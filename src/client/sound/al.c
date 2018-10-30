@@ -77,7 +77,7 @@ bool AL_Init(void)
 
     s_numchannels = i;
 
-    Com_Printf("OpenAL initialized.\n");
+	Com_Printf("OpenAL initialized.\n");
     return true;
 
 fail1:
@@ -101,41 +101,53 @@ void AL_Shutdown(void)
     QAL_Shutdown();
 }
 
+sfxcache_t *ResampleSfx(sfx_t *sfx, int wanted_rate);
+
 sfxcache_t *AL_UploadSfx(sfx_t *s)
 {
     sfxcache_t *sc;
-    ALsizei size = s_info.samples * s_info.width;
-    ALenum format = s_info.width == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
+	ALenum format = s_info.width == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
     ALuint name;
+	// allocate placeholder sfxcache
 
-    if (!size) {
-        s->error = Q_ERR_TOO_FEW;
-        return NULL;
-    }
+	int speed;
 
-    qalGetError();
+	if (s_khz->integer == 44)
+		speed = 44100;
+	else if (s_khz->integer == 22)
+		speed = 22050;
+	else
+		speed = 11025;
+
+	sc = ResampleSfx(s, speed);
+
+	ALsizei size = sc->length * s_info.width;
+
+	if (!size) {
+		s->error = Q_ERR_TOO_FEW;
+		return NULL;
+	}
+	
+	size_t length_in_samples = sc->length;
+
+	sc->length = sc->length * 1000 / speed; // in msec
+	sc->size = size;
+	
+	qalGetError();
     qalGenBuffers(1, &name);
-    qalBufferData(name, format, s_info.data, size, s_info.rate);
+    qalBufferData(name, format, sc->data, size, speed);
     if (qalGetError() != AL_NO_ERROR) {
         s->error = Q_ERR_LIBRARY_ERROR;
         return NULL;
     }
 
-#if 0
+	sc->bufnum = name;
+
     // specify OpenAL-Soft style loop points
     if (s_info.loopstart > 0 && qalIsExtensionPresent("AL_SOFT_loop_points")) {
-        ALint points[2] = { s_info.loopstart, s_info.samples };
+        ALint points[2] = { sc->loopstart, length_in_samples };
         qalBufferiv(name, AL_LOOP_POINTS_SOFT, points);
     }
-#endif
-
-    // allocate placeholder sfxcache
-    sc = s->cache = S_Malloc(sizeof(*sc));
-    sc->length = s_info.samples * 1000 / s_info.rate; // in msec
-    sc->loopstart = s_info.loopstart;
-    sc->width = s_info.width;
-    sc->size = size;
-    sc->bufnum = name;
 
     return sc;
 }
@@ -196,7 +208,7 @@ void AL_PlayChannel(channel_t *ch)
     ch->srcnum = s_srcnums[ch - channels];
     qalGetError();
     qalSourcei(ch->srcnum, AL_BUFFER, sc->bufnum);
-    if (ch->autosound /*|| sc->loopstart >= 0*/) {
+    if (ch->autosound || (sc->loopstart >= 0 && qalIsExtensionPresent("AL_SOFT_loop_points"))) {
         qalSourcei(ch->srcnum, AL_LOOPING, AL_TRUE);
     } else {
         qalSourcei(ch->srcnum, AL_LOOPING, AL_FALSE);
@@ -205,6 +217,21 @@ void AL_PlayChannel(channel_t *ch)
     qalSourcef(ch->srcnum, AL_REFERENCE_DISTANCE, SOUND_FULLVOLUME);
     qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
     qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, ch->dist_mult * (8192 - SOUND_FULLVOLUME));
+
+	float pitch = 1.0f;
+
+	if (cl.frame.ps.rdflags & RDF_UNDERWATER)
+		pitch -= 0.3f;
+
+	if (ch->pitch_offset != 0)
+	{
+		float difference_in_octaves = ch->pitch_offset / (2400.0f);
+		pitch += difference_in_octaves;
+
+		qalSourcef(ch->srcnum, AL_PITCH, pitch);
+	}
+
+	qalSourcef(ch->srcnum, AL_PITCH, pitch);
 
     AL_Spatialize(ch);
 
@@ -284,7 +311,7 @@ static void AL_AddLoopSounds(void)
         if (!sounds[i])
             continue;
 
-        sfx = S_SfxForHandle(cl.sound_precache[sounds[i]]);
+        sfx = S_SfxForHandle(cl.precache[sounds[i]].sound, CL_GetClientGame());
         if (!sfx)
             continue;       // bad sound effect
         sc = sfx->cache;
@@ -315,6 +342,8 @@ static void AL_AddLoopSounds(void)
         ch->master_vol = 1;
         ch->dist_mult = SOUND_LOOPATTENUATE;
         ch->end = paintedtime + sc->length;
+
+		ch->pitch_offset = 0; // TODO
 
         AL_PlayChannel(ch);
 

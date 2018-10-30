@@ -332,47 +332,6 @@ bool Com_ParseTimespec(const char *s, int *frames)
 #endif
 
 /*
-================
-Com_HashString
-================
-*/
-unsigned Com_HashString(const char *s, unsigned size)
-{
-    unsigned hash, c;
-
-    hash = 0;
-    while (*s) {
-        c = *s++;
-        hash = 127 * hash + c;
-    }
-
-    hash = (hash >> 20) ^(hash >> 10) ^ hash;
-    return hash & (size - 1);
-}
-
-/*
-================
-Com_HashStringLen
-
-A case-insensitive version of Com_HashString that hashes up to 'len'
-characters.
-================
-*/
-unsigned Com_HashStringLen(const char *s, size_t len, unsigned size)
-{
-    unsigned hash, c;
-
-    hash = 0;
-    while (*s && len--) {
-        c = Q_tolower(*s++);
-        hash = 127 * hash + c;
-    }
-
-    hash = (hash >> 20) ^(hash >> 10) ^ hash;
-    return hash & (size - 1);
-}
-
-/*
 ===============
 Com_PageInMemory
 

@@ -19,6 +19,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
+// Generations
+#define USE_VIEW_ORIGIN_PVS
+
 /*
 =============================================================================
 
@@ -257,7 +260,7 @@ void SV_Multicast(vec3_t origin, multicast_t to)
     client_t    *client;
     byte        mask[VIS_MAX_BYTES];
     mleaf_t     *leaf1, *leaf2;
-    int         leafnum q_unused;
+    int         leafnum;
     int         flags;
     vec3_t      org;
 
@@ -308,7 +311,8 @@ void SV_Multicast(vec3_t origin, multicast_t to)
 
         if (leaf1) {
             // find the client's PVS
-#if 0
+// Generations
+#ifdef USE_VIEW_ORIGIN_PVS
             player_state_t *ps = &client->edict->client->ps;
             VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
 #else
@@ -460,9 +464,9 @@ static void free_all_messages(client_t *client)
     client->msg_dynamic_bytes = 0;
 }
 
-static void add_msg_packet(client_t     *client,
-                           byte         *data,
-                           size_t       len,
+static void add_msg_packet(client_t    *client,
+                           byte        *data,
+                           size_t      len,
                            bool         reliable)
 {
     message_packet_t    *msg;
@@ -547,7 +551,8 @@ static void emit_snd(client_t *client, message_packet_t *msg)
 
     MSG_WriteByte(svc_sound);
     MSG_WriteByte(flags);
-    MSG_WriteByte(msg->index);
+	// Generations
+	MSG_WriteShort(msg->index);
 
     if (flags & SND_VOLUME)
         MSG_WriteByte(msg->volume);
@@ -1052,8 +1057,8 @@ void SV_InitClientSend(client_t *newcl)
 
     // setup protocol
     if (newcl->netchan->type == NETCHAN_NEW) {
-        newcl->AddMessage = add_message_new;
-        newcl->WriteDatagram = write_datagram_new;
+    newcl->AddMessage = add_message_new;
+    newcl->WriteDatagram = write_datagram_new;
     } else {
         newcl->AddMessage = add_message_old;
         newcl->WriteDatagram = write_datagram_old;

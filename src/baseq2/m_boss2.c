@@ -459,7 +459,7 @@ void boss2_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
 // American wanted these at no attenuation
     if (damage < 10) {
         gi.sound(self, CHAN_VOICE, sound_pain3, 1, ATTN_NONE, 0);
@@ -479,6 +479,7 @@ void boss2_dead(edict_t *self)
     VectorSet(self->maxs, 56, 56, 80);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -578,7 +579,7 @@ bool Boss2_CheckAttack(edict_t *self)
 
     if (random() < chance) {
         self->monsterinfo.attack_state = AS_MISSILE;
-        self->monsterinfo.attack_finished = level.time + 2 * random();
+        self->monsterinfo.attack_finished = level.time + 2000 * random();
         return true;
     }
 

@@ -53,7 +53,7 @@ static inline void CL_ParseDeltaEntity(server_frame_t  *frame,
     MSG_ParseDeltaEntity(old, state, newnum, bits, cl.esFlags);
 
     // shuffle previous origin to old
-    if (!(bits & U_OLDORIGIN) && !(state->renderfx & RF_BEAM))
+    if (!(bits & U_OLDORIGIN) && !(state->renderfx & (RF_BEAM | RF_PROJECTILE)))
         VectorCopy(old->origin, state->old_origin);
 }
 
@@ -201,30 +201,30 @@ static void CL_ParseFrame(int extrabits)
 
     extraflags = 0;
     if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
-        bits = MSG_ReadLong();
-
-        currentframe = bits & FRAMENUM_MASK;
-        delta = bits >> FRAMENUM_BITS;
-
-        if (delta == 31) {
-            deltaframe = -1;
-        } else {
-            deltaframe = currentframe - delta;
-        }
-
-        bits = MSG_ReadByte();
-
-        suppressed = bits & SUPPRESSCOUNT_MASK;
+	    bits = MSG_ReadLong();
+	
+	    currentframe = bits & FRAMENUM_MASK;
+	    delta = bits >> FRAMENUM_BITS;
+	
+	    if (delta == 31) {
+	        deltaframe = -1;
+	    } else {
+	        deltaframe = currentframe - delta;
+	    }
+	
+	    bits = MSG_ReadByte();
+	
+	    suppressed = bits & SUPPRESSCOUNT_MASK;
         if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
-            if (suppressed & FF_CLIENTPRED) {
-                // CLIENTDROP is implied, don't draw both
-                suppressed &= ~FF_CLIENTDROP;
-            }
-            cl.frameflags |= suppressed;
+		    if (suppressed & FF_CLIENTPRED) {
+		        // CLIENTDROP is implied, don't draw both
+		        suppressed &= ~FF_CLIENTDROP;
+		    }
+		    cl.frameflags |= suppressed;
         } else if (suppressed) {
             cl.frameflags |= FF_SUPPRESSED;
         }
-        extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
+	    extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
     } else {
         currentframe = MSG_ReadLong();
         deltaframe = MSG_ReadLong();
@@ -311,19 +311,19 @@ static void CL_ParseFrame(int extrabits)
     // parse playerstate
     bits = MSG_ReadShort();
     if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
-        MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
+	    MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
 #ifdef _DEBUG
-        if (cl_shownet->integer > 2 && (bits || extraflags)) {
-            MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
-            Com_LPrintf(PRINT_DEVELOPER, "\n");
-        }
+	        if (cl_shownet->integer > 2 && (bits || extraflags)) {
+	        MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
+	        Com_LPrintf(PRINT_DEVELOPER, "\n");
+	    }
 #endif
         if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
-            // parse clientNum
+	    	// parse clientNum
             if (extraflags & EPS_CLIENTNUM) {
-                frame.clientNum = MSG_ReadByte();
+	        	frame.clientNum = MSG_ReadByte();
             } else if (oldframe) {
-                frame.clientNum = oldframe->clientNum;
+	        	frame.clientNum = oldframe->clientNum;
             }
         } else {
             frame.clientNum = cl.clientNum;
@@ -338,7 +338,7 @@ static void CL_ParseFrame(int extrabits)
 #endif
         frame.clientNum = cl.clientNum;
     }
-
+	
     // parse packetentities
     if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT) {
         if (MSG_ReadByte() != svc_packetentities) {
@@ -405,6 +405,29 @@ static void CL_ParseFrame(int extrabits)
 =====================================================================
 */
 
+// Generations
+static void CL_ParsePrecacheBaseline()
+{
+	byte *data = MSG_ReadData(MAX_PRECACHE_BITSET);
+	memcpy(cl.precache_bitset, data, MAX_PRECACHE_BITSET);
+
+	/*for (int i = 1; i < MAX_PRECACHE; ++i)
+	{
+		precache_type_e type = Q_GetPrecacheBitsetType(cl.precache_bitset, i);
+
+		if (!type)
+			break;
+
+		cl.precache[i].type = type;
+		
+		switch (type)
+		{
+		case PRECACHE_MODEL:
+			cl.precache[i].model = 
+		}
+	}*/
+}
+
 static void CL_ParseConfigstring(int index)
 {
     size_t  len, maxlen;
@@ -439,6 +462,20 @@ static void CL_ParseConfigstring(int index)
     CL_UpdateConfigstring(index);
 }
 
+// Generations
+static void CL_ParsePrecache()
+{
+	int index = MSG_ReadShort();
+	precache_type_e type = (precache_type_e)MSG_ReadByte();
+
+	if (index < 0 || index >= MAX_PRECACHE)
+		Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
+
+	Q_SetPrecacheBitsetType(cl.precache_bitset, index, type);
+
+	CL_ParseConfigstring(CS_PRECACHE + index);
+}
+
 static void CL_ParseBaseline(int index, int bits)
 {
     if (index < 1 || index >= MAX_EDICTS) {
@@ -467,6 +504,9 @@ static void CL_ParseGamestate(void)
         CL_ParseConfigstring(index);
     }
 
+	// Generations
+	CL_ParsePrecacheBaseline();
+
     while (msg_read.readcount < msg_read.cursize) {
         index = MSG_ParseEntityBits(&bits);
         if (!index) {
@@ -479,7 +519,7 @@ static void CL_ParseGamestate(void)
 static void CL_ParseServerData(void)
 {
     char    levelname[MAX_QPATH];
-    int     i, protocol, attractloop q_unused;
+    int     i, protocol, attractloop;
     size_t  len;
 
     Cbuf_Execute(&cl_cmdbuf);          // make sure any stuffed commands are done
@@ -504,8 +544,8 @@ static void CL_ParseServerData(void)
         }
         // BIG HACK to let demos from release work with the 3.0x patch!!!
         if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_Q2PRO) {
-            Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
-        }
+        	Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
+    	}
         cls.serverProtocol = protocol;
     }
 
@@ -535,7 +575,7 @@ static void CL_ParseServerData(void)
     MSG_ReadString(levelname, sizeof(levelname));
 
     // setup default pmove parameters
-    PmoveInit(&cl.pmp);
+    PmoveInit(&cl.pmp, GAME_NONE);
 
 #if USE_FPS
     // setup default frame times
@@ -577,49 +617,49 @@ static void CL_ParseServerData(void)
         }
         cl.pmp.speedmult = 2;
     } else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
-        i = MSG_ReadShort();
-        if (!Q2PRO_SUPPORTED(i)) {
-            Com_Error(ERR_DROP,
-                      "Q2PRO server reports unsupported protocol version %d.\n"
-                      "Current client version is %d.", i, PROTOCOL_VERSION_Q2PRO_CURRENT);
-        }
-        Com_DPrintf("Using minor Q2PRO protocol version %d\n", i);
-        cls.protocolVersion = i;
-        i = MSG_ReadByte();
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) {
-            Com_DPrintf("Q2PRO server state %d\n", i);
-            cl.serverstate = i;
-        }
-        i = MSG_ReadByte();
-        if (i) {
-            Com_DPrintf("Q2PRO strafejump hack enabled\n");
+	    i = MSG_ReadShort();
+	    if (!Q2PRO_SUPPORTED(i)) {
+	        Com_Error(ERR_DROP,
+	                    "Q2PRO server reports unsupported protocol version %d.\n"
+	                    "Current client version is %d.", i, PROTOCOL_VERSION_Q2PRO_CURRENT);
+	    }
+	    Com_DPrintf("Using minor Q2PRO protocol version %d\n", i);
+	    cls.protocolVersion = i;
+	    i = MSG_ReadByte();
+	    if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE) {
+	        Com_DPrintf("Q2PRO server state %d\n", i);
+	        cl.serverstate = i;
+	    }
+	    i = MSG_ReadByte();
+	    if (i) {
+	        Com_DPrintf("Q2PRO strafejump hack enabled\n");
             cl.pmp.strafehack = true;
-        }
-        i = MSG_ReadByte(); //atu QWMod
-        if (i) {
-            Com_DPrintf("Q2PRO QW mode enabled\n");
-            PmoveEnableQW(&cl.pmp);
-        }
-        cl.esFlags |= MSG_ES_UMASK;
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
-            cl.esFlags |= MSG_ES_LONGSOLID;
-        }
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
-            cl.esFlags |= MSG_ES_BEAMORIGIN;
-        }
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
-            cl.esFlags |= MSG_ES_SHORTANGLES;
-        }
-        if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            i = MSG_ReadByte();
-            if (i) {
-                Com_DPrintf("Q2PRO waterjump hack enabled\n");
+	    }
+	    i = MSG_ReadByte(); //atu QWMod
+	    if (i) {
+	        Com_DPrintf("Q2PRO QW mode enabled\n");
+	        PmoveEnableQW(&cl.pmp);
+	    }
+	    cl.esFlags |= MSG_ES_UMASK;
+	    if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
+	        cl.esFlags |= MSG_ES_LONGSOLID;
+	    }
+	    if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
+	        cl.esFlags |= MSG_ES_BEAMORIGIN;
+	    }
+	    if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES) {
+	        cl.esFlags |= MSG_ES_SHORTANGLES;
+	    }
+	    if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
+	        i = MSG_ReadByte();
+	        if (i) {
+	            Com_DPrintf("Q2PRO waterjump hack enabled\n");
                 cl.pmp.waterhack = true;
-            }
-        }
-        cl.pmp.speedmult = 2;
+	        }
+	    }
+	    cl.pmp.speedmult = 2;
         cl.pmp.flyhack = true; // fly hack is unconditionally enabled
-        cl.pmp.flyfriction = 4;
+	    cl.pmp.flyfriction = 4;
     }
 
     if (cl.clientNum == -1) {
@@ -719,13 +759,45 @@ static void CL_ParseTEntPacket(void)
     case TE_DBALL_GOAL:
     case TE_WIDOWSPLASH:
     case TE_NUKEBLAST:
-        MSG_ReadPos(te.pos1);
+
+	case TE_Q1_SPIKE:
+	case TE_Q1_SUPERSPIKE:
+	case TE_Q1_EXPLODE:
+	case TE_Q1_LIGHTNINGBLOOD:
+	case TE_Q1_WIZSPIKE:
+	case TE_Q1_KNIGHTSPIKE:
+	case TE_Q1_LAVASPLASH:
+	case TE_Q1_TAREXPLOSION:
+
+	case TE_DOOM_GUNSHOT:
+	case TE_DOOM_EXPLODE:
+	case TE_DOOM_PLASMA:
+	case TE_DOOM_BLOOD:
+	case TE_DOOM_IMP_BOOM:
+	case TE_DOOM_CACO_BOOM:
+	case TE_DOOM_BSPI_BOOM:
+	case TE_DOOM_FBXP_BOOM:
+	case TE_DOOM_PUFF:
+	case TE_DOOM_BOSS_BOOM:
+	case TE_DUKE_GUNSHOT:
+	case TE_DUKE_BLOOD:
+	case TE_DUKE_BLOOD_SPLAT:
+	case TE_DUKE_EXPLODE:
+	case TE_DUKE_EXPLODE_SMALL:
+	case TE_DUKE_EXPLODE_PIPE:
+	case TE_DUKE_FREEZE_HIT:
+	case TE_DUKE_GLASS:
+		MSG_ReadPos(te.pos1);
         break;
 
     case TE_PARASITE_ATTACK:
     case TE_MEDIC_CABLE_ATTACK:
     case TE_HEATBEAM:
     case TE_MONSTER_HEATBEAM:
+
+	case TE_Q1_LIGHTNING1:
+	case TE_Q1_LIGHTNING2:
+	case TE_Q1_LIGHTNING3:
         te.entity1 = MSG_ReadShort();
         MSG_ReadPos(te.pos1);
         MSG_ReadPos(te.pos2);
@@ -773,6 +845,17 @@ static void CL_ParseTEntPacket(void)
         MSG_ReadPos(te.pos1);
         break;
 
+	case TE_Q1_GUNSHOT:
+		te.count = MSG_ReadByte();
+		MSG_ReadPos(te.pos1);
+		break;
+
+	case TE_Q1_BLOOD:
+		MSG_ReadPos(te.pos1);
+		MSG_ReadPos(te.dir);
+		te.count = MSG_ReadByte();
+		break;
+
     default:
         Com_Error(ERR_DROP, "%s: bad type", __func__);
     }
@@ -800,7 +883,8 @@ static void CL_ParseStartSoundPacket(void)
     if ((flags & (SND_ENT | SND_POS)) == 0)
         Com_Error(ERR_DROP, "%s: neither SND_ENT nor SND_POS set", __func__);
 
-    snd.index = MSG_ReadByte();
+	// Generations
+    snd.index = MSG_ReadShort();
     if (snd.index == -1)
         Com_Error(ERR_DROP, "%s: read past end of message", __func__);
 
@@ -838,7 +922,7 @@ static void CL_ParseStartSoundPacket(void)
 
     snd.flags = flags;
 
-    SHOWNET(2, "    %s\n", cl.configstrings[CS_SOUNDS + snd.index]);
+    SHOWNET(2, "    %s\n", cl.configstrings[CS_PRECACHE + snd.index]);
 }
 
 static void CL_ParseReconnect(void)
@@ -1010,15 +1094,22 @@ static void CL_ParseStuffText(void)
 
 static void CL_ParseLayout(void)
 {
-    MSG_ReadString(cl.layout, sizeof(cl.layout));
-    SHOWNET(2, "    \"%s\"\n", cl.layout);
+	// Generations
+    MSG_ReadString(cl.layout_raw, sizeof(cl.layout_raw));
+    SHOWNET(2, "    \"%s\"\n", cl.layout_raw);
+
+	if (cl.layout)
+		SCR_FreeLayoutString(cl.layout);
+
+	cl.layout = SCR_ParseLayoutString(cl.layout_raw);
 }
 
 static void CL_ParseInventory(void)
 {
-    int        i;
+	int i;
 
-    for (i = 0; i < MAX_ITEMS; i++) {
+	// Generations
+	for (i = ITI_NULL; i < ITI_TOTAL; i++) {
         cl.inventory[i] = MSG_ReadShort();
     }
 }
@@ -1043,7 +1134,7 @@ static void CL_ParseDownload(int cmd)
     // read optional uncompressed packet size
     if (cmd == svc_zdownload) {
         if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2) {
-            compressed = MSG_ReadShort();
+        	compressed = MSG_ReadShort();
         } else {
             compressed = -1;
         }
@@ -1136,8 +1227,8 @@ static void set_server_fps(int value)
 
 static void CL_ParseSetting(void)
 {
-    int index q_unused;
-    int value q_unused;
+    int index;
+    int value;
 
     index = MSG_ReadLong();
     value = MSG_ReadLong();
@@ -1201,14 +1292,12 @@ void CL_ParseServerMessage(void)
         default:
 badbyte:
             Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
-            break;
 
         case svc_nop:
             break;
 
         case svc_disconnect:
             Com_Error(ERR_DISCONNECT, "Server disconnected");
-            break;
 
         case svc_reconnect:
             CL_ParseReconnect();
@@ -1303,6 +1392,21 @@ badbyte:
             }
             CL_ParseSetting();
             continue;
+
+		// Generations
+		case svc_precache:
+            if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+                goto badbyte;
+            }
+			CL_ParsePrecache();
+			continue;
+
+		case svc_precache_baseline:
+            if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO) {
+                goto badbyte;
+            }
+			CL_ParsePrecacheBaseline();
+			continue;
         }
 
         // if recording demos, copy off protocol invariant stuff
@@ -1372,7 +1476,6 @@ void CL_SeekDemoMessage(void)
         switch (cmd) {
         default:
             Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
-            break;
 
         case svc_nop:
             break;
@@ -1380,7 +1483,6 @@ void CL_SeekDemoMessage(void)
         case svc_disconnect:
         case svc_reconnect:
             Com_Error(ERR_DISCONNECT, "Server disconnected");
-            break;
 
         case svc_print:
             MSG_ReadByte();

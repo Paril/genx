@@ -228,7 +228,6 @@ void UI_OpenMenu(uiMenu_t type)
         break;
     default:
         Com_Error(ERR_FATAL, "UI_OpenMenu: bad menu");
-        break;
     }
 
     UI_PushMenu(menu);
@@ -312,12 +311,12 @@ void UI_DrawString(int x, int y, int flags, const char *string)
         x -= strlen(string) * CHAR_WIDTH;
     }
 
-    R_DrawString(x, y, flags, MAX_STRING_CHARS, string, uis.fontHandle);
+    R_DrawString(x, y, flags, MAX_STRING_CHARS, string, uis.fontHandle, CL_GetClientGame());
 }
 
 void UI_DrawChar(int x, int y, int flags, int ch)
 {
-    R_DrawChar(x, y, flags, ch, uis.fontHandle);
+    R_DrawChar(x, y, flags, ch, uis.fontHandle, CL_GetClientGame());
 }
 
 void UI_StringDimensions(vrect_t *rc, int flags, const char *string)
@@ -427,7 +426,7 @@ void UI_Draw(int realtime)
     R_ClearColor();
     R_SetScale(uis.scale);
 
-    if (1) {
+    if ((1)) {
         // draw top menu
         if (uis.activeMenu->draw) {
             uis.activeMenu->draw(uis.activeMenu);
@@ -448,7 +447,7 @@ void UI_Draw(int realtime)
     // draw custom cursor in fullscreen mode
     if (r_config.flags & QVF_FULLSCREEN) {
         R_DrawPic(uis.mouseCoords[0] - uis.cursorWidth / 2,
-                  uis.mouseCoords[1] - uis.cursorHeight / 2, uis.cursorHandle);
+                  uis.mouseCoords[1] - uis.cursorHeight / 2, uis.cursorHandle, CL_GetClientGame());
     }
 
     if (ui_debug->integer) {
@@ -629,9 +628,11 @@ void UI_Init(void)
 
     UI_ModeChanged();
 
-    uis.fontHandle = R_RegisterFont("conchars");
+	// Generations
+    uis.fontHandle = R_RegisterFont("%conchars");
     uis.cursorHandle = R_RegisterPic("ch1");
-    R_GetPicSize(&uis.cursorWidth, &uis.cursorHeight, uis.cursorHandle);
+	// Generations
+    R_GetPicSize(&uis.cursorWidth, &uis.cursorHeight, uis.cursorHandle, CL_GetClientGame());
 
     for (i = 0; i < NUM_CURSOR_FRAMES; i++) {
         Q_snprintf(buffer, sizeof(buffer), "m_cursor%d", i);

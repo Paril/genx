@@ -451,7 +451,7 @@ void supertank_pain(edict_t *self, edict_t *other, float kick, int damage)
         if ((self->s.frame >= FRAME_attak2_1) && (self->s.frame <= FRAME_attak2_14))
             return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
 
     if (skill->value == 3)
         return;     // no pain anims in nightmare
@@ -561,6 +561,7 @@ void supertank_dead(edict_t *self)
     VectorSet(self->maxs, 60, 60, 72);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -624,7 +625,7 @@ void BossExplode(edict_t *self)
     gi.WritePosition(org);
     gi.multicast(self->s.origin, MULTICAST_PVS);
 
-    self->nextthink = level.time + 0.1f;
+    self->nextthink = level.time + game.frametime;
 }
 
 

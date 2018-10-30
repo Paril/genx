@@ -41,11 +41,21 @@ typedef struct {
     float       friction;
     float       waterfriction;
     float       flyfriction;
+
+	// Generations
+	gametype_t	game;
+
+	// movement parameters
+	float		pm_stopspeed;
+	float		pm_duckspeed;
+	float		pm_accelerate;
+	float		pm_wateraccelerate;
+	float		pm_waterspeed;
 } pmoveParams_t;
 
 void Pmove(pmove_t *pmove, pmoveParams_t *params);
 
-void PmoveInit(pmoveParams_t *pmp);
+void PmoveInit(pmoveParams_t *pmp, gametype_t game);
 void PmoveEnableQW(pmoveParams_t *pmp);
 
 #endif // PMOVE_H

@@ -51,6 +51,172 @@ typedef unsigned char byte;
 typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
 typedef int qhandle_t;
 
+// Paril
+typedef enum
+{
+	GAME_NONE,
+
+	GAME_Q2,
+	GAME_Q1,
+	GAME_DOOM,
+	GAME_DUKE,
+
+	GAME_TOTAL
+} gametype_t;
+
+extern const char *gameNames[];
+
+// Item enums
+typedef enum
+{
+	// Quake 2 stuff
+	ITI_NULL,
+	ITI_FIRST,
+
+	ITI_JACKET_ARMOR = ITI_FIRST,
+	ITI_COMBAT_ARMOR,
+	ITI_BODY_ARMOR,
+
+	ITI_ARMOR_SHARD,
+	ITI_POWER_SCREEN,
+	ITI_POWER_SHIELD,
+
+	ITI_BLASTER,
+	ITI_SHOTGUN,
+	ITI_SUPER_SHOTGUN,
+	ITI_MACHINEGUN,
+	ITI_CHAINGUN,
+	ITI_GRENADE_LAUNCHER,
+	ITI_ROCKET_LAUNCHER,
+	ITI_HYPERBLASTER,
+	ITI_RAILGUN,
+	ITI_BFG10K,
+
+	ITI_AMMO_FIRST,
+	ITI_BULLETS = ITI_AMMO_FIRST,
+	ITI_SHELLS,
+	ITI_ROCKETS,
+	ITI_GRENADES,
+	ITI_CELLS,
+	ITI_SLUGS,
+
+	// Special ammo types that can't be done normally
+	ITI_SHELLS_LARGE,
+	ITI_BULLETS_LARGE,
+
+	ITI_AMMO_LAST = ITI_BULLETS_LARGE,
+
+	ITI_STIMPACK,
+	ITI_MEDIUM_HEALTH,
+	ITI_LARGE_HEALTH,
+	ITI_MEGA_HEALTH,
+
+	ITI_QUAD_DAMAGE,
+	ITI_INVULNERABILITY,
+	ITI_ENVIRONMENT_SUIT,
+	ITI_SILENCER,
+	ITI_REBREATHER,
+	ITI_ANCIENT_HEAD,
+	ITI_ADRENALINE,
+	ITI_BANDOLIER,
+	ITI_AMMO_PACK,
+
+	ITI_DATA_CD,
+	ITI_POWER_CUBE,
+	ITI_PYRAMID_KEY,
+	ITI_DATA_SPINNER,
+	ITI_SECURITY_PASS,
+	ITI_BLUE_KEY,
+	ITI_RED_KEY,
+	ITI_COMMANDERS_HEAD,
+	ITI_AIRSTRIKE_MARKER,
+
+	ITI_TOTAL,
+
+	// Special items
+	ITI_Q1_SILVER_KEY = ITI_RED_KEY,
+	ITI_Q1_GOLD_KEY = ITI_BLUE_KEY,
+
+	// Quake 1
+	ITI_Q1_GREEN_ARMOR = ITI_JACKET_ARMOR,
+	ITI_Q1_YELLOW_ARMOR = ITI_COMBAT_ARMOR,
+	ITI_Q1_RED_ARMOR = ITI_BODY_ARMOR,
+	ITI_Q1_INVISIBILITY = ITI_REBREATHER,
+
+	ITI_Q1_AXE = ITI_BLASTER,
+	ITI_Q1_SHOTGUN = ITI_SHOTGUN,
+	ITI_Q1_SUPER_SHOTGUN = ITI_SUPER_SHOTGUN,
+	ITI_Q1_NAILGUN = ITI_MACHINEGUN,
+	ITI_Q1_SUPER_NAILGUN = ITI_CHAINGUN,
+	ITI_Q1_GRENADE_LAUNCHER = ITI_GRENADE_LAUNCHER,
+	ITI_Q1_ROCKET_LAUNCHER = ITI_ROCKET_LAUNCHER,
+	ITI_Q1_THUNDERBOLT = ITI_HYPERBLASTER,
+
+	ITI_Q1_SHELLS = ITI_SHELLS,
+	ITI_Q1_SHELLS_SMALL = ITI_SHELLS,
+	ITI_Q1_SHELLS_LARGE = ITI_SHELLS_LARGE,
+	ITI_Q1_NAILS = ITI_BULLETS,
+	ITI_Q1_NAILS_SMALL = ITI_BULLETS,
+	ITI_Q1_NAILS_LARGE = ITI_BULLETS_LARGE,
+	ITI_Q1_ROCKETS = ITI_ROCKETS,
+	ITI_Q1_ROCKETS_SMALL = ITI_GRENADES,
+	ITI_Q1_ROCKETS_LARGE = ITI_ROCKETS,
+	ITI_Q1_CELLS = ITI_CELLS,
+	ITI_Q1_CELLS_SMALL = ITI_CELLS,
+	ITI_Q1_CELLS_LARGE = ITI_SLUGS,
+
+	// Doom
+	ITI_DOOM_ARMOR = ITI_JACKET_ARMOR,
+	ITI_DOOM_MEGA_ARMOR = ITI_COMBAT_ARMOR,
+
+	ITI_DOOM_MEGA_SPHERE = ITI_MEGA_HEALTH,
+	ITI_DOOM_SUPER_SPHERE = ITI_ADRENALINE,
+	ITI_DOOM_INVISIBILITY = ITI_REBREATHER,
+
+	ITI_DOOM_FIST = ITI_BLASTER,
+	ITI_DOOM_PISTOL = ITI_MACHINEGUN,
+	ITI_DOOM_SHOTGUN = ITI_SHOTGUN,
+	ITI_DOOM_SUPER_SHOTGUN = ITI_SUPER_SHOTGUN,
+	ITI_DOOM_CHAINGUN = ITI_CHAINGUN,
+	ITI_DOOM_ROCKET_LAUNCHER = ITI_ROCKET_LAUNCHER,
+	ITI_DOOM_PLASMA_GUN = ITI_HYPERBLASTER,
+	ITI_DOOM_CHAINSAW = ITI_RAILGUN,
+	ITI_DOOM_BFG = ITI_BFG10K,
+
+	ITI_DOOM_BULLETS = ITI_BULLETS,
+	ITI_DOOM_BULLETS_SMALL = ITI_BULLETS,
+	ITI_DOOM_BULLETS_LARGE = ITI_BULLETS_LARGE,
+	ITI_DOOM_SHELLS = ITI_SHELLS,
+	ITI_DOOM_SHELLS_SMALL = ITI_SHELLS,
+	ITI_DOOM_SHELLS_LARGE = ITI_SHELLS_LARGE,
+	ITI_DOOM_ROCKETS = ITI_ROCKETS,
+	ITI_DOOM_ROCKETS_SMALL = ITI_GRENADES,
+	ITI_DOOM_ROCKETS_LARGE = ITI_ROCKETS,
+	ITI_DOOM_CELLS = ITI_CELLS,
+	ITI_DOOM_CELLS_SMALL = ITI_CELLS,
+	ITI_DOOM_CELLS_LARGE = ITI_SLUGS,
+
+	// Duke
+	ITI_DUKE_FOOT = ITI_BLASTER,
+	ITI_DUKE_PISTOL = ITI_MACHINEGUN,
+	ITI_DUKE_SHOTGUN = ITI_SHOTGUN,
+	ITI_DUKE_CANNON = ITI_CHAINGUN,
+	ITI_DUKE_RPG = ITI_ROCKET_LAUNCHER,
+	ITI_DUKE_DEVASTATOR = ITI_GRENADE_LAUNCHER,
+	ITI_DUKE_FREEZER = ITI_HYPERBLASTER,
+
+	ITI_DUKE_CLIP = ITI_BULLETS,
+	ITI_DUKE_SHELLS = ITI_SHELLS,
+	ITI_DUKE_SHELLS_LARGE = ITI_SHELLS_LARGE,
+	ITI_DUKE_CANNON_AMMO = ITI_BULLETS_LARGE,
+	ITI_DUKE_RPG_ROCKETS = ITI_ROCKETS,
+	ITI_DUKE_DEVASTATOR_ROCKETS = ITI_SLUGS,
+	ITI_DUKE_PIPEBOMBS = ITI_GRENADES,
+	ITI_DUKE_FREEZER_AMMO = ITI_CELLS,
+
+	ITI_DUKE_ARMOR = ITI_JACKET_ARMOR
+} itemid_e;
+
 #ifndef NULL
 #define NULL ((void *)0)
 #endif
@@ -74,10 +240,12 @@ typedef int qhandle_t;
 #define MAX_CLIENTS         256     // absolute limit
 #define MAX_EDICTS          1024    // must change protocol to increase more
 #define MAX_LIGHTSTYLES     256
-#define MAX_MODELS          256     // these are sent over the net as bytes
-#define MAX_SOUNDS          256     // so they cannot be blindly increased
-#define MAX_IMAGES          256
-#define MAX_ITEMS           256
+// Generations
+#define MAX_MODELS          1024
+#define MAX_SOUNDS          1024
+#define MAX_IMAGES          1024
+#define MAX_PRECACHE        1024
+#define MAX_PRECACHE_BITSET (MAX_PRECACHE / 3) + 1
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
 
 #define MAX_CLIENT_NAME     16
@@ -144,6 +312,16 @@ typedef union {
     uint8_t u8[4];
 } color_t;
 
+static inline color_t ColorFromRGBA(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a)
+{
+	color_t c = { 0 };
+	c.u8[0] = r;
+	c.u8[1] = g;
+	c.u8[2] = b;
+	c.u8[3] = a;
+	return c;
+}
+
 typedef int fixed4_t;
 typedef int fixed8_t;
 typedef int fixed16_t;
@@ -164,6 +342,11 @@ typedef struct vrect_s {
 #define RAD2DEG(a)      ((a) * (180 / M_PI))
 
 #define ALIGN(x, a)     (((x) + (a) - 1) & ~((a) - 1))
+
+static inline float LerpFloat(const float a, const float b, const float frac)
+{
+	return a + (b - a) * frac;
+}
 
 #define DotProduct(x,y)         ((x)[0]*(y)[0]+(x)[1]*(y)[1]+(x)[2]*(y)[2])
 #define CrossProduct(v1,v2,cross) \
@@ -216,6 +399,7 @@ typedef struct vrect_s {
         ((v1)[1]-(v2)[1])*((v1)[1]-(v2)[1])+ \
         ((v1)[2]-(v2)[2])*((v1)[2]-(v2)[2]))
 #define Distance(v1,v2) (sqrtf(DistanceSquared(v1,v2)))
+#define ManhattanDistance(v1,v2) (fabsf(v2[0] - v1[0]) + fabsf(v2[1] - v1[1]) + fabsf(v2[2] - v1[2]))
 #define LerpAngles(a,b,c,d) \
         ((d)[0]=LerpAngle((a)[0],(b)[0],c), \
          (d)[1]=LerpAngle((a)[1],(b)[1],c), \
@@ -348,6 +532,43 @@ uint32_t Q_rand_uniform(uint32_t n);
 #define Q_IsBitSet(data, bit)   (((data)[(bit) >> 3] & (1 << ((bit) & 7))) != 0)
 #define Q_SetBit(data, bit)     ((data)[(bit) >> 3] |= (1 << ((bit) & 7)))
 #define Q_ClearBit(data, bit)   ((data)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
+
+// Generations
+typedef enum
+{
+	PRECAHCE_NONE,
+
+	PRECACHE_MODEL,
+	PRECACHE_SOUND,
+	PRECACHE_PIC
+} precache_type_e;
+
+static inline precache_type_e Q_GetPrecacheBitsetType(const byte *bitset, const uint32_t index)
+{
+	const uint32_t bit_start = index * 3;
+	byte value = 0;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		if (Q_IsBitSet(bitset, bit_start + i))
+			value |= 1<<i;
+	}
+
+	return (precache_type_e)value;
+}
+
+static inline void Q_SetPrecacheBitsetType(byte *bitset, const uint32_t index, const precache_type_e value)
+{
+	const uint32_t bit_start = index * 3;
+
+	for (int i = 0; i < 3; ++i)
+	{
+		if ((int)value & 1<<i)
+			Q_SetBit(bitset, bit_start + i);
+		else
+			Q_ClearBit(bitset, bit_start + i);
+	}
+}
 
 //=============================================
 
@@ -564,13 +785,13 @@ static inline float FloatSwap(float f)
 #define MAX_INFO_VALUE      64
 #define MAX_INFO_STRING     512
 
-char    *Info_ValueForKey(const char *s, const char *key);
-void    Info_RemoveKey(char *s, const char *key);
+char	    *Info_ValueForKey(const char *s, const char *key);
+void	    Info_RemoveKey(char *s, const char *key);
 bool    Info_SetValueForKey(char *s, const char *key, const char *value);
 bool    Info_Validate(const char *s);
-size_t  Info_SubValidate(const char *s);
-void    Info_NextPair(const char **string, char *key, char *value);
-void    Info_Print(const char *infostring);
+size_t		Info_SubValidate(const char *s);
+void		Info_NextPair(const char **string, char *key, char *value);
+void		Info_Print(const char *infostring);
 
 /*
 ==========================================================
@@ -648,7 +869,7 @@ COLLISION DETECTION
 #define CONTENTS_CURRENT_270    0x200000
 #define CONTENTS_CURRENT_UP     0x400000
 #define CONTENTS_CURRENT_DOWN   0x800000
-
+	
 #define CONTENTS_ORIGIN         0x1000000   // removed before bsping an entity
 
 #define CONTENTS_MONSTER        0x2000000   // should never be on a brush, only in game
@@ -656,6 +877,9 @@ COLLISION DETECTION
 #define CONTENTS_DETAIL         0x8000000   // brushes to be added after vis leafs
 #define CONTENTS_TRANSLUCENT    0x10000000  // auto set if any surface has trans
 #define CONTENTS_LADDER         0x20000000
+// Generations
+#define CONTENTS_BFG			0x40000000
+#define CONTENTS_BULLETS		0x80000000
 
 
 
@@ -671,6 +895,9 @@ COLLISION DETECTION
 #define SURF_NODRAW     0x80    // don't bother referencing the texture
 
 #define SURF_ALPHATEST  0x02000000  // used by kmquake2
+// Generations
+#define SURF_Q1			0x04000000
+#define SURF_DOOM		0x08000000
 
 
 
@@ -684,7 +911,9 @@ COLLISION DETECTION
 #define MASK_OPAQUE             (CONTENTS_SOLID|CONTENTS_SLIME|CONTENTS_LAVA)
 #define MASK_SHOT               (CONTENTS_SOLID|CONTENTS_MONSTER|CONTENTS_WINDOW|CONTENTS_DEADMONSTER)
 #define MASK_CURRENT            (CONTENTS_CURRENT_0|CONTENTS_CURRENT_90|CONTENTS_CURRENT_180|CONTENTS_CURRENT_270|CONTENTS_CURRENT_UP|CONTENTS_CURRENT_DOWN)
-
+// Generations
+#define MASK_BULLET				(MASK_SHOT | CONTENTS_BULLETS)
+	
 
 // gi.BoxEdicts() can return a list of either solid or trigger entities
 // FIXME: eliminate AREA_ distinction?
@@ -716,19 +945,19 @@ typedef struct cplane_s {
 #define PLANE_NON_AXIAL 6
 
 typedef struct csurface_s {
-    char        name[16];
+    char			name[16];
     int         flags;
-    int         value;
+    int				value;
 } csurface_t;
 
 // a trace is returned when a box is swept through the world
 typedef struct {
     qboolean    allsolid;   // if true, plane is not valid
     qboolean    startsolid; // if true, the initial point was in a solid area
-    float       fraction;   // time completed, 1.0 = didn't hit anything
-    vec3_t      endpos;     // final position
-    cplane_t    plane;      // surface normal at impact
-    csurface_t  *surface;   // surface hit
+    float			fraction;   // time completed, 1.0 = didn't hit anything
+    vec3_t			endpos;     // final position
+    cplane_t		plane;      // surface normal at impact
+    csurface_t		*surface;   // surface hit
     int         contents;   // contents on other side of surface hit
     struct edict_s  *ent;       // not set by CM_*() functions
 } trace_t;
@@ -743,6 +972,9 @@ typedef enum {
     PM_DEAD,
     PM_GIB,     // different bounding box
     PM_FREEZE
+
+	// Generations
+	, PM_DUKE_FROZEN
 } pmtype_t;
 
 // pmove->pm_flags
@@ -754,6 +986,7 @@ typedef enum {
 #define PMF_TIME_TELEPORT   32  // pm_time is non-moving time
 #define PMF_NO_PREDICTION   64  // temporarily disables prediction (used for grappling hook)
 #define PMF_TELEPORT_BIT    128 // used by q2pro
+#define PMF_AWAIT_JUMP      256 // Generations
 
 // this structure needs to be communicated bit-accurate
 // from the server to the client to guarantee that
@@ -763,12 +996,13 @@ typedef enum {
 typedef struct {
     pmtype_t    pm_type;
 
-    short       origin[3];      // 12.3
-    short       velocity[3];    // 12.3
-    byte        pm_flags;       // ducked, jump_held, etc
-    byte        pm_time;        // each unit = 8 ms
-    short       gravity;
-    short       delta_angles[3];    // add to command angles to get view direction
+    short		origin[3];      // 12.3
+    short		velocity[3];    // 12.3
+	short		pm_flags;       // ducked, jump_held, etc
+	byte		pm_time;        // each unit = 8 ms
+	byte		pm_time2;       // Generations; each unit = 8 ms
+    short		gravity;
+    short		delta_angles[3];    // add to command angles to get view direction
                                     // changed by spawns, rotating objects, and teleporters
 } pmove_state_t;
 
@@ -813,6 +1047,7 @@ typedef struct {
     struct edict_s  *groundentity;
     int         watertype;
     int         waterlevel;
+	gametype_t	game; // Paril
 
     // callbacks to test the world
     trace_t     (* q_gameabi trace)(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
@@ -861,6 +1096,11 @@ typedef struct {
 #define EF_TRACKERTRAIL     0x80000000
 //ROGUE
 
+// Generations
+#define EF_Q1_WIZ			EF_BLUEHYPERBLASTER
+#define EF_Q1_VORE			EF_IONRIPPER
+#define EF_Q1_HKNIGHT		EF_GREENGIB
+
 // entity_state_t->renderfx flags
 #define RF_MINLIGHT         1       // allways have some light (viewmodel)
 #define RF_VIEWERMODEL      2       // don't draw through eyes, only mirrors
@@ -883,6 +1123,15 @@ typedef struct {
 #define RF_USE_DISGUISE     0x00040000
 //ROGUE
 
+// Paril
+#define RF_SKIN_ANIM		0x00080000
+#define RF_NOLERP			0x00100000
+#define RF_ANIM_BOUNCE		0x00200000
+#define RF_SPECTRE			0x00400000
+#define RF_PROJECTILE		0x00800000
+#define RF_NOCULL			0x01000000
+#define RF_FROZEN			0x0200000
+
 // player_state_t->refdef flags
 #define RDF_UNDERWATER      1       // warp the screen as apropriate
 #define RDF_NOWORLDMODEL    2       // used for player configuration screen
@@ -891,6 +1140,9 @@ typedef struct {
 #define RDF_IRGOGGLES       4
 #define RDF_UVGOGGLES       8
 //ROGUE
+
+// Generations
+#define RDF_INVUL			16
 
 //
 // muzzle flashes / player effects
@@ -1232,6 +1484,43 @@ typedef enum {
     TE_FLECHETTE,
 //ROGUE
 
+	// Generations
+	TE_Q1_GUNSHOT,
+	TE_Q1_BLOOD,
+	TE_Q1_SUPERSPIKE,
+	TE_Q1_SPIKE,
+	TE_Q1_EXPLODE,
+	TE_Q1_LIGHTNING1,
+	TE_Q1_LIGHTNING2,
+	TE_Q1_LIGHTNING3,
+	TE_Q1_LIGHTNINGBLOOD,
+	TE_Q1_WIZSPIKE,
+	TE_Q1_KNIGHTSPIKE,
+	TE_Q1_LAVASPLASH,
+	TE_Q1_TAREXPLOSION,
+
+	TE_DOOM_GUNSHOT,
+	TE_DOOM_EXPLODE,
+	TE_DOOM_PLASMA,
+	TE_DOOM_BLOOD,
+	TE_DOOM_IMP_BOOM,
+	TE_DOOM_CACO_BOOM,
+	TE_DOOM_BSPI_BOOM,
+	TE_DOOM_PUFF,
+	TE_DOOM_FBXP_BOOM,
+	TE_DOOM_BOSS_BOOM,
+
+	TE_DUKE_GUNSHOT,
+	TE_DUKE_BLOOD,
+	TE_DUKE_BLOOD_SPLAT,
+	TE_DUKE_EXPLODE,
+	TE_DUKE_EXPLODE_SMALL,
+	TE_DUKE_EXPLODE_PIPE,
+	TE_DUKE_FREEZE_HIT,
+	TE_DUKE_GLASS,
+
+	TE_DAMAGE_DIRECTION,
+
     TE_NUM_ENTITIES
 } temp_event_t;
 
@@ -1252,9 +1541,13 @@ typedef enum {
 #define CHAN_VOICE              2
 #define CHAN_ITEM               3
 #define CHAN_BODY               4
+// Paril
+#define CHAN_WEAPON2			8
 // modifier flags
 #define CHAN_NO_PHS_ADD         8   // send to all clients, not just ones in PHS (ATTN 0 will also do this)
 #define CHAN_RELIABLE           16  // send by reliable message, not datagram
+// Paril
+#define	CHAN_NO_EAVESDROP		32
 
 
 // sound attenuation values
@@ -1284,8 +1577,94 @@ typedef enum {
 #define STAT_CHASE              16
 #define STAT_SPECTATOR          17
 
-#define MAX_STATS               32
+#define MAX_STATS				32
 
+#define STAT_Q1_AMMO			STAT_PICKUP_ICON
+#define STAT_Q1_ITEMS			STAT_PICKUP_STRING
+#define STAT_Q1_CURWEAP			STAT_TIMER_ICON
+#define STAT_Q1_FACEANIM		STAT_TIMER
+
+#define STAT_DOOM_WEAPONS		STAT_PICKUP_ICON
+#define STAT_DOOM_AMMO1			STAT_PICKUP_STRING
+#define STAT_DOOM_AMMO2			STAT_TIMER_ICON
+#define STAT_DOOM_MAXAMMO1		STAT_TIMER
+#define STAT_DOOM_MAXAMMO2		STAT_FLASHES
+#define STAT_DOOM_FACE			STAT_SELECTED_ICON
+
+#define STAT_DUKE_WEAPONS		STAT_PICKUP_ICON
+#define STAT_DUKE_AMMO1			STAT_PICKUP_STRING
+#define STAT_DUKE_AMMO2			STAT_TIMER_ICON
+#define STAT_DUKE_AMMO3			STAT_TIMER
+
+enum
+{
+	IT_Q1_SHOTGUN			= 1<<0,
+	IT_Q1_SSHOTGUN			= 1<<1,
+	IT_Q1_NAILGUN			= 1<<2,
+	IT_Q1_SNAILGUN			= 1<<3,
+	IT_Q1_GLAUNCHER			= 1<<4,
+	IT_Q1_RLAUNCHER			= 1<<5,
+	IT_Q1_LIGHTNING			= 1<<6,
+	IT_Q1_QUAD				= 1<<7,
+	IT_Q1_INVUL				= 1<<8,
+	IT_Q1_SUIT				= 1<<9,
+	IT_Q1_INVIS				= 1<<10
+};
+
+enum
+{
+	IT_DOOM_PISTOL			= 1<<1,
+	IT_DOOM_SHOTGUNS		= 1<<2,
+	IT_DOOM_CHAINGUN		= 1<<3,
+	IT_DOOM_ROCKET			= 1<<4,
+	IT_DOOM_PLASMA			= 1<<5,
+	IT_DOOM_BFG				= 1<<6
+};
+
+enum
+{
+	IT_DUKE_PISTOL			= 1<<2,
+	IT_DUKE_SHOTGUN			= 1<<3,
+	IT_DUKE_CANNON			= 1<<4,
+	IT_DUKE_RPG				= 1<<5,
+	IT_DUKE_PIPE			= 1<<6,
+	IT_DUKE_SHRINKER		= 1<<7,
+	IT_DUKE_DEVASTATOR		= 1<<8,
+	IT_DUKE_TRIPWIRE		= 1<<9,
+	IT_DUKE_FREEZETHROWER	= 1<<10
+};
+
+enum
+{
+	IT_DUKE_PISTOL_AMMO			= 0,
+	IT_DUKE_SHOTGUN_AMMO		= 1,
+	IT_DUKE_CANNON_AMMO			= 2,
+	IT_DUKE_RPG_AMMO			= 3,
+	IT_DUKE_PIPE_AMMO			= 0,
+	IT_DUKE_SHRINKER_AMMO		= 1,
+	IT_DUKE_DEVASTATOR_AMMO		= 2,
+	IT_DUKE_TRIPWIRE_AMMO		= 3,
+	IT_DUKE_FREEZETHROWER_AMMO	= 0
+};
+
+// Doom face stuff
+#define ST_NUMPAINFACES		5
+#define ST_NUMSTRAIGHTFACES	3
+#define ST_NUMTURNFACES		2
+#define ST_NUMSPECIALFACES	3
+
+#define ST_FACESTRIDE		(ST_NUMSTRAIGHTFACES + ST_NUMTURNFACES + ST_NUMSPECIALFACES)
+
+#define ST_NUMEXTRAFACES	2
+
+#define ST_NUMFACES			(ST_FACESTRIDE * ST_NUMPAINFACES) + ST_NUMEXTRAFACES
+
+#define ST_TURNOFFSET		ST_NUMSTRAIGHTFACES
+#define ST_OUCHOFFSET		ST_TURNOFFSET + ST_NUMTURNFACES
+#define ST_EVILGRINOFFSET	ST_OUCHOFFSET + 1
+#define ST_RAMPAGEOFFSET	ST_EVILGRINOFFSET + 1
+#define ST_GODFACE			ST_NUMPAINFACES*ST_FACESTRIDE
+#define ST_DEADFACE			ST_GODFACE+1
 
 // dmflags->value flags
 #define DF_NO_HEALTH        0x00000001  // 1
@@ -1389,17 +1768,18 @@ ROGUE - VERSIONS
 #define CS_SKYAXIS          3       // %f %f %f format
 #define CS_SKYROTATE        4
 #define CS_STATUSBAR        5       // display program string
+#define CS_GAMEMODE			6		// Generations
 
 #define CS_AIRACCEL         29      // air acceleration control
 #define CS_MAXCLIENTS       30
 #define CS_MAPCHECKSUM      31      // for catching cheater maps
 
-#define CS_MODELS           32
-#define CS_SOUNDS           (CS_MODELS+MAX_MODELS)
-#define CS_IMAGES           (CS_SOUNDS+MAX_SOUNDS)
-#define CS_LIGHTS           (CS_IMAGES+MAX_IMAGES)
+// Generations
+#define CS_PRECACHE         32
+#define CS_LIGHTS           (CS_PRECACHE+MAX_PRECACHE)
 #define CS_ITEMS            (CS_LIGHTS+MAX_LIGHTSTYLES)
-#define CS_PLAYERSKINS      (CS_ITEMS+MAX_ITEMS)
+// Generations
+#define CS_PLAYERSKINS      (CS_ITEMS+ITI_TOTAL)
 #define CS_GENERAL          (CS_PLAYERSKINS+MAX_CLIENTS)
 #define MAX_CONFIGSTRINGS   (CS_GENERAL+MAX_GENERAL)
 
@@ -1408,6 +1788,13 @@ ROGUE - VERSIONS
     ((cs) >= CS_STATUSBAR && (cs) < CS_AIRACCEL ? \
       MAX_QPATH * (CS_AIRACCEL - (cs)) : MAX_QPATH)
 
+typedef enum
+{
+	GAMEMODE_SINGLEPLAYER,
+	GAMEMODE_COOP,
+	GAMEMODE_INVASION,
+	GAMEMODE_DEATHMATCH
+} gamemode_t;
 
 //==============================================
 
@@ -1450,10 +1837,34 @@ typedef struct entity_state_s {
     int     event;          // impulse events -- muzzle flashes, footsteps, etc
                             // events only go out for a single frame, they
                             // are automatically cleared each frame
+
+	// Paril
+	gametype_t     game;
+	int		clip_contents;
 } entity_state_t;
 
 //==============================================
 
+typedef enum {
+	PEV_NONE		= 0,
+	PEV_DAMAGED		= 1 << 0,
+	PEV_ITEM		= 1 << 1
+} player_event_t;
+
+typedef struct {
+	vec3_t		angles;
+	vec3_t		offset;
+	uint16_t	index;
+	uint16_t	frame;
+} player_gun_t;
+
+typedef enum
+{
+	GUN_MAIN,
+	GUN_OFFHAND,
+
+	MAX_PLAYER_GUNS
+} gunindex_e;
 
 // player_state_t is the information needed in addition to pmove_state_t
 // to rendered a view.  There will only be 10 player_state_t sent each second,
@@ -1464,23 +1875,48 @@ typedef struct {
 
     // these fields do not need to be communicated bit-precise
 
-    vec3_t      viewangles;     // for fixed views
-    vec3_t      viewoffset;     // add to pmovestate->origin
-    vec3_t      kick_angles;    // add to view direction to get render angles
-                                // set by weapon kicks, pain effects, etc
+    vec3_t			viewangles;     // for fixed views
+    vec3_t			viewoffset;     // add to pmovestate->origin
+    vec3_t			kick_angles;    // add to view direction to get render angles
+					                // set by weapon kicks, pain effects, etc
 
-    vec3_t      gunangles;
-    vec3_t      gunoffset;
-    int         gunindex;
-    int         gunframe;
+	// Generations
+	player_gun_t	guns[MAX_PLAYER_GUNS];
 
-    float       blend[4];       // rgba full screen effect
+    float       	blend[4];       // rgba full screen effect
 
-    float       fov;            // horizontal field of view
+    float			fov;            // horizontal field of view
 
-    int         rdflags;        // refdef flags
+    int         	rdflags;        // refdef flags
 
-    short       stats[MAX_STATS];       // fast status bar updates
+	// Generations
+    int				stats[MAX_STATS];       // fast status bar updates
+
+	player_event_t	view_events;
 } player_state_t;
+
+// hash stuff
+unsigned Com_HashString(const char *s, unsigned size);
+unsigned Com_HashStringLen(const char *s, size_t len, unsigned size);
+
+// Navigation stuff
+#define MAX_NODES 4096
+#define MAX_NODE_CONNECTIONS 16
+
+typedef enum
+{
+	NAV_NODE_NORMAL,
+	NAV_NODE_JUMP,
+	NAV_NODE_PLATFORM,
+
+	NAV_NODE_INVALID = 0xFFFFFFFFu
+} nav_node_type_e;
+
+typedef uint32_t nav_node_id;
+
+typedef double(*nav_igator_heuristic_func)(nav_node_id a, nav_node_id b);
+typedef bool(*nav_igator_node_func)(nav_node_id node);
+
+typedef struct nav_igator_s nav_igator_t;
 
 #endif // SHARED_H

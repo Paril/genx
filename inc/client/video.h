@@ -54,4 +54,8 @@ bool VID_GetGeometry(vrect_t *rc);
 void VID_SetGeometry(vrect_t *rc);
 void VID_ToggleFullscreen(void);
 
+// Generations
+// Video palettes
+extern uint32_t d_palettes[GAME_TOTAL][256];
+
 #endif // VIDEO_H

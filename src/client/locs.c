@@ -186,6 +186,7 @@ void LOC_AddLocationsToScene(void)
     }
 
     memset(&ent, 0, sizeof(ent));
+	ent.scale = 1;
     ent.model = R_RegisterModel("models/items/c_head/tris.md2");
     ent.skin = R_RegisterSkin("models/items/c_head/skin.pcx");
 
@@ -365,8 +366,8 @@ static void LOC_Write_f(void)
     if (FS_FCloseFile(f))
         Com_EPrintf("Error writing %s\n", buffer);
     else
-        Com_Printf("Wrote %d location%s to %s\n",
-                   count, count == 1 ? "" : "s", buffer);
+    Com_Printf("Wrote %d location%s to %s\n",
+               count, count == 1 ? "" : "s", buffer);
 }
 
 /*

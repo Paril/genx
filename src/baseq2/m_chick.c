@@ -259,7 +259,7 @@ void chick_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
 
     r = random();
     if (r < 0.33f)
@@ -286,6 +286,7 @@ void chick_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, 16);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -375,7 +376,7 @@ void chick_duck_down(edict_t *self)
     self->monsterinfo.aiflags |= AI_DUCKED;
     self->maxs[2] -= 32;
     self->takedamage = DAMAGE_YES;
-    self->monsterinfo.pausetime = level.time + 1;
+    self->monsterinfo.pausetime = level.time + 1000;
     gi.linkentity(self);
 }
 

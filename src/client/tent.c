@@ -19,36 +19,80 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-qhandle_t   cl_sfx_ric1;
-qhandle_t   cl_sfx_ric2;
-qhandle_t   cl_sfx_ric3;
-qhandle_t   cl_sfx_lashit;
-qhandle_t   cl_sfx_spark5;
-qhandle_t   cl_sfx_spark6;
-qhandle_t   cl_sfx_spark7;
-qhandle_t   cl_sfx_railg;
-qhandle_t   cl_sfx_rockexp;
-qhandle_t   cl_sfx_grenexp;
-qhandle_t   cl_sfx_watrexp;
-qhandle_t   cl_sfx_footsteps[4];
+soundhandle_t   cl_sfx_ric1;
+soundhandle_t   cl_sfx_ric2;
+soundhandle_t   cl_sfx_ric3;
+soundhandle_t   cl_sfx_lashit;
+soundhandle_t   cl_sfx_spark5;
+soundhandle_t   cl_sfx_spark6;
+soundhandle_t   cl_sfx_spark7;
+soundhandle_t   cl_sfx_railg;
+soundhandle_t   cl_sfx_rockexp;
+soundhandle_t   cl_sfx_grenexp;
+soundhandle_t   cl_sfx_watrexp;
+soundhandle_t   cl_sfx_footsteps[4];
 
-qhandle_t   cl_sfx_lightning;
-qhandle_t   cl_sfx_disrexp;
+soundhandle_t   cl_sfx_lightning;
+soundhandle_t   cl_sfx_disrexp;
 
-qhandle_t   cl_mod_explode;
-qhandle_t   cl_mod_smoke;
-qhandle_t   cl_mod_flash;
-qhandle_t   cl_mod_parasite_segment;
-qhandle_t   cl_mod_grapple_cable;
-qhandle_t   cl_mod_explo4;
-qhandle_t   cl_mod_bfg_explo;
-qhandle_t   cl_mod_powerscreen;
-qhandle_t   cl_mod_laser;
-qhandle_t   cl_mod_dmspot;
+modelhandle_t   cl_mod_explode;
+modelhandle_t   cl_mod_smoke;
+modelhandle_t   cl_mod_flash;
+modelhandle_t   cl_mod_parasite_segment;
+modelhandle_t   cl_mod_grapple_cable;
+modelhandle_t   cl_mod_explo4;
+modelhandle_t   cl_mod_bfg_explo;
+modelhandle_t   cl_mod_powerscreen;
+modelhandle_t   cl_mod_laser;
+modelhandle_t   cl_mod_dmspot;
 
-qhandle_t   cl_mod_lightning;
-qhandle_t   cl_mod_heatbeam;
-qhandle_t   cl_mod_explo4_big;
+modelhandle_t   cl_mod_lightning;
+modelhandle_t   cl_mod_heatbeam;
+modelhandle_t   cl_mod_explo4_big;
+
+// Generations
+soundhandle_t   cl_sfx_tink1;
+soundhandle_t	cl_sfx_r_exp3;
+soundhandle_t	cl_sfx_wizhit;
+soundhandle_t	cl_sfx_knighthit;
+
+modelhandle_t	cl_mod_q1_lightning1;
+modelhandle_t	cl_mod_q1_lightning2;
+modelhandle_t	cl_mod_q1_lightning3;
+modelhandle_t	cl_mod_q1_explode;
+modelhandle_t	cl_mod_player;
+
+soundhandle_t	cl_sfx_doom_boom;
+soundhandle_t	cl_sfx_doom_plas;
+soundhandle_t	cl_sfx_doom_imp_xplo;
+
+modelhandle_t	cl_mod_doom_tfog;
+modelhandle_t	cl_mod_doom_ifog;
+modelhandle_t	cl_mod_doom_puff;
+modelhandle_t	cl_mod_doom_misl;
+modelhandle_t	cl_mod_doom_plse;
+modelhandle_t	cl_mod_doom_bal1;
+modelhandle_t	cl_mod_doom_bal2;
+modelhandle_t	cl_mod_doom_bal7;
+modelhandle_t	cl_mod_doom_apbx;
+modelhandle_t	cl_mod_doom_blud;
+modelhandle_t	cl_mod_doom_fbxp;
+
+modelhandle_t	cl_mod_duke_shotspark;
+modelhandle_t	cl_mod_duke_shotsmoke;
+modelhandle_t	cl_mod_duke_shotblood;
+modelhandle_t	cl_mod_duke_shotgunshell;
+modelhandle_t	cl_mod_duke_shell;
+modelhandle_t	cl_mod_duke_explosion;
+modelhandle_t	cl_mod_duke_explosion2;
+modelhandle_t	cl_mod_duke_teleport;
+modelhandle_t	cl_mod_duke_freezeblast;
+modelhandle_t	cl_mod_duke_glass;
+
+soundhandle_t	cl_sfx_duke_rpg_boom;
+soundhandle_t	cl_sfx_duke_pipe_boom;
+soundhandle_t	cl_sfx_duke_ricochet;
+soundhandle_t	cl_sfx_duke_glass;
 
 /*
 =================
@@ -83,6 +127,20 @@ void CL_RegisterTEntSounds(void)
 
     cl_sfx_lightning = S_RegisterSound("weapons/tesla.wav");
     cl_sfx_disrexp = S_RegisterSound("weapons/disrupthit.wav");
+
+	// Generations
+	cl_sfx_tink1 = S_RegisterSound("q1/weapons/tink1.wav");
+	cl_sfx_r_exp3 = S_RegisterSound("q1/weapons/r_exp3.wav");
+	cl_sfx_wizhit = S_RegisterSound("q1/wizard/hit.wav");
+	cl_sfx_knighthit = S_RegisterSound("q1/hknight/hit.wav");
+
+	cl_sfx_doom_boom = S_RegisterSound("doom/BAREXP.wav");
+	cl_sfx_doom_plas = S_RegisterSound("doom/FIRXPL.wav");
+
+	cl_sfx_duke_rpg_boom = S_RegisterSound("%s_duke_rpg_explode");
+	cl_sfx_duke_pipe_boom = S_RegisterSound("%s_duke_pipe_explode");
+	cl_sfx_duke_ricochet = S_RegisterSound("duke/RICOCHET.wav");
+	cl_sfx_duke_glass = S_RegisterSound("duke/GLASS.wav");
 }
 
 /*
@@ -106,6 +164,36 @@ void CL_RegisterTEntModels(void)
     cl_mod_lightning = R_RegisterModel("models/proj/lightning/tris.md2");
     cl_mod_heatbeam = R_RegisterModel("models/proj/beam/tris.md2");
     cl_mod_explo4_big = R_RegisterModel("models/objects/r_explode2/tris.md2");
+
+	// Generations
+	cl_mod_q1_lightning1 = R_RegisterModel("models/q1/bolt.mdl");
+	cl_mod_q1_lightning2 = R_RegisterModel("models/q1/bolt2.mdl");
+	cl_mod_q1_lightning3 = R_RegisterModel("models/q1/bolt3.mdl");
+	cl_mod_q1_explode = R_RegisterModel("sprites/q1/s_explod.spr");
+	cl_mod_player = R_RegisterModel("%p_player");
+
+	cl_mod_doom_tfog = R_RegisterModel("sprites/doom/TFOG.d2s");
+	cl_mod_doom_ifog = R_RegisterModel("sprites/doom/IFOG.d2s");
+	cl_mod_doom_puff = R_RegisterModel("sprites/doom/PUFF.d2s");
+	cl_mod_doom_misl = R_RegisterModel("sprites/doom/MISL.d2s");
+	cl_mod_doom_plse = R_RegisterModel("sprites/doom/PLSE.d2s");
+	cl_mod_doom_bal1 = R_RegisterModel("sprites/doom/BAL1.d2s");
+	cl_mod_doom_bal7 = R_RegisterModel("sprites/doom/BAL7.d2s");
+	cl_mod_doom_bal2 = R_RegisterModel("sprites/doom/BAL2.d2s");
+	cl_mod_doom_apbx = R_RegisterModel("sprites/doom/APBX.d2s");
+	cl_mod_doom_blud = R_RegisterModel("sprites/doom/BLUD.d2s");
+	cl_mod_doom_fbxp = R_RegisterModel("sprites/doom/FBXP.d2s");
+
+	cl_mod_duke_shotspark = R_RegisterModel("sprites/duke/shotspark.dns");
+	cl_mod_duke_shotsmoke = R_RegisterModel("sprites/duke/shotsmoke.dns");
+	cl_mod_duke_shotblood = R_RegisterModel("sprites/duke/shotblood.dns");
+	cl_mod_duke_shotgunshell = R_RegisterModel("sprites/duke/shotgunshell.dns");
+	cl_mod_duke_shell = R_RegisterModel("sprites/duke/shell.dns");
+	cl_mod_duke_explosion = R_RegisterModel("sprites/duke/explosion.dns");
+	cl_mod_duke_explosion2 = R_RegisterModel("sprites/duke/explosion2.dns");
+	cl_mod_duke_teleport = R_RegisterModel("sprites/duke/teleport.dns");
+	cl_mod_duke_freezeblast = R_RegisterModel("sprites/duke/respawn.dns");
+	cl_mod_duke_glass = R_RegisterModel("sprites/duke/glass.dns");
 }
 
 /*
@@ -120,15 +208,31 @@ EXPLOSION MANAGEMENT
 
 typedef struct {
     enum {
-        ex_free,
-        ex_explosion,
-        ex_misc,
-        ex_flash,
-        ex_mflash,
-        ex_poly,
-        ex_poly2,
-        ex_light
-    } type;
+		ex_free,
+		ex_explosion,
+		ex_misc,
+		ex_flash,
+		ex_mflash,
+		ex_poly,
+		ex_poly2,
+		ex_light
+
+		// Generations
+		, ex_q1_explosion,
+	
+		ex_doom_puff,
+		ex_doom_boom,
+		ex_doom_plas,
+		ex_doom_blood,
+		ex_doom_imp,
+		ex_duke_teleport,
+		ex_duke_fast,
+		ex_duke_glass,
+	
+		ex_duke_blood,
+	
+		ex_duke_shell
+	} type;
 
     entity_t    ent;
     int         frames;
@@ -136,6 +240,12 @@ typedef struct {
     vec3_t      lightcolor;
     float       start;
     int         baseframe;
+
+	// Generations
+	int			frameofs;
+	vec3_t		velocity;
+	vec3_t		accel;
+	bool		hitground;
 } explosion_t;
 
 static explosion_t  cl_explosions[MAX_EXPLOSIONS];
@@ -154,6 +264,8 @@ static explosion_t *CL_AllocExplosion(void)
     for (i = 0, e = cl_explosions; i < MAX_EXPLOSIONS; i++, e++) {
         if (e->type == ex_free) {
             memset(e, 0, sizeof(*e));
+			// Generations
+			e->ent.scale = 1;
             return e;
         }
     }
@@ -168,6 +280,8 @@ static explosion_t *CL_AllocExplosion(void)
         }
     }
     memset(oldest, 0, sizeof(*oldest));
+	// Generations
+	oldest->ent.scale = 1;
     return oldest;
 }
 
@@ -224,6 +338,7 @@ static void CL_AddExplosions(void)
     explosion_t *ex;
     float       frac;
     int         f;
+	trace_t		tr; // Generations
 
     memset(&ent, 0, sizeof(ent));
 
@@ -234,6 +349,14 @@ static void CL_AddExplosions(void)
         f = floor(frac);
 
         ent = &ex->ent;
+
+		// Generations
+		VectorMA(ex->velocity, cls.frametime, ex->accel, ex->velocity);
+
+		vec3_t moved;
+
+		VectorCopy(ent->origin, moved);
+		VectorMA(ent->origin, cls.frametime, ex->velocity, moved);
 
         switch (ex->type) {
         case ex_mflash:
@@ -285,6 +408,162 @@ static void CL_AddExplosions(void)
             ent->skinnum = 0;
             ent->flags |= RF_TRANSLUCENT;
             break;
+		// Generations
+		case ex_q1_explosion:
+			if (f >= ex->frames)
+				ex->type = ex_free;
+			ent->flags |= RF_FULLBRIGHT;
+			ent->alpha = 1.0f;
+			break;
+		case ex_doom_puff:
+			f = floor(frac / 1.5f) + 1;
+			
+			if (f >= ex->frames)
+				ex->type = ex_free;
+
+			ent->alpha = 1.0f;
+			ent->flags |= RF_FULLBRIGHT;
+			VectorCopy(moved, ent->origin);
+			break;
+		case ex_doom_boom:
+			f = floor(frac / 2.0f);
+			if (f >= ex->frames)
+				ex->type = ex_free;
+			ent->alpha = 1.0f;
+			ent->flags |= RF_FULLBRIGHT;
+			break;
+		case ex_duke_teleport:
+			f = floor(frac / 1.5f);
+			if (f >= ex->frames)
+				ex->type = ex_free;
+			ent->alpha = 1.0f;
+			ent->flags |= RF_FULLBRIGHT;
+			break;
+		case ex_doom_imp:
+			f = floor(frac / 2.0f);
+			if (f >= ex->frames)
+				ex->type = ex_free;
+			f = f + 2;
+			ent->alpha = 1.0f;
+			ent->flags |= RF_FULLBRIGHT;
+			break;
+		case ex_doom_plas:
+			f = floor(frac / 1.0f);
+			if (f >= ex->frames)
+				ex->type = ex_free;
+			ent->alpha = 1.0f;
+			ent->flags |= RF_FULLBRIGHT;
+			break;
+		case ex_duke_fast:
+			f = floor(frac / 0.5f);
+			if (f >= ex->frames)
+				ex->type = ex_free;
+			ent->flags |= RF_FULLBRIGHT;
+			break;
+		case ex_doom_blood:
+			f = ex->frames;
+			ent->alpha = 1.0f;
+
+			if (!ex->hitground)
+			{
+				CM_BoxTrace(&tr, ent->origin, moved, vec3_origin, vec3_origin, cl.bsp->nodes, MASK_SOLID);
+
+				if (tr.fraction != 1.0)
+				{
+					VectorClear(ex->velocity);
+					VectorClear(ex->accel);
+
+					VectorMA(tr.endpos, 2, tr.plane.normal, ent->origin);
+					ex->hitground = true;
+					ex->start = cl.servertime - CL_FRAMETIME;
+				}
+				else
+					VectorCopy(moved, ent->origin);
+			}
+			else
+			{
+				f = ex->frames - floor(frac / 1.5f);
+
+				if (f < 0)
+					ex->type = ex_free;
+			}
+			
+			break;
+		case ex_duke_blood:
+			f = ex->frames;
+			ent->alpha = 1.0f;
+
+			if (!ex->hitground)
+			{
+				CM_BoxTrace(&tr, ent->origin, moved, vec3_origin, vec3_origin, cl.bsp->nodes, MASK_SOLID);
+
+				if (tr.fraction != 1.0f)
+				{
+					VectorClear(ex->velocity);
+					VectorClear(ex->accel);
+
+					VectorMA(tr.endpos, 3, tr.plane.normal, ent->origin);
+					ex->hitground = true;
+					ex->start = cl.servertime - CL_FRAMETIME;
+				}
+				else
+					VectorCopy(moved, ent->origin);
+
+				f = ((int)floor(frac / 1.5f)) % 2;
+			}
+			else
+			{
+				f = 2 + floor(frac);
+
+				if (f >= ex->frames)
+					ex->type = ex_free;
+			}
+
+			break;
+
+		case ex_duke_shell:
+			ent->alpha = 1.0f;
+
+			CM_BoxTrace(&tr, ent->origin, moved, vec3_origin, vec3_origin, cl.bsp->nodes, MASK_SOLID);
+
+			if (tr.fraction != 1.0f)
+				ex->type = ex_free;
+			else
+				VectorCopy(moved, ent->origin);
+
+			f = (int)(ex->frameofs + floor(frac / 1.5f)) % ex->frames;
+			break;
+
+		case ex_duke_glass:
+			ent->alpha = 1.0f;
+
+			CM_BoxTrace(&tr, ent->origin, moved, vec3_origin, vec3_origin, cl.bsp->nodes, MASK_SOLID);
+
+			if (ex->hitground)
+				ent->scale = min(0.5f, (1 - frac / 8.0f));
+
+			if (ent->scale <= 0)
+				ex->type = ex_free;
+			else if (tr.fraction != 1.0f)
+			{
+				VectorMA(tr.endpos, 2, tr.plane.normal, ent->origin);
+
+				for (int x = 0; x < 3; ++x)
+					ex->velocity[x] -= (2 * 0.8f) * tr.plane.normal[x] * (tr.plane.normal[x] * ex->velocity[x]);
+
+				if (!ex->hitground)
+				{
+					ex->hitground = true;
+					ex->start = cl.servertime - CL_FRAMETIME;
+				}
+			}
+			else
+				VectorCopy(moved, ent->origin);
+
+			f = (int)(ex->frameofs + floor(frac / 1.5f)) % ex->frames;
+
+			break;
+
         default:
             break;
         }
@@ -301,9 +580,16 @@ static void CL_AddExplosions(void)
 
             if (f < 0)
                 f = 0;
-            ent->frame = ex->baseframe + f + 1;
-            ent->oldframe = ex->baseframe + f;
-            ent->backlerp = 1.0f - (frac - f);
+
+			// Generations
+			if (ex->type <= ex_poly2) {
+				ent->frame = ex->baseframe + f + 1;
+				ent->oldframe = ex->baseframe + f;
+			} else {
+				ent->frame = ex->baseframe + f;
+				ent->oldframe = ex->baseframe + f - 1;
+			}
+			ent->backlerp = 1.0f - (frac - f);
 
             V_AddEntity(ent);
         }
@@ -360,6 +646,8 @@ static void CL_AddLasers(void)
     int         time;
 
     memset(&ent, 0, sizeof(ent));
+	// Generations
+	ent.scale = 1;
 
     for (i = 0, l = cl_lasers; i < MAX_LASERS; i++, l++) {
         time = l->lifetime - (cl.time - l->starttime);
@@ -415,12 +703,12 @@ BEAM MANAGEMENT
 #define MAX_BEAMS   32
 
 typedef struct {
-    int         entity;
-    int         dest_entity;
-    qhandle_t   model;
-    int         endtime;
-    vec3_t      offset;
-    vec3_t      start, end;
+    int         	entity;
+    int         	dest_entity;
+	modelhandle_t   model;
+    int         	endtime;
+    vec3_t      	offset;
+    vec3_t      	start, end;
 } beam_t;
 
 static beam_t   cl_beams[MAX_BEAMS];
@@ -432,7 +720,7 @@ static void CL_ClearBeams(void)
     memset(cl_playerbeams, 0, sizeof(cl_playerbeams));
 }
 
-static void CL_ParseBeam(qhandle_t model)
+static void CL_ParseBeam(modelhandle_t model)
 {
     beam_t  *b;
     int     i;
@@ -444,7 +732,7 @@ static void CL_ParseBeam(qhandle_t model)
 
 // find a free beam
     for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time) {
+        if (!b->model.handle || b->endtime < cl.time) {
 override:
             b->entity = te.entity1;
             b->dest_entity = te.entity2;
@@ -458,7 +746,7 @@ override:
     }
 }
 
-static void CL_ParsePlayerBeam(qhandle_t model)
+static void CL_ParsePlayerBeam(modelhandle_t model)
 {
     beam_t  *b;
     int     i;
@@ -478,7 +766,7 @@ static void CL_ParsePlayerBeam(qhandle_t model)
 
 // find a free beam
     for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time) {
+        if (!b->model.handle || b->endtime < cl.time) {
             b->entity = te.entity1;
             b->model = model;
             b->endtime = cl.time + 100;     // PMM - this needs to be 100 to prevent multiple heatbeams
@@ -509,7 +797,7 @@ static void CL_AddBeams(void)
 
 // update beams
     for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time)
+        if (!b->model.handle || b->endtime < cl.time)
             continue;
 
         // if coming from the player, update the start position
@@ -524,7 +812,7 @@ static void CL_AddBeams(void)
 
         // add new entities for the beams
         d = VectorNormalize(dist);
-        if (b->model == cl_mod_lightning) {
+        if (b->model.handle == cl_mod_lightning.handle) {
             model_length = 35.0f;
             d -= 20.0f; // correction so it doesn't end in middle of tesla
         } else {
@@ -536,10 +824,13 @@ static void CL_AddBeams(void)
         memset(&ent, 0, sizeof(ent));
         ent.model = b->model;
 
+		// Generations
+		ent.scale = 1;
+
         // PMM - special case for lightning model .. if the real length is shorter than the model,
         // flip it around & draw it from the end to the start.  This prevents the model from going
         // through the tesla mine (instead it goes through the target)
-        if ((b->model == cl_mod_lightning) && (d <= model_length)) {
+        if ((b->model.handle == cl_mod_lightning.handle) && (d <= model_length)) {
             VectorCopy(b->end, ent.origin);
             ent.flags = RF_FULLBRIGHT;
             ent.angles[0] = angles[0];
@@ -551,7 +842,7 @@ static void CL_AddBeams(void)
 
         while (d > 0) {
             VectorCopy(org, ent.origin);
-            if (b->model == cl_mod_lightning) {
+            if (b->model.handle == cl_mod_lightning.handle) {
                 ent.flags = RF_FULLBRIGHT;
                 ent.angles[0] = -angles[0];
                 ent.angles[1] = angles[1] + 180.0f;
@@ -601,7 +892,7 @@ static void CL_AddPlayerBeams(void)
 
 // update beams
     for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model || b->endtime < cl.time)
+        if (!b->model.handle || b->endtime < cl.time)
             continue;
 
         // if coming from the player, update the start position
@@ -610,9 +901,10 @@ static void CL_AddPlayerBeams(void)
             ps = CL_KEYPS;
             ops = CL_OLDKEYPS;
 
+			// Generations
             for (j = 0; j < 3; j++)
-                b->start[j] = cl.refdef.vieworg[j] + ops->gunoffset[j] +
-                    CL_KEYLERPFRAC * (ps->gunoffset[j] - ops->gunoffset[j]);
+                b->start[j] = cl.refdef.vieworg[j] + ops->guns[GUN_MAIN].offset[j] +
+                    CL_KEYLERPFRAC * (ps->guns[GUN_MAIN].offset[j] - ops->guns[GUN_MAIN].offset[j]);
 
             VectorMA(b->start, (hand_multiplier * b->offset[0]), cl.v_right, org);
             VectorMA(org, b->offset[1], cl.v_forward, org);
@@ -679,6 +971,9 @@ static void CL_AddPlayerBeams(void)
         ent.angles[0] = -angles[0];
         ent.angles[1] = angles[1] + 180.0f;
         ent.angles[2] = cl.time % 360;
+
+		// Generations
+		ent.scale = 1;
 
         while (d > 0) {
             VectorCopy(org, ent.origin);
@@ -841,6 +1136,22 @@ static void CL_RailCore(void)
     l->rgba.u32 = railcore_color.u32;
 }
 
+void CL_AddNavLaser(vec3_t first, vec3_t second, int width, color_t color)
+{
+	laser_t *l;
+
+	l = CL_AllocLaser();
+	if (!l)
+		return;
+
+	VectorCopy(first, l->start);
+	VectorCopy(second, l->end);
+	l->color = -1;
+	l->lifetime = 1;
+	l->width = width;
+	l->rgba.u32 = color.u32;
+}
+
 static void CL_RailSpiral(void)
 {
     vec3_t      move;
@@ -893,7 +1204,7 @@ static void CL_RailTrail(void)
         CL_OldRailTrail();
     } else {
         if (cl_railcore_width->integer > 0) {
-            CL_RailCore();
+        	CL_RailCore();
         }
         if (cl_railtrail_type->integer > 1) {
             CL_RailSpiral();
@@ -912,6 +1223,282 @@ static void dirtoangles(vec3_t angles)
         angles[1] = 270;
     else
         angles[1] = 0;
+}
+
+
+/*
+===============
+R_RunParticleEffect
+Generations
+===============
+*/
+
+int		ramp1[8] = { 0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61 };
+int		ramp2[8] = { 0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66 };
+int		ramp3[8] = { 0x6d, 0x6b, 6, 5, 4, 3 };
+
+void R_RunParticleEffect(vec3_t org, vec3_t dir, int color, int count)
+{
+	int			i, j;
+	cparticle_t	*p;
+	int			scale;
+
+	if (count > 130)
+		scale = 3;
+	else if (count > 20)
+		scale = 2;
+	else
+		scale = 1;
+
+	for (i = 0; i<count; i++)
+	{
+		p = CL_AllocParticle();
+
+		if (!p)
+			return;
+
+		p->time = cl.time;
+		p->die = cl.time + 100*(Q_rand() % 5);
+		p->color = -1;
+		p->rgba.u32 = d_palettes[GAME_Q1][(color&~7) + (Q_rand() & 7)];
+		p->type = PARTICLE_Q1_SLOWGRAV;
+		VectorClear(p->accel);
+		p->alpha = 1;
+		p->alphavel = 0;
+		p->accel[2] = -20;
+
+		for (j = 0; j<3; j++)
+		{
+			p->org[j] = org[j] + scale*((rand() & 15) - 8);
+			p->vel[j] = dir[j] * 15;// + (rand()%300)-150;
+		}
+	}
+}
+
+void R_ParticleExplosion(vec3_t org)
+{
+	int			i, j;
+	cparticle_t	*p;
+
+	for (i = 0; i<1024; i++)
+	{
+		p = CL_AllocParticle();
+
+		if (!p)
+			return;
+
+		p->time = cl.time;
+		p->die = cl.time + 5 * 1000;
+		p->color = -1;
+		p->rgba.u32 = d_palettes[GAME_Q1][ramp1[0]];
+		p->ramp = rand() & 3;
+		if (i & 1)
+		{
+			p->type = PARTICLE_Q1_EXPLODE;
+			for (j = 0; j<3; j++)
+			{
+				p->org[j] = org[j] + ((rand() % 32) - 16);
+				p->vel[j] = (rand() % 512) - 256;
+			}
+		}
+		else
+		{
+			p->type = PARTICLE_Q1_EXPLODE2;
+			for (j = 0; j<3; j++)
+			{
+				p->org[j] = org[j] + ((rand() % 32) - 16);
+				p->vel[j] = (rand() % 512) - 256;
+			}
+		}
+		VectorClear(p->accel);
+		p->accel[2] = -PARTICLE_GRAVITY / 2;
+		p->alpha = 1;
+		p->alphavel = 0;
+	}
+}
+
+
+
+/*
+===============
+R_LavaSplash
+
+===============
+*/
+void R_LavaSplash(vec3_t org)
+{
+	int			i, j, k;
+	cparticle_t	*p;
+	float		vel;
+	vec3_t		dir;
+
+	for (i = -16; i<16; i++)
+		for (j = -16; j<16; j++)
+			for (k = 0; k<1; k++)
+			{
+				p = CL_AllocParticle();
+
+				if (!p)
+					return;
+
+				p->time = cl.time;
+				p->color = -1;
+
+				p->die = cl.time + (2 + (rand() & 31) * 0.02) * 1000;
+				p->rgba.u32 = d_palettes[GAME_Q1][224 + (rand() & 7)];
+				p->type = PARTICLE_Q1_SLOWGRAV;
+
+				dir[0] = j * 8 + (rand() & 7);
+				dir[1] = i * 8 + (rand() & 7);
+				dir[2] = 256;
+
+				p->org[0] = org[0] + dir[0];
+				p->org[1] = org[1] + dir[1];
+				p->org[2] = org[2] + (rand() & 63);
+
+				VectorNormalize(dir);
+				vel = 50 + (rand() & 63);
+				VectorScale(dir, vel, p->vel);
+
+				VectorClear(p->accel);
+				p->alpha = 1;
+				p->alphavel = 0;
+				p->accel[2] = -20;
+			}
+}
+
+
+/*
+===============
+R_BlobExplosion
+
+===============
+*/
+void R_BlobExplosion(vec3_t org)
+{
+	int			i, j;
+	cparticle_t	*p;
+
+	for (i = 0; i<1024; i++)
+	{
+		p = CL_AllocParticle();
+
+		if (!p)
+			return;
+
+		p->time = cl.time;
+		p->color = -1;
+
+		p->die = cl.time + (1 + (rand() & 8)*0.05) * 1000;
+
+		if (i & 1)
+		{
+			p->type = PARTICLE_Q1_BLOB1;
+			p->rgba.u32 = d_palettes[GAME_Q1][66 + rand() % 6];
+			for (j = 0; j<3; j++)
+			{
+				p->org[j] = org[j] + ((rand() % 32) - 16);
+				p->vel[j] = (rand() % 512) - 256;
+			}
+		}
+		else
+		{
+			p->type = PARTICLE_Q1_BLOB2;
+			p->rgba.u32 = d_palettes[GAME_Q1][150 + rand() % 6];
+			for (j = 0; j<3; j++)
+			{
+				p->org[j] = org[j] + ((rand() % 32) - 16);
+				p->vel[j] = (rand() % 512) - 256;
+			}
+		}
+
+		VectorClear(p->accel);
+		p->accel[2] = -PARTICLE_GRAVITY / 2;
+		p->alpha = 1;
+		p->alphavel = 0;
+	}
+}
+
+void R_Doom_Teleport_Fog(int entity, vec3_t pos)
+{
+	S_StartSound(NULL, entity, CHAN_AUTO, S_RegisterSound("doom/TELEPT.wav"), 1, ATTN_IDLE, 0);
+
+	// sprite
+	explosion_t *ex = CL_AllocExplosion();
+	VectorCopy(pos, ex->ent.origin);
+	ex->ent.origin[2] -= 20;
+	ex->type = ex_doom_plas;
+	ex->start = cl.servertime - CL_FRAMETIME;
+	ex->light = 0;
+	ex->ent.model = cl_mod_doom_tfog;
+	ex->frames = 10;
+}
+
+void R_Doom_Respawn_Fog(vec3_t pos)
+{
+	// sprite
+	explosion_t *ex = CL_AllocExplosion();
+	VectorCopy(pos, ex->ent.origin);
+	ex->ent.origin[2] -= 20;
+	ex->type = ex_doom_plas;
+	ex->start = cl.servertime - CL_FRAMETIME;
+	ex->light = 0;
+	ex->ent.model = cl_mod_doom_ifog;
+	ex->frames = 5;
+}
+
+void Duke_Teleport(int entity, vec3_t pos)
+{
+	S_StartSound(NULL, entity, CHAN_AUTO, S_RegisterSound("duke/TELEPORT.wav"), 1, ATTN_IDLE, 0);
+
+	// sprite
+	explosion_t *ex = CL_AllocExplosion();
+	VectorCopy(pos, ex->ent.origin);
+	ex->type = ex_duke_teleport;
+	ex->start = cl.servertime - CL_FRAMETIME;
+	ex->light = 0;
+	ex->ent.model = cl_mod_duke_teleport;
+	ex->frames = 5;
+}
+
+void R_Q1_TeleportSplash(int, vec3_t);
+
+void CL_MakeDukeGunshot()
+{
+	// sprite
+	explosion_t *ex = CL_AllocExplosion();
+	VectorCopy(te.pos1, ex->ent.origin);
+	ex->type = ex_doom_plas;
+	ex->start = cl.servertime - CL_FRAMETIME;
+	ex->light = 0;
+	ex->ent.model = cl_mod_duke_shotspark;
+	ex->ent.scale = 0.1f;
+	ex->frames = 4;
+
+	ex = CL_AllocExplosion();
+	VectorCopy(te.pos1, ex->ent.origin);
+	ex->type = ex_doom_puff;
+	ex->start = cl.servertime - CL_FRAMETIME;
+	ex->light = 0;
+	ex->ent.model = cl_mod_duke_shotsmoke;
+	ex->ent.scale = 0.3f;
+	ex->frames = 4;
+	ex->velocity[2] = 40;
+}
+
+void CL_MakeDukeShell(vec3_t position, vec3_t velocity, bool shotgun)
+{
+	explosion_t *ex = CL_AllocExplosion();
+	VectorCopy(position, ex->ent.origin);
+	ex->type = ex_duke_shell;
+	ex->start = cl.servertime - CL_FRAMETIME;
+	ex->light = 0;
+	ex->ent.model = shotgun ? cl_mod_duke_shotgunshell : cl_mod_duke_shell;
+	ex->ent.scale = 0.05f;
+	ex->frames = shotgun ? 2 : 4;
+	VectorCopy(velocity, ex->velocity);
+	ex->accel[2] = -400;
+	ex->frameofs = (Q_rand() % ex->frames);
 }
 
 /*
@@ -1131,6 +1718,363 @@ void CL_ParseTEnt(void)
         te.entity2 = 0;
         CL_ParseBeam(cl_mod_parasite_segment);
         break;
+
+	// Generations
+	// Q1
+	case TE_Q1_GUNSHOT:
+		R_RunParticleEffect(te.pos1, vec3_origin, 0, 20 * te.count);
+		break;
+	case TE_Q1_BLOOD:
+		R_RunParticleEffect(te.pos1, te.dir, 73, te.count);
+		break;
+	case TE_Q1_WIZSPIKE:
+		R_RunParticleEffect(te.pos1, vec3_origin, 20, 30);
+		S_StartSound(te.pos1, 0, 0, cl_sfx_wizhit, 1, ATTN_NORM, 0);
+		break;
+	case TE_Q1_KNIGHTSPIKE:
+		R_RunParticleEffect(te.pos1, vec3_origin, 226, 20);
+		S_StartSound(te.pos1, 0, 0, cl_sfx_knighthit, 1, ATTN_NORM, 0);
+		break;
+	case TE_Q1_TAREXPLOSION:
+		R_BlobExplosion(te.pos1);
+
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_r_exp3, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_q1_explosion;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 350;
+		ex->lightcolor[0] = 0.2;
+		ex->lightcolor[1] = 0.1;
+		ex->lightcolor[2] = 0.05;
+		ex->ent.model = cl_mod_q1_explode;
+		ex->frames = 6;
+		break;
+	case TE_Q1_EXPLODE:
+		R_ParticleExplosion(te.pos1);
+
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_r_exp3, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_q1_explosion;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 350;
+		ex->lightcolor[0] = 0.2;
+		ex->lightcolor[1] = 0.1;
+		ex->lightcolor[2] = 0.05;
+		ex->ent.model = cl_mod_q1_explode;
+		ex->frames = 6;
+		break;
+
+	case TE_DOOM_GUNSHOT:
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_puff;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_puff;
+		ex->velocity[2] = 40;
+		ex->frames = 4;
+		break;
+
+	case TE_DUKE_GUNSHOT:
+		CL_MakeDukeGunshot();
+
+		if ((Q_rand()&255) < 4)
+			S_StartSound(te.pos1, 0, 0, cl_sfx_duke_ricochet, 1, ATTN_NORM, 0);
+		break;
+
+	case TE_DUKE_BLOOD:
+		CL_MakeDukeGunshot();
+
+	case TE_DUKE_BLOOD_SPLAT:
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_duke_blood;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_duke_shotblood;
+		ex->ent.scale = 0.3f;
+		ex->accel[2] = -400;
+		ex->frames = 8;
+
+		if (te.type == TE_DUKE_BLOOD_SPLAT)
+			ex->hitground = true;
+		break;
+
+	case TE_DUKE_FREEZE_HIT:
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_duke_fast;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_duke_freezeblast;
+		ex->ent.scale = 0.4f;
+		ex->frames = 10;
+		ex->ent.flags |= RF_FROZEN | RF_TRANSLUCENT | RF_ANIM_BOUNCE;
+		ex->ent.alpha = 0.6f;
+		break;
+
+	case TE_DUKE_GLASS:
+		S_StartSound(te.pos1, 0, 0, cl_sfx_duke_glass, 1, ATTN_NORM, 0);
+
+		for (int i = 0; i < 20; ++i)
+		{
+			ex = CL_AllocExplosion();
+			VectorCopy(te.pos1, ex->ent.origin);
+
+			for (int x = 0; x < 3; ++x)
+				ex->ent.origin[x] += crand() * 12;
+
+			ex->type = ex_duke_glass;
+			ex->start = cl.servertime - CL_FRAMETIME;
+			ex->light = 0;
+			ex->ent.model = cl_mod_duke_glass;
+			ex->ent.scale = 0.5f;
+			ex->frames = 4;
+			ex->ent.flags |= RF_FROZEN;
+			ex->baseframe = rand() % ex->frames;
+			ex->velocity[0] = crand() * 250;
+			ex->velocity[1] = crand() * 250;
+			ex->velocity[2] = 450 + crand() * 200;
+			ex->accel[2] = -1400;
+		}
+		break;
+
+	case TE_DUKE_EXPLODE:
+	case TE_DUKE_EXPLODE_PIPE:
+	case TE_DUKE_EXPLODE_SMALL:
+		// sound
+
+		if (te.type == TE_DUKE_EXPLODE_PIPE)
+		{
+			te.pos1[2] += 22;
+			S_StartSound(te.pos1, 0, 0, cl_sfx_duke_pipe_boom, 1, ATTN_NORM, 0);
+		}
+		else
+			S_StartSound(te.pos1, 0, 0, cl_sfx_duke_rpg_boom, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_plas;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_duke_explosion;
+
+		if (te.type == TE_DUKE_EXPLODE_SMALL)
+			ex->ent.scale = 0.2f;
+
+		ex->frames = 20;
+
+		if (te.type == TE_DUKE_EXPLODE_PIPE)
+		{
+			// sprite
+			ex = CL_AllocExplosion();
+			VectorCopy(te.pos1, ex->ent.origin);
+			ex->type = ex_doom_plas;
+			ex->start = cl.servertime - CL_FRAMETIME;
+			ex->light = 0;
+			ex->ent.model = cl_mod_duke_explosion2;
+
+			ex->frames = 20;
+		}
+		break;
+
+	case TE_DOOM_EXPLODE:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_boom, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_boom;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_misl;
+		ex->frames = 3;
+		break;
+
+	case TE_DOOM_PLASMA:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_plas, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_plas;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_plse;
+		ex->frames = 5;
+		break;
+
+	case TE_DOOM_IMP_BOOM:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_plas, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_imp;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_bal1;
+		ex->frames = 3;
+		break;
+
+	case TE_DOOM_BOSS_BOOM:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_plas, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_imp;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_bal7;
+		ex->frames = 3;
+		break;
+
+	case TE_DOOM_CACO_BOOM:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_plas, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_imp;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_bal2;
+		ex->frames = 3;
+		break;
+
+	case TE_DOOM_BSPI_BOOM:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_plas, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_plas;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_apbx;
+		ex->frames = 5;
+		break;
+
+	case TE_DOOM_BLOOD:
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_blood;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_blud;
+		ex->frames = 1;
+		ex->accel[2] = -400;
+		ex->hitground = false;
+		break;
+
+	case TE_DOOM_FBXP_BOOM:
+		// sound
+		S_StartSound(te.pos1, 0, 0, cl_sfx_doom_boom, 1, ATTN_NORM, 0);
+
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_plas;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_fbxp;
+		ex->frames = 3;
+		break;
+
+	case TE_DOOM_PUFF:
+		// sprite
+		ex = CL_AllocExplosion();
+		VectorCopy(te.pos1, ex->ent.origin);
+		ex->type = ex_doom_plas;
+		ex->start = cl.servertime - CL_FRAMETIME;
+		ex->light = 0;
+		ex->ent.model = cl_mod_doom_puff;
+		ex->frames = 4;
+		break;
+
+	case TE_Q1_SPIKE:
+		R_RunParticleEffect(te.pos1, vec3_origin, 0, 10);
+
+		if (rand() % 5)
+			S_StartSound(te.pos1, 0, 0, cl_sfx_tink1, 1, ATTN_NORM, 0);
+		else
+		{
+			int rnd = rand() & 3;
+			if (rnd == 1)
+				S_StartSound(te.pos1, 0, 0, cl_sfx_ric1, 1, ATTN_NORM, 0);
+			else if (rnd == 2)
+				S_StartSound(te.pos1, 0, 0, cl_sfx_ric2, 1, ATTN_NORM, 0);
+			else
+				S_StartSound(te.pos1, 0, 0, cl_sfx_ric3, 1, ATTN_NORM, 0);
+		}
+		break;
+
+	case TE_Q1_SUPERSPIKE:
+		R_RunParticleEffect(te.pos1, vec3_origin, 0, 20);
+
+		if (rand() % 5)
+			S_StartSound(te.pos1, 0, 0, cl_sfx_tink1, 1, ATTN_NORM, 0);
+		else
+		{
+			int rnd = rand() & 3;
+			if (rnd == 1)
+				S_StartSound(te.pos1, 0, 0, cl_sfx_ric1, 1, ATTN_NORM, 0);
+			else if (rnd == 2)
+				S_StartSound(te.pos1, 0, 0, cl_sfx_ric2, 1, ATTN_NORM, 0);
+			else
+				S_StartSound(te.pos1, 0, 0, cl_sfx_ric3, 1, ATTN_NORM, 0);
+		}
+		break;
+
+	case TE_Q1_LIGHTNINGBLOOD:
+		{
+			vec3_t lightning_ofs = { 0, 0, 6.25 };
+			R_RunParticleEffect(te.pos1, lightning_ofs, 225, 50);
+		}
+		break;
+
+
+	case TE_Q1_LIGHTNING1:
+		VectorClear(te.offset);
+		te.entity2 = 0;
+		CL_ParseBeam(cl_mod_q1_lightning1);
+		break;
+
+	case TE_Q1_LIGHTNING2:
+		VectorClear(te.offset);
+		te.entity2 = 0;
+		CL_ParseBeam(cl_mod_q1_lightning2);
+		break;
+
+	case TE_Q1_LIGHTNING3:
+		VectorClear(te.offset);
+		te.entity2 = 0;
+		CL_ParseBeam(cl_mod_q1_lightning3);
+		break;
+
+	case TE_Q1_LAVASPLASH:
+		R_LavaSplash(te.pos1);
+		break;
 
     case TE_BOSSTPORT:          // boss teleporting to station
         CL_BigTeleportParticles(te.pos1);

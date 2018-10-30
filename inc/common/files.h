@@ -131,8 +131,8 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
 int FS_WriteFile(const char *path, const void *data, size_t len);
 
 bool FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
-                      const char *dir, const char *name, const char *ext,
-                      const void *data, size_t len);
+                          const char *dir, const char *name, const char *ext,
+                          const void *data, size_t len);
 
 int FS_Read(void *buffer, size_t len, qhandle_t f);
 int FS_Write(const void *buffer, size_t len, qhandle_t f);

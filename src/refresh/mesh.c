@@ -388,6 +388,12 @@ static void setup_color(void)
             }
         }
 
+		// Generations
+		if (flags & RF_FROZEN) {
+			color[0] /= 3;
+			color[1] /= 3;
+		}
+
         for (i = 0; i < 3; i++) {
             clamp(color[i], 0, 1);
         }
@@ -554,8 +560,8 @@ static int texnum_for_mesh(maliasmesh_t *mesh)
     if (ent->flags & RF_SHELL_MASK)
         return TEXNUM_WHITE;
 
-    if (ent->skin)
-        return IMG_ForHandle(ent->skin)->texnum;
+    if (ent->skin.handle)
+        return IMG_ForHandle(ent->skin, GAME_Q2)->texnum;
 
     if (!mesh->numskins)
         return TEXNUM_DEFAULT;
@@ -567,6 +573,10 @@ static int texnum_for_mesh(maliasmesh_t *mesh)
 
     if (mesh->skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
         return mesh->skins[0]->texnum;
+
+	// Generations
+	if (ent->flags & RF_SKIN_ANIM)
+		ent->skinnum = (int)(glr.fd.time * 5) % mesh->numskins;
 
     return mesh->skins[ent->skinnum]->texnum;
 }
@@ -641,7 +651,7 @@ void GL_DrawAliasModel(model_t *model)
         oldframenum = 0;
     }
 
-    backlerp = ent->backlerp;
+	backlerp = ent->backlerp;
     frontlerp = 1.0f - backlerp;
 
     // optimized case
@@ -654,6 +664,17 @@ void GL_DrawAliasModel(model_t *model)
                     backlerp, frontlerp, origin);
     else
         VectorCopy(ent->origin, origin);
+
+	// Generations
+	if ((ent->flags & RF_NOLERP) || model->nolerp) {
+		backlerp = 0;
+
+		frontlerp = 1.0f - backlerp;
+
+		// optimized case
+		if (backlerp == 0)
+			oldframenum = newframenum;
+	}
 
     // cull the model, setup scale and translate vectors
     if (newframenum == oldframenum)

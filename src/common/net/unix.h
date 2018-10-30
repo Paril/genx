@@ -103,7 +103,7 @@ static bool process_error_queue(qsocket_t sock, const netadr_t *to)
 }
 
 static int os_udp_recv(qsocket_t sock, void *data,
-                       size_t len, netadr_t *from)
+                           size_t len, netadr_t *from)
 {
     struct sockaddr_storage addr;
     socklen_t addrlen;
@@ -135,7 +135,7 @@ static int os_udp_recv(qsocket_t sock, void *data,
 }
 
 static int os_udp_send(qsocket_t sock, const void *data,
-                       size_t len, const netadr_t *to)
+                           size_t len, const netadr_t *to)
 {
     struct sockaddr_storage addr;
     socklen_t addrlen;

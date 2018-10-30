@@ -349,7 +349,7 @@ void brain_dodge(edict_t *self, edict_t *attacker, float eta) {
     if (!self->enemy)
         self->enemy = attacker;
 
-    self->monsterinfo.pausetime = level.time + eta + 0.5f;
+    self->monsterinfo.pausetime = level.time + (eta * 1000) + 500;
     self->monsterinfo.currentmove = &brain_move_duck;
 }
 
@@ -530,7 +530,7 @@ void brain_pain(edict_t *self, edict_t *other, float kick, int damage) {
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     if (skill->value == 3)
         return;     // no pain anims in nightmare
 
@@ -552,6 +552,7 @@ void brain_dead(edict_t *self) {
     VectorSet(self->maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }

@@ -263,9 +263,6 @@ static void IMG_MipMap(byte *out, byte *in, int width, int height)
 =============================================================================
 */
 
-#define SCRAP_BLOCK_WIDTH       256
-#define SCRAP_BLOCK_HEIGHT      256
-
 static int scrap_inuse[SCRAP_BLOCK_WIDTH];
 static byte scrap_data[SCRAP_BLOCK_WIDTH * SCRAP_BLOCK_HEIGHT * 4];
 static bool scrap_dirty;
@@ -618,17 +615,26 @@ static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imaget
 
 static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
 {
-    if (type == IT_WALL || type == IT_SKIN) {
-        qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
-        qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
-    } else {
+	if (type == IT_WALL || type == IT_SKIN) {
+		// Generations
+		if (flags & IF_OLDSCHOOL) {
+			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		} else {
+			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
+			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
+		}
+	} else {
         bool    nearest;
 
-        if (flags & IF_NEAREST) {
-            nearest = true;
-        } else if (type == IT_FONT) {
-            nearest = (gl_bilerp_chars->integer == 0);
-        } else if (type == IT_PIC) {
+		if (flags & IF_NEAREST) {
+			nearest = true;
+		} else if (type == IT_FONT) {
+			nearest = (gl_bilerp_chars->integer == 0);
+		// Generations
+		} else if (flags & IF_OLDSCHOOL) {
+			nearest = qtrue;
+		} else if (type == IT_PIC) {
             if (flags & IF_SCRAP)
                 nearest = (gl_bilerp_pics->integer == 0 || gl_bilerp_pics->integer == 1);
             else
@@ -690,7 +696,8 @@ void IMG_Load(image_t *image, byte *pic)
     height = image->upload_height;
 
     // load small pics onto the scrap
-    if (image->type == IT_PIC && width < 64 && height < 64 &&
+	// Generations
+    if (image->type == IT_PIC && !(image->flags & IF_REPEAT) && width <= SCRAP_BLOCK_WIDTH && height <= SCRAP_BLOCK_HEIGHT &&
         gl_noscrap->integer == 0 && Scrap_AllocBlock(width, height, &s, &t)) {
         src = pic;
         dst = &scrap_data[(t * SCRAP_BLOCK_WIDTH + s) * 4];
@@ -738,7 +745,10 @@ void IMG_Load(image_t *image, byte *pic)
     }
 
     // don't need pics in memory after GL upload
-    Z_Free(pic);
+	// Paril
+	if (!(image->flags & IF_DELAYED)) {
+	    Z_Free(pic);
+	}
 }
 
 void IMG_Unload(image_t *image)
@@ -870,46 +880,73 @@ static void GL_InitDefaultTexture(void)
 
 static void GL_InitParticleTexture(void)
 {
-    byte pixels[16 * 16 * 4];
-    byte *dst;
-    float x, y, f;
-    int i, j;
+	byte pixels[16 * 16 * 4];
+	byte *dst;
+	float x, y, f;
+	int i, j;
     int shape = Cvar_ClampInteger(gl_partshape, 0, 2);
     int flags = IF_TRANSPARENT;
 
     if (shape == 0 || shape == 2) {
-        dst = pixels;
-        for (i = 0; i < 16; i++) {
-            for (j = 0; j < 16; j++) {
-                x = j - 16 / 2 + 0.5f;
-                y = i - 16 / 2 + 0.5f;
+		dst = pixels;
+		for (i = 0; i < 16; i++) {
+			for (j = 0; j < 16; j++) {
+				x = j - 16 / 2 + 0.5f;
+				y = i - 16 / 2 + 0.5f;
                 f = sqrtf(x * x + y * y);
                 f = 1.0f - f / ((16 - shape) / 2 - 0.5f);
                 f *= 1 << shape;
-                dst[0] = 255;
-                dst[1] = 255;
-                dst[2] = 255;
+				dst[0] = 255;
+				dst[1] = 255;
+				dst[2] = 255;
                 dst[3] = 255 * clamp(f, 0, 1 - shape * 0.2f);
-                dst += 4;
-            }
-        }
+				dst += 4;
+			}
+		}
     } else {
         flags |= IF_NEAREST;
         memset(pixels, 0, sizeof(pixels));
         for (i = 3; i <= 12; i++) {
             for (j = 3; j <= 12; j++) {
                 dst = pixels + (i * 16 + j) * 4;
-                dst[0] = 255;
-                dst[1] = 255;
-                dst[2] = 255;
+				dst[0] = 255;
+				dst[1] = 255;
+				dst[2] = 255;
                 dst[3] = 255 * 0.6f;
-            }
-        }
-    }
+			}
+		}
+	}
 
     GL_ForceTexture(0, TEXNUM_PARTICLE);
     GL_Upload32(pixels, 16, 16, 0, IT_SPRITE, flags);
     GL_SetFilterAndRepeat(IT_SPRITE, flags);
+}
+
+static void GL_InitOldParticleTexture(void)
+{
+	byte pixels[8 * 8 * 4];
+	byte *dst;
+	float x, y, f;
+	int i, j;
+
+	dst = pixels;
+	for (i = 0; i < 8; i++) {
+		for (j = 0; j < 8; j++) {
+			x = j - 8 / 2 + 0.5f;
+			y = i - 8 / 2 + 0.5f;
+			f = sqrt(x * x + y * y);
+			f = 1.0f - f / (8 / 2 - 0.5f);
+			dst[0] = 255;
+			dst[1] = 255;
+			dst[2] = 255;
+			dst[3] = 255 * (clamp(f, 0.0f, 1.0f) <= 0.5f ? 0 : 1);
+			dst += 4;
+		}
+	}
+
+	GL_ForceTexture(0, TEXNUM_PARTICLE_Q1);
+	GL_Upload32(pixels, 8, 8, 0, IT_SPRITE, IF_NONE);
+	GL_SetFilterAndRepeat(IT_SPRITE, IF_NONE);
 }
 
 static void GL_InitWhiteImage(void)
@@ -955,6 +992,7 @@ static void GL_InitBeamTexture(void)
 static void gl_partshape_changed(cvar_t *self)
 {
     GL_InitParticleTexture();
+	GL_InitOldParticleTexture();
 }
 
 /*
@@ -975,7 +1013,7 @@ void GL_InitImages(void)
     gl_texturemode->changed = gl_texturemode_changed;
     gl_texturemode->generator = gl_texturemode_g;
     gl_texturebits = Cvar_Get("gl_texturebits", "0", CVAR_FILES);
-    gl_anisotropy = Cvar_Get("gl_anisotropy", "1", 0);
+     gl_anisotropy = Cvar_Get("gl_anisotropy", "1", 0);
     gl_anisotropy->changed = gl_anisotropy_changed;
     gl_noscrap = Cvar_Get("gl_noscrap", "0", CVAR_FILES);
     gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES);
@@ -1042,6 +1080,7 @@ void GL_InitImages(void)
 
     GL_InitDefaultTexture();
     GL_InitParticleTexture();
+	GL_InitOldParticleTexture();
     GL_InitWhiteImage();
     GL_InitBeamTexture();
 

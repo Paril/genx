@@ -314,7 +314,7 @@ void mutant_jump_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
             VectorNormalize(normal);
             VectorMA(self->s.origin, self->maxs[0], normal, point);
             damage = 40 + 10 * random();
-            T_Damage(other, self, self, self->velocity, point, normal, damage, damage, 0, MOD_UNKNOWN);
+            T_Damage(other, self, self, self->velocity, point, normal, damage, damage, DAMAGE_NONE, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
         }
     }
 
@@ -340,7 +340,7 @@ void mutant_jump_takeoff(edict_t *self)
     self->velocity[2] = 250;
     self->groundentity = NULL;
     self->monsterinfo.aiflags |= AI_DUCKED;
-    self->monsterinfo.attack_finished = level.time + 3;
+    self->monsterinfo.attack_finished = level.time + 3000;
     self->touch = mutant_jump_touch;
 }
 
@@ -482,7 +482,7 @@ void mutant_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
 
     if (skill->value == 3)
         return;     // no pain anims in nightmare
@@ -511,6 +511,7 @@ void mutant_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     gi.linkentity(self);
 
     M_FlyCheck(self);

@@ -18,15 +18,18 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "g_local.h"
 
+#if _WIN32
+#define strdup _strdup
+#endif
+
 game_locals_t   game;
 level_locals_t  level;
 game_import_t   gi;
 game_export_t   globals;
-spawn_temp_t    st;
+spawn_temp_t    spawnTemp;
 
 int sm_meat_index;
 int snd_fry;
-int meansOfDeath;
 
 edict_t     *g_edicts;
 
@@ -71,6 +74,15 @@ cvar_t  *flood_waitdelay;
 cvar_t  *sv_maplist;
 
 cvar_t  *sv_features;
+// Generations
+cvar_t	*invasion;
+
+
+cvar_t				*bot_showpath;
+cvar_t				*bot_showcombat;
+cvar_t				*bot_showsrgoal;
+cvar_t				*bot_showlrgoal;
+cvar_t				*bot_debugmonster;
 
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint);
 void ClientThink(edict_t *ent, usercmd_t *cmd);
@@ -99,6 +111,8 @@ void ShutdownGame(void)
     gi.FreeTags(TAG_GAME);
 }
 
+void Wave_Init();
+
 /*
 ============
 InitGame
@@ -111,8 +125,6 @@ is loaded.
 void InitGame(void)
 {
     gi.dprintf("==== InitGame ====\n");
-
-    Q_srand(time(NULL));
 
     gun_x = gi.cvar("gun_x", "0", 0);
     gun_y = gi.cvar("gun_y", "0", 0);
@@ -136,6 +148,7 @@ void InitGame(void)
     maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
     deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
     coop = gi.cvar("coop", "0", CVAR_LATCH);
+	invasion = gi.cvar("invasion", "0", CVAR_LATCH);
     skill = gi.cvar("skill", "1", CVAR_LATCH);
     maxentities = gi.cvar("maxentities", "1024", CVAR_LATCH);
 
@@ -178,7 +191,6 @@ void InitGame(void)
 
     // initialize all entities for this game
     game.maxentities = maxentities->value;
-    clamp(game.maxentities, (int)maxclients->value + 1, MAX_EDICTS);
     g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
     globals.edicts = g_edicts;
     globals.max_edicts = game.maxentities;
@@ -187,6 +199,32 @@ void InitGame(void)
     game.maxclients = maxclients->value;
     game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
     globals.num_edicts = game.maxclients + 1;
+
+	AI_Init();//JABot
+
+#if USE_FPS
+	cvar_t *sv_fps = gi.cvar("sv_fps", "", 0);
+
+	int framediv;
+
+#if (G_FEATURES & GMF_VARIABLE_FPS)
+		framediv = sv_fps->integer / BASE_FRAMERATE;
+#else
+		framediv = 1;
+#endif
+
+	clamp(framediv, 1, MAX_FRAMEDIV);
+
+	game.framerate = framediv * BASE_FRAMERATE;
+	game.frametime = BASE_FRAMETIME / framediv;
+	game.framediv = framediv;
+	game.frameseconds = BASE_FRAMETIME_1000 / framediv;
+#endif
+
+	game.random_seed = time(NULL);
+	
+	if (invasion->integer)
+		Wave_Init();
 }
 
 
@@ -200,6 +238,8 @@ and global variables
 */
 q_exported game_export_t *GetGameAPI(game_import_t *import)
 {
+	srand(time(NULL));
+
     gi = *import;
 
     globals.apiversion = GAME_API_VERSION;
@@ -276,7 +316,7 @@ void ClientEndServerFrames(void)
     // and damage has been added
     for (i = 0 ; i < maxclients->value ; i++) {
         ent = g_edicts + 1 + i;
-        if (!ent->inuse || !ent->client)
+        if (!ent->inuse || !ent->client || !ent->client->pers.connected)
             continue;
         ClientEndServerFrame(ent);
     }
@@ -295,7 +335,7 @@ edict_t *CreateTargetChangeLevel(char *map)
     edict_t *ent;
 
     ent = G_Spawn();
-    ent->classname = "target_changelevel";
+    ent->entitytype = ET_TARGET_CHANGELEVEL;
     Q_snprintf(level.nextmap, sizeof(level.nextmap), "%s", map);
     ent->map = level.nextmap;
     return ent;
@@ -349,7 +389,7 @@ void EndDMLevel(void)
     if (level.nextmap[0]) // go to a specific map
         BeginIntermission(CreateTargetChangeLevel(level.nextmap));
     else {  // search for a changelevel
-        ent = G_Find(NULL, FOFS(classname), "target_changelevel");
+        ent = G_FindByType(NULL, ET_TARGET_CHANGELEVEL);
         if (!ent) {
             // the map designer didn't include a changelevel,
             // so create a fake ent that goes back to the same level
@@ -437,6 +477,10 @@ void ExitLevel(void)
     edict_t *ent;
     char    command [256];
 
+	//JABot[start] (Disconnect all bots before changing map)
+	BOT_RemoveBot("all");
+	//[end]
+
     Q_snprintf(command, sizeof(command), "gamemap \"%s\"\n", level.changemap);
     gi.AddCommandString(command);
     level.changemap = NULL;
@@ -459,16 +503,19 @@ void ExitLevel(void)
 ================
 G_RunFrame
 
-Advances the world by 0.1 seconds
+Advances the world by game.frameseconds seconds
 ================
 */
+
+void Wave_Frame();
+
 void G_RunFrame(void)
 {
     int     i;
     edict_t *ent;
 
     level.framenum++;
-    level.time = level.framenum * FRAMETIME;
+    level.time += game.frametime;
 
     // choose a client for monsters to target this frame
     AI_SetSightClient();
@@ -491,7 +538,8 @@ void G_RunFrame(void)
 
         level.current_entity = ent;
 
-        VectorCopy(ent->s.origin, ent->s.old_origin);
+		if (!(ent->s.renderfx & RF_PROJECTILE))
+			VectorCopy(ent->s.origin, ent->s.old_origin);
 
         // if the ground entity moved, make sure we are still on it
         if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount)) {
@@ -503,10 +551,16 @@ void G_RunFrame(void)
 
         if (i > 0 && i <= maxclients->value) {
             ClientBeginServerFrame(ent);
+			//JABot[start]
+			if (!ent->ai) //jabot092(2)
+						  //[end]
             continue;
         }
 
         G_RunEntity(ent);
+
+		if (ent->s.renderfx & RF_PROJECTILE)
+			VectorCopy(ent->velocity, ent->s.old_origin);
     }
 
     // see if it is time to end a deathmatch
@@ -517,4 +571,12 @@ void G_RunFrame(void)
 
     // build the playerstate_t structures for all players
     ClientEndServerFrames();
+
+	//JABot[start]
+	AITools_Frame();	//give think time to AI debug tools
+						//[end]
+
+	if (invasion->integer)
+		Wave_Frame();
 }
+

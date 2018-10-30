@@ -60,6 +60,11 @@ void GL_CommonStateBits(GLbitfield bits)
 {
     GLbitfield diff = bits ^ gls.state_bits;
 
+	// Generations
+    if (!diff) {
+        return;
+    }
+
     if (diff & GLS_BLEND_MASK) {
         if (bits & GLS_BLEND_MASK) {
             qglEnable(GL_BLEND);
@@ -69,7 +74,10 @@ void GL_CommonStateBits(GLbitfield bits)
                 qglBlendFunc(GL_SRC_ALPHA, GL_ONE);
             } else if (bits & GLS_BLEND_MODULATE) {
                 qglBlendFunc(GL_DST_COLOR, GL_ONE);
-            }
+			// Generations
+            } else if (bits & GLS_BLEND_INVERT) {
+				qglBlendFunc(GL_ONE_MINUS_SRC_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+			}
         } else {
             qglDisable(GL_BLEND);
         }
@@ -202,6 +210,13 @@ static void GL_RotateForViewer(void)
 
     AnglesToAxis(glr.fd.viewangles, glr.viewaxis);
 
+	// Generations
+	vec3_t angles;
+	VectorCopy(glr.fd.viewangles, angles);
+	angles[0] = angles[2] = 0;
+
+	AnglesToAxis(angles, glr.viewaxis_nopitch);
+
     matrix[0] = -glr.viewaxis[1][0];
     matrix[4] = -glr.viewaxis[1][1];
     matrix[8] = -glr.viewaxis[1][2];
@@ -308,7 +323,7 @@ void GL_InitState(void)
             gl_static.use_shaders = false;
             Cvar_Set("gl_shaders", "0");
         }
-    } else {
+        } else {
         if (!(gl_config.caps & QGL_CAP_LEGACY)) {
             Com_Printf("Legacy rendering backend not available.\n");
             gl_static.use_shaders = true;

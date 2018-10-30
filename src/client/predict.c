@@ -89,12 +89,13 @@ static void CL_ClipMoveToEntities(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t
 
         if (ent->current.solid == PACKED_BSP) {
             // special value for bmodel
-            cmodel = cl.model_clip[ent->current.modelindex];
+            cmodel = cl.precache[ent->current.modelindex].model.clip;
             if (!cmodel)
                 continue;
             headnode = cmodel->headnode;
         } else {
-            headnode = CM_HeadnodeForBox(ent->mins, ent->maxs);
+			// Generations
+            headnode = CM_HeadnodeForBox(ent->mins, ent->maxs, ent->current.clip_contents);
         }
 
         if (tr->allsolid)
@@ -144,7 +145,7 @@ static int CL_PointContents(vec3_t point)
         if (ent->current.solid != PACKED_BSP) // special value for bmodel
             continue;
 
-        cmodel = cl.model_clip[ent->current.modelindex];
+        cmodel = cl.precache[ent->current.modelindex].model.clip;
         if (!cmodel)
             continue;
 
@@ -218,6 +219,12 @@ void CL_PredictMovement(void)
 #if USE_SMOOTH_DELTA_ANGLES
     VectorCopy(cl.delta_angles, pm.s.delta_angles);
 #endif
+
+	// Generations
+	pm.game = cl_entities[cl.frame.clientNum + 1].current.game;
+
+	if (cl.pmp.game != CL_GetClientGame())
+		PmoveInit(&cl.pmp, CL_GetClientGame());
 
     // run frames
     while (++ack <= current) {

@@ -686,9 +686,9 @@ static void SV_Status_f(void)
             char *w = Cmd_Argv(1);
             switch (*w) {
             case 'd': dump_downloads(); break;
-            case 'l': dump_lag();       break;
+            case 'l': dump_lag(); break;
             case 'p': dump_protocols(); break;
-            case 's': dump_settings();  break;
+            case 's': dump_settings(); break;
             case 't': dump_time();      break;
             case 'v': dump_versions();  break;
             default:
@@ -1589,3 +1589,4 @@ void SV_InitOperatorCommands(void)
     if (COM_DEDICATED)
         Cmd_AddCommand("say", SV_ConSay_f);
 }
+

@@ -58,12 +58,12 @@ typedef struct m_demos_s {
     menuList_t      list;
     int             numDirs;
     uint8_t         hash[16];
-    char            browse[MAX_OSPATH];
-    int             selection;
-    int             year;
-    int             widest_map, widest_pov;
-    uint64_t        total_bytes;
-    char            status[32];
+    char    		browse[MAX_OSPATH];
+    int     		selection;
+    int     		year;
+    int     		widest_map, widest_pov;
+    uint64_t    	total_bytes;
+    char    		status[32];
 } m_demos_t;
 
 static m_demos_t    m_demos;

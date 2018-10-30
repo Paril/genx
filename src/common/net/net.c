@@ -575,7 +575,7 @@ static void NET_GetLoopPackets(netsrc_t sock, void (*packet_cb)(void))
 }
 
 static bool NET_SendLoopPacket(netsrc_t sock, const void *data,
-                               size_t len, const netadr_t *to)
+                                   size_t len, const netadr_t *to)
 {
     loopback_t *loop;
     loopmsg_t *msg;
@@ -916,7 +916,7 @@ NET_SendPacket
 =============
 */
 bool NET_SendPacket(netsrc_t sock, const void *data,
-                    size_t len, const netadr_t *to)
+                        size_t len, const netadr_t *to)
 {
     int ret;
     qsocket_t s;

@@ -150,8 +150,8 @@ static inline bool NET_IsEqualBaseAdr(const netadr_t *a, const netadr_t *b)
 }
 
 static inline bool NET_IsEqualBaseAdrMask(const netadr_t *a,
-                                          const netadr_t *b,
-                                          const netadr_t *m)
+                                              const netadr_t *b,
+                                              const netadr_t *m)
 {
     if (a->type != b->type) {
         return false;

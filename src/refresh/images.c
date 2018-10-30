@@ -40,8 +40,182 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 #include <setjmp.h>
+#include "common/picscript.h"
 
-#define R_COLORMAP_PCX    "pics/colormap.pcx"
+static picscript_t	r_picscripts[MAX_PIC_SCRIPTS];
+static int			r_numPicScripts;
+
+static void PSCR_Untouch()
+{
+	for (int i = 0; i < r_numPicScripts; ++i)
+	{
+		for (int g = 1; g < GAME_TOTAL; ++g)
+		{
+			if (r_picscripts[i].entries[g].path[0])
+			{
+				r_picscripts[i].entries[g].loaded = false;
+				r_picscripts[i].entries[g].pic = (pichandle_t) { 0 };
+			}
+		}
+	}
+}
+
+static void PSCR_Touch()
+{
+	for (int i = 0; i < r_numPicScripts; ++i)
+	{
+		for (int g = 1; g < GAME_TOTAL; ++g)
+		{
+			if (r_picscripts[i].entries[g].path[0])
+			{
+				r_picscripts[i].entries[g].loaded = true;
+				r_picscripts[i].entries[g].pic = R_RegisterPic2(r_picscripts[i].entries[g].path);
+			}
+		}
+	}
+}
+
+static picscript_t *PSCR_Alloc()
+{
+	picscript_t *script;
+	int i;
+
+	for (i = 0, script = r_picscripts; i < r_numPicScripts; ++i, script++)
+	{
+		if (!script->name[0])
+			break;
+	}
+
+	if (i == r_numPicScripts) {
+		if (r_numPicScripts == MAX_PIC_SCRIPTS) {
+			return NULL;
+		}
+		r_numPicScripts++;
+	}
+
+	return script;
+}
+
+static picscript_t *PSCR_Find(const char *name)
+{
+	picscript_t *script;
+	int i;
+
+	for (i = 0, script = r_picscripts; i < r_numPicScripts; i++, script++) {
+		if (!script->name[0]) {
+			continue;
+		}
+		if (!FS_pathcmp(script->name, name)) {
+			return script;
+		}
+	}
+
+	return NULL;
+}
+
+static picscript_t *PSCR_Register(const char *name)
+{
+	char path[MAX_QPATH];
+	char *rawdata;
+	picscript_t *script;
+	int ret = Q_ERR_INVALID_FORMAT;
+
+	Q_snprintf(path, MAX_QPATH, "picscripts/%s.psc", name);
+
+	uint32_t filelen = FS_LoadFile(path, (void **)&rawdata);
+
+	if (!rawdata) {
+		// don't spam about missing pics
+		if (filelen == Q_ERR_NOENT) {
+			return 0;
+		}
+
+		ret = filelen;
+		goto fail1;
+	}
+
+	script = PSCR_Alloc();
+	memset(script, 0, sizeof(*script));
+
+	Q_snprintf(script->name, MAX_QPATH, "%s", name);
+
+	while (true)
+	{
+		char *tok = COM_Parse((const char**)&rawdata);
+
+		if (!*tok)
+			break;
+
+		if (*tok != '{')
+		{
+			ret = Q_ERR_INVALID_FORMAT;
+			goto fail2;
+		}
+
+		picentry_t entry;
+		gametype_t game = GAME_NONE;
+
+		memset(&entry, 0, sizeof(entry));
+
+		while (*(tok = COM_Parse((const char**)&rawdata)) != '}')
+		{
+			char *value = COM_Parse((const char**)&rawdata);
+
+			if (!Q_stricmp(tok, "game"))
+			{
+				if (!Q_stricmp(value, "q2"))
+					game = GAME_Q2;
+				else if (!Q_stricmp(value, "q1"))
+					game = GAME_Q1;
+				else if (!Q_stricmp(value, "doom"))
+					game = GAME_DOOM;
+				else if (!Q_stricmp(value, "duke"))
+					game = GAME_DUKE;
+			}
+			else if (!Q_stricmp(tok, "path"))
+				Q_snprintf(entry.path, MAX_QPATH, "%s", value);
+		}
+
+		if (game == GAME_NONE || game == GAME_TOTAL || !entry.path[0])
+			goto fail2;
+
+		entry.pic = R_RegisterPic2(entry.path);
+		entry.loaded = true;
+
+		memcpy(&script->entries[game], &entry, sizeof(entry));
+	}
+
+	FS_FreeFile(rawdata);
+
+	return script;
+
+fail2:
+	FS_FreeFile(rawdata);
+fail1:
+	Com_EPrintf("Couldn't load %s: %s\n", path, Q_ErrorString(ret));
+	return 0;
+}
+
+picentry_t *PSCR_EntryForHandle(pichandle_t handle, gametype_t game)
+{
+	picscript_t *script = &r_picscripts[handle.pic.id - 1];
+
+	if (!script->name[0])
+		return NULL;
+
+	if (game == GAME_NONE)
+		game = GAME_Q2;
+
+	if (!script->entries[game].path[0])
+		return &script->entries[GAME_Q2];
+
+	return &script->entries[game];
+}
+
+#define R_COLORMAP_Q2    "pics/colormap.pcx"
+#define R_COLORMAP_Q1    "pics/q1/palette.dat"
+#define R_COLORMAP_DOOM  "pics/doom/palette.dat"
+#define R_COLORMAP_DUKE  "pics/duke/palette.dat"
 
 #define IMG_LOAD(x) \
     static int IMG_Load##x(byte *rawdata, size_t rawlen, \
@@ -226,7 +400,7 @@ static int _IMG_LoadPCX(byte *rawdata, size_t rawlen, byte *pixels,
 IMG_Unpack8
 ===============
 */
-static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
+int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height, uint32_t *palette)
 {
     int         x, y, p;
     bool        has_alpha = false;
@@ -257,9 +431,9 @@ static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
                 else
                     p = 0;
                 // copy rgb components
-                *out = d_8to24table[p] & U32_RGB;
+                *out = palette[p] & U32_RGB;
             } else {
-                *out = d_8to24table[p];
+                *out = palette[p] | U32_ALPHA;
             }
             in++;
             out++;
@@ -274,7 +448,7 @@ static int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height)
 
 IMG_LOAD(PCX)
 {
-    byte    buffer[640 * 480];
+    byte        buffer[640 * 480];
     int     w, h, ret;
 
     ret = _IMG_LoadPCX(rawdata, rawlen, buffer, NULL, &w, &h);
@@ -288,11 +462,85 @@ IMG_LOAD(PCX)
 
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
-    image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h);
+    image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_Q2]);
 
     return Q_ERR_SUCCESS;
 }
 
+/*
+=================================================================
+
+Q1P LOADING
+
+=================================================================
+*/
+
+IMG_LOAD(Q1P)
+{
+	uint32_t *ptr = (uint32_t*)rawdata;
+	uint32_t w = LittleLong(*ptr);
+	uint32_t h = LittleLong(*(ptr + 1));
+	byte *buffer = rawdata + 8;
+
+	*pic = (byte*)IMG_AllocPixels(w * h * 4);
+
+	image->upload_width = image->width = w;
+	image->upload_height = image->height = h;
+	image->flags |= IF_OLDSCHOOL;
+	image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_Q1]);
+
+	return Q_ERR_SUCCESS;
+}
+
+/*
+=================================================================
+
+D2P LOADING
+
+=================================================================
+*/
+
+IMG_LOAD(D2P)
+{
+	uint32_t *ptr = (uint32_t*)rawdata;
+	uint32_t w = LittleLong(*ptr);
+	uint32_t h = LittleLong(*(ptr + 1));
+	byte *buffer = rawdata + 8;
+
+	*pic = IMG_AllocPixels(w * h * 4);
+
+	image->upload_width = image->width = w;
+	image->upload_height = image->height = h;
+	image->flags |= IF_OLDSCHOOL;
+	image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_DOOM]);
+
+	return Q_ERR_SUCCESS;
+}
+
+/*
+=================================================================
+
+DNP LOADING
+
+=================================================================
+*/
+
+IMG_LOAD(DNP)
+{
+	uint32_t *ptr = (uint32_t*)rawdata;
+	uint32_t w = LittleLong(*ptr);
+	uint32_t h = LittleLong(*(ptr + 1));
+	byte *buffer = rawdata + 8;
+
+	*pic = IMG_AllocPixels(w * h * 4);
+
+	image->upload_width = image->width = w;
+	image->upload_height = image->height = h;
+	image->flags |= IF_OLDSCHOOL;
+	image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_DUKE]);
+
+	return Q_ERR_SUCCESS;
+}
 
 /*
 =================================================================
@@ -331,7 +579,15 @@ IMG_LOAD(WAL)
 
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
-    image->flags |= IMG_Unpack8((uint32_t *)*pic, (uint8_t *)mt + offset, w, h);
+
+	gametype_t game_palette = GAME_Q2;
+
+	if (mt->flags & SURF_Q1)
+		game_palette = GAME_Q1;
+	else if (mt->flags & SURF_DOOM)
+		game_palette = GAME_DOOM;
+
+    image->flags |= IMG_Unpack8((uint32_t *)*pic, (uint8_t *)mt + offset, w, h, d_palettes[game_palette]);
 
     return Q_ERR_SUCCESS;
 }
@@ -679,7 +935,7 @@ static void my_output_message(j_common_ptr cinfo)
     (*cinfo->err->format_message)(cinfo, buffer);
 
     if (jerr->filename)
-        Com_EPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
+    Com_EPrintf("libjpeg: %s: %s\n", jerr->filename, buffer);
 }
 
 static void my_error_exit(j_common_ptr cinfo)
@@ -895,7 +1151,7 @@ static void my_png_warning_fn(png_structp png_ptr, png_const_charp warning_msg)
     my_png_error *err = png_get_error_ptr(png_ptr);
 
     if (err->filename)
-        Com_WPrintf("libpng: %s: %s\n", err->filename, warning_msg);
+    Com_WPrintf("libpng: %s: %s\n", err->filename, warning_msg);
 }
 
 static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
@@ -967,7 +1223,7 @@ static int my_png_read_header(png_structp png_ptr, png_infop info_ptr,
 
 static int my_png_read_image(png_structp png_ptr, png_infop info_ptr, png_bytepp row_pointers)
 {
-    my_png_error *err = png_get_error_ptr(png_ptr);
+        my_png_error *err = png_get_error_ptr(png_ptr);
 
     if (setjmp(err->setjmp_buffer)) {
         return Q_ERR_LIBRARY_ERROR;
@@ -996,7 +1252,7 @@ IMG_LOAD(PNG)
 
     my_err.filename = image->name;
     png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
-                                     (png_voidp)&my_err, my_png_error_fn, my_png_warning_fn);
+                                      (png_voidp)&my_err, my_png_error_fn, my_png_warning_fn);
     if (!png_ptr) {
         return Q_ERR_LIBRARY_ERROR;
     }
@@ -1349,21 +1605,28 @@ IMAGE MANAGER
 =========================================================
 */
 
-#define RIMAGES_HASH    256
+#define RIMAGES_HASH    (MAX_RIMAGES / 4)
 
 static list_t   r_imageHash[RIMAGES_HASH];
 
 image_t     r_images[MAX_RIMAGES];
 int         r_numImages;
 
-uint32_t    d_8to24table[256];
+// Paril
+uint32_t    d_palettes[GAME_TOTAL][256];
 
 static const struct {
-    char    ext[4];
+    char        ext[4];
     int     (*load)(byte *, size_t, image_t *, byte **);
 } img_loaders[IM_MAX] = {
     { "pcx", IMG_LoadPCX },
     { "wal", IMG_LoadWAL },
+
+	// Paril
+	{ "q1p", IMG_LoadQ1P },
+	{ "d2p", IMG_LoadD2P },
+	{ "dnp", IMG_LoadDNP },
+
 #if USE_TGA
     { "tga", IMG_LoadTGA },
 #endif
@@ -1464,7 +1727,7 @@ static image_t *lookup_image(const char *name,
 
 static int _try_image_format(imageformat_t fmt, image_t *image, byte **pic)
 {
-    byte    *data;
+    byte        *data;
     int     len, ret;
 
     // load the file
@@ -1511,7 +1774,7 @@ static int try_other_formats(imageformat_t orig, image_t *image, byte **pic)
     }
 
     // fall back to 8-bit formats
-    fmt = (image->type == IT_WALL) ? IM_WAL : IM_PCX;
+	fmt = image->original_format;
     if (fmt == orig) {
         return Q_ERR_NOENT; // don't retry twice
     }
@@ -1542,7 +1805,47 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
             }
             FS_FCloseFile(f);
         }
-    } else {
+    }
+	// Paril
+	else if (fmt == IM_Q1P) {
+		memcpy(buffer + image->baselen + 1, "q1p", 4);
+		FS_FOpenFile(buffer, &f, FS_MODE_READ);
+		if (f) {
+			FS_Read(&w, sizeof(uint32_t), f);
+			FS_Read(&h, sizeof(uint32_t), f);
+
+			w = LittleLong(w);
+			h = LittleLong(h);
+
+			FS_FCloseFile(f);
+		}
+	}
+	else if (fmt == IM_D2P) {
+		memcpy(buffer + image->baselen + 1, "d2p", 4);
+		FS_FOpenFile(buffer, &f, FS_MODE_READ);
+		if (f) {
+			FS_Read(&w, sizeof(uint32_t), f);
+			FS_Read(&h, sizeof(uint32_t), f);
+
+			w = LittleLong(w);
+			h = LittleLong(h);
+
+			FS_FCloseFile(f);
+		}
+	}
+	else if (fmt == IM_DNP) {
+		memcpy(buffer + image->baselen + 1, "dnp", 4);
+		FS_FOpenFile(buffer, &f, FS_MODE_READ);
+		if (f) {
+			FS_Read(&w, sizeof(uint32_t), f);
+			FS_Read(&h, sizeof(uint32_t), f);
+	
+			w = LittleLong(w);
+			h = LittleLong(h);
+	
+			FS_FCloseFile(f);
+		}
+	} else {
         memcpy(buffer + image->baselen + 1, "pcx", 4);
         FS_FOpenFile(buffer, &f, FS_MODE_READ);
         if (f) {
@@ -1612,6 +1915,7 @@ static int find_or_load_image(const char *name, size_t len,
     unsigned        hash;
     imageformat_t   fmt;
     int             ret;
+	const char		*ext;
 
     *image_p = NULL;
 
@@ -1619,14 +1923,27 @@ static int find_or_load_image(const char *name, size_t len,
     if (len <= 4) {
         return Q_ERR_NAMETOOSHORT;
     }
-    if (name[len - 4] != '.') {
+	// Paril
+	// internal textures and stuff
+    /*
+	if (name[len - 4] != '.') {
         return Q_ERR_INVALID_PATH;
     }
+	*/
 
-    hash = FS_HashPathLen(name, len - 4, RIMAGES_HASH);
+	ext = strstr(name, ".");
+
+	if (!ext)
+		return Q_ERR_INVALID_PATH;
+
+	ext++;
+
+    hash = FS_HashPathLen(name, len, RIMAGES_HASH);
+
+	size_t baselen = ext - name - 1;
 
     // look for it
-    if ((image = lookup_image(name, type, hash, len - 4)) != NULL) {
+    if ((image = lookup_image(name, type, hash, baselen)) != NULL) {
         image->flags |= flags & IF_PERMANENT;
         image->registration_sequence = registration_sequence;
         *image_p = image;
@@ -1641,63 +1958,68 @@ static int find_or_load_image(const char *name, size_t len,
 
     // fill in some basic info
     memcpy(image->name, name, len + 1);
-    image->baselen = len - 4;
+    image->baselen = baselen;
     image->type = type;
     image->flags = flags;
     image->registration_sequence = registration_sequence;
 
-    // find out original extension
-    for (fmt = 0; fmt < IM_MAX; fmt++) {
-        if (!Q_stricmp(image->name + image->baselen + 1, img_loaders[fmt].ext)) {
-            break;
-        }
-    }
+	// Paril
+	if (!(flags & IF_DELAYED)) {
+		// find out original extension
+		for (fmt = 0; fmt < IM_MAX; fmt++) {
+			if (!Q_stricmp(image->name + image->baselen + 1, img_loaders[fmt].ext)) {
+				break;
+			}
+		}
 
-    // load the pic from disk
-    pic = NULL;
+		image->original_format = fmt;
+
+		// load the pic from disk
+		pic = NULL;
 
 #if USE_PNG || USE_JPG || USE_TGA
-    if (fmt == IM_MAX) {
-        // unknown extension, but give it a chance to load anyway
-        ret = try_other_formats(IM_MAX, image, &pic);
-        if (ret == Q_ERR_NOENT) {
-            // not found, change error to invalid path
-            ret = Q_ERR_INVALID_PATH;
-        }
-    } else if (r_override_textures->integer) {
-        // forcibly replace the extension
-        ret = try_other_formats(IM_MAX, image, &pic);
-    } else {
-        // first try with original extension
-        ret = _try_image_format(fmt, image, &pic);
-        if (ret == Q_ERR_NOENT) {
-            // retry with remaining extensions
-            ret = try_other_formats(fmt, image, &pic);
-        }
-    }
+		if (fmt == IM_MAX) {
+			// unknown extension, but give it a chance to load anyway
+			ret = try_other_formats(IM_MAX, image, &pic);
+			if (ret == Q_ERR_NOENT) {
+				// not found, change error to invalid path
+				ret = Q_ERR_INVALID_PATH;
+			}
+		} else if (r_override_textures->integer) {
+			// forcibly replace the extension
+			ret = try_other_formats(IM_MAX, image, &pic);
+		} else {
+			// first try with original extension
+			ret = _try_image_format(fmt, image, &pic);
+			if (ret == Q_ERR_NOENT) {
+				// retry with remaining extensions
+				ret = try_other_formats(fmt, image, &pic);
+			}
+		}
 
-    // if we are replacing 8-bit texture with a higher resolution 32-bit
-    // texture, we need to recover original image dimensions
-    if (fmt <= IM_WAL && ret > IM_WAL) {
-        get_image_dimensions(fmt, image);
-    }
+		// if we are replacing 8-bit texture with a higher resolution 32-bit
+		// texture, we need to recover original image dimensions
+		if (fmt <= IM_WAL && ret > IM_WAL) {
+			get_image_dimensions(fmt, image);
+		}
 #else
-    if (fmt == IM_MAX) {
-        ret = Q_ERR_INVALID_PATH;
-    } else {
-        ret = _try_image_format(fmt, image, &pic);
-    }
+		if (fmt == IM_MAX) {
+			ret = Q_ERR_INVALID_PATH;
+		} else {
+			ret = _try_image_format(fmt, image, &pic);
+		}
 #endif
 
-    if (ret < 0) {
-        memset(image, 0, sizeof(*image));
-        return ret;
-    }
+		if (ret < 0) {
+			memset(image, 0, sizeof(*image));
+			return ret;
+		}
+
+		// upload the image
+		IMG_Load(image, pic);
+	}
 
     List_Append(&r_imageHash[hash], &image->entry);
-
-    // upload the image
-    IMG_Load(image, pic);
 
     *image_p = image;
     return Q_ERR_SUCCESS;
@@ -1737,13 +2059,32 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 IMG_ForHandle
 ===============
 */
-image_t *IMG_ForHandle(qhandle_t h)
+image_t *IMG_ForHandle(pichandle_t h, gametype_t game)
 {
-    if (h < 0 || h >= r_numImages) {
-        Com_Error(ERR_FATAL, "%s: %d out of range", __func__, h);
-    }
+	picentry_t *entry;
 
-    return &r_images[h];
+	switch (h.pic.type)
+	{
+	case PICHANDLE_RAW:
+		if (h.pic.id < 0 || h.pic.id >= r_numImages) {
+			Com_Error(ERR_FATAL, "%s: %d out of range", __func__, h.pic.id);
+		}
+
+		return &r_images[h.pic.id];
+	case PICHANDLE_GAMED:
+		if (h.pic.id < 0 || h.pic.id > r_numPicScripts) {
+			Com_Error(ERR_DROP, "%s: %d out of range", __func__, h.pic.id);
+		}
+
+		entry = PSCR_EntryForHandle(h, game);
+
+		if (!entry->loaded)
+			return NULL;
+
+		return IMG_ForHandle(entry->pic, game);
+	}
+
+	return NULL;
 }
 
 /*
@@ -1751,26 +2092,43 @@ image_t *IMG_ForHandle(qhandle_t h)
 R_RegisterImage
 ===============
 */
-qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-                          imageflags_t flags, int *err_p)
+pichandle_t R_RegisterImage(const char *name, imagetype_t type,
+                            imageflags_t flags, int *err_p)
 {
     image_t     *image;
     char        fullname[MAX_QPATH];
     size_t      len;
     int         err;
+	pichandle_t	index = { 0 };
 
     // empty names are legal, silently ignore them
     if (!*name) {
         if (err_p)
             *err_p = Q_ERR_NAMETOOSHORT;
-        return 0;
-    }
+		return (pichandle_t) { 0 };
+    } else if (*name == '%') {
+		// model script
+		index.pic.type = PICHANDLE_GAMED;
+
+		picscript_t *script = PSCR_Find(name + 1);
+
+		if (script)
+		{
+		loadedscript:
+			index.pic.id = (script - r_picscripts) + 1;
+			return index;
+		}
+
+		// gotta load it
+		script = PSCR_Register(name + 1);
+		goto loadedscript;
+	}
 
     // no images = not initialized
     if (!r_numImages) {
         if (err_p)
             *err_p = Q_ERR_AGAIN;
-        return 0;
+		return (pichandle_t) { 0 };
     }
 
     if (type == IT_SKIN) {
@@ -1796,7 +2154,11 @@ qhandle_t R_RegisterImage(const char *name, imagetype_t type,
     if (image) {
         if (err_p)
             *err_p = Q_ERR_SUCCESS;
-        return image - r_images;
+		
+		index.pic.type = PICHANDLE_RAW;
+		index.pic.id = image - r_images;
+
+        return index;
     }
 
 fail:
@@ -1806,7 +2168,7 @@ fail:
     else if (err != Q_ERR_NOENT)
         Com_EPrintf("Couldn't load %s: %s\n", fullname, Q_ErrorString(err));
 
-    return 0;
+	return (pichandle_t) { 0 };
 }
 
 /*
@@ -1814,9 +2176,9 @@ fail:
 R_GetPicSize
 =============
 */
-bool R_GetPicSize(int *w, int *h, qhandle_t pic)
+bool R_GetPicSize(int *w, int *h, pichandle_t pic, gametype_t game)
 {
-    image_t *image = IMG_ForHandle(pic);
+    image_t *image = IMG_ForHandle(pic, game);
 
     if (w) {
         *w = image->width;
@@ -1862,6 +2224,9 @@ void IMG_FreeUnused(void)
     if (count) {
         Com_DPrintf("%s: %i images freed\n", __func__, count);
     }
+
+	PSCR_Untouch();
+	PSCR_Touch();
 }
 
 void IMG_FreeAll(void)
@@ -1889,6 +2254,18 @@ void IMG_FreeAll(void)
 
     // &r_images[0] == R_NOTEXTURE
     r_numImages = 1;
+
+	picscript_t *script;
+
+	for (i = 0, script = r_picscripts; i < r_numPicScripts; ++i, script++)
+	{
+		if (!script->name[0])
+			continue;
+
+		memset(script, 0, sizeof(*script));
+	}
+
+	r_numPicScripts = 0;
 }
 
 /*
@@ -1901,9 +2278,12 @@ void IMG_GetPalette(void)
 {
     byte        pal[768], *src, *data;
     int         i, ret, len;
+	const char	*loading = R_COLORMAP_Q2;
 
     // get the palette
-    len = FS_LoadFile(R_COLORMAP_PCX, (void **)&data);
+
+	// Load Q2 palette
+    len = FS_LoadFile(loading, (void **)&data);
     if (!data) {
         ret = len;
         goto fail;
@@ -1918,15 +2298,80 @@ void IMG_GetPalette(void)
     }
 
     for (i = 0, src = pal; i < 255; i++, src += 3) {
-        d_8to24table[i] = MakeColor(src[0], src[1], src[2], 255);
+		d_palettes[GAME_Q2][i] = MakeColor(src[0], src[1], src[2], 255);
     }
 
     // 255 is transparent
-    d_8to24table[i] = MakeColor(src[0], src[1], src[2], 0);
+	d_palettes[GAME_Q2][i] = MakeColor(src[0], src[1], src[2], 0);
+
+	// Load Q1 palette
+	loading = R_COLORMAP_Q1;
+	len = FS_LoadFile(loading, (void **)&data);
+
+	if (!data) {
+		ret = len;
+		goto fail;
+	}
+
+	if (ret < 0) {
+		FS_FreeFile(data);
+		goto fail;
+	}
+
+	for (i = 0, src = data; i < 255; i++, src += 3) {
+		d_palettes[GAME_Q1][i] = MakeColor(src[0], src[1], src[2], 255);
+	}
+
+	d_palettes[GAME_Q1][i] = MakeColor(src[0], src[1], src[2], 0);
+	FS_FreeFile(data);
+
+	// Load Doom palette
+	loading = R_COLORMAP_DOOM;
+	len = FS_LoadFile(loading, (void **)&data);
+
+	if (!data) {
+		ret = len;
+		goto fail;
+	}
+
+	if (ret < 0) {
+		FS_FreeFile(data);
+		goto fail;
+	}
+
+	for (i = 0, src = data; i < 255; i++, src += 3) {
+		d_palettes[GAME_DOOM][i] = MakeColor(src[0], src[1], src[2], 255);
+	}
+
+	d_palettes[GAME_DOOM][i] = MakeColor(src[0], src[1], src[2], 0);
+	FS_FreeFile(data);
+
+	// Load Duke palette
+	loading = R_COLORMAP_DUKE;
+	len = FS_LoadFile(loading, (void **)&data);
+
+	if (!data) {
+		ret = len;
+		goto fail;
+	}
+
+	if (ret < 0) {
+		FS_FreeFile(data);
+		goto fail;
+	}
+
+	for (i = 0, src = data; i < 255; i++, src += 3) {
+		d_palettes[GAME_DUKE][i] = MakeColor(src[0], src[1], src[2], 255);
+	}
+
+	// 255 is transparent
+	d_palettes[GAME_DUKE][i] = MakeColor(src[0], src[1], src[2], 0);
+	FS_FreeFile(data);
+
     return;
 
 fail:
-    Com_Error(ERR_FATAL, "Couldn't load %s: %s", R_COLORMAP_PCX, Q_ErrorString(ret));
+    Com_Error(ERR_FATAL, "Couldn't load %s: %s", loading, Q_ErrorString(ret));
 }
 
 static const cmdreg_t img_cmd[] = {
@@ -2000,4 +2445,5 @@ void IMG_Shutdown(void)
 {
     Cmd_Deregister(img_cmd);
     r_numImages = 0;
+	r_numPicScripts = 0;
 }

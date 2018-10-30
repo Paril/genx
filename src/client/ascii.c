@@ -26,6 +26,7 @@ STAT PROGRAMS TO TEXT
 ===============================================================================
 */
 
+#if 0
 #define TH_WIDTH    80
 #define TH_HEIGHT   40
 
@@ -292,83 +293,92 @@ static void TH_DrawLayoutString(char *dst, const char *s)
 
 static void SCR_ScoreShot_f(void)
 {
-    char buffer[(TH_WIDTH + 1) * TH_HEIGHT];
-    char path[MAX_OSPATH];
-    qhandle_t f;
+	char buffer[(TH_WIDTH + 1) * TH_HEIGHT];
+	char path[MAX_OSPATH];
+	qhandle_t f = 0;
     int i, ret;
 
-    if (cls.state != ca_active) {
-        Com_Printf("Must be in a level.\n");
-        return;
-    }
+	if (cls.state != ca_active) {
+		Com_Printf("Must be in a level.\n");
+		return;
+	}
 
-    if (Cmd_Argc() > 1) {
-        f = FS_EasyOpenFile(path, sizeof(path), FS_MODE_WRITE | FS_FLAG_TEXT,
-                            "scoreshots/", Cmd_Argv(1), ".txt");
-        if (!f) {
-            return;
-        }
+	if (Cmd_Argc() > 1) {
+		f = FS_EasyOpenFile(path, sizeof(path), FS_MODE_WRITE | FS_FLAG_TEXT,
+			"scoreshots/", Cmd_Argv(1), ".txt");
+		if (!f) {
+			return;
+		}
     } else {
-        // find a file name to save it to
-        for (i = 0; i < 1000; i++) {
-            Q_snprintf(path, sizeof(path), "scoreshots/quake%03d.txt", i);
-            ret = FS_FOpenFile(path, &f, FS_MODE_WRITE | FS_FLAG_TEXT | FS_FLAG_EXCL);
-            if (f) {
-                break;
-            }
-            if (ret != Q_ERR_EXIST) {
-                Com_EPrintf("Couldn't exclusively open %s for writing: %s\n",
-                            path, Q_ErrorString(ret));
-                return;
-            }
-        }
+		// find a file name to save it to
+		for (i = 0; i < 1000; i++) {
+			Q_snprintf(path, sizeof(path), "scoreshots/quake%03d.txt", i);
+			ret = FS_FOpenFile(path, &f, FS_MODE_WRITE | FS_FLAG_TEXT | FS_FLAG_EXCL);
+			if (f) {
+				break;
+			}
+			if (ret != Q_ERR_EXIST) {
+				Com_EPrintf("Couldn't exclusively open %s for writing: %s\n",
+					path, Q_ErrorString(ret));
+				return;
+			}
+		}
 
-        if (i == 1000) {
-            Com_EPrintf("All scoreshot slots are full.\n");
-            return;
-        }
-    }
+		if (i == 1000) {
+			Com_EPrintf("All scoreshot slots are full.\n");
+			return;
+		}
+	}
 
-    memset(buffer, ' ', sizeof(buffer));
-    for (i = 0; i < TH_HEIGHT; i++) {
-        buffer[i * (TH_WIDTH + 1) + TH_WIDTH] = '\n';
-    }
+	memset(buffer, ' ', sizeof(buffer));
+	for (i = 0; i < TH_HEIGHT; i++) {
+		buffer[i * (TH_WIDTH + 1) + TH_WIDTH] = '\n';
+	}
 
+// Generations
+/*
     TH_DrawLayoutString(buffer, cl.configstrings[CS_STATUSBAR]);
     TH_DrawLayoutString(buffer, cl.layout);
+*/
 
-    FS_Write(buffer, sizeof(buffer), f);
+	FS_Write(buffer, sizeof(buffer), f);
 
     if (FS_FCloseFile(f))
         Com_EPrintf("Error writing %s\n", path);
     else
-        Com_Printf("Wrote %s.\n", path);
+		Com_Printf("Wrote %s.\n", path);
 }
 
 static void SCR_ScoreDump_f(void)
 {
-    char buffer[(TH_WIDTH + 1) * TH_HEIGHT];
-    int i;
+	char buffer[(TH_WIDTH + 1) * TH_HEIGHT];
+	int i;
 
-    if (cls.state != ca_active) {
-        Com_Printf("Must be in a level.\n");
-        return;
-    }
+	if (cls.state != ca_active) {
+		Com_Printf("Must be in a level.\n");
+		return;
+	}
 
-    memset(buffer, ' ', sizeof(buffer));
-    for (i = 0; i < TH_HEIGHT - 1; i++) {
-        buffer[i * (TH_WIDTH + 1) + TH_WIDTH] = '\n';
-    }
-    buffer[i * (TH_WIDTH + 1) + TH_WIDTH] = 0;
+	memset(buffer, ' ', sizeof(buffer));
+	for (i = 0; i < TH_HEIGHT - 1; i++) {
+		buffer[i * (TH_WIDTH + 1) + TH_WIDTH] = '\n';
+	}
+	buffer[i * (TH_WIDTH + 1) + TH_WIDTH] = 0;
 
+// Generations
+/*
     TH_DrawLayoutString(buffer, cl.configstrings[CS_STATUSBAR]);
     TH_DrawLayoutString(buffer, cl.layout);
+*/
 
-    Com_Printf("%s\n", buffer);
+	Com_Printf("%s\n", buffer);
 }
+#endif
 
 void CL_InitAscii(void)
 {
-    Cmd_AddCommand("aashot", SCR_ScoreShot_f);
-    Cmd_AddCommand("aadump", SCR_ScoreDump_f);
+#if 0
+	Cmd_AddCommand("aashot", SCR_ScoreShot_f);
+	Cmd_AddCommand("aadump", SCR_ScoreDump_f);
+#endif
 }

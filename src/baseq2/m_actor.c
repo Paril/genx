@@ -223,7 +223,7 @@ void actor_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
 //  gi.sound (self, CHAN_VOICE, actor.sound_pain, 1, ATTN_NORM, 0);
 
     if ((other->client) && (random() < 0.4f)) {
@@ -281,6 +281,7 @@ void actor_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -369,7 +370,7 @@ void actor_attack(edict_t *self)
 
     self->monsterinfo.currentmove = &actor_move_attack;
     n = (Q_rand() & 15) + 3 + 7;
-    self->monsterinfo.pausetime = level.time + n * FRAMETIME;
+    self->monsterinfo.pausetime = level.time + n * 100;
 }
 
 
@@ -378,10 +379,10 @@ void actor_use(edict_t *self, edict_t *other, edict_t *activator)
     vec3_t      v;
 
     self->goalentity = self->movetarget = G_PickTarget(self->target);
-    if ((!self->movetarget) || (strcmp(self->movetarget->classname, "target_actor") != 0)) {
-        gi.dprintf("%s has bad target %s at %s\n", self->classname, self->target, vtos(self->s.origin));
+    if ((!self->movetarget) || self->movetarget->entitytype != ET_TARGET_ACTOR) {
+        gi.dprintf("entityid %i has bad target %s at %s\n", self->entitytype, self->target, vtos(self->s.origin));
         self->target = NULL;
-        self->monsterinfo.pausetime = 100000000;
+        self->monsterinfo.pausetime = GTIME_MAX;
         self->monsterinfo.stand(self);
         return;
     }
@@ -404,13 +405,13 @@ void SP_misc_actor(edict_t *self)
     }
 
     if (!self->targetname) {
-        gi.dprintf("untargeted %s at %s\n", self->classname, vtos(self->s.origin));
+        gi.dprintf("untargeted %s at %s\n", spawnTemp.classname, vtos(self->s.origin));
         G_FreeEdict(self);
         return;
     }
 
     if (!self->target) {
-        gi.dprintf("%s with no target at %s\n", self->classname, vtos(self->s.origin));
+        gi.dprintf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
         G_FreeEdict(self);
         return;
     }
@@ -530,7 +531,7 @@ void target_actor_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
         other->goalentity = other->movetarget;
 
     if (!other->movetarget && !other->enemy) {
-        other->monsterinfo.pausetime = level.time + 100000000;
+        other->monsterinfo.pausetime = GTIME_MAX;
         other->monsterinfo.stand(other);
     } else if (other->movetarget == other->goalentity) {
         VectorSubtract(other->movetarget->s.origin, other->s.origin, v);
@@ -541,7 +542,7 @@ void target_actor_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 void SP_target_actor(edict_t *self)
 {
     if (!self->targetname)
-        gi.dprintf("%s with no targetname at %s\n", self->classname, vtos(self->s.origin));
+        gi.dprintf("%s with no targetname at %s\n", spawnTemp.classname, vtos(self->s.origin));
 
     self->solid = SOLID_TRIGGER;
     self->touch = target_actor_touch;
@@ -552,12 +553,12 @@ void SP_target_actor(edict_t *self)
     if (self->spawnflags & 1) {
         if (!self->speed)
             self->speed = 200;
-        if (!st.height)
-            st.height = 200;
+        if (!spawnTemp.height)
+			spawnTemp.height = 200;
         if (self->s.angles[YAW] == 0)
             self->s.angles[YAW] = 360;
         G_SetMovedir(self->s.angles, self->movedir);
-        self->movedir[2] = st.height;
+        self->movedir[2] = spawnTemp.height;
     }
 
     gi.linkentity(self);

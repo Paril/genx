@@ -22,6 +22,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #if USE_SDL
 #include <SDL_opengl.h>
 #else
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif

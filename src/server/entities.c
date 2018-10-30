@@ -250,7 +250,7 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     MSG_WriteData(frame->areabits, frame->areabytes);
 
     // ignore some parts of playerstate if not recording demo
-    psFlags = 0;
+    psFlags = MSG_PS_NONE;
     if (!client->settings[CLS_RECORDING]) {
         if (client->settings[CLS_NOGUN]) {
             psFlags |= MSG_PS_IGNORE_GUNFRAMES;
@@ -273,13 +273,13 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
 
     clientEntityNum = 0;
     if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
-            clientEntityNum = frame->clientNum + 1;
-        }
-        if (client->settings[CLS_NOPREDICT]) {
-            psFlags |= MSG_PS_IGNORE_PREDICTION;
-        }
-        suppressed = client->frameflags;
+	    if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING]) {
+	        clientEntityNum = frame->clientNum + 1;
+	    }
+	    if (client->settings[CLS_NOPREDICT]) {
+	        psFlags |= MSG_PS_IGNORE_PREDICTION;
+	    }
+	    suppressed = client->frameflags;
     } else {
         suppressed = client->suppress_count;
     }
@@ -288,19 +288,19 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
     extraflags = MSG_WriteDeltaPlayerstate_Enhanced(oldstate, &frame->ps, psFlags);
 
     if (client->protocol == PROTOCOL_VERSION_Q2PRO) {
-        // delta encode the clientNum
-        if (client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_FIX) {
-            if (!oldframe || frame->clientNum != oldframe->clientNum) {
-                extraflags |= EPS_CLIENTNUM;
-                MSG_WriteByte(frame->clientNum);
-            }
-        } else {
-            int clientNum = oldframe ? oldframe->clientNum : 0;
-            if (clientNum != frame->clientNum) {
-                extraflags |= EPS_CLIENTNUM;
-                MSG_WriteByte(frame->clientNum);
-            }
-        }
+	    // delta encode the clientNum
+	    if (client->version < PROTOCOL_VERSION_Q2PRO_CLIENTNUM_FIX) {
+	        if (!oldframe || frame->clientNum != oldframe->clientNum) {
+	            extraflags |= EPS_CLIENTNUM;
+	            MSG_WriteByte(frame->clientNum);
+	        }
+	    } else {
+	        int clientNum = oldframe ? oldframe->clientNum : 0;
+	        if (clientNum != frame->clientNum) {
+	            extraflags |= EPS_CLIENTNUM;
+	            MSG_WriteByte(frame->clientNum);
+	        }
+	    }
     }
 
     // save 3 high bits of extraflags
@@ -332,7 +332,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
     server_entity_t *sent = &sv.entities[e];
     int i, j, k;
 
-    if (ent->s.renderfx & RF_BEAM)
+    if (ent->s.renderfx & (RF_BEAM | RF_PROJECTILE))
         return;
 
     if (!ent->linkcount)
@@ -347,13 +347,13 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
     if (state->event == EV_PLAYER_TELEPORT && !Q2PRO_OPTIMIZE(client)) {
         // other clients will lerp from old_origin on EV_PLAYER_TELEPORT...
         VectorCopy(state->origin, state->old_origin);
-        return;
+		return;
     }
 
     if (sent->create_framenum > sv.framenum - client->framediv) {
         // created between client frames
         VectorScale(sent->create_origin, 8.0f, state->old_origin);
-        return;
+		return;
     }
 
     // find the oldest valid origin
@@ -362,7 +362,7 @@ fix_old_origin(client_t *client, entity_packed_t *state, edict_t *ent, int e)
         k = j & ENT_HISTORY_MASK;
         if (sent->history[k].framenum == j) {
             VectorScale(sent->history[k].origin, 8.0f, state->old_origin);
-            return;
+			return;
         }
     }
 
@@ -475,7 +475,7 @@ void SV_BuildClientFrame(client_t *client)
             }
 
             // beams just check one point for PHS
-            if (ent->s.renderfx & RF_BEAM) {
+            if (ent->s.renderfx & (RF_BEAM | RF_PROJECTILE)) {
                 l = ent->clusternums[0];
                 if (!Q_IsBitSet(clientphs, l))
                     continue;
@@ -539,6 +539,8 @@ void SV_BuildClientFrame(client_t *client)
             state->solid = sv.entities[e].solid32;
         }
 
+		state->clip_contents = sv.entities[e].clip_contents;
+
         svs.next_entity++;
 
         if (++frame->num_entities == MAX_PACKET_ENTITIES) {
@@ -546,3 +548,4 @@ void SV_BuildClientFrame(client_t *client)
         }
     }
 }
+

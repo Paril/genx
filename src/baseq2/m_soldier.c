@@ -403,7 +403,7 @@ void soldier_pain(edict_t *self, edict_t *other, float kick, int damage)
         return;
     }
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
 
     n = self->s.skinnum | 1;
     if (n == 1)
@@ -485,7 +485,7 @@ void soldier_fire(edict_t *self, int flash_number)
         monster_fire_shotgun(self, start, aim, 2, 1, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SHOTGUN_COUNT, flash_index);
     } else {
         if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME))
-            self->monsterinfo.pausetime = level.time + (3 + Q_rand() % 8) * FRAMETIME;
+            self->monsterinfo.pausetime = level.time + (3 + Q_rand() % 8) * 100;
 
         monster_fire_bullet(self, start, aim, 2, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_index);
 
@@ -609,7 +609,7 @@ void soldier_duck_down(edict_t *self)
     self->monsterinfo.aiflags |= AI_DUCKED;
     self->maxs[2] -= 32;
     self->takedamage = DAMAGE_YES;
-    self->monsterinfo.pausetime = level.time + 1;
+    self->monsterinfo.pausetime = level.time + 100;
     gi.linkentity(self);
 }
 
@@ -629,7 +629,7 @@ void soldier_fire3(edict_t *self)
 
 void soldier_attack3_refire(edict_t *self)
 {
-    if ((level.time + 0.4f) < self->monsterinfo.pausetime)
+    if ((level.time + 400) < self->monsterinfo.pausetime)
         self->monsterinfo.nextframe = FRAME_attak303;
 }
 
@@ -803,7 +803,7 @@ void soldier_dodge(edict_t *self, edict_t *attacker, float eta)
         return;
     }
 
-    self->monsterinfo.pausetime = level.time + eta + 0.3f;
+    self->monsterinfo.pausetime = level.time + (eta * 1000) + 300;
     r = random();
 
     if (skill->value == 1) {
@@ -846,6 +846,7 @@ void soldier_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -1193,17 +1194,17 @@ void SP_monster_soldier_light(edict_t *self)
         return;
     }
 
-    SP_monster_soldier_x(self);
+	sound_pain_light = gi.soundindex("soldier/solpain2.wav");
+	sound_death_light = gi.soundindex("soldier/soldeth2.wav");
+	gi.modelindex("models/objects/laser/tris.md2");
+	gi.soundindex("misc/lasfly.wav");
+	gi.soundindex("soldier/solatck2.wav");
 
-    sound_pain_light = gi.soundindex("soldier/solpain2.wav");
-    sound_death_light = gi.soundindex("soldier/soldeth2.wav");
-    gi.modelindex("models/objects/laser/tris.md2");
-    gi.soundindex("misc/lasfly.wav");
-    gi.soundindex("soldier/solatck2.wav");
-
-    self->s.skinnum = 0;
-    self->health = 20;
-    self->gib_health = -30;
+	self->s.skinnum = 0;
+	self->health = 20;
+	self->gib_health = -30;
+	
+	SP_monster_soldier_x(self);
 }
 
 /*QUAKED monster_soldier (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -1215,15 +1216,15 @@ void SP_monster_soldier(edict_t *self)
         return;
     }
 
-    SP_monster_soldier_x(self);
+	sound_pain = gi.soundindex("soldier/solpain1.wav");
+	sound_death = gi.soundindex("soldier/soldeth1.wav");
+	gi.soundindex("soldier/solatck1.wav");
 
-    sound_pain = gi.soundindex("soldier/solpain1.wav");
-    sound_death = gi.soundindex("soldier/soldeth1.wav");
-    gi.soundindex("soldier/solatck1.wav");
-
-    self->s.skinnum = 2;
-    self->health = 30;
-    self->gib_health = -30;
+	self->s.skinnum = 2;
+	self->health = 30;
+	self->gib_health = -30;
+	
+	SP_monster_soldier_x(self);
 }
 
 /*QUAKED monster_soldier_ss (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
@@ -1235,13 +1236,13 @@ void SP_monster_soldier_ss(edict_t *self)
         return;
     }
 
-    SP_monster_soldier_x(self);
+	sound_pain_ss = gi.soundindex("soldier/solpain3.wav");
+	sound_death_ss = gi.soundindex("soldier/soldeth3.wav");
+	gi.soundindex("soldier/solatck3.wav");
 
-    sound_pain_ss = gi.soundindex("soldier/solpain3.wav");
-    sound_death_ss = gi.soundindex("soldier/soldeth3.wav");
-    gi.soundindex("soldier/solatck3.wav");
-
-    self->s.skinnum = 4;
-    self->health = 40;
-    self->gib_health = -30;
+	self->s.skinnum = 4;
+	self->health = 40;
+	self->gib_health = -30;
+	
+	SP_monster_soldier_x(self);
 }

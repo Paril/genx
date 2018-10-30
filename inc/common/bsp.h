@@ -104,8 +104,8 @@ typedef struct mnode_s {
     /* ======> */
     cplane_t            *plane;     // never NULL to differentiate from leafs
 #if USE_REF
-    vec3_t              mins;
-    vec3_t              maxs;
+    vec3_t      mins;
+    vec3_t      maxs;
 
     int                 visframe;
 #endif

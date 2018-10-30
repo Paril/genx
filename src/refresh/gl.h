@@ -49,7 +49,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
 #define MAX_PROGRAMS    64
-#define NUM_TEXNUMS     6
+#define NUM_TEXNUMS     7 // Generations
 
 typedef struct {
     const char *name;
@@ -101,6 +101,7 @@ typedef struct {
 typedef struct {
     refdef_t        fd;
     vec3_t          viewaxis[3];
+	vec3_t			viewaxis_nopitch[3];
     GLfloat         viewmatrix[16];
     int             visframe;
     int             drawframe;
@@ -134,9 +135,9 @@ typedef struct {
     int     ver_es;
     int     ver_sl;
     int     caps;
-    int     colorbits;
-    int     depthbits;
-    int     stencilbits;
+    int         colorbits;
+    int         depthbits;
+    int         stencilbits;
 } glConfig_t;
 
 extern glStatic_t gl_static;
@@ -215,7 +216,7 @@ glCullResult_t GL_CullSphere(const vec3_t origin, float radius);
 glCullResult_t GL_CullLocalBox(const vec3_t origin, vec3_t bounds[2]);
 
 bool GL_AllocBlock(int width, int height, int *inuse,
-                   int w, int h, int *s, int *t);
+                       int w, int h, int *s, int *t);
 
 void GL_MultMatrix(GLfloat *out, const GLfloat *a, const GLfloat *b);
 void GL_RotateForEntity(vec3_t origin);
@@ -259,17 +260,66 @@ typedef struct maliasmesh_s {
     int             numskins;
 } maliasmesh_t;
 
-typedef struct mspriteframe_s {
+typedef struct image_s image_t;
+
+typedef struct {
     int             width, height;
     int             origin_x, origin_y;
-    struct image_s  *image;
+    image_t			*image;
 } mspriteframe_t;
+
+typedef struct {
+	int			width, height;
+	int			origin_x, origin_y;
+	bool		invert_x;
+	image_t		*image;
+} mspritedirframe_t;
+
+typedef struct {
+	mspritedirframe_t *directions;
+} mspritedirframes_t;
+
+typedef int modeltype_t;
+
+typedef struct {
+	modelhandle_t		model;
+} mweaponscript_sprite_t;
+
+typedef struct {
+	bool				draw;
+	int					sprite_frame;
+	vec2_t				translate;
+} mweaponscript_frame_draw_t;
+
+typedef struct {
+	mweaponscript_frame_draw_t	*draws; // count = num_sprites
+	vec2_t						translate;
+	bool						lerp;
+} mweaponscript_frame_t;
+
+// total = sizeof(mweaponscript_t) + (sizeof(mweaponscript_sprite_t) * num_sprites) + ((sizeof(mweaponscript_frame_t) + sizeof(mweaponscript_frame_draw_t) * num_sprites) * num_frames)
+typedef struct {
+	vec2_t					view;
+
+	int						num_sprites;
+	int						num_frames;
+
+	vec2_t					translate;
+
+	mweaponscript_sprite_t	*sprites; // count = num_sprites
+	mweaponscript_frame_t	*frames; // count = num_frames
+} mweaponscript_t;
 
 typedef struct model_s {
     enum {
         MOD_FREE,
         MOD_ALIAS,
         MOD_SPRITE,
+
+		// Generations
+		MOD_DIR_SPRITE,
+		MOD_WEAPONSCRIPT,
+
         MOD_EMPTY
     } type;
 
@@ -283,8 +333,16 @@ typedef struct model_s {
     int nummeshes;
     struct maliasmesh_s *meshes;
 
+	// Generations
+	bool nolerp;
+
     // sprite models
-    struct mspriteframe_s *spriteframes;
+	float radius;
+	int numdirs;
+
+    mspriteframe_t 		*spriteframes;
+	mspritedirframes_t	*spritedirframes;
+	mweaponscript_t		*weaponscript;
 } model_t;
 
 // xyz[3] | color[1]  | st[2]    | lmst[2]
@@ -296,8 +354,8 @@ void MOD_FreeAll(void);
 void MOD_Init(void);
 void MOD_Shutdown(void);
 
-model_t *MOD_ForHandle(qhandle_t h);
-qhandle_t R_RegisterModel(const char *name);
+model_t *MOD_ForHandle(modelhandle_t h, gametype_t game);
+modelhandle_t R_RegisterModel(const char *name);
 
 /*
  * gl_surf.c
@@ -335,8 +393,8 @@ void GL_LoadWorld(const char *name);
  */
 typedef enum {
     GLS_DEFAULT             = 0,
-    GLS_DEPTHMASK_FALSE     = (1 <<  0),
-    GLS_DEPTHTEST_DISABLE   = (1 <<  1),
+    GLS_DEPTHMASK_FALSE     = (1 << 0),
+    GLS_DEPTHTEST_DISABLE   = (1 << 1),
     GLS_CULL_DISABLE        = (1 <<  2),
     GLS_BLEND_BLEND         = (1 <<  3),
     GLS_BLEND_ADD           = (1 <<  4),
@@ -348,10 +406,13 @@ typedef enum {
     GLS_WARP_ENABLE         = (1 << 10),
     GLS_INTENSITY_ENABLE    = (1 << 11),
     GLS_SHADE_SMOOTH        = (1 << 12),
+
+	// Generations
+	GLS_BLEND_INVERT		= (1 << 13)
 } glStateBits_t;
 
 #define GLS_BLEND_MASK \
-    (GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE)
+    (GLS_BLEND_BLEND | GLS_BLEND_ADD | GLS_BLEND_MODULATE | GLS_BLEND_INVERT)
 
 #define GLS_COMMON_MASK \
     (GLS_DEPTHMASK_FALSE | GLS_DEPTHTEST_DISABLE | GLS_CULL_DISABLE | GLS_BLEND_MASK)
@@ -513,12 +574,16 @@ void GL_Blend(void);
  */
 
 // auto textures
-#define TEXNUM_DEFAULT  gl_static.texnums[0]
-#define TEXNUM_SCRAP    gl_static.texnums[1]
-#define TEXNUM_PARTICLE gl_static.texnums[2]
-#define TEXNUM_BEAM     gl_static.texnums[3]
-#define TEXNUM_WHITE    gl_static.texnums[4]
-#define TEXNUM_BLACK    gl_static.texnums[5]
+#define TEXNUM_DEFAULT     gl_static.texnums[0]
+#define TEXNUM_SCRAP       gl_static.texnums[1]
+#define TEXNUM_PARTICLE    gl_static.texnums[2]
+#define TEXNUM_BEAM        gl_static.texnums[3]
+#define TEXNUM_WHITE       gl_static.texnums[4]
+#define TEXNUM_BLACK       gl_static.texnums[5]
+#define TEXNUM_PARTICLE_Q1 gl_static.texnums[6]
+
+#define SCRAP_BLOCK_WIDTH       256
+#define SCRAP_BLOCK_HEIGHT      256
 
 void Scrap_Upload(void);
 

@@ -431,7 +431,7 @@ void jorg_pain(edict_t *self, edict_t *other, float kick, int damage)
             return;
 
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     if (skill->value == 3)
         return;     // no pain anims in nightmare
 
@@ -627,7 +627,7 @@ bool Jorg_CheckAttack(edict_t *self)
 
     if (random() < chance) {
         self->monsterinfo.attack_state = AS_MISSILE;
-        self->monsterinfo.attack_finished = level.time + 2 * random();
+        self->monsterinfo.attack_finished = level.time + 2000 * random();
         return true;
     }
 

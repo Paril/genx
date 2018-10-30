@@ -292,7 +292,7 @@ void tank_pain(edict_t *self, edict_t *other, float kick, int damage)
             return;
     }
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
 
     if (skill->value == 3)
@@ -654,7 +654,7 @@ void tank_attack(edict_t *self)
             self->monsterinfo.currentmove = &tank_move_attack_chain;
         else if (r < 0.66f) {
             self->monsterinfo.currentmove = &tank_move_attack_pre_rocket;
-            self->pain_debounce_time = level.time + 5.0f;   // no pain for a while
+            self->pain_debounce_time = level.time + 5000;    // no pain for a while
         } else
             self->monsterinfo.currentmove = &tank_move_attack_blast;
     }
@@ -671,6 +671,7 @@ void tank_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, -0);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -779,7 +780,7 @@ void SP_monster_tank(edict_t *self)
     gi.soundindex("tank/tnkatk2e.wav");
     gi.soundindex("tank/tnkatck3.wav");
 
-    if (strcmp(self->classname, "monster_tank_commander") == 0) {
+    if (self->entitytype == ET_MONSTER_TANK_COMMANDER) {
         self->health = 1000;
         self->gib_health = -225;
     } else {
@@ -807,6 +808,6 @@ void SP_monster_tank(edict_t *self)
 
     walkmonster_start(self);
 
-    if (strcmp(self->classname, "monster_tank_commander") == 0)
+    if (self->entitytype == ET_MONSTER_TANK_COMMANDER)
         self->s.skinnum = 2;
 }

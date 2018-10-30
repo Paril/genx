@@ -549,7 +549,7 @@ void makron_pain(edict_t *self, edict_t *other, float kick, int damage)
         if (random() < 0.2f)
             return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     if (skill->value == 3)
         return;     // no pain anims in nightmare
 
@@ -603,10 +603,10 @@ Makron Torso. This needs to be spawned in
 void makron_torso_think(edict_t *self)
 {
     if (++self->s.frame < 365)
-        self->nextthink = level.time + FRAMETIME;
+        self->nextthink = level.time + game.frametime;
     else {
         self->s.frame = 346;
-        self->nextthink = level.time + FRAMETIME;
+        self->nextthink = level.time + game.frametime;
     }
 }
 
@@ -619,7 +619,7 @@ void makron_torso(edict_t *ent)
     ent->s.frame = 346;
     ent->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
     ent->think = makron_torso_think;
-    ent->nextthink = level.time + 2 * FRAMETIME;
+    ent->nextthink = level.time + (2 * game.frametime);
     ent->s.sound = gi.soundindex("makron/spine.wav");
     gi.linkentity(ent);
 }
@@ -635,6 +635,7 @@ void makron_dead(edict_t *self)
     VectorSet(self->maxs, 60, 60, 72);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
@@ -740,7 +741,7 @@ bool Makron_CheckAttack(edict_t *self)
 
     if (random() < chance) {
         self->monsterinfo.attack_state = AS_MISSILE;
-        self->monsterinfo.attack_finished = level.time + 2 * random();
+        self->monsterinfo.attack_finished = level.time + 2000 * random();
         return true;
     }
 
@@ -859,7 +860,7 @@ void MakronToss(edict_t *self)
     edict_t *ent;
 
     ent = G_Spawn();
-    ent->nextthink = level.time + 0.8f;
+    ent->nextthink = level.time + (game.frametime * 8);
     ent->think = MakronSpawn;
     ent->target = self->target;
     VectorCopy(self->s.origin, ent->s.origin);

@@ -142,7 +142,7 @@ bool SV_EdictIsVisible(cm_t *cm, edict_t *ent, byte *mask)
         }
     }
 
-    return false;   // not visible
+    return false;  // not visible
 }
 
 /*
@@ -289,21 +289,31 @@ void PF_LinkEdict(edict_t *ent)
     // encode the size into the entity_state for client prediction
     switch (ent->solid) {
     case SOLID_BBOX:
-        if ((ent->svflags & SVF_DEADMONSTER) || VectorCompare(ent->mins, ent->maxs)) {
+		// Generations
+        if (/*(ent->s.clip_contents & CONTENTS_DEADMONSTER) || */VectorCompare(ent->mins, ent->maxs)) {
             ent->s.solid = 0;
             sent->solid32 = 0;
         } else {
             ent->s.solid = MSG_PackSolid16(ent->mins, ent->maxs);
             sent->solid32 = MSG_PackSolid32(ent->mins, ent->maxs);
         }
+
+		// Generations
+		sent->clip_contents = ent->s.clip_contents;
         break;
     case SOLID_BSP:
         ent->s.solid = PACKED_BSP;      // a SOLID_BBOX will never create this value
         sent->solid32 = PACKED_BSP;     // FIXME: use 255?
+
+		// Generations
+		sent->clip_contents = ent->s.clip_contents;
         break;
     default:
         ent->s.solid = 0;
         sent->solid32 = 0;
+
+		// Generations
+		sent->clip_contents = 0;
         break;
     }
 
@@ -441,7 +451,8 @@ static mnode_t *SV_HullForEntity(edict_t *ent)
     }
 
     // create a temp hull from bounding box sizes
-    return CM_HeadnodeForBox(ent->mins, ent->maxs);
+	// Generations
+    return CM_HeadnodeForBox(ent->mins, ent->maxs, ent->s.clip_contents);
 }
 
 /*
@@ -519,11 +530,11 @@ static void SV_ClipMoveToEntities(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t
             if (passedict->owner == touch)
                 continue;    // don't clip against owner
         }
-
+/*		// Generations
         if (!(contentmask & CONTENTS_DEADMONSTER)
             && (touch->svflags & SVF_DEADMONSTER))
             continue;
-
+*/
         // might intersect, so do an exact clip
         CM_TransformedBoxTrace(&trace, start, end, mins, maxs,
                                SV_HullForEntity(touch), contentmask,
@@ -551,7 +562,8 @@ trace_t q_gameabi SV_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end,
     }
 
     // work around game bugs
-    if (++sv.tracecount > 10000) {
+	// Generations: lots of traces done here
+    if (++sv.tracecount > (INT_MAX - 2)) {
         Com_EPrintf("%s: runaway loop avoided\n", __func__);
         memset(&trace, 0, sizeof(trace));
         trace.fraction = 1;

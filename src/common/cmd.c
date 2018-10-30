@@ -765,12 +765,12 @@ typedef struct cmd_function_s {
     char            *name;
 } cmd_function_t;
 
-static list_t   cmd_functions;      // possible commands to execute
-static list_t   cmd_hash[CMD_HASH_SIZE];
+static  list_t  cmd_functions;        // possible commands to execute
+static  list_t  cmd_hash[CMD_HASH_SIZE];
 
-static int      cmd_argc;
-static char     *cmd_argv[MAX_STRING_TOKENS]; // pointers to cmd_data[]
-static char     *cmd_null_string = "";
+static  int     cmd_argc;
+static  char    *cmd_argv[MAX_STRING_TOKENS]; // pointers to cmd_data[]
+static  char    *cmd_null_string = "";
 
 // complete command string, left untouched
 static char     cmd_string[MAX_STRING_CHARS];
@@ -783,7 +783,7 @@ static int      cmd_offsets[MAX_STRING_TOKENS];
 static char     cmd_data[MAX_STRING_CHARS];
 
 // normalized command arguments
-static char     cmd_args[MAX_STRING_CHARS];
+static  char    cmd_args[MAX_STRING_CHARS];
 
 int             cmd_optind;
 char            *cmd_optarg;
@@ -1115,7 +1115,7 @@ static char *parse_macro(char *out, const char *in)
             if (*in == '$') {   // allow $var$ syntax
                 in++;
                 break;
-            }
+        }
             *out++ = *in++;
         }
     }
@@ -1574,7 +1574,7 @@ void Cmd_ExecuteString(cmdbuf_t *buf, const char *text)
 
 int Cmd_ExecuteFile(const char *path, unsigned flags)
 {
-    char *f;
+    char    *f;
     int len, ret;
     cmdbuf_t *buf;
 

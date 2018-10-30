@@ -17,11 +17,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "g_local.h"
-#include "g_ptrs.h"
 
 //#define _DEBUG
 typedef struct {
-    fieldtype_t type;
+	fieldtype_t		type;
 #ifdef _DEBUG
     char *name;
 #endif
@@ -30,551 +29,153 @@ typedef struct {
 } save_field_t;
 
 #ifdef _DEBUG
-#define _FA(type, name, size) { type, #name, _OFS(name), size }
+#define FA(type, name, size) { type, #name, OFS(name), size }
 #else
-#define _FA(type, name, size) { type, _OFS(name), size }
+#define FA(type, name, size) { type, OFS(name), size }
 #endif
-#define _F(type, name) _FA(type, name, 1)
-#define SZ(name, size) _FA(F_ZSTRING, name, size)
-#define BA(name, size) _FA(F_BYTE, name, size)
-#define B(name) BA(name, 1)
-#define SA(name, size) _FA(F_SHORT, name, size)
-#define S(name) SA(name, 1)
-#define IA(name, size) _FA(F_INT, name, size)
-#define I(name) IA(name, 1)
-#define OA(name, size) _FA(F_BOOL, name, size)
-#define O(name) OA(name, 1)
-#define FA(name, size) _FA(F_FLOAT, name, size)
-#define F(name) FA(name, 1)
-#define L(name) _F(F_LSTRING, name)
-#define V(name) _F(F_VECTOR, name)
-#define T(name) _F(F_ITEM, name)
-#define E(name) _F(F_EDICT, name)
-#define P(name, type) _FA(F_POINTER, name, type)
+
+#define T(name) FA(F_ITEM, name, sizeof(itemid_e))
+#define L(name) FA(F_LSTRING, name, sizeof(char*))
+#define E(name) FA(F_EDICT, name, sizeof(short))
+#define NOP(name, size) FA(F_IGNORE, name, size)
+
 
 static const save_field_t entityfields[] = {
-#define _OFS FOFS
-    V(s.origin),
-    V(s.angles),
-    V(s.old_origin),
-    I(s.modelindex),
-    I(s.modelindex2),
-    I(s.modelindex3),
-    I(s.modelindex4),
-    I(s.frame),
-    I(s.skinnum),
-    I(s.effects),
-    I(s.renderfx),
-    I(s.solid),
-    I(s.sound),
-    I(s.event),
+#define OFS FOFS
+	NOP(client, sizeof(gclient_t*)),
+	NOP(area, sizeof(list_t)),
+	E(owner),
+	L(model),
+	L(message),
+	L(target),
+	L(targetname),
+	L(killtarget),
+	L(team),
+	L(pathtarget),
+	L(deathtarget),
+	L(combattarget),
+	E(target_ent),
+	L(map),
+	E(chain),
+	E(enemy),
+	E(oldenemy),
+	E(activator),
+	E(groundentity),
+	E(teamchain),
+	E(teammaster),
 
-    // [...]
+	E(mynoise),
+	E(mynoise2),
+	T(item),
 
-    I(svflags),
-    V(mins),
-    V(maxs),
-    V(absmin),
-    V(absmax),
-    V(size),
-    I(solid),
-    I(clipmask),
-    E(owner),
+	T(real_item),
+	E(trigger_field),
 
-    I(movetype),
-    I(flags),
-
-    L(model),
-    F(freetime),
-
-    L(message),
-    L(classname),
-    I(spawnflags),
-
-    F(timestamp),
-
-    L(target),
-    L(targetname),
-    L(killtarget),
-    L(team),
-    L(pathtarget),
-    L(deathtarget),
-    L(combattarget),
-    E(target_ent),
-
-    F(speed),
-    F(accel),
-    F(decel),
-    V(movedir),
-    V(pos1),
-    V(pos2),
-
-    V(velocity),
-    V(avelocity),
-    I(mass),
-    F(air_finished),
-    F(gravity),
-
-    E(goalentity),
-    E(movetarget),
-    F(yaw_speed),
-    F(ideal_yaw),
-
-    F(nextthink),
-    P(prethink, P_prethink),
-    P(think, P_think),
-    P(blocked, P_blocked),
-    P(touch, P_touch),
-    P(use, P_use),
-    P(pain, P_pain),
-    P(die, P_die),
-
-    F(touch_debounce_time),
-    F(pain_debounce_time),
-    F(damage_debounce_time),
-    F(fly_sound_debounce_time),
-    F(last_move_time),
-
-    I(health),
-    I(max_health),
-    I(gib_health),
-    I(deadflag),
-    F(show_hostile),
-
-    F(powerarmor_time),
-
-    L(map),
-
-    I(viewheight),
-    I(takedamage),
-    I(dmg),
-    I(radius_dmg),
-    F(dmg_radius),
-    I(sounds),
-    I(count),
-
-    E(chain),
-    E(enemy),
-    E(oldenemy),
-    E(activator),
-    E(groundentity),
-    I(groundentity_linkcount),
-    E(teamchain),
-    E(teammaster),
-
-    E(mynoise),
-    E(mynoise2),
-
-    I(noise_index),
-    I(noise_index2),
-    F(volume),
-    F(attenuation),
-
-    F(wait),
-    F(delay),
-    F(random),
-
-    F(teleport_time),
-
-    I(watertype),
-    I(waterlevel),
-
-    V(move_origin),
-    V(move_angles),
-
-    I(light_level),
-
-    I(style),
-
-    T(item),
-
-    V(moveinfo.start_origin),
-    V(moveinfo.start_angles),
-    V(moveinfo.end_origin),
-    V(moveinfo.end_angles),
-
-    I(moveinfo.sound_start),
-    I(moveinfo.sound_middle),
-    I(moveinfo.sound_end),
-
-    F(moveinfo.accel),
-    F(moveinfo.speed),
-    F(moveinfo.decel),
-    F(moveinfo.distance),
-
-    F(moveinfo.wait),
-
-    I(moveinfo.state),
-    V(moveinfo.dir),
-    F(moveinfo.current_speed),
-    F(moveinfo.move_speed),
-    F(moveinfo.next_speed),
-    F(moveinfo.remaining_distance),
-    F(moveinfo.decel_distance),
-    P(moveinfo.endfunc, P_moveinfo_endfunc),
-
-    P(monsterinfo.currentmove, P_monsterinfo_currentmove),
-    I(monsterinfo.aiflags),
-    I(monsterinfo.nextframe),
-    F(monsterinfo.scale),
-
-    P(monsterinfo.stand, P_monsterinfo_stand),
-    P(monsterinfo.idle, P_monsterinfo_idle),
-    P(monsterinfo.search, P_monsterinfo_search),
-    P(monsterinfo.walk, P_monsterinfo_walk),
-    P(monsterinfo.run, P_monsterinfo_run),
-    P(monsterinfo.dodge, P_monsterinfo_dodge),
-    P(monsterinfo.attack, P_monsterinfo_attack),
-    P(monsterinfo.melee, P_monsterinfo_melee),
-    P(monsterinfo.sight, P_monsterinfo_sight),
-    P(monsterinfo.checkattack, P_monsterinfo_checkattack),
-
-    F(monsterinfo.pausetime),
-    F(monsterinfo.attack_finished),
-
-    V(monsterinfo.saved_goal),
-    F(monsterinfo.search_time),
-    F(monsterinfo.trail_time),
-    V(monsterinfo.last_sighting),
-    I(monsterinfo.attack_state),
-    I(monsterinfo.lefty),
-    F(monsterinfo.idle_time),
-    I(monsterinfo.linkcount),
-
-    I(monsterinfo.power_armor_type),
-    I(monsterinfo.power_armor_power),
-
-    {0}
-#undef _OFS
+	{0}
+#undef OFS
 };
 
 static const save_field_t levelfields[] = {
-#define _OFS LLOFS
-    I(framenum),
-    F(time),
-
-    SZ(level_name, MAX_QPATH),
-    SZ(mapname, MAX_QPATH),
-    SZ(nextmap, MAX_QPATH),
-
-    F(intermissiontime),
-    L(changemap),
-    I(exitintermission),
-    V(intermission_origin),
-    V(intermission_angle),
-
-    E(sight_client),
-
-    E(sight_entity),
-    I(sight_entity_framenum),
-    E(sound_entity),
-    I(sound_entity_framenum),
-    E(sound2_entity),
-    I(sound2_entity_framenum),
-
-    I(pic_health),
-
-    I(total_secrets),
-    I(found_secrets),
-
-    I(total_goals),
-    I(found_goals),
-
-    I(total_monsters),
-    I(killed_monsters),
-
-    I(body_que),
-
-    I(power_cubes),
-
-    {0}
-#undef _OFS
+#define OFS LLOFS
+	L(changemap),
+	E(sight_client),
+	E(sight_entity),
+	E(sound_entity),
+	E(sound2_entity),
+	E(current_entity),
+	{0}
+#undef OFS
 };
 
+
 static const save_field_t clientfields[] = {
-#define _OFS CLOFS
-    I(ps.pmove.pm_type),
-
-    SA(ps.pmove.origin, 3),
-    SA(ps.pmove.velocity, 3),
-    B(ps.pmove.pm_flags),
-    B(ps.pmove.pm_time),
-    S(ps.pmove.gravity),
-    SA(ps.pmove.delta_angles, 3),
-
-    V(ps.viewangles),
-    V(ps.viewoffset),
-    V(ps.kick_angles),
-
-    V(ps.gunangles),
-    V(ps.gunoffset),
-    I(ps.gunindex),
-    I(ps.gunframe),
-
-    FA(ps.blend, 4),
-
-    F(ps.fov),
-
-    I(ps.rdflags),
-
-    SA(ps.stats, MAX_STATS),
-
-    SZ(pers.userinfo, MAX_INFO_STRING),
-    SZ(pers.netname, 16),
-    I(pers.hand),
-
-    O(pers.connected),
-
-    I(pers.health),
-    I(pers.max_health),
-    I(pers.savedFlags),
-
-    I(pers.selected_item),
-    IA(pers.inventory, MAX_ITEMS),
-
-    I(pers.max_bullets),
-    I(pers.max_shells),
-    I(pers.max_rockets),
-    I(pers.max_grenades),
-    I(pers.max_cells),
-    I(pers.max_slugs),
-
-    T(pers.weapon),
-    T(pers.lastweapon),
-
-    I(pers.power_cubes),
-    I(pers.score),
-
-    I(pers.game_helpchanged),
-    I(pers.helpchanged),
-
-    O(pers.spectator),
-
-    O(showscores),
-    O(showinventory),
-    O(showhelp),
-    O(showhelpicon),
-
-    I(ammo_index),
-
-    T(newweapon),
-
-    I(damage_armor),
-    I(damage_parmor),
-    I(damage_blood),
-    I(damage_knockback),
-    V(damage_from),
-
-    F(killer_yaw),
-
-    I(weaponstate),
-
-    V(kick_angles),
-    V(kick_origin),
-    F(v_dmg_roll),
-    F(v_dmg_pitch),
-    F(v_dmg_time),
-    F(fall_time),
-    F(fall_value),
-    F(damage_alpha),
-    F(bonus_alpha),
-    V(damage_blend),
-    V(v_angle),
-    F(bobtime),
-    V(oldviewangles),
-    V(oldvelocity),
-
-    F(next_drown_time),
-    I(old_waterlevel),
-    I(breather_sound),
-
-    I(machinegun_shots),
-
-    I(anim_end),
-    I(anim_priority),
-    O(anim_duck),
-    O(anim_run),
-
-    // powerup timers
-    I(quad_framenum),
-    I(invincible_framenum),
-    I(breather_framenum),
-    I(enviro_framenum),
-
-    O(grenade_blew_up),
-    F(grenade_time),
-    I(silencer_shots),
-    I(weapon_sound),
-
-    F(pickup_msg_time),
-
-    {0}
-#undef _OFS
+#define OFS CLOFS
+	T(pers.weapon),
+	T(pers.lastweapon),
+	T(gunstates[GUN_MAIN].newweapon),
+	E(chase_target),
+	{0}
+#undef OFS
 };
 
 static const save_field_t gamefields[] = {
-#define _OFS GLOFS
-    SZ(helpmessage1, 512),
-    SZ(helpmessage2, 512),
-
-    I(maxclients),
-    I(maxentities),
-
-    I(serverflags),
-
-    I(num_items),
-
-    O(autosaved),
-
-    {0}
-#undef _OFS
+#define OFS GLOFS
+	NOP(clients, sizeof(gclient_t*)),
+	{0}
+#undef OFS
 };
 
 //=========================================================
 
 static void write_data(void *buf, size_t len, FILE *f)
 {
-    if (fwrite(buf, 1, len, f) != len) {
+	if (fwrite(buf, 1, len, f) != len) {
         gi.error("%s: couldn't write %"PRIz" bytes", __func__, len);
-    }
+	}
+}
+
+static void write_byte(FILE *f, byte v)
+{
+	write_data(&v, sizeof(v), f);
 }
 
 static void write_short(FILE *f, short v)
 {
-    v = LittleShort(v);
-    write_data(&v, sizeof(v), f);
+	v = LittleShort(v);
+	write_data(&v, sizeof(v), f);
 }
 
 static void write_int(FILE *f, int v)
 {
-    v = LittleLong(v);
-    write_data(&v, sizeof(v), f);
-}
-
-static void write_float(FILE *f, float v)
-{
-    v = LittleFloat(v);
-    write_data(&v, sizeof(v), f);
+	v = LittleLong(v);
+	write_data(&v, sizeof(v), f);
 }
 
 static void write_string(FILE *f, char *s)
 {
-    size_t len;
+	size_t len;
 
-    if (!s) {
-        write_int(f, -1);
-        return;
-    }
+	if (!s) {
+		write_int(f, -1);
+		return;
+	}
 
-    len = strlen(s);
-    write_int(f, len);
-    write_data(s, len, f);
+	len = strlen(s);
+	write_int(f, len);
+	write_data(s, len, f);
 }
 
-static void write_vector(FILE *f, vec_t *v)
+void write_rle(FILE *f, void *base, size_t len)
 {
-    write_float(f, v[0]);
-    write_float(f, v[1]);
-    write_float(f, v[2]);
-}
-
-static void write_index(FILE *f, void *p, size_t size, void *start, int max_index)
-{
-    size_t diff;
-
-    if (!p) {
-        write_int(f, -1);
-        return;
-    }
-
-    if (p < start || (byte *)p > (byte *)start + max_index * size) {
-        gi.error("%s: pointer out of range: %p", __func__, p);
-    }
-
-    diff = (byte *)p - (byte *)start;
-    if (diff % size) {
-        gi.error("%s: misaligned pointer: %p", __func__, p);
-    }
-    write_int(f, (int)(diff / size));
-}
-
-static void write_pointer(FILE *f, void *p, ptr_type_t type)
-{
-    const save_ptr_t *ptr;
-    int i;
-
-    if (!p) {
-        write_int(f, -1);
-        return;
-    }
-
-    for (i = 0, ptr = save_ptrs; i < num_save_ptrs; i++, ptr++) {
-        if (ptr->type == type && ptr->ptr == p) {
-            write_int(f, i);
-            return;
-        }
-    }
-
-    gi.error("%s: unknown pointer: %p", __func__, p);
+	fwrite(base, len, 1, f);
 }
 
 static void write_field(FILE *f, const save_field_t *field, void *base)
 {
     void *p = (byte *)base + field->ofs;
-    int i;
+    edict_t *ent;
 
-    switch (field->type) {
-    case F_BYTE:
-        write_data(p, field->size, f);
-        break;
-    case F_SHORT:
-        for (i = 0; i < field->size; i++) {
-            write_short(f, ((short *)p)[i]);
-        }
-        break;
-    case F_INT:
-        for (i = 0; i < field->size; i++) {
-            write_int(f, ((int *)p)[i]);
-        }
-        break;
-    case F_BOOL:
-        for (i = 0; i < field->size; i++) {
-            write_int(f, ((bool *)p)[i]);
-        }
-        break;
-    case F_FLOAT:
-        for (i = 0; i < field->size; i++) {
-            write_float(f, ((float *)p)[i]);
-        }
-        break;
-    case F_VECTOR:
-        write_vector(f, (vec_t *)p);
-        break;
-
-    case F_ZSTRING:
-        write_string(f, (char *)p);
-        break;
+	switch (field->type) {
     case F_LSTRING:
         write_string(f, *(char **)p);
         break;
+	case F_EDICT:
+		ent = *(edict_t**)p;
 
-    case F_EDICT:
-        write_index(f, *(void **)p, sizeof(edict_t), g_edicts, MAX_EDICTS - 1);
-        break;
-    case F_CLIENT:
-        write_index(f, *(void **)p, sizeof(gclient_t), game.clients, game.maxclients - 1);
-        break;
-    case F_ITEM:
-        write_index(f, *(void **)p, sizeof(gitem_t), itemlist, game.num_items - 1);
-        break;
-
-    case F_POINTER:
-        write_pointer(f, *(void **)p, field->size);
-        break;
+		if (ent)
+			write_short(f, *(edict_t**)p - g_edicts);
+		else
+			write_short(f, -1);
+		break;
+	case F_ITEM:
+		write_byte(f, GetIndexByItem(*(gitem_t**)p));
+		break;
+	case F_IGNORE:
+		break;
 
     default:
         gi.error("%s: unknown field type", __func__);
-    }
+	}
 }
 
 static void write_fields(FILE *f, const save_field_t *fields, void *base)
@@ -588,180 +189,100 @@ static void write_fields(FILE *f, const save_field_t *fields, void *base)
 
 static void read_data(void *buf, size_t len, FILE *f)
 {
-    if (fread(buf, 1, len, f) != len) {
+	if (fread(buf, 1, len, f) != len) {
         gi.error("%s: couldn't read %"PRIz" bytes", __func__, len);
-    }
+	}
+}
+
+static int read_byte(FILE *f)
+{
+	byte v;
+	read_data(&v, sizeof(v), f);
+	return v;
 }
 
 static int read_short(FILE *f)
 {
-    short v;
+	short v;
 
-    read_data(&v, sizeof(v), f);
-    v = LittleShort(v);
+	read_data(&v, sizeof(v), f);
+	v = LittleShort(v);
 
-    return v;
+	return v;
 }
 
 static int read_int(FILE *f)
 {
-    int v;
+	int v;
 
-    read_data(&v, sizeof(v), f);
-    v = LittleLong(v);
+	read_data(&v, sizeof(v), f);
+	v = LittleLong(v);
 
-    return v;
+	return v;
 }
-
-static float read_float(FILE *f)
-{
-    float v;
-
-    read_data(&v, sizeof(v), f);
-    v = LittleFloat(v);
-
-    return v;
-}
-
 
 static char *read_string(FILE *f)
 {
-    int len;
-    char *s;
+	int len;
+	char *s;
 
-    len = read_int(f);
-    if (len == -1) {
-        return NULL;
-    }
+	len = read_int(f);
+	if (len == -1) {
+		return NULL;
+	}
 
-    if (len < 0 || len > 65536) {
-        gi.error("%s: bad length", __func__);
-    }
+	if (len < 0 || len > 65536) {
+		gi.error("%s: bad length", __func__);
+	}
 
     s = gi.TagMalloc(len + 1, TAG_LEVEL);
-    read_data(s, len, f);
-    s[len] = 0;
+	read_data(s, len, f);
+	s[len] = 0;
 
-    return s;
+	return s;
 }
 
-static void read_zstring(FILE *f, char *s, size_t size)
+void unset_fields(void *base, const save_field_t *fields)
 {
-    int len;
+    const save_field_t *field;
 
-    len = read_int(f);
-    if (len < 0 || len >= size) {
-        gi.error("%s: bad length", __func__);
-    }
-
-    read_data(s, len, f);
-    s[len] = 0;
+    for (field = fields; field->type; field++) {
+		memset((byte*)base + field->ofs, 0, field->size);
+	}
 }
 
-static void read_vector(FILE *f, vec_t *v)
+void read_rle(FILE *f, void *base, size_t len)
 {
-    v[0] = read_float(f);
-    v[1] = read_float(f);
-    v[2] = read_float(f);
-}
-
-static void *read_index(FILE *f, size_t size, void *start, int max_index)
-{
-    int index;
-    byte *p;
-
-    index = read_int(f);
-    if (index == -1) {
-        return NULL;
-    }
-
-    if (index < 0 || index > max_index) {
-        gi.error("%s: bad index", __func__);
-    }
-
-    p = (byte *)start + index * size;
-    return p;
-}
-
-static void *read_pointer(FILE *f, ptr_type_t type)
-{
-    int index;
-    const save_ptr_t *ptr;
-
-    index = read_int(f);
-    if (index == -1) {
-        return NULL;
-    }
-
-    if (index < 0 || index >= num_save_ptrs) {
-        gi.error("%s: bad index", __func__);
-    }
-
-    ptr = &save_ptrs[index];
-    if (ptr->type != type) {
-        gi.error("%s: type mismatch", __func__);
-    }
-
-    return ptr->ptr;
+	fread(base, len, 1, f);
 }
 
 static void read_field(FILE *f, const save_field_t *field, void *base)
 {
-    void *p = (byte *)base + field->ofs;
-    int i;
+	void *p = (byte *)base + field->ofs;
+	short s;
 
-    switch (field->type) {
-    case F_BYTE:
-        read_data(p, field->size, f);
-        break;
-    case F_SHORT:
-        for (i = 0; i < field->size; i++) {
-            ((short *)p)[i] = read_short(f);
-        }
-        break;
-    case F_INT:
-        for (i = 0; i < field->size; i++) {
-            ((int *)p)[i] = read_int(f);
-        }
-        break;
-    case F_BOOL:
-        for (i = 0; i < field->size; i++) {
-            ((bool *)p)[i] = read_int(f);
-        }
-        break;
-    case F_FLOAT:
-        for (i = 0; i < field->size; i++) {
-            ((float *)p)[i] = read_float(f);
-        }
-        break;
-    case F_VECTOR:
-        read_vector(f, (vec_t *)p);
-        break;
-
+	switch (field->type) {
     case F_LSTRING:
         *(char **)p = read_string(f);
         break;
-    case F_ZSTRING:
-        read_zstring(f, (char *)p, field->size);
-        break;
+	case F_EDICT:
+		s = read_short(f);
 
-    case F_EDICT:
-        *(edict_t **)p = read_index(f, sizeof(edict_t), g_edicts, game.maxentities - 1);
-        break;
-    case F_CLIENT:
-        *(gclient_t **)p = read_index(f, sizeof(gclient_t), game.clients, game.maxclients - 1);
-        break;
-    case F_ITEM:
-        *(gitem_t **)p = read_index(f, sizeof(gitem_t), itemlist, game.num_items - 1);
-        break;
+		if (s == -1)
+			*(edict_t**)p = NULL;
+		else
+			*(edict_t**)p = g_edicts + s;
 
-    case F_POINTER:
-        *(void **)p = read_pointer(f, field->size);
-        break;
+		break;
+	case F_ITEM:
+		*(gitem_t**)p = GetItemByIndex(read_byte(f));
+		break;
+	case F_IGNORE:
+		break;
 
     default:
         gi.error("%s: unknown field type", __func__);
-    }
+	}
 }
 
 static void read_fields(FILE *f, const save_field_t *fields, void *base)
@@ -777,7 +298,7 @@ static void read_fields(FILE *f, const save_field_t *fields, void *base)
 
 #define SAVE_MAGIC1     (('1'<<24)|('V'<<16)|('S'<<8)|'S')  // "SSV1"
 #define SAVE_MAGIC2     (('1'<<24)|('V'<<16)|('A'<<8)|'S')  // "SAV1"
-#define SAVE_VERSION    2
+#define SAVE_VERSION    3
 
 /*
 ============
@@ -809,12 +330,38 @@ void WriteGame(const char *filename, qboolean autosave)
     write_int(f, SAVE_VERSION);
 
     game.autosaved = autosave;
-    write_fields(f, gamefields, &game);
-    game.autosaved = false;
 
-    for (i = 0; i < game.maxclients; i++) {
-        write_fields(f, clientfields, &game.clients[i]);
-    }
+	// make a copy of writable_game with
+	// all of the special fields zeroed, for RLE purposes
+	static game_locals_t writable_game;
+
+	// zero special fields
+	memcpy(&writable_game, &game, sizeof(game));
+	unset_fields(&writable_game, gamefields);
+	
+	// write whole structure first
+	write_rle(f, &writable_game, sizeof(writable_game));
+
+	// write special fields
+	write_fields(f, gamefields, &game);
+    
+	game.autosaved = false;
+
+	static gclient_t writable_client;
+
+	for (i = 0; i < game.maxclients; i++) {
+		gclient_t *client = &game.clients[i];
+
+		// zero special fields
+		memcpy(&writable_client, client, sizeof(*client));
+		unset_fields(&writable_client, clientfields);
+
+		// write whole structure first
+		write_rle(f, &writable_client, sizeof(writable_client));
+
+		// write special fields
+		write_fields(f, clientfields, client);
+	}
 
     if (fclose(f))
         gi.error("Couldn't write %s", filename);
@@ -843,7 +390,8 @@ void ReadGame(const char *filename)
         gi.error("Savegame from an older version");
     }
 
-    read_fields(f, gamefields, &game);
+	read_rle(f, &game, sizeof(game));
+	read_fields(f, gamefields, &game);
 
     // should agree with server's version
     if (game.maxclients != (int)maxclients->value) {
@@ -861,7 +409,13 @@ void ReadGame(const char *filename)
 
     game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
     for (i = 0; i < game.maxclients; i++) {
-        read_fields(f, clientfields, &game.clients[i]);
+		gclient_t *client = &game.clients[i];
+
+		// write whole structure first
+		read_rle(f, client, sizeof(*client));
+
+		// write special fields
+        read_fields(f, clientfields, client);
     }
 
     fclose(f);
@@ -889,18 +443,40 @@ void WriteLevel(const char *filename)
     write_int(f, SAVE_MAGIC2);
     write_int(f, SAVE_VERSION);
 
-    // write out level_locals_t
-    write_fields(f, levelfields, &level);
+	// make a copy of writable_game with
+	// all of the special fields zeroed, for RLE purposes
+	static level_locals_t writable_level;
+
+	// zero special fields
+	memcpy(&writable_level, &level, sizeof(level));
+	unset_fields(&writable_level, levelfields);
+
+	// write whole structure first
+	write_rle(f, &writable_level, sizeof(writable_level));
+
+	// write special fields
+	write_fields(f, levelfields, &level);
+
+	static edict_t writable_entity;
 
     // write out all the entities
     for (i = 0; i < globals.num_edicts; i++) {
         ent = &g_edicts[i];
-        if (!ent->inuse)
+		if (!ent->inuse)
             continue;
-        write_int(f, i);
-        write_fields(f, entityfields, ent);
-    }
-    write_int(f, -1);
+        write_short(f, i);
+
+		// zero special fields
+		memcpy(&writable_entity, ent, sizeof(*ent));
+		unset_fields(&writable_entity, entityfields);
+
+		// write whole structure first
+		write_rle(f, &writable_entity, sizeof(writable_entity));
+
+		// write special fields
+		write_fields(f, entityfields, ent);
+	}
+    write_short(f, -1);
 
     if (fclose(f))
         gi.error("Couldn't write %s", filename);
@@ -955,11 +531,12 @@ void ReadLevel(const char *filename)
     }
 
     // load the level locals
-    read_fields(f, levelfields, &level);
+	read_rle(f, &level, sizeof(level));
+	read_fields(f, levelfields, &level);
 
     // load all the entities
     while (1) {
-        entnum = read_int(f);
+        entnum = read_short(f);
         if (entnum == -1)
             break;
         if (entnum < 0 || entnum >= game.maxentities) {
@@ -969,12 +546,14 @@ void ReadLevel(const char *filename)
             globals.num_edicts = entnum + 1;
 
         ent = &g_edicts[entnum];
-        read_fields(f, entityfields, ent);
-        ent->inuse = true;
-        ent->s.number = entnum;
+
+		// read whole structure first
+		read_rle(f, ent, sizeof(*ent));
+
+		// read special fields
+		read_fields(f, entityfields, ent);
 
         // let the server rebuild world links for this ent
-        memset(&ent->area, 0, sizeof(ent->area));
         gi.linkentity(ent);
     }
 
@@ -995,17 +574,8 @@ void ReadLevel(const char *filename)
             continue;
 
         // fire any cross-level triggers
-        if (ent->classname)
-            if (strcmp(ent->classname, "target_crosslevel_target") == 0)
-                ent->nextthink = level.time + ent->delay;
-
-        if (ent->think == func_clock_think || ent->use == func_clock_use) {
-            char *msg = ent->message;
-            ent->message = gi.TagMalloc(CLOCK_MESSAGE_SIZE, TAG_LEVEL);
-            if (msg) {
-                Q_strlcpy(ent->message, msg, CLOCK_MESSAGE_SIZE);
-                gi.TagFree(msg);
-            }
-        }
+        if (ent->entitytype == ET_TARGET_CROSSLEVEL_TARGET)
+			ent->nextthink = level.time + (ent->delay * 1000);
     }
 }
+

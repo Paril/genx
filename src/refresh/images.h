@@ -53,6 +53,12 @@ typedef enum {
 #if USE_PNG
     IM_PNG,
 #endif
+
+	// Paril
+	IM_Q1P,
+	IM_D2P,
+	IM_DNP,
+
     IM_MAX
 } imageformat_t;
 
@@ -67,9 +73,12 @@ typedef struct image_s {
     int             registration_sequence; // 0 = free
     unsigned        texnum; // gl texture binding
     float           sl, sh, tl, th;
+
+	// Generations
+	imageformat_t	original_format;
 } image_t;
 
-#define MAX_RIMAGES     1024
+#define MAX_RIMAGES     2048
 
 extern image_t  r_images[MAX_RIMAGES];
 extern int      r_numImages;
@@ -78,7 +87,7 @@ extern int registration_sequence;
 
 #define R_NOTEXTURE &r_images[0]
 
-extern uint32_t d_8to24table[256];
+extern uint32_t d_palettes[GAME_TOTAL][256];
 
 image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags);
 void IMG_FreeUnused(void);
@@ -87,10 +96,13 @@ void IMG_Init(void);
 void IMG_Shutdown(void);
 void IMG_GetPalette(void);
 
-image_t *IMG_ForHandle(qhandle_t h);
+image_t *IMG_ForHandle(pichandle_t h, gametype_t game);
 
 void IMG_Unload(image_t *image);
 void IMG_Load(image_t *image, byte *pic);
 byte *IMG_ReadPixels(int *width, int *height, int *rowbytes);
+
+// Paril
+int IMG_Unpack8(uint32_t *out, const uint8_t *in, int width, int height, uint32_t *palette);
 
 #endif // IMAGES_H

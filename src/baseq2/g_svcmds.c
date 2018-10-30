@@ -216,7 +216,7 @@ void SVCmd_ListIP_f(void)
 {
     int     i;
     union {
-        byte    b[4];
+    byte    b[4];
         unsigned u32;
     } b;
 
@@ -238,18 +238,18 @@ void SVCmd_WriteIP_f(void)
     char    name[MAX_OSPATH];
     size_t  len;
     union {
-        byte    b[4];
+    byte    b[4];
         unsigned u32;
     } b;
     int     i;
-    cvar_t  *game;
+    cvar_t  *sv_game;
 
-    game = gi.cvar("game", "", 0);
+    sv_game = gi.cvar("game", "genx", 0);
 
-    if (!*game->string)
+    if (!*sv_game->string)
         len = Q_snprintf(name, sizeof(name), "%s/listip.cfg", GAMEVERSION);
     else
-        len = Q_snprintf(name, sizeof(name), "%s/listip.cfg", game->string);
+        len = Q_snprintf(name, sizeof(name), "%s/listip.cfg", sv_game->string);
 
     if (len >= sizeof(name)) {
         gi.cprintf(NULL, PRINT_HIGH, "File name too long\n");
@@ -287,6 +287,11 @@ void    ServerCommand(void)
 {
     char    *cmd;
 
+	// JABot[start]
+	if (BOT_ServerCommand())
+		return;
+	// [end]
+
     cmd = gi.argv(1);
     if (Q_stricmp(cmd, "test") == 0)
         Svcmd_Test_f();
@@ -301,3 +306,4 @@ void    ServerCommand(void)
     else
         gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
 }
+

@@ -52,15 +52,17 @@ typedef struct sfx_s {
 // when the mixer reaches playsound->begin, the playsound will
 // be assigned to a channel
 typedef struct playsound_s {
-    struct playsound_s  *prev, *next;
-    sfx_t       *sfx;
-    float       volume;
+    struct playsound_s	*prev, *next;
+    sfx_t				*sfx;
+    float				volume;
     float       attenuation;
-    int         entnum;
-    int         entchannel;
+    int					entnum;
+    int					entchannel;
     bool        fixed_origin;   // use origin field instead of entnum's origin
-    vec3_t      origin;
-    unsigned    begin;          // begin on this sample
+    vec3_t				origin;
+    unsigned			begin;          // begin on this sample
+	// Generations
+	int					pitch_offset;
 } playsound_t;
 
 typedef struct channel_s {
@@ -81,6 +83,8 @@ typedef struct channel_s {
     int         autoframe;
     int         srcnum;
 #endif
+	// Generations
+	int			pitch_offset;
 } channel_t;
 
 typedef struct {
@@ -146,7 +150,7 @@ extern bool s_active;
 extern  channel_t   channels[MAX_CHANNELS];
 extern  int         s_numchannels;
 
-extern  int     paintedtime;
+extern  int			paintedtime;
 extern  playsound_t s_pendingplays;
 
 extern  vec3_t      listener_origin;
@@ -159,16 +163,16 @@ extern  wavinfo_t   s_info;
 
 extern cvar_t   *s_volume;
 #if USE_SNDDMA
-extern cvar_t   *s_khz;
 extern cvar_t   *s_testsound;
 #endif
+extern cvar_t   *s_khz;
 extern cvar_t   *s_ambient;
 extern cvar_t   *s_show;
 
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
-sfx_t *S_SfxForHandle(qhandle_t hSfx);
+sfx_t *S_SfxForHandle(soundhandle_t hSfx, gametype_t game);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);

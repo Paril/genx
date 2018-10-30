@@ -239,7 +239,7 @@ The input line scrolls horizontally if typing goes beyond the right edge.
 Returns x offset of the rightmost character drawn.
 ================
 */
-int IF_Draw(inputField_t *field, int x, int y, int flags, qhandle_t font)
+int IF_Draw(inputField_t *field, int x, int y, int flags, pichandle_t font, gametype_t game)
 {
     char *text = field->text;
     size_t cursorPos = field->cursorPos;
@@ -261,13 +261,13 @@ int IF_Draw(inputField_t *field, int x, int y, int flags, qhandle_t font)
     }
 
     // draw text
-    ret = R_DrawString(x, y, flags, field->visibleChars, text + offset, font);
+    ret = R_DrawString(x, y, flags, field->visibleChars, text + offset, font, CL_GetClientGame());
 
     if (flags & UI_DRAWCURSOR) {
         // draw blinking cursor
         if ((com_localTime >> 8) & 1) {
             int c = Key_GetOverstrikeMode() ? 11 : '_';
-            R_DrawChar(x + cursorPos * CHAR_WIDTH, y, flags, c, font);
+            R_DrawChar(x + cursorPos * CHAR_WIDTH, y, flags, c, font, CL_GetClientGame());
         }
     }
 

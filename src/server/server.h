@@ -109,6 +109,8 @@ typedef struct {
 
 typedef struct {
     int         solid32;
+	// Generations
+	int			clip_contents;
 
 #if USE_FPS
 
@@ -161,13 +163,15 @@ typedef struct {
     char        *entitystring;
 
     char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
+	// Generations
+	byte		precache_bitset[MAX_PRECACHE_BITSET];
 
     server_entity_t entities[MAX_EDICTS];
 
     unsigned    tracecount;
 } server_t;
 
-#define EDICT_POOL(c, n) ((edict_t *)((byte *)(c)->pool->edicts + (c)->pool->edict_size*(n)))
+#define EDICT_POOL(c, n)		((edict_t *)((byte *)(c)->pool->edicts + (c)->pool->edict_size*(n)))
 
 #define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))
 #define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
@@ -223,11 +227,12 @@ typedef struct {
         uint8_t         data[MSG_TRESHOLD];
         struct {
             uint8_t     flags;
-            uint8_t     index;
-            uint16_t    sendchan;
             uint8_t     volume;
             uint8_t     attenuation;
             uint8_t     timeofs;
+			// Generations
+            uint16_t    index;
+            uint16_t    sendchan;
             int16_t     pos[3];     // saved in case entity is freed
         };
     };
@@ -347,6 +352,8 @@ typedef struct client_s {
 
     // server state pointers (hack for MVD channels implementation)
     char            *configstrings;
+	// Generations
+	byte			*precache_bitset;
     char            *gamedir, *mapname;
     edict_pool_t    *pool;
     cm_t            *cm;

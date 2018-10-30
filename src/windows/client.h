@@ -100,7 +100,7 @@ typedef struct {
     int     center_x, center_y;
 
     bool    alttab_disabled;
-    int     mode_changed;
+    int         mode_changed;
 
     struct {
         enum {

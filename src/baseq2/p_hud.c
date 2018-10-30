@@ -37,17 +37,18 @@ void MoveClientToIntermission(edict_t *ent)
     ent->client->ps.pmove.origin[2] = level.intermission_origin[2] * 8;
     VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
     ent->client->ps.pmove.pm_type = PM_FREEZE;
-    ent->client->ps.gunindex = 0;
-    ent->client->ps.blend[3] = 0;
+	memset(ent->client->ps.guns, 0, sizeof(ent->client->ps.guns));
+	ent->client->ps.blend[3] = 0;
     ent->client->ps.rdflags &= ~RDF_UNDERWATER;
 
     // clean up powerup info
-    ent->client->quad_framenum = 0;
-    ent->client->invincible_framenum = 0;
-    ent->client->breather_framenum = 0;
-    ent->client->enviro_framenum = 0;
+    ent->client->quad_time = 0;
+    ent->client->invincible_time = 0;
+    ent->client->breather_time = 0;
+    ent->client->enviro_time = 0;
     ent->client->grenade_blew_up = false;
     ent->client->grenade_time = 0;
+	ent->freeze_time = 0;
 
     ent->viewheight = 0;
     ent->s.modelindex = 0;
@@ -96,7 +97,7 @@ void BeginIntermission(edict_t *targ)
                 if (!client->inuse)
                     continue;
                 // strip players of all keys between units
-                for (n = 0; n < MAX_ITEMS; n++) {
+                for (n = 0; n < ITI_TOTAL; n++) {
                     if (itemlist[n].flags & IT_KEY)
                         client->client->pers.inventory[n] = 0;
                 }
@@ -112,19 +113,19 @@ void BeginIntermission(edict_t *targ)
     level.exitintermission = 0;
 
     // find an intermission spot
-    ent = G_Find(NULL, FOFS(classname), "info_player_intermission");
+    ent = G_FindByType(NULL, ET_INFO_PLAYER_INTERMISSION);
     if (!ent) {
         // the map creator forgot to put in an intermission point...
-        ent = G_Find(NULL, FOFS(classname), "info_player_start");
+        ent = G_FindByType(NULL, ET_INFO_PLAYER_START);
         if (!ent)
-            ent = G_Find(NULL, FOFS(classname), "info_player_deathmatch");
+            ent = G_FindByType(NULL, ET_INFO_PLAYER_DEATHMATCH);
     } else {
         // chose one of four spots
         i = Q_rand() & 3;
         while (i--) {
-            ent = G_Find(ent, FOFS(classname), "info_player_intermission");
+            ent = G_FindByType(ent, ET_INFO_PLAYER_INTERMISSION);
             if (!ent)   // wrap around the list
-                ent = G_Find(ent, FOFS(classname), "info_player_intermission");
+                ent = G_FindByType(ent, ET_INFO_PLAYER_INTERMISSION);
         }
     }
 
@@ -217,7 +218,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
         // send the layout
         Q_snprintf(entry, sizeof(entry),
                    "client %i %i %i %i %i %i ",
-                   x, y, sorted[i], cl->resp.score, cl->ping, (level.framenum - cl->resp.enterframe) / 600);
+                   x, y, sorted[i], cl->resp.score, cl->ping, (int)((level.time - cl->resp.entertime) / 6000));
         j = strlen(entry);
         if (stringlength + j > 1024)
             break;
@@ -345,6 +346,169 @@ void Cmd_Help_f(edict_t *ent)
 
 //=======================================================================
 
+#define ST_EVILGRINCOUNT		(2*game.framerate)
+#define ST_STRAIGHTFACECOUNT	(game.framerate/2)
+#define ST_TURNCOUNT		(1*game.framerate)
+#define ST_RAMPAGEDELAY		(2*game.framerate)
+
+const int ST_MUCHPAIN			= 20;
+
+// Stolen from Doom's source
+int ST_calcPainOffset(edict_t *plyr)
+{
+	int health = max(0, min(100, plyr->health));
+
+	if (health != plyr->client->old_health)
+	{
+		plyr->client->lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
+		plyr->client->old_health = health;
+	}
+
+	return plyr->client->lastcalc;
+}
+
+//
+// This is a not-very-pretty routine which handles
+//  the face states and their timing.
+// the precedence of expressions is:
+//  dead > evil grin > turned head > straight ahead
+//
+void ST_updateFaceWidget(edict_t *plyr)
+{
+	if (plyr->client->priority < 10)
+	{
+		// dead
+		if (plyr->health <= 0)
+		{
+			plyr->client->priority = 9;
+			plyr->client->st_faceindex = ST_DEADFACE;
+			plyr->client->st_facecount = 1;
+		}
+	}
+
+	if (plyr->client->priority < 9)
+	{
+		if (time_diff(plyr->client->pickup_msg_time, level.time) >= (gtime_t)(3000 - game.frametime))
+		{
+			// picking up bonus
+			if ((plyr->client->pickup_item->flags & IT_WEAPON) && plyr->client->pickup_item_first)
+			{
+				// evil grin if just picked up weapon
+				plyr->client->priority = 8;
+				plyr->client->st_facecount = ST_EVILGRINCOUNT;
+				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_EVILGRINOFFSET;
+			}
+		}
+
+	}
+
+	if (plyr->client->priority < 8)
+	{
+		if (((plyr->meansOfDeath.time + game.frametime) >= level.time)
+			&& plyr->meansOfDeath.attacker
+			&& plyr->meansOfDeath.attacker != plyr)
+		{
+			// being attacked
+			plyr->client->priority = 7;
+
+			if (plyr->health - plyr->client->old_health > ST_MUCHPAIN)
+			{
+				plyr->client->st_facecount = ST_TURNCOUNT;
+				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_OUCHOFFSET;
+			}
+			else
+			{
+				plyr->client->st_facecount = ST_TURNCOUNT;
+				plyr->client->st_faceindex = ST_calcPainOffset(plyr);
+
+				float yaw_sub = anglemod((plyr->client->v_angle[1] - plyr->client->damage_dir) + 180);
+
+				if (yaw_sub <= 45 || yaw_sub >= (360 - 45))
+				{
+					// head-on    
+					plyr->client->st_faceindex += ST_RAMPAGEOFFSET;
+				}
+				else if (yaw_sub > 180)
+				{
+					// turn face right
+					plyr->client->st_faceindex += ST_TURNOFFSET;
+				}
+				else
+				{
+					// turn face left
+					plyr->client->st_faceindex += ST_TURNOFFSET+1;
+				}
+			}
+		}
+	}
+
+	if (plyr->client->priority < 7)
+	{
+		// getting hurt because of your own damn stupidity
+		if (((plyr->meansOfDeath.time + game.frametime) >= level.time) &&
+			plyr->meansOfDeath.attacker == plyr)
+		{
+			if (plyr->health - plyr->client->old_health > ST_MUCHPAIN)
+			{
+				plyr->client->priority = 7;
+				plyr->client->st_facecount = ST_TURNCOUNT;
+				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_OUCHOFFSET;
+			}
+			else
+			{
+				plyr->client->priority = 6;
+				plyr->client->st_facecount = ST_TURNCOUNT;
+				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_RAMPAGEOFFSET;
+			}
+
+		}
+
+	}
+
+	if (plyr->client->priority < 6)
+	{
+		// rapid firing
+		if (plyr->client->buttons & BUTTON_ATTACK)
+		{
+			if (plyr->client->lastattackdown == -1)
+				plyr->client->lastattackdown = ST_RAMPAGEDELAY;
+			else if (!--plyr->client->lastattackdown)
+			{
+				plyr->client->priority = 5;
+				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_RAMPAGEOFFSET;
+				plyr->client->st_facecount = 1;
+				plyr->client->lastattackdown = 1;
+			}
+		}
+		else
+			plyr->client->lastattackdown = -1;
+	}
+
+	if (plyr->client->priority < 5)
+	{
+		// invulnerability
+		if ((plyr->flags & FL_GODMODE) || plyr->client->invincible_time > level.time)
+		{
+			plyr->client->priority = 4;
+
+			plyr->client->st_faceindex = ST_GODFACE;
+			plyr->client->st_facecount = 1;
+		}
+	}
+
+	// look left or look right if the facecount has timed out
+	if (!plyr->client->st_facecount)
+	{
+		plyr->client->st_faceindex = ST_calcPainOffset(plyr) + (Q_rand() % 3);
+		plyr->client->st_facecount = ST_STRAIGHTFACECOUNT;
+		plyr->client->priority = 0;
+	}
+
+	plyr->client->st_facecount--;
+	plyr->client->ps.stats[STAT_DOOM_FACE] = plyr->client->st_faceindex;
+}
+
+
 /*
 ===============
 G_SetStats
@@ -353,43 +517,48 @@ G_SetStats
 void G_SetStats(edict_t *ent)
 {
     gitem_t     *item;
-    int         index, cells;
-    int         power_armor_type;
+	itemid_e    index;
+	int         cells = 0;
+    int         power_armor_type = 0;
 
     //
     // health
     //
-    ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
+	if (ent->s.game == GAME_Q2)
+	    ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
     ent->client->ps.stats[STAT_HEALTH] = ent->health;
 
     //
     // ammo
     //
-    if (!ent->client->ammo_index /* || !ent->client->pers.inventory[ent->client->ammo_index] */) {
+    if (!ent->client->gunstates[GUN_MAIN].ammo_index /* || !ent->client->pers.inventory[ent->client->ammo_index] */) {
         ent->client->ps.stats[STAT_AMMO_ICON] = 0;
         ent->client->ps.stats[STAT_AMMO] = 0;
     } else {
-        item = &itemlist[ent->client->ammo_index];
+        item = &itemlist[ent->client->gunstates[GUN_MAIN].ammo_index];
         ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
-        ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->ammo_index];
+        ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->gunstates[GUN_MAIN].ammo_index];
     }
 
     //
     // armor
     //
-    power_armor_type = PowerArmorType(ent);
-    if (power_armor_type) {
-        cells = ent->client->pers.inventory[ITEM_INDEX(FindItem("cells"))];
-        if (cells == 0) {
-            // ran out of cells for power armor
-            ent->flags &= ~FL_POWER_ARMOR;
-            gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
-            power_armor_type = 0;;
-        }
-    }
+	if (ent->s.game == GAME_Q2)
+	{
+		power_armor_type = PowerArmorType(ent);
+		if (power_armor_type) {
+			cells = ent->client->pers.inventory[ITI_CELLS];
+			if (cells == 0) {
+				// ran out of cells for power armor
+				ent->flags &= ~FL_POWER_ARMOR;
+				gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
+				power_armor_type = 0;;
+			}
+		}
+	}
 
     index = ArmorIndex(ent);
-    if (power_armor_type && (!index || (level.framenum & 8))) {
+    if (power_armor_type && (!index || (level.framenum & (8 * game.framediv)))) {
         // flash between power armor and other armor icon
         ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex("i_powershield");
         ent->client->ps.stats[STAT_ARMOR] = cells;
@@ -405,40 +574,48 @@ void G_SetStats(edict_t *ent)
     //
     // pickup message
     //
-    if (level.time > ent->client->pickup_msg_time) {
-        ent->client->ps.stats[STAT_PICKUP_ICON] = 0;
-        ent->client->ps.stats[STAT_PICKUP_STRING] = 0;
-    }
+	if (ent->s.game == GAME_Q2)
+	{
+		if (level.time > ent->client->pickup_msg_time) {
+			ent->client->ps.stats[STAT_PICKUP_ICON] = 0;
+			ent->client->ps.stats[STAT_PICKUP_STRING] = 0;
+		}
+		else
+		{
+			ent->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->client->pickup_item->icon);
+			ent->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS + ITEM_INDEX(ent->client->pickup_item);
+		}
 
-    //
-    // timers
-    //
-    if (ent->client->quad_framenum > level.framenum) {
-        ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_quad");
-        ent->client->ps.stats[STAT_TIMER] = (ent->client->quad_framenum - level.framenum) / 10;
-    } else if (ent->client->invincible_framenum > level.framenum) {
-        ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_invulnerability");
-        ent->client->ps.stats[STAT_TIMER] = (ent->client->invincible_framenum - level.framenum) / 10;
-    } else if (ent->client->enviro_framenum > level.framenum) {
-        ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_envirosuit");
-        ent->client->ps.stats[STAT_TIMER] = (ent->client->enviro_framenum - level.framenum) / 10;
-    } else if (ent->client->breather_framenum > level.framenum) {
-        ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_rebreather");
-        ent->client->ps.stats[STAT_TIMER] = (ent->client->breather_framenum - level.framenum) / 10;
-    } else {
-        ent->client->ps.stats[STAT_TIMER_ICON] = 0;
-        ent->client->ps.stats[STAT_TIMER] = 0;
-    }
+		//
+		// timers
+		//
+		if (ent->client->quad_time > level.time) {
+			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_quad");
+			ent->client->ps.stats[STAT_TIMER] = (ent->client->quad_time - level.time) / 1000;
+		} else if (ent->client->invincible_time > level.time) {
+			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_invulnerability");
+			ent->client->ps.stats[STAT_TIMER] = (ent->client->invincible_time - level.time) / 1000;
+		} else if (ent->client->enviro_time > level.time) {
+			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_envirosuit");
+			ent->client->ps.stats[STAT_TIMER] = (ent->client->enviro_time - level.time) / 1000;
+		} else if (ent->client->breather_time > level.time) {
+			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_rebreather");
+			ent->client->ps.stats[STAT_TIMER] = (ent->client->breather_time - level.time) / 1000;
+		} else {
+			ent->client->ps.stats[STAT_TIMER_ICON] = 0;
+			ent->client->ps.stats[STAT_TIMER] = 0;
+		}
 
-    //
-    // selected item
-    //
-    if (ent->client->pers.selected_item == -1)
-        ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
-    else
-        ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
+		//
+		// selected item
+		//
+		if (ent->client->pers.selected_item == ITI_NULL)
+			ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
+		else
+			ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
+	}
 
-    ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
+	ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
 
     //
     // layouts
@@ -466,15 +643,157 @@ void G_SetStats(edict_t *ent)
     //
     // help icon / current weapon if not shown
     //
-    if (ent->client->pers.helpchanged && (level.framenum & 8))
-        ent->client->ps.stats[STAT_HELPICON] = gi.imageindex("i_help");
-    else if ((ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
-             && ent->client->pers.weapon)
-        ent->client->ps.stats[STAT_HELPICON] = gi.imageindex(ent->client->pers.weapon->icon);
-    else
-        ent->client->ps.stats[STAT_HELPICON] = 0;
+	if (ent->s.game == GAME_Q2)
+	{
+		if (ent->client->pers.helpchanged && (level.framenum & (8 * game.framediv)))
+			ent->client->ps.stats[STAT_HELPICON] = gi.imageindex("i_help");
+		else if ((ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
+			&& ent->client->pers.weapon)
+			ent->client->ps.stats[STAT_HELPICON] = gi.imageindex(ent->client->pers.weapon->icon);
+		else
+			ent->client->ps.stats[STAT_HELPICON] = 0;
+	}
 
     ent->client->ps.stats[STAT_SPECTATOR] = 0;
+
+	// Q1 stuff
+	if (ent->s.game == GAME_Q1)
+	{
+		int shells = ent->client->pers.inventory[ITI_SHELLS];
+		int nails = ent->client->pers.inventory[ITI_BULLETS];
+		int rockets = ent->client->pers.inventory[ITI_ROCKETS];
+		cells = ent->client->pers.inventory[ITI_CELLS];
+
+		ent->client->ps.stats[STAT_Q1_AMMO] = shells | (nails << 8) | (rockets << 16) | (cells << 24);
+
+		ent->client->ps.stats[STAT_Q1_ITEMS] = 0;
+
+		if (ent->client->pers.inventory[ITI_Q1_SHOTGUN])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SHOTGUN;
+		if (ent->client->pers.inventory[ITI_Q1_SUPER_SHOTGUN])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SSHOTGUN;
+		if (ent->client->pers.inventory[ITI_Q1_NAILGUN])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_NAILGUN;
+		if (ent->client->pers.inventory[ITI_Q1_SUPER_NAILGUN])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SNAILGUN;
+		if (ent->client->pers.inventory[ITI_Q1_GRENADE_LAUNCHER])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_GLAUNCHER;
+		if (ent->client->pers.inventory[ITI_Q1_ROCKET_LAUNCHER])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_RLAUNCHER;
+		if (ent->client->pers.inventory[ITI_Q1_THUNDERBOLT])
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_LIGHTNING;
+
+		if (ent->client->quad_time > level.time)
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_QUAD;
+		if (ent->client->invincible_time > level.time)
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_INVUL;
+		if (ent->client->enviro_time > level.time)
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SUIT;
+		if (ent->client->breather_time > level.time)
+			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_INVIS;
+
+		ent->client->ps.stats[STAT_Q1_CURWEAP] = 0;
+
+		if (ent->health <= 0)
+			ent->client->ps.stats[STAT_Q1_FACEANIM] = 0;
+		else
+		{
+			if (ent->client->ps.stats[STAT_Q1_FACEANIM])
+				--ent->client->ps.stats[STAT_Q1_FACEANIM];
+		}
+
+		if (ent->client->pers.weapon)
+			ent->client->ps.stats[STAT_Q1_CURWEAP] = ITEM_INDEX(ent->client->pers.weapon) - ITI_BLASTER;
+	}
+
+	// Doom stuff
+	else  if (ent->s.game == GAME_DOOM)
+	{
+		int shells = ent->client->pers.inventory[ITI_SHELLS];
+		int bullets = ent->client->pers.inventory[ITI_BULLETS];
+		int rockets = ent->client->pers.inventory[ITI_ROCKETS];
+		cells = ent->client->pers.inventory[ITI_CELLS];
+
+		ent->client->ps.stats[STAT_DOOM_AMMO1] = bullets | (shells << 16);
+		ent->client->ps.stats[STAT_DOOM_AMMO2] = rockets | (cells << 16);
+
+		ent->client->ps.stats[STAT_DOOM_MAXAMMO1] = GetMaxAmmo(ent, ITI_BULLETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_SHELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
+		ent->client->ps.stats[STAT_DOOM_MAXAMMO2] = GetMaxAmmo(ent, ITI_ROCKETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_CELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
+
+		ent->client->ps.stats[STAT_DOOM_WEAPONS] = 0;
+
+		if (ent->client->pers.inventory[ITI_DOOM_PISTOL])
+			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_PISTOL;
+		if (ent->client->pers.inventory[ITI_DOOM_SHOTGUN] || ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN])
+			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_SHOTGUNS;
+		if (ent->client->pers.inventory[ITI_DOOM_CHAINGUN])
+			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_CHAINGUN;
+		if (ent->client->pers.inventory[ITI_DOOM_ROCKET_LAUNCHER])
+			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_ROCKET;
+		if (ent->client->pers.inventory[ITI_DOOM_PLASMA_GUN])
+			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_PLASMA;
+		if (ent->client->pers.inventory[ITI_DOOM_BFG])
+			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_BFG;
+
+		ST_updateFaceWidget(ent);
+	}
+
+	// Duke stuff
+	else  if (ent->s.game == GAME_DUKE)
+	{
+		ent->client->ps.stats[STAT_DUKE_WEAPONS] = 0;
+
+		struct {
+			itemid_e	item;
+			uint16_t	flag;
+		} weapon_hud_mapping[] = {
+			{ ITI_DUKE_PISTOL, IT_DUKE_PISTOL },
+			{ ITI_DUKE_SHOTGUN, IT_DUKE_SHOTGUN },
+			{ ITI_DUKE_CANNON, IT_DUKE_CANNON },
+			{ ITI_DUKE_RPG, IT_DUKE_RPG },
+			{ ITI_DUKE_PIPEBOMBS, IT_DUKE_PIPE },
+			//{ ITI_DUKE_SHRINKER, IT_DUKE_SHRINKER },
+			{ ITI_DUKE_DEVASTATOR, IT_DUKE_DEVASTATOR },
+			//{ ITI_DUKE_TRIPWIRE, IT_DUKE_TRIPWIRE },
+			{ ITI_DUKE_FREEZER, IT_DUKE_FREEZETHROWER }
+		};
+
+		for (size_t i = 0; i < q_countof(weapon_hud_mapping); i++)
+		{
+			if (ent->client->pers.inventory[weapon_hud_mapping[i].item])
+				ent->client->ps.stats[STAT_DUKE_WEAPONS] |= weapon_hud_mapping[i].flag;
+
+			if (GetIndexByItem(ent->client->pers.weapon) == weapon_hud_mapping[i].item)
+				ent->client->ps.stats[STAT_DUKE_WEAPONS] |= (weapon_hud_mapping[i].flag << 16);
+		}
+
+		/*
+
+{
+	IT_DUKE_PISTOL_AMMO			= 0,
+	IT_DUKE_SHOTGUN_AMMO		= 1,
+	IT_DUKE_CANNON_AMMO			= 2,
+	IT_DUKE_RPG_AMMO			= 3,
+	IT_DUKE_PIPE_AMMO			= 0,
+	IT_DUKE_SHRINKER_AMMO		= 1,
+	IT_DUKE_DEVASTATOR_AMMO		= 2,
+	IT_DUKE_TRIPWIRE_AMMO		= 3,
+	IT_DUKE_FREEZETHROWER_AMMO	= 0
+};
+*/
+
+		ent->client->ps.stats[STAT_DUKE_AMMO1] = ent->client->pers.inventory[ITI_DUKE_CLIP] |
+												 (ent->client->pers.inventory[ITI_DUKE_SHELLS] << 8) |
+												 (ent->client->pers.inventory[ITI_DUKE_CANNON_AMMO] << 16) |
+												 (ent->client->pers.inventory[ITI_DUKE_RPG_ROCKETS] << 24);
+
+		ent->client->ps.stats[STAT_DUKE_AMMO2] = ent->client->pers.inventory[ITI_DUKE_PIPEBOMBS] |
+												 //(ent->client->pers.inventory[ITI_DUKE_SHRINKER_AMMO] << 8) |
+												 (ent->client->pers.inventory[ITI_DUKE_DEVASTATOR_ROCKETS] << 16);
+												 // | (ent->client->pers.inventory[ITI_DUKE_TRIPWIRE_AMMO] << 24)
+
+		ent->client->ps.stats[STAT_DUKE_AMMO3] = ent->client->pers.inventory[ITI_DUKE_FREEZER_AMMO];
+	}
 }
 
 /*
@@ -523,3 +842,4 @@ void G_SetSpectatorStats(edict_t *ent)
     else
         cl->ps.stats[STAT_CHASE] = 0;
 }
+

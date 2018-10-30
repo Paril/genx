@@ -21,13 +21,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 wavinfo_t s_info;
 
-#if USE_SNDDMA
 /*
 ================
 ResampleSfx
 ================
 */
-static sfxcache_t *ResampleSfx(sfx_t *sfx)
+sfxcache_t *ResampleSfx(sfx_t *sfx, int wanted_rate)
 {
     int         outcount;
     int         srcsample;
@@ -36,7 +35,7 @@ static sfxcache_t *ResampleSfx(sfx_t *sfx)
     int         samplefrac, fracstep;
     sfxcache_t  *sc;
 
-    stepscale = (float)s_info.rate / dma.speed;      // this is usually 0.5, 1, or 2
+    stepscale = (float)s_info.rate / wanted_rate;      // this is usually 0.5, 1, or 2
 
     outcount = s_info.samples / stepscale;
     if (!outcount) {
@@ -87,7 +86,6 @@ static sfxcache_t *ResampleSfx(sfx_t *sfx)
 
     return sc;
 }
-#endif
 
 /*
 ===============================================================================
@@ -204,10 +202,10 @@ static bool GetWavinfo(void)
     }
 
     s_info.rate = GetLittleLong();
-    if (s_info.rate < 8000 || s_info.rate > 48000) {
+   /* if (s_info.rate < 8000 || s_info.rate > 48000) {
         Com_DPrintf("%s has bad rate\n", s_info.name);
         return false;
-    }
+    }*/
 
     data_p += 4 + 2;
 
@@ -333,10 +331,11 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 
 #if USE_SNDDMA
     if (s_started == SS_DMA)
-        sc = ResampleSfx(s);
+        sc = ResampleSfx(s, s_info.rate);
 #endif
 
 fail:
     FS_FreeFile(data);
     return sc;
 }
+

@@ -70,6 +70,7 @@ void CL_SendStatusRequest(const netadr_t *address);
 demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info);
 bool CL_CheatsOK(void);
 void CL_SetSky(void);
+gametype_t CL_GetClientGame();
 
 #if USE_CURL
 int HTTP_FetchFile(const char *url, void **data);
@@ -90,6 +91,12 @@ void SCR_BeginLoadingPlaque(void);
 void SCR_EndLoadingPlaque(void);
 void SCR_ModeChanged(void);
 void SCR_UpdateScreen(void);
+
+typedef struct layout_string_s layout_string_t;
+
+layout_string_t *SCR_ParseLayoutString(const char *s);
+void SCR_FreeLayoutString(layout_string_t *layout);
+void SCR_FreeHUDLayouts();
 
 #define U32_BLACK   MakeColor(  0,   0,   0, 255)
 #define U32_RED     MakeColor(255,   0,   0, 255)

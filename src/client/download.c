@@ -27,14 +27,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CL_DOWNLOAD_IGNORES     "download-ignores.txt"
 
 typedef enum {
-    PRECACHE_MODELS,
-    PRECACHE_OTHER,
-    PRECACHE_MAP,
-    PRECACHE_FINAL
+	PRECACHE_MODELS,
+	PRECACHE_OTHER,
+	PRECACHE_MAP,
+	PRECACHE_FINAL
 } precache_t;
 
 static precache_t precache_check;
-static int precache_sexed_sounds[MAX_SOUNDS];
+static int precache_sexed_sounds[MAX_PRECACHE];
 static int precache_sexed_total;
 
 /*
@@ -48,40 +48,40 @@ to make sure each path is tried exactly once.
 */
 int CL_QueueDownload(const char *path, dltype_t type)
 {
-    dlqueue_t *q;
-    size_t len;
+	dlqueue_t *q;
+	size_t len;
 
-    FOR_EACH_DLQ(q) {
-        // avoid sending duplicate requests
-        if (!FS_pathcmp(path, q->path)) {
-            Com_DPrintf("%s: %s [DUP]\n", __func__, path);
-            return Q_ERR_EXIST;
-        }
-    }
+	FOR_EACH_DLQ(q) {
+		// avoid sending duplicate requests
+		if (!FS_pathcmp(path, q->path)) {
+			Com_DPrintf("%s: %s [DUP]\n", __func__, path);
+			return Q_ERR_EXIST;
+		}
+	}
 
-    len = strlen(path);
-    if (len >= MAX_QPATH) {
-        Com_Error(ERR_DROP, "%s: oversize quake path", __func__);
-    }
+	len = strlen(path);
+	if (len >= MAX_QPATH) {
+		Com_Error(ERR_DROP, "%s: oversize quake path", __func__);
+	}
 
     q = Z_Malloc(sizeof(*q) + len);
-    memcpy(q->path, path, len + 1);
-    q->type = type;
-    q->state = DL_PENDING;
+	memcpy(q->path, path, len + 1);
+	q->type = type;
+	q->state = DL_PENDING;
 
 #if USE_CURL
-    // paks get bumped to the top and HTTP switches to single downloading.
-    // this prevents someone on 28k dialup trying to do both the main .pak
-    // and referenced configstrings data at once.
-    if (type == DL_PAK)
-        List_Insert(&cls.download.queue, &q->entry);
-    else
+	// paks get bumped to the top and HTTP switches to single downloading.
+	// this prevents someone on 28k dialup trying to do both the main .pak
+	// and referenced configstrings data at once.
+	if (type == DL_PAK)
+		List_Insert(&cls.download.queue, &q->entry);
+	else
 #endif
-        List_Append(&cls.download.queue, &q->entry);
+		List_Append(&cls.download.queue, &q->entry);
 
-    cls.download.pending++;
-    Com_DPrintf("%s: %s [%d]\n", __func__, path, cls.download.pending);
-    return Q_ERR_SUCCESS;
+	cls.download.pending++;
+	Com_DPrintf("%s: %s [%d]\n", __func__, path, cls.download.pending);
+	return Q_ERR_SUCCESS;
 }
 
 /*
@@ -94,13 +94,13 @@ list.
 */
 bool CL_IgnoreDownload(const char *path)
 {
-    string_entry_t *entry;
+	string_entry_t *entry;
 
-    for (entry = cls.download.ignores; entry; entry = entry->next) {
-        if (Com_WildCmp(entry->string, path)) {
+	for (entry = cls.download.ignores; entry; entry = entry->next) {
+		if (Com_WildCmp(entry->string, path)) {
             return true;
-        }
-    }
+		}
+	}
 
     return false;
 }
@@ -114,16 +114,16 @@ Mark the queue entry as done, decrementing pending count.
 */
 void CL_FinishDownload(dlqueue_t *q)
 {
-    if (q->state == DL_DONE) {
-        Com_Error(ERR_DROP, "%s: already done", __func__);
-    }
-    if (!cls.download.pending) {
-        Com_Error(ERR_DROP, "%s: bad pending count", __func__);
-    }
+	if (q->state == DL_DONE) {
+		Com_Error(ERR_DROP, "%s: already done", __func__);
+	}
+	if (!cls.download.pending) {
+		Com_Error(ERR_DROP, "%s: bad pending count", __func__);
+	}
 
-    q->state = DL_DONE;
-    cls.download.pending--;
-    Com_DPrintf("%s: %s [%d]\n", __func__, q->path, cls.download.pending);
+	q->state = DL_DONE;
+	cls.download.pending--;
+	Com_DPrintf("%s: %s [%d]\n", __func__, q->path, cls.download.pending);
 }
 
 /*
@@ -135,30 +135,30 @@ Disconnected from server, clean up.
 */
 void CL_CleanupDownloads(void)
 {
-    dlqueue_t *q, *n;
+	dlqueue_t *q, *n;
 
-    HTTP_CleanupDownloads();
+	HTTP_CleanupDownloads();
 
-    FOR_EACH_DLQ_SAFE(q, n) {
-        Z_Free(q);
-    }
+	FOR_EACH_DLQ_SAFE(q, n) {
+		Z_Free(q);
+	}
 
-    List_Init(&cls.download.queue);
-    cls.download.pending = 0;
+	List_Init(&cls.download.queue);
+	cls.download.pending = 0;
 
-    cls.download.current = NULL;
-    cls.download.percent = 0;
-    cls.download.position = 0;
+	cls.download.current = NULL;
+	cls.download.percent = 0;
+	cls.download.position = 0;
 
-    if (cls.download.file) {
-        FS_FCloseFile(cls.download.file);
-        cls.download.file = 0;
-    }
+	if (cls.download.file) {
+		FS_FCloseFile(cls.download.file);
+		cls.download.file = 0;
+	}
 
-    cls.download.temp[0] = 0;
+	cls.download.temp[0] = 0;
 
 #if USE_ZLIB
-    inflateEnd(&cls.download.z);
+	inflateEnd(&cls.download.z);
 #endif
 }
 
@@ -172,95 +172,95 @@ should never be downloaded (e.g. model specific sounds).
 */
 void CL_LoadDownloadIgnores(void)
 {
-    string_entry_t *entry, *next;
-    char *raw, *data, *p;
+	string_entry_t *entry, *next;
+	char *raw, *data, *p;
     int len, count, line;
 
-    // free previous entries
-    for (entry = cls.download.ignores; entry; entry = next) {
-        next = entry->next;
-        Z_Free(entry);
-    }
+	// free previous entries
+	for (entry = cls.download.ignores; entry; entry = next) {
+		next = entry->next;
+		Z_Free(entry);
+	}
 
-    cls.download.ignores = NULL;
+	cls.download.ignores = NULL;
 
-    // load new list
-    len = FS_LoadFile(CL_DOWNLOAD_IGNORES, (void **)&raw);
-    if (!raw) {
-        if (len != Q_ERR_NOENT)
-            Com_EPrintf("Couldn't load %s: %s\n",
-                        CL_DOWNLOAD_IGNORES, Q_ErrorString(len));
-        return;
-    }
+	// load new list
+	len = FS_LoadFile(CL_DOWNLOAD_IGNORES, (void **)&raw);
+	if (!raw) {
+		if (len != Q_ERR_NOENT)
+			Com_EPrintf("Couldn't load %s: %s\n",
+				CL_DOWNLOAD_IGNORES, Q_ErrorString(len));
+		return;
+	}
 
-    count = 0;
-    line = 1;
-    data = raw;
+	count = 0;
+	line = 1;
+	data = raw;
 
-    while (*data) {
-        p = strchr(data, '\n');
-        if (p) {
-            if (p > data && *(p - 1) == '\r')
-                *(p - 1) = 0;
-            *p = 0;
-        }
+	while (*data) {
+		p = strchr(data, '\n');
+		if (p) {
+			if (p > data && *(p - 1) == '\r')
+				*(p - 1) = 0;
+			*p = 0;
+		}
 
-        // ignore empty lines and comments
-        if (*data && *data != '#' && *data != '/') {
-            len = strlen(data);
-            if (len < MAX_QPATH) {
+		// ignore empty lines and comments
+		if (*data && *data != '#' && *data != '/') {
+			len = strlen(data);
+			if (len < MAX_QPATH) {
                 entry = Z_Malloc(sizeof(*entry) + len);
-                memcpy(entry->string, data, len + 1);
-                entry->next = cls.download.ignores;
-                cls.download.ignores = entry;
-                count++;
+				memcpy(entry->string, data, len + 1);
+				entry->next = cls.download.ignores;
+				cls.download.ignores = entry;
+				count++;
             } else {
-                Com_WPrintf("Oversize filter on line %d in %s\n",
-                            line, CL_DOWNLOAD_IGNORES);
-            }
-        }
+				Com_WPrintf("Oversize filter on line %d in %s\n",
+					line, CL_DOWNLOAD_IGNORES);
+			}
+		}
 
-        if (!p)
-            break;
+		if (!p)
+			break;
 
-        data = p + 1;
-        line++;
-    }
+		data = p + 1;
+		line++;
+	}
 
-    Com_DPrintf("Loaded %d filters from %s\n", count, CL_DOWNLOAD_IGNORES);
+	Com_DPrintf("Loaded %d filters from %s\n", count, CL_DOWNLOAD_IGNORES);
 
-    FS_FreeFile(raw);
+	FS_FreeFile(raw);
 }
 
 static bool start_udp_download(dlqueue_t *q)
 {
-    size_t len;
-    qhandle_t f;
+	size_t len;
+	qhandle_t f;
     int64_t ret;
 
-    len = strlen(q->path);
-    if (len >= MAX_QPATH) {
-        Com_Error(ERR_DROP, "%s: oversize quake path", __func__);
-    }
+	len = strlen(q->path);
+	if (len >= MAX_QPATH) {
+		Com_Error(ERR_DROP, "%s: oversize quake path", __func__);
+	}
 
-    // download to a temp name, and only rename
-    // to the real name when done, so if interrupted
-    // a runt file wont be left
-    memcpy(cls.download.temp, q->path, len);
-    memcpy(cls.download.temp + len, ".tmp", 5);
+	// download to a temp name, and only rename
+	// to the real name when done, so if interrupted
+	// a runt file wont be left
+	memcpy(cls.download.temp, q->path, len);
+	memcpy(cls.download.temp + len, ".tmp", 5);
 
-    // check to see if we already have a tmp for this file, if so, try to resume
-    // open the file if not opened yet
-    ret = FS_FOpenFile(cls.download.temp, &f, FS_MODE_RDWR);
+	// check to see if we already have a tmp for this file, if so, try to resume
+	// open the file if not opened yet
+	ret = FS_FOpenFile(cls.download.temp, &f, FS_MODE_RDWR);
     if (ret > INT_MAX) {
         FS_FCloseFile(f);
         ret = -EFBIG;
     }
-    if (ret >= 0) {  // it exists
-        cls.download.file = f;
-        cls.download.position = ret;
-        // give the server an offset to start the download
-        Com_DPrintf("[UDP] Resuming %s\n", q->path);
+	if (ret >= 0) {  // it exists
+		cls.download.file = f;
+		cls.download.position = ret;
+		// give the server an offset to start the download
+		Com_DPrintf("[UDP] Resuming %s\n", q->path);
 #if USE_ZLIB
         if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2)
             CL_ClientCommand(va("download \"%s\" %d udp-zlib", q->path, (int)ret));
@@ -268,7 +268,7 @@ static bool start_udp_download(dlqueue_t *q)
 #endif
             CL_ClientCommand(va("download \"%s\" %d", q->path, (int)ret));
     } else if (ret == Q_ERR_NOENT) {  // it doesn't exist
-        Com_DPrintf("[UDP] Downloading %s\n", q->path);
+		Com_DPrintf("[UDP] Downloading %s\n", q->path);
 #if USE_ZLIB
         if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2)
             CL_ClientCommand(va("download \"%s\" %d udp-zlib", q->path, 0));
@@ -276,14 +276,14 @@ static bool start_udp_download(dlqueue_t *q)
 #endif
             CL_ClientCommand(va("download \"%s\"", q->path));
     } else { // error happened
-        Com_EPrintf("[UDP] Couldn't open %s for appending: %s\n",
-                    cls.download.temp, Q_ErrorString(ret));
-        CL_FinishDownload(q);
+		Com_EPrintf("[UDP] Couldn't open %s for appending: %s\n",
+			cls.download.temp, Q_ErrorString(ret));
+		CL_FinishDownload(q);
         return false;
-    }
+	}
 
-    q->state = DL_RUNNING;
-    cls.download.current = q;
+	q->state = DL_RUNNING;
+	cls.download.current = q;
     return true;
 }
 
@@ -296,67 +296,67 @@ Start another UDP download if possible
 */
 void CL_StartNextDownload(void)
 {
-    dlqueue_t *q;
+	dlqueue_t *q;
 
-    if (!cls.download.pending || cls.download.current) {
-        return;
-    }
+	if (!cls.download.pending || cls.download.current) {
+		return;
+	}
 
-    FOR_EACH_DLQ(q) {
-        if (q->state == DL_PENDING) {
-            if (start_udp_download(q)) {
-                break;
-            }
-        }
-    }
+	FOR_EACH_DLQ(q) {
+		if (q->state == DL_PENDING) {
+			if (start_udp_download(q)) {
+				break;
+			}
+		}
+	}
 }
 
 static void finish_udp_download(const char *msg)
 {
-    dlqueue_t *q = cls.download.current;
+	dlqueue_t *q = cls.download.current;
 
-    // finished with current path
-    CL_FinishDownload(q);
+	// finished with current path
+	CL_FinishDownload(q);
 
-    cls.download.current = NULL;
-    cls.download.percent = 0;
-    cls.download.position = 0;
+	cls.download.current = NULL;
+	cls.download.percent = 0;
+	cls.download.position = 0;
 
-    if (cls.download.file) {
-        FS_FCloseFile(cls.download.file);
-        cls.download.file = 0;
-    }
+	if (cls.download.file) {
+		FS_FCloseFile(cls.download.file);
+		cls.download.file = 0;
+	}
 
-    cls.download.temp[0] = 0;
+	cls.download.temp[0] = 0;
 
 #if USE_ZLIB
-    inflateReset(&cls.download.z);
+	inflateReset(&cls.download.z);
 #endif
 
-    if (msg) {
-        Com_Printf("[UDP] %s [%s] [%d remaining file%s]\n",
-                   q->path, msg, cls.download.pending,
-                   cls.download.pending == 1 ? "" : "s");
-    }
+	if (msg) {
+		Com_Printf("[UDP] %s [%s] [%d remaining file%s]\n",
+			q->path, msg, cls.download.pending,
+			cls.download.pending == 1 ? "" : "s");
+	}
 
-    // get another file if needed
-    CL_RequestNextDownload();
-    CL_StartNextDownload();
+	// get another file if needed
+	CL_RequestNextDownload();
+	CL_StartNextDownload();
 }
 
 static int write_udp_download(byte *data, int size)
 {
     int ret;
 
-    ret = FS_Write(data, size, cls.download.file);
-    if (ret != size) {
-        Com_EPrintf("[UDP] Couldn't write %s: %s\n",
-                    cls.download.temp, Q_ErrorString(ret));
-        finish_udp_download(NULL);
-        return -1;
-    }
+	ret = FS_Write(data, size, cls.download.file);
+	if (ret != size) {
+		Com_EPrintf("[UDP] Couldn't write %s: %s\n",
+			cls.download.temp, Q_ErrorString(ret));
+		finish_udp_download(NULL);
+		return -1;
+	}
 
-    return 0;
+	return 0;
 }
 
 // handles both continuous deflate stream for entire download and chunked
@@ -367,52 +367,52 @@ static int inflate_udp_download(byte *data, int inlen, int outlen)
 
 #define CHUNK   0x10000
 
-    z_streamp   z = &cls.download.z;
-    byte        buffer[CHUNK];
-    int         ret;
+	z_streamp   z = &cls.download.z;
+	byte        buffer[CHUNK];
+	int         ret;
 
-    // initialize stream if not done yet
-    if (z->state == NULL && inflateInit2(z, -MAX_WBITS) != Z_OK)
-        Com_Error(ERR_FATAL, "%s: inflateInit2() failed", __func__);
+	// initialize stream if not done yet
+	if (z->state == NULL && inflateInit2(z, -MAX_WBITS) != Z_OK)
+		Com_Error(ERR_FATAL, "%s: inflateInit2() failed", __func__);
 
-    z->next_in = data;
-    z->avail_in = inlen;
+	z->next_in = data;
+	z->avail_in = inlen;
 
-    // run inflate() until output buffer not full
-    do {
-        z->next_out = buffer;
-        z->avail_out = CHUNK;
+	// run inflate() until output buffer not full
+	do {
+		z->next_out = buffer;
+		z->avail_out = CHUNK;
 
-        ret = inflate(z, Z_SYNC_FLUSH);
-        if (ret != Z_OK && ret != Z_STREAM_END) {
-            Com_EPrintf("[UDP] inflate() failed: %s\n", z->msg);
-            finish_udp_download(NULL);
-            return -1;
-        }
+		ret = inflate(z, Z_SYNC_FLUSH);
+		if (ret != Z_OK && ret != Z_STREAM_END) {
+			Com_EPrintf("[UDP] inflate() failed: %s\n", z->msg);
+			finish_udp_download(NULL);
+			return -1;
+		}
 
-        Com_DDPrintf("%s: %u --> %u [%d]\n",
-                     __func__,
-                     inlen - z->avail_in,
-                     CHUNK - z->avail_out,
-                     ret);
+		Com_DDPrintf("%s: %u --> %u [%d]\n",
+			__func__,
+			inlen - z->avail_in,
+			CHUNK - z->avail_out,
+			ret);
 
-        if (write_udp_download(buffer, CHUNK - z->avail_out))
-            return -1;
-    } while (z->avail_out == 0);
+		if (write_udp_download(buffer, CHUNK - z->avail_out))
+			return -1;
+	} while (z->avail_out == 0);
 
-    // check uncompressed length if known
+	// check uncompressed length if known
     if (outlen > 0 && outlen != z->total_out)
-        Com_WPrintf("[UDP] Decompressed length mismatch: %d != %lu\n", outlen, z->total_out);
+		Com_WPrintf("[UDP] Decompressed length mismatch: %d != %lu\n", outlen, z->total_out);
 
-    // prepare for the next stream if done
-    if (ret == Z_STREAM_END)
-        inflateReset(z);
+	// prepare for the next stream if done
+	if (ret == Z_STREAM_END)
+		inflateReset(z);
 
-    return 0;
+	return 0;
 #else
-    // should never happen
-    Com_Error(ERR_DROP, "Compressed server packet received, "
-              "but no zlib support linked in.");
+	// should never happen
+	Com_Error(ERR_DROP, "Compressed server packet received, "
+		"but no zlib support linked in.");
 #endif
 }
 
@@ -425,63 +425,63 @@ An UDP download data has been received from the server.
 */
 void CL_HandleDownload(byte *data, int size, int percent, int compressed)
 {
-    dlqueue_t *q = cls.download.current;
+	dlqueue_t *q = cls.download.current;
     int ret;
 
-    if (!q) {
-        Com_Error(ERR_DROP, "%s: no download requested", __func__);
-    }
+	if (!q) {
+		Com_Error(ERR_DROP, "%s: no download requested", __func__);
+	}
 
-    if (size == -1) {
-        if (!percent) {
-            finish_udp_download("FAIL");
+	if (size == -1) {
+		if (!percent) {
+			finish_udp_download("FAIL");
         } else {
-            finish_udp_download("STOP");
-        }
-        return;
-    }
+			finish_udp_download("STOP");
+		}
+		return;
+	}
 
-    // open the file if not opened yet
-    if (!cls.download.file) {
-        ret = FS_FOpenFile(cls.download.temp, &cls.download.file, FS_MODE_WRITE);
-        if (!cls.download.file) {
-            Com_EPrintf("[UDP] Couldn't open %s for writing: %s\n",
-                        cls.download.temp, Q_ErrorString(ret));
-            finish_udp_download(NULL);
-            return;
-        }
-    }
+	// open the file if not opened yet
+	if (!cls.download.file) {
+		ret = FS_FOpenFile(cls.download.temp, &cls.download.file, FS_MODE_WRITE);
+		if (!cls.download.file) {
+			Com_EPrintf("[UDP] Couldn't open %s for writing: %s\n",
+				cls.download.temp, Q_ErrorString(ret));
+			finish_udp_download(NULL);
+			return;
+		}
+	}
 
-    if (compressed) {
-        if (inflate_udp_download(data, size, compressed))
-            return;
+	if (compressed) {
+		if (inflate_udp_download(data, size, compressed))
+			return;
     } else {
-        if (write_udp_download(data, size))
-            return;
-    }
+		if (write_udp_download(data, size))
+			return;
+	}
 
-    if (percent != 100) {
-        // request next block
-        // change display routines by zoid
-        cls.download.percent = percent;
-        cls.download.position += size;
+	if (percent != 100) {
+		// request next block
+		// change display routines by zoid
+		cls.download.percent = percent;
+		cls.download.position += size;
 
-        CL_ClientCommand("nextdl");
+		CL_ClientCommand("nextdl");
     } else {
-        // close the file before renaming
-        FS_FCloseFile(cls.download.file);
-        cls.download.file = 0;
+		// close the file before renaming
+		FS_FCloseFile(cls.download.file);
+		cls.download.file = 0;
 
-        // rename the temp file to its final name
-        ret = FS_RenameFile(cls.download.temp, q->path);
-        if (ret) {
-            Com_EPrintf("[UDP] Couldn't rename %s to %s: %s\n",
-                        cls.download.temp, q->path, Q_ErrorString(ret));
-            finish_udp_download(NULL);
+		// rename the temp file to its final name
+		ret = FS_RenameFile(cls.download.temp, q->path);
+		if (ret) {
+			Com_EPrintf("[UDP] Couldn't rename %s to %s: %s\n",
+				cls.download.temp, q->path, Q_ErrorString(ret));
+			finish_udp_download(NULL);
         } else {
-            finish_udp_download("DONE");
-        }
-    }
+			finish_udp_download("DONE");
+		}
+	}
 }
 
 
@@ -495,14 +495,14 @@ to prevent the server from uploading arbitrary files.
 */
 bool CL_CheckDownloadExtension(const char *ext)
 {
-    static const char allowed[][4] = {
-        "pcx", "wal", "wav", "md2", "sp2", "tga", "png",
-        "jpg", "bsp", "ent", "txt", "dm2", "loc", "md3"
-    };
-    int i;
+	static const char allowed[][4] = {
+		"pcx", "wal", "wav", "md2", "sp2", "tga", "png",
+		"jpg", "bsp", "ent", "txt", "dm2", "loc", "md3"
+	};
+	int i;
 
-    for (i = 0; i < q_countof(allowed); i++)
-        if (!Q_stricmp(ext, allowed[i]))
+	for (i = 0; i < q_countof(allowed); i++)
+		if (!Q_stricmp(ext, allowed[i]))
             return true;
 
     return false;
@@ -511,62 +511,62 @@ bool CL_CheckDownloadExtension(const char *ext)
 // attempts to start a download from the server if file doesn't exist.
 static int check_file_len(const char *path, size_t len, dltype_t type)
 {
-    char buffer[MAX_QPATH], *ext;
+	char buffer[MAX_QPATH], *ext;
     int ret;
-    int valid;
+	int valid;
 
-    // check for oversize path
-    if (len >= MAX_QPATH)
-        return Q_ERR_NAMETOOLONG;
+	// check for oversize path
+	if (len >= MAX_QPATH)
+		return Q_ERR_NAMETOOLONG;
 
-    // normalize path
-    len = FS_NormalizePath(buffer, path);
+	// normalize path
+	len = FS_NormalizePath(buffer, path);
 
-    // check for empty path
-    if (len == 0)
-        return Q_ERR_NAMETOOSHORT;
+	// check for empty path
+	if (len == 0)
+		return Q_ERR_NAMETOOSHORT;
 
-    valid = FS_ValidatePath(buffer);
+	valid = FS_ValidatePath(buffer);
 
-    // check path
-    if (valid == PATH_INVALID
-        || !Q_ispath(buffer[0])
-        || !Q_ispath(buffer[len - 1])
-        || strstr(buffer, "..")
-        || !strchr(buffer, '/')) {
-        // some of these checks are too conservative or even redundant
-        // once we have normalized the path, however they have to stay for
-        // compatibility reasons with older servers (some would even ban us
-        // for sending .. for example)
-        return Q_ERR_INVALID_PATH;
-    }
+	// check path
+	if (valid == PATH_INVALID
+		|| !Q_ispath(buffer[0])
+		|| !Q_ispath(buffer[len - 1])
+		|| strstr(buffer, "..")
+		|| !strchr(buffer, '/')) {
+		// some of these checks are too conservative or even redundant
+		// once we have normalized the path, however they have to stay for
+		// compatibility reasons with older servers (some would even ban us
+		// for sending .. for example)
+		return Q_ERR_INVALID_PATH;
+	}
 
-    // check extension
-    ext = COM_FileExtension(buffer);
-    if (*ext != '.' || !CL_CheckDownloadExtension(ext + 1))
-        return Q_ERR_INVALID_PATH;
+	// check extension
+	ext = COM_FileExtension(buffer);
+	if (*ext != '.' || !CL_CheckDownloadExtension(ext + 1))
+		return Q_ERR_INVALID_PATH;
 
-    if (FS_FileExists(buffer))
-        // it exists, no need to download
-        return Q_ERR_EXIST;
+	if (FS_FileExists(buffer))
+		// it exists, no need to download
+		return Q_ERR_EXIST;
 
-    if (valid == PATH_MIXED_CASE)
-        // convert to lower case to make download server happy
-        Q_strlwr(buffer);
+	if (valid == PATH_MIXED_CASE)
+		// convert to lower case to make download server happy
+		Q_strlwr(buffer);
 
-    if (CL_IgnoreDownload(buffer))
-        return Q_ERR_PERM;
+	if (CL_IgnoreDownload(buffer))
+		return Q_ERR_PERM;
 
-    ret = HTTP_QueueDownload(buffer, type);
-    if (ret != Q_ERR_NOSYS)
-        return ret;
+	ret = HTTP_QueueDownload(buffer, type);
+	if (ret != Q_ERR_NOSYS)
+		return ret;
 
-    // queue and start legacy UDP download
-    ret = CL_QueueDownload(buffer, type);
-    if (ret == Q_ERR_SUCCESS)
-        CL_StartNextDownload();
+	// queue and start legacy UDP download
+	ret = CL_QueueDownload(buffer, type);
+	if (ret == Q_ERR_SUCCESS)
+		CL_StartNextDownload();
 
-    return ret;
+	return ret;
 }
 
 #define check_file(path, type) \
@@ -574,155 +574,155 @@ static int check_file_len(const char *path, size_t len, dltype_t type)
 
 static void check_skins(const char *name)
 {
-    size_t          i, num_skins, ofs_skins, end_skins;
-    byte            *model;
-    size_t          len;
-    dmd2header_t    *md2header;
-    dsp2header_t    *sp2header;
-    char            *md2skin;
-    dsp2frame_t     *sp2frame;
-    uint32_t        ident;
-    char            fn[MAX_QPATH];
+	size_t          i, num_skins, ofs_skins, end_skins;
+	byte            *model;
+	size_t          len;
+	dmd2header_t    *md2header;
+	dsp2header_t    *sp2header;
+	char            *md2skin;
+	dsp2frame_t     *sp2frame;
+	uint32_t        ident;
+	char            fn[MAX_QPATH];
 
-    len = FS_LoadFile(name, (void **)&model);
-    if (!model) {
-        // couldn't load it
-        return;
-    }
+	len = FS_LoadFile(name, (void **)&model);
+	if (!model) {
+		// couldn't load it
+		return;
+	}
 
-    if (len < sizeof(ident)) {
-        // file too small
-        goto done;
-    }
+	if (len < sizeof(ident)) {
+		// file too small
+		goto done;
+	}
 
-    // check ident
-    ident = LittleLong(*(uint32_t *)model);
-    switch (ident) {
-    case MD2_IDENT:
-        // alias model
-        md2header = (dmd2header_t *)model;
-        if (len < sizeof(*md2header) ||
-            LittleLong(md2header->ident) != MD2_IDENT ||
-            LittleLong(md2header->version) != MD2_VERSION) {
-            // not an alias model
-            goto done;
-        }
+	// check ident
+	ident = LittleLong(*(uint32_t *)model);
+	switch (ident) {
+	case MD2_IDENT:
+		// alias model
+		md2header = (dmd2header_t *)model;
+		if (len < sizeof(*md2header) ||
+			LittleLong(md2header->ident) != MD2_IDENT ||
+			LittleLong(md2header->version) != MD2_VERSION) {
+			// not an alias model
+			goto done;
+		}
 
-        num_skins = LittleLong(md2header->num_skins);
-        ofs_skins = LittleLong(md2header->ofs_skins);
-        end_skins = ofs_skins + num_skins * MD2_MAX_SKINNAME;
-        if (num_skins > MD2_MAX_SKINS || end_skins < ofs_skins || end_skins > len) {
-            // bad alias model
-            goto done;
-        }
+		num_skins = LittleLong(md2header->num_skins);
+		ofs_skins = LittleLong(md2header->ofs_skins);
+		end_skins = ofs_skins + num_skins * MD2_MAX_SKINNAME;
+		if (num_skins > MD2_MAX_SKINS || end_skins < ofs_skins || end_skins > len) {
+			// bad alias model
+			goto done;
+		}
 
-        md2skin = (char *)model + ofs_skins;
-        for (i = 0; i < num_skins; i++) {
-            if (!Q_memccpy(fn, md2skin, 0, sizeof(fn))) {
-                // bad alias model
-                goto done;
-            }
-            check_file(fn, DL_OTHER);
-            md2skin += MD2_MAX_SKINNAME;
-        }
-        break;
+		md2skin = (char *)model + ofs_skins;
+		for (i = 0; i < num_skins; i++) {
+			if (!Q_memccpy(fn, md2skin, 0, sizeof(fn))) {
+				// bad alias model
+				goto done;
+			}
+			check_file(fn, DL_OTHER);
+			md2skin += MD2_MAX_SKINNAME;
+		}
+		break;
 
-    case SP2_IDENT:
-        // sprite model
-        sp2header = (dsp2header_t *)model;
-        if (len < sizeof(*sp2header) ||
-            LittleLong(sp2header->ident) != SP2_IDENT ||
-            LittleLong(sp2header->version) != SP2_VERSION) {
-            // not a sprite model
-            goto done;
-        }
+	case SP2_IDENT:
+		// sprite model
+		sp2header = (dsp2header_t *)model;
+		if (len < sizeof(*sp2header) ||
+			LittleLong(sp2header->ident) != SP2_IDENT ||
+			LittleLong(sp2header->version) != SP2_VERSION) {
+			// not a sprite model
+			goto done;
+		}
 
-        num_skins = LittleLong(sp2header->numframes);
-        ofs_skins = sizeof(*sp2header);
-        end_skins = ofs_skins + num_skins * sizeof(dsp2frame_t);
-        if (num_skins > SP2_MAX_FRAMES || end_skins < ofs_skins || end_skins > len) {
-            // bad sprite model
-            goto done;
-        }
+		num_skins = LittleLong(sp2header->numframes);
+		ofs_skins = sizeof(*sp2header);
+		end_skins = ofs_skins + num_skins * sizeof(dsp2frame_t);
+		if (num_skins > SP2_MAX_FRAMES || end_skins < ofs_skins || end_skins > len) {
+			// bad sprite model
+			goto done;
+		}
 
-        sp2frame = (dsp2frame_t *)(model + ofs_skins);
-        for (i = 0; i < num_skins; i++) {
-            if (!Q_memccpy(fn, sp2frame->name, 0, sizeof(fn))) {
-                // bad sprite model
-                goto done;
-            }
-            check_file(fn, DL_OTHER);
-            sp2frame++;
-        }
-        break;
+		sp2frame = (dsp2frame_t *)(model + ofs_skins);
+		for (i = 0; i < num_skins; i++) {
+			if (!Q_memccpy(fn, sp2frame->name, 0, sizeof(fn))) {
+				// bad sprite model
+				goto done;
+			}
+			check_file(fn, DL_OTHER);
+			sp2frame++;
+		}
+		break;
 
-    default:
-        // unknown file format
-        goto done;
-    }
+	default:
+		// unknown file format
+		goto done;
+	}
 
 done:
-    FS_FreeFile(model);
+	FS_FreeFile(model);
 }
 
 static void check_player(const char *name)
 {
-    char fn[MAX_QPATH], model[MAX_QPATH], skin[MAX_QPATH], *p;
-    size_t len;
-    int i, j;
+	char fn[MAX_QPATH], model[MAX_QPATH], skin[MAX_QPATH], *p;
+	size_t len;
+	int i, j;
 
-    CL_ParsePlayerSkin(NULL, model, skin, name);
+	CL_ParsePlayerSkin(NULL, model, skin, name);
 
-    // model
-    len = Q_concat(fn, sizeof(fn), "players/", model, "/tris.md2", NULL);
-    check_file_len(fn, len, DL_OTHER);
+	// model
+	len = Q_concat(fn, sizeof(fn), "players/", model, "/tris.md2", NULL);
+	check_file_len(fn, len, DL_OTHER);
 
-    // weapon models
-    for (i = 0; i < cl.numWeaponModels; i++) {
-        len = Q_concat(fn, sizeof(fn), "players/", model, "/", cl.weaponModels[i], NULL);
-        check_file_len(fn, len, DL_OTHER);
-    }
+	// weapon models
+	for (i = 0; i < cl.numWeaponModels; i++) {
+		len = Q_concat(fn, sizeof(fn), "players/", model, "/", cl.weaponModels[i], NULL);
+		check_file_len(fn, len, DL_OTHER);
+	}
 
-    // default weapon skin
-    len = Q_concat(fn, sizeof(fn), "players/", model, "/weapon.pcx", NULL);
-    check_file_len(fn, len, DL_OTHER);
+	// default weapon skin
+	len = Q_concat(fn, sizeof(fn), "players/", model, "/weapon.pcx", NULL);
+	check_file_len(fn, len, DL_OTHER);
 
-    // skin
-    len = Q_concat(fn, sizeof(fn), "players/", model, "/", skin, ".pcx", NULL);
-    check_file_len(fn, len, DL_OTHER);
+	// skin
+	len = Q_concat(fn, sizeof(fn), "players/", model, "/", skin, ".pcx", NULL);
+	check_file_len(fn, len, DL_OTHER);
 
-    // skin_i
-    len = Q_concat(fn, sizeof(fn), "players/", model, "/", skin, "_i.pcx", NULL);
-    check_file_len(fn, len, DL_OTHER);
+	// skin_i
+	len = Q_concat(fn, sizeof(fn), "players/", model, "/", skin, "_i.pcx", NULL);
+	check_file_len(fn, len, DL_OTHER);
 
-    // sexed sounds
+	// sexed sounds
     for (i = 0; i < precache_sexed_total; i++) {
-        j = precache_sexed_sounds[i];
-        p = cl.configstrings[CS_SOUNDS + j];
+		j = precache_sexed_sounds[i];
+		p = cl.configstrings[CS_PRECACHE + j];
 
         if (*p == '*') {
-            len = Q_concat(fn, sizeof(fn), "players/", model, "/", p + 1, NULL);
-            check_file_len(fn, len, DL_OTHER);
-        }
-    }
+			len = Q_concat(fn, sizeof(fn), "players/", model, "/", p + 1, NULL);
+			check_file_len(fn, len, DL_OTHER);
+		}
+	}
 }
 
 // for precaching dependencies
 static bool downloads_pending(dltype_t type)
 {
-    dlqueue_t *q;
+	dlqueue_t *q;
 
-    // DL_OTHER just checks for any download
-    if (type == DL_OTHER) {
-        return !!cls.download.pending;
-    }
+	// DL_OTHER just checks for any download
+	if (type == DL_OTHER) {
+		return !!cls.download.pending;
+	}
 
-    // see if there are pending downloads of the given type
-    FOR_EACH_DLQ(q) {
-        if (q->state != DL_DONE && q->type == type) {
+	// see if there are pending downloads of the given type
+	FOR_EACH_DLQ(q) {
+		if (q->state != DL_DONE && q->type == type) {
             return true;
-        }
-    }
+		}
+	}
 
     return false;
 }
@@ -736,169 +736,194 @@ Runs precache check and dispatches downloads.
 */
 void CL_RequestNextDownload(void)
 {
-    char fn[MAX_QPATH], *name;
-    size_t len;
-    int i;
+	char fn[MAX_QPATH], *name;
+	size_t len;
+	int i;
 
-    if (cls.state != ca_connected && cls.state != ca_loading)
-        return;
+	if (cls.state != ca_connected && cls.state != ca_loading)
+		return;
 
-    if (allow_download->integer <= 0 || NET_IsLocalAddress(&cls.serverAddress)) {
-        if (precache_check <= PRECACHE_MAP) {
-            CL_RegisterBspModels();
-        }
+	if (allow_download->integer <= 0 || NET_IsLocalAddress(&cls.serverAddress)) {
+		if (precache_check <= PRECACHE_MAP) {
+			CL_RegisterBspModels();
+		}
 
-        CL_Begin();
-        return;
-    }
+		CL_Begin();
+		return;
+	}
 
-    switch (precache_check) {
-    case PRECACHE_MODELS:
-        // confirm map
-        if (allow_download_maps->integer)
-            check_file(cl.configstrings[CS_MODELS + 1], DL_MAP);
+	const byte *precache_bitset = (const byte*)cl.precache_bitset;
 
-        // checking for models
-        if (allow_download_models->integer) {
-            for (i = 2; i < MAX_MODELS; i++) {
-                name = cl.configstrings[CS_MODELS + i];
-                if (!name[0]) {
-                    break;
-                }
-                if (name[0] == '*' || name[0] == '#') {
-                    continue;
-                }
-                check_file(name, DL_MODEL);
-            }
-        }
+	switch (precache_check) {
+	case PRECACHE_MODELS:
+		// confirm map
+		if (allow_download_maps->integer)
+			check_file(cl.configstrings[CS_PRECACHE + 1], DL_MAP);
 
-        precache_check = PRECACHE_OTHER;
-        // fall through
+		// checking for models
+		if (allow_download_models->integer) {
+			for (i = 1; i < MAX_PRECACHE; i++) {
+				if (Q_GetPrecacheBitsetType(precache_bitset, i) != PRECACHE_MODEL) {
+					continue;
+				}
 
-    case PRECACHE_OTHER:
-        if (allow_download_models->integer) {
-            if (downloads_pending(DL_MODEL)) {
-                // pending downloads (models), let's wait here before we can check skins.
-                Com_DPrintf("%s: waiting for models...\n", __func__);
-                return;
-            }
+				name = cl.configstrings[CS_PRECACHE + i];
 
-            for (i = 2; i < MAX_MODELS; i++) {
-                name = cl.configstrings[CS_MODELS + i];
-                if (!name[0]) {
-                    break;
-                }
-                if (name[0] == '*' || name[0] == '#') {
-                    continue;
-                }
-                check_skins(name);
-            }
-        }
+				if (!name[0]) {
+					continue;
+				}
+				if (name[0] == '*' || name[0] == '#') {
+					continue;
+				}
+				check_file(name, DL_MODEL);
+			}
+		}
 
-        if (allow_download_sounds->integer) {
-            for (i = 1; i < MAX_SOUNDS; i++) {
-                name = cl.configstrings[CS_SOUNDS + i];
-                if (!name[0]) {
-                    break;
-                }
-                if (name[0] == '*') {
-                    continue;
-                }
-                if (name[0] == '#') {
-                    len = Q_strlcpy(fn, name + 1, sizeof(fn));
-                } else {
-                    len = Q_concat(fn, sizeof(fn), "sound/", name, NULL);
-                }
-                check_file_len(fn, len, DL_OTHER);
-            }
-        }
+		precache_check = PRECACHE_OTHER;
+		// fall through
 
-        if (allow_download_pics->integer) {
-            for (i = 1; i < MAX_IMAGES; i++) {
-                name = cl.configstrings[CS_IMAGES + i];
-                if (!name[0]) {
-                    break;
-                }
-                if (name[0] == '/' || name[0] == '\\') {
-                    len = Q_strlcpy(fn, name + 1, sizeof(fn));
-                } else {
-                    len = Q_concat(fn, sizeof(fn), "pics/", name, ".pcx", NULL);
-                }
-                check_file_len(fn, len, DL_OTHER);
-            }
-        }
+	case PRECACHE_OTHER:
+		if (allow_download_models->integer) {
+			if (downloads_pending(DL_MODEL)) {
+				// pending downloads (models), let's wait here before we can check skins.
+				Com_DPrintf("%s: waiting for models...\n", __func__);
+				return;
+			}
 
-        if (allow_download_players->integer) {
-            // find sexed sounds
-            precache_sexed_total = 0;
-            for (i = 1; i < MAX_SOUNDS; i++) {
-                if (cl.configstrings[CS_SOUNDS + i][0] == '*') {
-                    precache_sexed_sounds[precache_sexed_total++] = i;
-                }
-            }
+			for (i = 1; i < MAX_PRECACHE; i++) {
+				if (Q_GetPrecacheBitsetType(precache_bitset, i) != PRECACHE_MODEL) {
+					continue;
+				}
 
-            for (i = 0; i < MAX_CLIENTS; i++) {
-                name = cl.configstrings[CS_PLAYERSKINS + i];
-                if (!name[0]) {
-                    continue;
-                }
-                check_player(name);
-            }
-        }
+				name = cl.configstrings[CS_PRECACHE + i];
 
-        if (allow_download_textures->integer) {
-            static const char env_suf[6][3] = {
-                "rt", "bk", "lf", "ft", "up", "dn"
-            };
+				if (!name[0]) {
+					continue;
+				}
+				if (name[0] == '*' || name[0] == '#' || name[0] == '%') {
+					continue;
+				}
+				check_skins(name);
+			}
+		}
 
-            for (i = 0; i < 6; i++) {
-                len = Q_concat(fn, sizeof(fn), "env/", cl.configstrings[CS_SKY], env_suf[i], ".tga", NULL);
-                check_file_len(fn, len, DL_OTHER);
-            }
-        }
+		if (allow_download_sounds->integer) {
+			for (i = 1; i < MAX_PRECACHE; i++) {
+				if (Q_GetPrecacheBitsetType(precache_bitset, i) != PRECACHE_SOUND) {
+					continue;
+				}
 
-        precache_check = PRECACHE_MAP;
-        // fall through
+				name = cl.configstrings[CS_PRECACHE + i];
+				if (!name[0]) {
+					continue;
+				}
+				if (name[0] == '*' || name[0] == '%') {
+					continue;
+				}
+				if (name[0] == '#') {
+					len = Q_strlcpy(fn, name + 1, sizeof(fn));
+				} else {
+					len = Q_concat(fn, sizeof(fn), "sound/", name, NULL);
+				}
+				check_file_len(fn, len, DL_OTHER);
+			}
+		}
 
-    case PRECACHE_MAP:
-        if (downloads_pending(DL_MAP)) {
-            // map might still be downloading?
-            Com_DPrintf("%s: waiting for map...\n", __func__);
-            return;
-        }
+		if (allow_download_pics->integer) {
+			for (i = 1; i < MAX_PRECACHE; i++) {
+				if (Q_GetPrecacheBitsetType(precache_bitset, i) != PRECACHE_PIC) {
+					continue;
+				}
 
-        // load the map file before checking textures
-        CL_RegisterBspModels();
+				name = cl.configstrings[CS_PRECACHE + i];
 
-        if (allow_download_textures->integer) {
-            for (i = 0; i < cl.bsp->numtexinfo; i++) {
-                len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal", NULL);
-                check_file_len(fn, len, DL_OTHER);
-            }
-        }
+				if (!name[0] || name[0] == '%') {
+					continue;
+				}
+				if (name[0] == '/' || name[0] == '\\') {
+					len = Q_strlcpy(fn, name + 1, sizeof(fn));
+				} else {
+					len = Q_concat(fn, sizeof(fn), "pics/", name, ".pcx", NULL);
+				}
+				check_file_len(fn, len, DL_OTHER);
+			}
+		}
 
-        precache_check = PRECACHE_FINAL;
-        // fall through
+		if (allow_download_players->integer) {
+			// find sexed sounds
+			precache_sexed_total = 0;
+			for (i = 1; i < MAX_PRECACHE; i++) {
+				if (Q_GetPrecacheBitsetType(precache_bitset, i) != PRECACHE_SOUND) {
+					continue;
+				}
 
-    case PRECACHE_FINAL:
-        if (downloads_pending(DL_OTHER)) {
-            // pending downloads (possibly textures), let's wait here.
-            Com_DPrintf("%s: waiting for others...\n", __func__);
-            return;
-        }
+				if (cl.configstrings[CS_PRECACHE + i][0] == '*') {
+					precache_sexed_sounds[precache_sexed_total++] = i;
+				}
+			}
 
-        // all done, tell server we are ready
-        CL_Begin();
-        break;
+			for (i = 0; i < MAX_CLIENTS; i++) {
+				name = cl.configstrings[CS_PLAYERSKINS + i];
+				if (!name[0]) {
+					continue;
+				}
+				check_player(name);
+			}
+		}
 
-    default:
-        Com_Error(ERR_DROP, "%s: bad precache_check\n", __func__);
-    }
+		if (allow_download_textures->integer) {
+			static const char env_suf[6][3] = {
+				"rt", "bk", "lf", "ft", "up", "dn"
+			};
+
+			for (i = 0; i < 6; i++) {
+				len = Q_concat(fn, sizeof(fn), "env/", cl.configstrings[CS_SKY], env_suf[i], ".tga", NULL);
+				check_file_len(fn, len, DL_OTHER);
+			}
+		}
+
+		precache_check = PRECACHE_MAP;
+		// fall through
+
+	case PRECACHE_MAP:
+		if (downloads_pending(DL_MAP)) {
+			// map might still be downloading?
+			Com_DPrintf("%s: waiting for map...\n", __func__);
+			return;
+		}
+
+		// load the map file before checking textures
+		CL_RegisterBspModels();
+
+		if (allow_download_textures->integer) {
+			for (i = 0; i < cl.bsp->numtexinfo; i++) {
+				len = Q_concat(fn, sizeof(fn), "textures/", cl.bsp->texinfo[i].name, ".wal", NULL);
+				check_file_len(fn, len, DL_OTHER);
+			}
+		}
+
+		precache_check = PRECACHE_FINAL;
+		// fall through
+
+	case PRECACHE_FINAL:
+		if (downloads_pending(DL_OTHER)) {
+			// pending downloads (possibly textures), let's wait here.
+			Com_DPrintf("%s: waiting for others...\n", __func__);
+			return;
+		}
+
+		// all done, tell server we are ready
+		CL_Begin();
+		break;
+
+	default:
+		Com_Error(ERR_DROP, "%s: bad precache_check\n", __func__);
+	}
 }
 
 void CL_ResetPrecacheCheck(void)
 {
-    precache_check = PRECACHE_MODELS;
+	precache_check = PRECACHE_MODELS;
 }
 
 /*
@@ -910,35 +935,35 @@ Request a download from the server
 */
 static void CL_Download_f(void)
 {
-    char *path;
+	char *path;
     int ret;
 
-    if (cls.state < ca_connected) {
-        Com_Printf("Must be connected to a server.\n");
-        return;
-    }
+	if (cls.state < ca_connected) {
+		Com_Printf("Must be connected to a server.\n");
+		return;
+	}
 
-    if (allow_download->integer == -1) {
-        Com_Printf("Downloads are permanently disabled.\n");
-        return;
-    }
+	if (allow_download->integer == -1) {
+		Com_Printf("Downloads are permanently disabled.\n");
+		return;
+	}
 
-    if (Cmd_Argc() != 2) {
-        Com_Printf("Usage: download <filename>\n");
-        return;
-    }
+	if (Cmd_Argc() != 2) {
+		Com_Printf("Usage: download <filename>\n");
+		return;
+	}
 
-    path = Cmd_Argv(1);
+	path = Cmd_Argv(1);
 
-    ret = check_file(path, DL_OTHER);
-    if (ret) {
-        Com_Printf("Couldn't download %s: %s\n", path, Q_ErrorString(ret));
-    }
+	ret = check_file(path, DL_OTHER);
+	if (ret) {
+		Com_Printf("Couldn't download %s: %s\n", path, Q_ErrorString(ret));
+	}
 }
 
 void CL_InitDownloads(void)
 {
-    Cmd_AddCommand("download", CL_Download_f);
+	Cmd_AddCommand("download", CL_Download_f);
 
-    List_Init(&cls.download.queue);
+	List_Init(&cls.download.queue);
 }

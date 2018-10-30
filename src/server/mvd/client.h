@@ -181,8 +181,8 @@ typedef struct mvd_s {
 // mvd_client.c
 //
 
-extern list_t       mvd_channel_list;
-extern mvd_t        mvd_waitingRoom;
+extern list_t           mvd_channel_list;
+extern mvd_t            mvd_waitingRoom;
 extern bool         mvd_dirty;
 
 extern bool         mvd_active;

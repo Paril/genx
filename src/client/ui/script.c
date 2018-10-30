@@ -144,10 +144,10 @@ static void Parse_Spin(menuFrameWork_t *menu, menuType_t type)
         long_args_hack(s, numItems);
     } else {
         s->itemnames = UI_Mallocz(sizeof(char *) * (numItems + 1));
-        for (i = 0; i < numItems; i++) {
+    for (i = 0; i < numItems; i++) {
             s->itemnames[i] = UI_CopyString(Cmd_Argv(cmd_optind + i));
-        }
-        s->numItems = numItems;
+    }
+    s->numItems = numItems;
     }
 
     Menu_AddItem(menu, s);
@@ -309,7 +309,7 @@ static void Parse_Bitmap(menuFrameWork_t *menu)
     b->cmd = UI_CopyString(Cmd_ArgsFrom(cmd_optind + 1));
     b->pics[0] = R_RegisterPic(Cmd_Argv(cmd_optind));
     b->pics[1] = R_RegisterPic(altname);
-    R_GetPicSize(&b->generic.width, &b->generic.height, b->pics[0]);
+    R_GetPicSize(&b->generic.width, &b->generic.height, b->pics[0], CL_GetClientGame());
 
     Menu_AddItem(menu, b);
 }
@@ -508,11 +508,11 @@ static void Parse_Background(menuFrameWork_t *menu)
     char *s = Cmd_Argv(1);
 
     if (SCR_ParseColor(s, &menu->color)) {
-        menu->image = 0;
+		menu->image = (pichandle_t) { 0 };
         menu->transparent = menu->color.u8[3] != 255;
     } else {
         menu->image = R_RegisterPic(s);
-        menu->transparent = R_GetPicSize(NULL, NULL, menu->image);
+        menu->transparent = R_GetPicSize(NULL, NULL, menu->image, CL_GetClientGame());
     }
 }
 
@@ -580,16 +580,16 @@ static void Parse_Plaque(menuFrameWork_t *menu)
     }
 
     menu->plaque = R_RegisterPic(Cmd_Argv(1));
-    if (menu->plaque) {
+    if (menu->plaque.handle) {
         R_GetPicSize(&menu->plaque_rc.width,
-                     &menu->plaque_rc.height, menu->plaque);
+                     &menu->plaque_rc.height, menu->plaque, CL_GetClientGame());
     }
 
     if (Cmd_Argc() > 2) {
         menu->logo = R_RegisterPic(Cmd_Argv(2));
-        if (menu->logo) {
+        if (menu->logo.handle) {
             R_GetPicSize(&menu->logo_rc.width,
-                         &menu->logo_rc.height, menu->logo);
+                         &menu->logo_rc.height, menu->logo, CL_GetClientGame());
         }
     }
 }
@@ -602,9 +602,9 @@ static void Parse_Banner(menuFrameWork_t *menu)
     }
 
     menu->banner = R_RegisterPic(Cmd_Argv(1));
-    if (menu->banner) {
+    if (menu->banner.handle) {
         R_GetPicSize(&menu->banner_rc.width,
-                     &menu->banner_rc.height, menu->banner);
+                     &menu->banner_rc.height, menu->banner, CL_GetClientGame());
     }
 }
 
@@ -726,18 +726,18 @@ static bool Parse_File(const char *path, int depth)
                     char *s = Cmd_Argv(1);
 
                     if (SCR_ParseColor(s, &uis.color.background)) {
-                        uis.backgroundHandle = 0;
+						uis.backgroundHandle = (pichandle_t) { 0 };
                         uis.transparent = uis.color.background.u8[3] != 255;
                     } else {
                         uis.backgroundHandle = R_RegisterPic(s);
-                        uis.transparent = R_GetPicSize(NULL, NULL, uis.backgroundHandle);
+                        uis.transparent = R_GetPicSize(NULL, NULL, uis.backgroundHandle, CL_GetClientGame());
                     }
                 } else if (!strcmp(cmd, "font")) {
                     uis.fontHandle = R_RegisterFont(Cmd_Argv(1));
                 } else if (!strcmp(cmd, "cursor")) {
                     uis.cursorHandle = R_RegisterPic(Cmd_Argv(1));
                     R_GetPicSize(&uis.cursorWidth,
-                                 &uis.cursorHeight, uis.cursorHandle);
+                                 &uis.cursorHeight, uis.cursorHandle, CL_GetClientGame());
                 } else if (!strcmp(cmd, "weapon")) {
                     Cmd_ArgvBuffer(1, uis.weaponModel, sizeof(uis.weaponModel));
                 } else {

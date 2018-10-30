@@ -46,13 +46,6 @@ static pml_t        pml;
 
 static pmoveParams_t    *pmp;
 
-// movement parameters
-static const float  pm_stopspeed = 100;
-static const float  pm_duckspeed = 100;
-static const float  pm_accelerate = 10;
-static const float  pm_wateraccelerate = 10;
-static const float  pm_waterspeed = 400;
-
 /*
   walking up a step should kill some velocity
 */
@@ -277,6 +270,10 @@ static void PM_Friction(void)
     if (speed < 1) {
         vel[0] = 0;
         vel[1] = 0;
+
+		if (!pm->groundentity)
+			vel[2] = 0;
+
         return;
     }
 
@@ -285,13 +282,22 @@ static void PM_Friction(void)
 // apply ground friction
     if ((pm->groundentity && pml.groundsurface && !(pml.groundsurface->flags & SURF_SLICK)) || (pml.ladder)) {
         friction = pmp->friction;
-        control = speed < pm_stopspeed ? pm_stopspeed : speed;
+        control = speed < pmp->pm_stopspeed ? pmp->pm_stopspeed : speed;
         drop += control * friction * pml.frametime;
     }
 
 // apply water friction
-    if (pm->waterlevel && !pml.ladder)
-        drop += speed * pmp->waterfriction * pm->waterlevel * pml.frametime;
+	if (pm->waterlevel && !pml.ladder)
+	{
+		if (pm->game == GAME_DUKE)
+		{
+			friction = pmp->waterfriction;
+			control = speed < pmp->pm_stopspeed ? pmp->pm_stopspeed : speed;
+			drop += control * friction * pml.frametime;
+		}
+		else
+			drop += speed * pmp->waterfriction * pm->waterlevel * pml.frametime;
+	}
 
 // scale the velocity
     newspeed = speed - drop;
@@ -405,7 +411,7 @@ static void PM_AddCurrents(vec3_t wishvel)
         if (pm->watertype & CONTENTS_CURRENT_DOWN)
             v[2] -= 1;
 
-        s = pm_waterspeed;
+        s = pmp->pm_waterspeed;
         if ((pm->waterlevel == 1) && (pm->groundentity))
             s /= 2;
 
@@ -455,8 +461,11 @@ static void PM_WaterMove(void)
     for (i = 0; i < 3; i++)
         wishvel[i] = pml.forward[i] * pm->cmd.forwardmove + pml.right[i] * pm->cmd.sidemove;
 
-    if (!pm->cmd.forwardmove && !pm->cmd.sidemove && !pm->cmd.upmove)
-        wishvel[2] -= 60;       // drift towards bottom
+	if (!pm->cmd.forwardmove && !pm->cmd.sidemove && !pm->cmd.upmove)
+	{
+		if (pm->game != GAME_DUKE)
+			wishvel[2] -= 60;       // drift towards bottom
+	}
     else
         wishvel[2] += pm->cmd.upmove;
 
@@ -471,7 +480,7 @@ static void PM_WaterMove(void)
     }
     wishspeed *= pmp->watermult;
 
-    PM_Accelerate(wishdir, wishspeed, pm_wateraccelerate);
+    PM_Accelerate(wishdir, wishspeed, pmp->pm_wateraccelerate);
 
     PM_StepSlideMove();
 }
@@ -506,7 +515,7 @@ static void PM_AirMove(void)
 //
 // clamp to server defined max speed
 //
-    maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pm_duckspeed : pmp->maxspeed;
+    maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pmp->pm_duckspeed : pmp->maxspeed;
 
     if (wishspeed > maxspeed) {
         VectorScale(wishvel, maxspeed / wishspeed, wishvel);
@@ -514,7 +523,7 @@ static void PM_AirMove(void)
     }
 
     if (pml.ladder) {
-        PM_Accelerate(wishdir, wishspeed, pm_accelerate);
+        PM_Accelerate(wishdir, wishspeed, pmp->pm_accelerate);
         if (!wishvel[2]) {
             if (pml.velocity[2] > 0) {
                 pml.velocity[2] -= pm->s.gravity * pml.frametime;
@@ -530,14 +539,14 @@ static void PM_AirMove(void)
     } else if (pm->groundentity) {
         // walking on ground
         pml.velocity[2] = 0; //!!! this is before the accel
-        PM_Accelerate(wishdir, wishspeed, pm_accelerate);
+        PM_Accelerate(wishdir, wishspeed, pmp->pm_accelerate);
 
 // PGM  -- fix for negative trigger_gravity fields
 //      pml.velocity[2] = 0;
         if (pm->s.gravity > 0)
             pml.velocity[2] = 0;
-        else
-            pml.velocity[2] -= pm->s.gravity * pml.frametime;
+		else
+				pml.velocity[2] -= pm->s.gravity * pml.frametime;
 // PGM
 
         if (!pml.velocity[0] && !pml.velocity[1])
@@ -546,11 +555,14 @@ static void PM_AirMove(void)
     } else {
         // not on ground, so little effect on velocity
         if (pmp->airaccelerate)
-            PM_AirAccelerate(wishdir, wishspeed, pm_accelerate);
+            PM_AirAccelerate(wishdir, wishspeed, pmp->pm_accelerate);
         else
             PM_Accelerate(wishdir, wishspeed, 1);
+
         // add gravity
-        pml.velocity[2] -= pm->s.gravity * pml.frametime;
+		if (pm->game != GAME_DUKE || pm->waterlevel <= 1)
+			pml.velocity[2] -= pm->s.gravity * pml.frametime;
+
         PM_StepSlideMove();
     }
 }
@@ -575,7 +587,7 @@ static void PM_CategorizePosition(void)
     point[0] = pml.origin[0];
     point[1] = pml.origin[1];
     point[2] = pml.origin[2] - 0.25f;
-    if (pml.velocity[2] > 180) { //!!ZOID changed from 100 to 180 (ramp accel)
+    if (pmp->game != GAME_DOOM && pml.velocity[2] > 180) { //!!ZOID changed from 100 to 180 (ramp accel)
         pm->s.pm_flags &= ~PMF_ON_GROUND;
         pm->groundentity = NULL;
     } else {
@@ -693,13 +705,20 @@ static void PM_CheckJump(void)
     if (pm->groundentity == NULL)
         return;     // in air, so no effect
 
+	if (pmp->game == GAME_DUKE && (pm->s.pm_flags & PMF_TIME_LAND))
+		return;
+
     pm->s.pm_flags |= PMF_JUMP_HELD;
 
     pm->groundentity = NULL;
     pm->s.pm_flags &= ~PMF_ON_GROUND;
-    pml.velocity[2] += 270;
-    if (pml.velocity[2] < 270)
-        pml.velocity[2] = 270;
+    
+	int jump_vel = (pmp->game == GAME_DUKE) ? 340 : 270;
+
+	pml.velocity[2] += jump_vel;
+
+    if (pml.velocity[2] < jump_vel)
+        pml.velocity[2] = jump_vel;
 }
 
 /*
@@ -777,7 +796,7 @@ static void PM_FlyMove(void)
         drop = 0;
 
         friction = pmp->flyfriction;
-        control = speed < pm_stopspeed ? pm_stopspeed : speed;
+        control = speed < pmp->pm_stopspeed ? pmp->pm_stopspeed : speed;
         drop += control * friction * pml.frametime;
 
         // scale the velocity
@@ -798,7 +817,7 @@ static void PM_FlyMove(void)
 
     for (i = 0; i < 3; i++)
         wishvel[i] = pml.forward[i] * fmove + pml.right[i] * smove;
-    wishvel[2] += pm->cmd.upmove;
+	wishvel[2] += pm->cmd.upmove;
 
     VectorCopy(wishvel, wishdir);
     wishspeed = VectorNormalize(wishdir);
@@ -818,7 +837,7 @@ static void PM_FlyMove(void)
             return; // original buggy behaviour
         }
     } else {
-        accelspeed = pm_accelerate * pml.frametime * wishspeed;
+        accelspeed = pmp->pm_accelerate * pml.frametime * wishspeed;
         if (accelspeed > addspeed)
             accelspeed = addspeed;
 
@@ -847,7 +866,7 @@ static void PM_CheckDuck(void)
     pm->maxs[0] = 16;
     pm->maxs[1] = 16;
 
-    if (pm->s.pm_type == PM_GIB) {
+	if (pm->s.pm_type == PM_GIB) {
         pm->mins[2] = 0;
         pm->maxs[2] = 16;
         pm->viewheight = 8;
@@ -955,9 +974,9 @@ static void PM_SnapPosition(void)
     for (j = 0; j < 8; j++) {
         bits = jitterbits[j];
         VectorCopy(base, pm->s.origin);
-        for (i = 0; i < 3; i++)
-            if (bits & (1 << i))
-                pm->s.origin[i] += sign[i];
+		for (i = 0; i < 3; i++)
+			if (bits & (1 << i))
+				pm->s.origin[i] += sign[i];
 
         if (PM_GoodPosition())
             return;
@@ -992,7 +1011,7 @@ static void PM_InitialSnapPosition(void)
                     pml.origin[1] = pm->s.origin[1] * 0.125f;
                     pml.origin[2] = pm->s.origin[2] * 0.125f;
                     VectorCopy(pm->s.origin, pml.previous_origin);
-                    return;
+					return;
                 }
             }
         }
@@ -1042,6 +1061,9 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     pm = pmove;
     pmp = params;
 
+	if (pmp->game != pmove->game)
+		PmoveInit(pmp, pmove->game);
+
     // clear results
     pm->numtouch = 0;
     VectorClear(pm->viewangles);
@@ -1079,6 +1101,11 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 
     if (pm->s.pm_type == PM_FREEZE)
         return;     // no movement at all
+	else if (pm->s.pm_type == PM_DUKE_FROZEN)
+	{
+		pm->cmd.angles[0] = pm->cmd.angles[1] = pm->cmd.angles[2] = 0;
+		pm->cmd.buttons = 0;
+	}
 
     // set mins, maxs, and viewheight
     PM_CheckDuck();
@@ -1088,6 +1115,26 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 
     // set groundentity, watertype, and waterlevel
     PM_CategorizePosition();
+
+	if (pmp->game == GAME_DUKE)
+	{
+		if (pm->cmd.upmove > 0 && pm->groundentity)
+		{
+			if (!(pm->s.pm_flags & PMF_AWAIT_JUMP))
+			{
+				pm->s.pm_flags |= PMF_AWAIT_JUMP;
+				pm->s.pm_time2 = 12;
+			}
+
+			pm->cmd.upmove = 0;
+		}
+
+		if ((pm->s.pm_flags & PMF_AWAIT_JUMP) && !pm->s.pm_time2)
+		{
+			pm->cmd.upmove = 200;
+			pm->s.pm_flags &= ~PMF_AWAIT_JUMP;
+		}
+	}
 
     if (pm->s.pm_type == PM_DEAD)
         PM_DeadMove();
@@ -1107,6 +1154,21 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
         } else
             pm->s.pm_time -= msec;
     }
+
+	if (pm->s.pm_time2)
+	{
+		int     msec;
+
+		msec = pm->cmd.msec >> 3;
+		
+		if (!msec)
+			msec = 1;
+
+		if (msec >= pm->s.pm_time2)
+			pm->s.pm_time2 = 0;
+		else
+			pm->s.pm_time2 -= msec;
+	}
 
     if (pm->s.pm_flags & PMF_TIME_TELEPORT) {
         // teleport pause stays exactly in place
@@ -1147,26 +1209,54 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
     PM_SnapPosition();
 }
 
-void PmoveInit(pmoveParams_t *pmp)
+void PmoveInit(pmoveParams_t *in_pmp, gametype_t game)
 {
     // set up default pmove parameters
-    memset(pmp, 0, sizeof(*pmp));
+    memset(in_pmp, 0, sizeof(*in_pmp));
 
-    pmp->speedmult = 1;
-    pmp->watermult = 0.5f;
-    pmp->maxspeed = 300;
-    pmp->friction = 6;
-    pmp->waterfriction = 1;
-    pmp->flyfriction = 9;
+	in_pmp->game = game;
+
+    in_pmp->speedmult = 1;
+    in_pmp->watermult = 0.5f;
+    in_pmp->maxspeed = 300;
+    in_pmp->friction = 6;
+    in_pmp->waterfriction = 1;
+    in_pmp->flyfriction = 9;
+
+	in_pmp->pm_stopspeed = 100;
+	in_pmp->pm_duckspeed = 100;
+	in_pmp->pm_accelerate = 10;
+	in_pmp->pm_wateraccelerate = 10;
+	in_pmp->pm_waterspeed = 400;
+
+	switch (in_pmp->game)
+	{
+	case GAME_DOOM:
+		in_pmp->pm_stopspeed = 2;
+		in_pmp->maxspeed = 400;
+		break;
+	case GAME_Q1:
+		PmoveEnableQW(in_pmp);
+		break;
+	case GAME_DUKE:
+		break;
+	}
 }
 
-void PmoveEnableQW(pmoveParams_t *pmp)
+void PmoveEnableQW(pmoveParams_t *in_pmp)
 {
-    pmp->qwmode = true;
-    pmp->watermult = 0.7f;
-    pmp->maxspeed = 320;
-    //pmp->upspeed = (sv_qwmod->integer > 1) ? 310 : 350;
-    pmp->friction = 4;
-    pmp->waterfriction = 4;
-    pmp->airaccelerate = true;
+    in_pmp->qwmode = true;
+    in_pmp->watermult = 0.7f;
+    in_pmp->maxspeed = 320;
+	//in_pmp->upspeed = (sv_qwmod->integer > 1) ? 310 : 350;
+    in_pmp->friction = 4;
+    in_pmp->waterfriction = 4;
+    in_pmp->airaccelerate = true;
+
+	in_pmp->pm_stopspeed = 100;
+	in_pmp->pm_duckspeed = 100;
+	in_pmp->pm_accelerate = 10;
+	in_pmp->pm_wateraccelerate = 10;
+	in_pmp->pm_waterspeed = 400;
 }
+

@@ -29,35 +29,48 @@ typedef struct {
     int16_t     origin[3];
     int16_t     angles[3];
     int16_t     old_origin[3];
-    uint8_t     modelindex;
-    uint8_t     modelindex2;
-    uint8_t     modelindex3;
-    uint8_t     modelindex4;
+    uint16_t     modelindex;
+    uint16_t     modelindex2;
+    uint16_t     modelindex3;
+    uint16_t     modelindex4;
     uint32_t    skinnum;
     uint32_t    effects;
-    uint32_t    renderfx;
+	uint32_t    renderfx;
     uint32_t    solid;
     uint16_t    frame;
-    uint8_t     sound;
+    uint16_t    sound;
     uint8_t     event;
+
+	// Generations
+	uint8_t		game;
+	uint32_t	clip_contents;
 } entity_packed_t;
+
+// Generations
+typedef struct {
+	uint16_t	index;
+	uint8_t		frame;
+	int8_t		angles[3];
+	int8_t		offset[3];
+} player_gun_packed_t;
 
 typedef struct {
     pmove_state_t   pmove;
     int16_t         viewangles[3];
     int8_t          viewoffset[3];
     int8_t          kick_angles[3];
-    int8_t          gunangles[3];
-    int8_t          gunoffset[3];
-    uint8_t         gunindex;
-    uint8_t         gunframe;
+	player_gun_packed_t	guns[MAX_PLAYER_GUNS];
     uint8_t         blend[4];
     uint8_t         fov;
-    uint8_t         rdflags;
-    int16_t         stats[MAX_STATS];
+	uint8_t         rdflags;
+    int32_t         stats[MAX_STATS];
+
+	// Generations
+	uint8_t			view_events;
 } player_packed_t;
 
 typedef enum {
+	MSG_PS_NONE					= 0,
     MSG_PS_IGNORE_GUNINDEX      = (1 << 0),
     MSG_PS_IGNORE_GUNFRAMES     = (1 << 1),
     MSG_PS_IGNORE_BLEND         = (1 << 2),

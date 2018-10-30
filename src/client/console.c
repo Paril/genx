@@ -65,8 +65,8 @@ typedef struct console_s {
                                     // for transparent notify lines
     bool    skipNotify;
 
-    qhandle_t   backImage;
-    qhandle_t   charsetImage;
+    pichandle_t   backImage;
+    pichandle_t   charsetImage;
 
     float   currentHeight;  // aproaches scr_conlines at scr_conspeed
     float   destHeight;     // 0.0 to 1.0 lines of console to display
@@ -281,8 +281,9 @@ static void Con_Dump_f(void)
     if (FS_FCloseFile(f))
         Com_EPrintf("Error writing %s\n", name);
     else
-        Com_Printf("Dumped console text to %s.\n", name);
+    	Com_Printf("Dumped console text to %s.\n", name);
 }
+
 
 /*
 ================
@@ -670,27 +671,33 @@ Con_RegisterMedia
 void Con_RegisterMedia(void)
 {
     int err;
+	char font[MAX_QPATH];
 
-    con.charsetImage = R_RegisterImage(con_font->string, IT_FONT, IF_PERMANENT, &err);
-    if (!con.charsetImage) {
-        if (strcmp(con_font->string, "conchars")) {
-            Com_WPrintf("Couldn't load %s: %s\n", con_font->string, Q_ErrorString(err));
-            Cvar_Reset(con_font);
-            con.charsetImage = R_RegisterImage("conchars", IT_FONT, IF_PERMANENT, &err);
-        }
-        if (!con.charsetImage) {
-            Com_Error(ERR_FATAL, "Couldn't load pics/conchars.pcx: %s", Q_ErrorString(err));
-        }
+	Q_snprintf(font, MAX_QPATH, "%%%s", con_font->string);
+
+    con.charsetImage = R_RegisterImage(font, IT_FONT, IF_PERMANENT, &err);
+    if (!con.charsetImage.handle) {
+		con.charsetImage = R_RegisterImage(con_font->string, IT_FONT, IF_PERMANENT, &err);
+		if (!con.charsetImage.handle) {
+			if (strcmp(con_font->string, "conchars")) {
+				Com_WPrintf("Couldn't load %s: %s\n", con_font->string, Q_ErrorString(err));
+				Cvar_Reset(con_font);
+				con.charsetImage = R_RegisterImage("%conchars", IT_FONT, IF_PERMANENT, &err);
+			}
+			if (!con.charsetImage.handle) {
+				Com_Error(ERR_FATAL, "Couldn't load pics/conchars.pcx: %s", Q_ErrorString(err));
+			}
+		}
     }
 
     con.backImage = R_RegisterImage(con_background->string, IT_PIC, IF_PERMANENT, &err);
-    if (!con.backImage) {
+    if (!con.backImage.handle) {
         if (strcmp(con_background->string, "conback")) {
             Com_WPrintf("Couldn't load %s: %s\n", con_background->string, Q_ErrorString(err));
             Cvar_Reset(con_background);
             con.backImage = R_RegisterImage("conback", IT_PIC, IF_PERMANENT, &err);
         }
-        if (!con.backImage) {
+        if (!con.backImage.handle) {
             Com_EPrintf("Couldn't load pics/conback.pcx: %s\n", Q_ErrorString(err));
         }
     }
@@ -715,7 +722,7 @@ static int Con_DrawLine(int v, int row, float alpha)
     if (line->ts_len) {
         R_SetColor(con.ts_color.u32);
         R_SetAlpha(alpha);
-        x = R_DrawString(x, v, 0, line->ts_len, s, con.charsetImage);
+        x = R_DrawString(x, v, 0, line->ts_len, s, con.charsetImage, CL_GetClientGame());
         s += line->ts_len;
         w -= line->ts_len;
     }
@@ -733,7 +740,7 @@ static int Con_DrawLine(int v, int row, float alpha)
     }
     R_SetAlpha(alpha);
 
-    return R_DrawString(x, v, flags, w, s, con.charsetImage);
+    return R_DrawString(x, v, flags, w, s, con.charsetImage, CL_GetClientGame());
 }
 
 #define CON_PRESTEP     (CHAR_HEIGHT * 3 + CHAR_HEIGHT / 4)
@@ -802,10 +809,10 @@ static void Con_DrawNotify(void)
         }
 
         R_DrawString(CHAR_WIDTH, v, 0, MAX_STRING_CHARS, text,
-                     con.charsetImage);
+                     con.charsetImage, CL_GetClientGame());
         con.chatPrompt.inputLine.visibleChars = con.linewidth - skip + 1;
         IF_Draw(&con.chatPrompt.inputLine, skip * CHAR_WIDTH, v,
-                UI_DRAWCURSOR, con.charsetImage);
+                UI_DRAWCURSOR, con.charsetImage, CL_GetClientGame());
     }
 }
 
@@ -843,7 +850,7 @@ static void Con_DrawSolidConsole(void)
 // draw the background
     if (cls.state < ca_active || (cls.key_dest & KEY_MENU) || con_alpha->value) {
         R_DrawStretchPic(0, vislines - con.vidHeight,
-                         con.vidWidth, con.vidHeight, con.backImage);
+                         con.vidWidth, con.vidHeight, con.backImage, CL_GetClientGame());
     }
 
 // draw the text
@@ -854,7 +861,7 @@ static void Con_DrawSolidConsole(void)
     if (con.display != con.current) {
         R_SetColor(U32_RED);
         for (i = 1; i < con.linewidth / 2; i += 4) {
-            R_DrawChar(i * CHAR_WIDTH, y, 0, '^', con.charsetImage);
+            R_DrawChar(i * CHAR_WIDTH, y, 0, '^', con.charsetImage, CL_GetClientGame());
         }
 
         y -= CHAR_HEIGHT;
@@ -923,12 +930,12 @@ static void Con_DrawSolidConsole(void)
 
         // draw it
         y = vislines - CON_PRESTEP + CHAR_HEIGHT * 2;
-        R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
+        R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage, CL_GetClientGame());
     } else if (cls.state == ca_loading) {
         // draw loading state
         switch (con.loadstate) {
         case LOAD_MAP:
-            text = cl.configstrings[CS_MODELS + 1];
+            text = cl.configstrings[CS_PRECACHE + 1];
             break;
         case LOAD_MODELS:
             text = "models";
@@ -952,7 +959,7 @@ static void Con_DrawSolidConsole(void)
 
             // draw it
             y = vislines - CON_PRESTEP + CHAR_HEIGHT * 2;
-            R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage);
+            R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage, CL_GetClientGame());
         }
     }
 
@@ -974,12 +981,12 @@ static void Con_DrawSolidConsole(void)
             break;
         }
         R_SetColor(U32_YELLOW);
-        R_DrawChar(CHAR_WIDTH, y, 0, i, con.charsetImage);
+        R_DrawChar(CHAR_WIDTH, y, 0, i, con.charsetImage, CL_GetClientGame());
         R_ClearColor();
 
         // draw input line
         x = IF_Draw(&con.prompt.inputLine, 2 * CHAR_WIDTH, y,
-                    UI_DRAWCURSOR, con.charsetImage);
+                    UI_DRAWCURSOR, con.charsetImage, CL_GetClientGame());
     }
 
 #define APP_VERSION APPLICATION " " VERSION
@@ -1000,14 +1007,14 @@ static void Con_DrawSolidConsole(void)
         x = Com_Time_m(buffer, sizeof(buffer)) * CHAR_WIDTH;
         if (widths[row] + x + CHAR_WIDTH <= con.vidWidth) {
             R_DrawString(con.vidWidth - CHAR_WIDTH - x, y - CHAR_HEIGHT,
-                         UI_RIGHT, MAX_STRING_CHARS, buffer, con.charsetImage);
+                         UI_RIGHT, MAX_STRING_CHARS, buffer, con.charsetImage, CL_GetClientGame());
         }
     }
 
 // draw version
     if (!row || widths[0] + VER_WIDTH <= con.vidWidth) {
         SCR_DrawStringEx(con.vidWidth - CHAR_WIDTH, y, UI_RIGHT,
-                         MAX_STRING_CHARS, APP_VERSION, con.charsetImage);
+                         MAX_STRING_CHARS, APP_VERSION, con.charsetImage, CL_GetClientGame());
     }
 
     // restore rendering parameters

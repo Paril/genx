@@ -161,10 +161,10 @@ static void Bitmap_Draw(menuBitmap_t *b)
 {
     if (b->generic.flags & QMF_HASFOCUS) {
         unsigned frame = (uis.realtime / 100) % NUM_CURSOR_FRAMES;
-        R_DrawPic(b->generic.x - CURSOR_OFFSET, b->generic.y, uis.bitmapCursors[frame]);
-        R_DrawPic(b->generic.x, b->generic.y, b->pics[1]);
+        R_DrawPic(b->generic.x - CURSOR_OFFSET, b->generic.y, uis.bitmapCursors[frame], CL_GetClientGame());
+        R_DrawPic(b->generic.x, b->generic.y, b->pics[1], CL_GetClientGame());
     } else {
-        R_DrawPic(b->generic.x, b->generic.y, b->pics[0]);
+        R_DrawPic(b->generic.x, b->generic.y, b->pics[0], CL_GetClientGame());
     }
 }
 
@@ -438,13 +438,13 @@ static void Field_Draw(menuField_t *f)
                      f->field.visibleChars * CHAR_WIDTH, CHAR_HEIGHT + 2, color);
 
         IF_Draw(&f->field, f->generic.x + RCOLUMN_OFFSET, f->generic.y,
-                flags, uis.fontHandle);
+                flags, uis.fontHandle, CL_GetClientGame());
     } else {
         R_DrawFill32(f->generic.rect.x, f->generic.rect.y - 1,
                      f->generic.rect.width, CHAR_HEIGHT + 2, color);
 
         IF_Draw(&f->field, f->generic.rect.x, f->generic.rect.y,
-                flags, uis.fontHandle);
+                flags, uis.fontHandle, CL_GetClientGame());
     }
 }
 
@@ -1852,7 +1852,6 @@ void Menu_Init(menuFrameWork_t *menu)
             break;
         default:
             Com_Error(ERR_FATAL, "Menu_Init: unknown item type");
-            break;
         }
     }
 
@@ -1911,7 +1910,7 @@ void Menu_Size(menuFrameWork_t *menu)
     }
 
     // account for banner
-    if (menu->banner) {
+    if (menu->banner.handle) {
         h += GENERIC_SPACING(menu->banner_rc.height);
     }
 
@@ -1944,7 +1943,7 @@ void Menu_Size(menuFrameWork_t *menu)
 
     // banner is horizontally centered and
     // positioned on top of all menu items
-    if (menu->banner) {
+    if (menu->banner.handle) {
         menu->banner_rc.x = (uis.width - menu->banner_rc.width) / 2;
         menu->banner_rc.y = y;
         y += GENERIC_SPACING(menu->banner_rc.height);
@@ -1953,19 +1952,19 @@ void Menu_Size(menuFrameWork_t *menu)
     // plaque and logo are vertically centered and
     // positioned to the left of bitmaps and cursor
     h = 0;
-    if (menu->plaque) {
+    if (menu->plaque.handle) {
         h += menu->plaque_rc.height;
     }
-    if (menu->logo) {
+    if (menu->logo.handle) {
         h += menu->logo_rc.height + 5;
     }
 
-    if (menu->plaque) {
+    if (menu->plaque.handle) {
         menu->plaque_rc.x = x - CURSOR_WIDTH - menu->plaque_rc.width;
         menu->plaque_rc.y = (uis.height - h) / 2;
     }
 
-    if (menu->logo) {
+    if (menu->logo.handle) {
         menu->logo_rc.x = x - CURSOR_WIDTH - menu->logo_rc.width;
         menu->logo_rc.y = (uis.height + h) / 2 - menu->logo_rc.height;
     }
@@ -2138,7 +2137,7 @@ static void Menu_DrawStatus(menuFrameWork_t *menu)
     for (l = 0; l < count; l++) {
         x = (uis.width - lens[l] * CHAR_WIDTH) / 2;
         y = menu->y2 - (count - l) * CHAR_HEIGHT;
-        R_DrawString(x, y, 0, lens[l], ptrs[l], uis.fontHandle);
+        R_DrawString(x, y, 0, lens[l], ptrs[l], uis.fontHandle, CL_GetClientGame());
     }
 }
 
@@ -2155,9 +2154,9 @@ void Menu_Draw(menuFrameWork_t *menu)
 //
 // draw background
 //
-    if (menu->image) {
+    if (menu->image.handle) {
         R_DrawStretchPic(0, menu->y1, uis.width,
-                         menu->y2 - menu->y1, menu->image);
+                         menu->y2 - menu->y1, menu->image, CL_GetClientGame());
     } else {
         R_DrawFill32(0, menu->y1, uis.width,
                      menu->y2 - menu->y1, menu->color.u32);
@@ -2174,14 +2173,14 @@ void Menu_Draw(menuFrameWork_t *menu)
 //
 // draw banner, plaque and logo
 //
-    if (menu->banner) {
-        R_DrawPic(menu->banner_rc.x, menu->banner_rc.y, menu->banner);
+    if (menu->banner.handle) {
+        R_DrawPic(menu->banner_rc.x, menu->banner_rc.y, menu->banner, CL_GetClientGame());
     }
-    if (menu->plaque) {
-        R_DrawPic(menu->plaque_rc.x, menu->plaque_rc.y, menu->plaque);
+    if (menu->plaque.handle) {
+        R_DrawPic(menu->plaque_rc.x, menu->plaque_rc.y, menu->plaque, CL_GetClientGame());
     }
-    if (menu->logo) {
-        R_DrawPic(menu->logo_rc.x, menu->logo_rc.y, menu->logo);
+    if (menu->logo.handle) {
+        R_DrawPic(menu->logo_rc.x, menu->logo_rc.y, menu->logo, CL_GetClientGame());
     }
 
 //
@@ -2230,7 +2229,6 @@ void Menu_Draw(menuFrameWork_t *menu)
             break;
         default:
             Com_Error(ERR_FATAL, "Menu_Draw: unknown item type");
-            break;
         }
 
         if (ui_debug->integer) {
@@ -2584,3 +2582,4 @@ void Menu_Free(menuFrameWork_t *menu)
     Z_Free(menu->name);
     Z_Free(menu);
 }
+

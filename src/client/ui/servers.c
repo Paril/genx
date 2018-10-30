@@ -47,10 +47,10 @@ SERVERS MENU
 
 typedef struct {
     enum {
-        SLOT_IDLE,
-        SLOT_PENDING,
-        SLOT_ERROR,
-        SLOT_VALID
+		SLOT_IDLE,
+		SLOT_PENDING,
+		SLOT_ERROR,
+		SLOT_VALID
     } status;
     netadr_t    address;
     char        *hostname; // original domain name, only used for favorites

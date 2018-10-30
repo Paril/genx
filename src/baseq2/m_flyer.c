@@ -519,7 +519,7 @@ void flyer_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     if (skill->value == 3)
         return;     // no pain anims in nightmare
 

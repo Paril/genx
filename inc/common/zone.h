@@ -42,6 +42,11 @@ typedef enum {
     TAG_SOUND,
     TAG_CMODEL,
 
+	// Generations
+	TAG_MODEL,
+	TAG_BSP,
+	TAG_LAYOUT,
+
     TAG_MAX
 } memtag_t;
 

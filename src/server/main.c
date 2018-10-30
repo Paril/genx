@@ -619,19 +619,19 @@ typedef struct {
 
     int         maxlength;
     int         nctype;
-    bool        has_zlib;
+    bool    	has_zlib;
 
     int         reserved;   // hidden client slots
     char        reconnect_var[16];
     char        reconnect_val[16];
 } conn_params_t;
 
-#define __reject(...) \
+#define reject_(...) \
     Netchan_OutOfBand(NS_SERVER, &net_from, "print\n" __VA_ARGS__)
 
 // small hack to permit one-line return statement :)
-#define reject(...) __reject(__VA_ARGS__), false
-#define reject2(...) __reject(__VA_ARGS__), NULL
+#define reject(...) reject_(__VA_ARGS__), false
+#define reject2(...) reject_(__VA_ARGS__), NULL
 
 static bool parse_basic_params(conn_params_t *p)
 {
@@ -733,16 +733,16 @@ static bool parse_packet_length(conn_params_t *p)
     // set maximum packet length
     p->maxlength = MAX_PACKETLEN_WRITABLE_DEFAULT;
     if (p->protocol >= PROTOCOL_VERSION_R1Q2) {
-        s = Cmd_Argv(5);
-        if (*s) {
-            p->maxlength = atoi(s);
-            if (p->maxlength < 0 || p->maxlength > MAX_PACKETLEN_WRITABLE)
-                return reject("Invalid maximum message length.\n");
-
-            // 0 means highest available
-            if (!p->maxlength)
-                p->maxlength = MAX_PACKETLEN_WRITABLE;
-        }
+	    s = Cmd_Argv(5);
+	    if (*s) {
+	        p->maxlength = atoi(s);
+	        if (p->maxlength < 0 || p->maxlength > MAX_PACKETLEN_WRITABLE)
+	            return reject("Invalid maximum message length.\n");
+	
+	        // 0 means highest available
+	        if (!p->maxlength)
+	            p->maxlength = MAX_PACKETLEN_WRITABLE;
+	    }
     }
 
     if (!NET_IsLocalAddress(&net_from) && net_maxmsglen->integer > 0) {
@@ -764,8 +764,8 @@ static bool parse_enhanced_params(conn_params_t *p)
 
     if (p->protocol == PROTOCOL_VERSION_R1Q2) {
         // set minor protocol version
-        s = Cmd_Argv(6);
-        if (*s) {
+	    s = Cmd_Argv(6);
+	    if (*s) {
             p->version = atoi(s);
             clamp(p->version,
                   PROTOCOL_VERSION_R1Q2_MINIMUM,
@@ -789,24 +789,24 @@ static bool parse_enhanced_params(conn_params_t *p)
         // set zlib
         s = Cmd_Argv(7);
         if (*s) {
-            p->has_zlib = !!atoi(s);
-        } else {
+	        p->has_zlib = !!atoi(s);
+	    } else {
             p->has_zlib = true;
-        }
+	    }
 
-        // set minor protocol version
+    // set minor protocol version
         s = Cmd_Argv(8);
-        if (*s) {
-            p->version = atoi(s);
-            clamp(p->version,
-                  PROTOCOL_VERSION_Q2PRO_MINIMUM,
-                  PROTOCOL_VERSION_Q2PRO_CURRENT);
-            if (p->version == PROTOCOL_VERSION_Q2PRO_RESERVED) {
-                p->version--; // never use this version
-            }
-        } else {
-            p->version = PROTOCOL_VERSION_Q2PRO_MINIMUM;
-        }
+	    if (*s) {
+	        p->version = atoi(s);
+	        clamp(p->version,
+	                PROTOCOL_VERSION_Q2PRO_MINIMUM,
+	                PROTOCOL_VERSION_Q2PRO_CURRENT);
+	        if (p->version == PROTOCOL_VERSION_Q2PRO_RESERVED) {
+	            p->version--; // never use this version
+	        }
+	    } else {
+	        p->version = PROTOCOL_VERSION_Q2PRO_MINIMUM;
+	    }
     }
 
     return true;
@@ -956,20 +956,21 @@ static client_t *find_client_slot(conn_params_t *params)
     return reject2("Server is full.\n");
 }
 
-static void init_pmove_and_es_flags(client_t *newcl)
+void init_pmove_and_es_flags(client_t *newcl)
 {
     int force;
 
     // copy default pmove parameters
     newcl->pmp = sv_pmp;
     newcl->pmp.airaccelerate = sv_airaccelerate->integer ? true : false;
+	newcl->pmp.game = svs.entities[newcl->number].game;
 
     // common extensions
     force = 2;
     if (newcl->protocol >= PROTOCOL_VERSION_R1Q2) {
-        newcl->pmp.speedmult = 2;
-        force = 1;
-    }
+	    newcl->pmp.speedmult = 2;
+	    force = 1;
+	}
     newcl->pmp.strafehack = sv_strafejump_hack->integer >= force ? true : false;
 
     // r1q2 extensions
@@ -983,23 +984,25 @@ static void init_pmove_and_es_flags(client_t *newcl)
     // q2pro extensions
     force = 2;
     if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (sv_qwmod->integer) {
-            PmoveEnableQW(&newcl->pmp);
-        }
+	    if (sv_qwmod->integer) {
+	        PmoveEnableQW(&newcl->pmp);
+	    }
         newcl->pmp.flyhack = true;
-        newcl->pmp.flyfriction = 4;
-        newcl->esFlags |= MSG_ES_UMASK;
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
-            newcl->esFlags |= MSG_ES_LONGSOLID;
-        }
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
-            newcl->esFlags |= MSG_ES_BEAMORIGIN;
-        }
-        if (newcl->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
-            force = 1;
-        }
-    }
+	    newcl->pmp.flyfriction = 4;
+	    newcl->esFlags |= MSG_ES_UMASK;
+	    if (newcl->version >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID) {
+	        newcl->esFlags |= MSG_ES_LONGSOLID;
+	    }
+	    if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN) {
+	        newcl->esFlags |= MSG_ES_BEAMORIGIN;
+	    }
+	    if (newcl->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK) {
+	        force = 1;
+	    }
+	}
     newcl->pmp.waterhack = sv_waterjump_hack->integer >= force ? true : false;
+
+	PmoveInit(&newcl->pmp, svs.entities[newcl->number].game);
 }
 
 static void send_connect_packet(client_t *newcl, int nctype)
@@ -1089,7 +1092,8 @@ static void SVC_DirectConnect(void)
     newcl->edict = EDICT_NUM(number + 1);
     newcl->gamedir = fs_game->string;
     newcl->mapname = sv.name;
-    newcl->configstrings = (char *)sv.configstrings;
+	newcl->configstrings = (char *)sv.configstrings;
+	newcl->precache_bitset = (byte *)sv.precache_bitset;
     newcl->pool = (edict_pool_t *)&ge->edicts;
     newcl->cm = &sv.cm;
     newcl->spawncount = sv.spawncount;
@@ -1114,9 +1118,9 @@ static void SVC_DirectConnect(void)
     if (!allow) {
         reason = Info_ValueForKey(userinfo, "rejmsg");
         if (*reason) {
-            __reject("%s\nConnection refused.\n", reason);
+            reject_("%s\nConnection refused.\n", reason);
         } else {
-            __reject("Connection refused.\n");
+            reject_("Connection refused.\n");
         }
         return;
     }
@@ -1142,7 +1146,7 @@ static void SVC_DirectConnect(void)
     if (newcl->protocol == PROTOCOL_VERSION_DEFAULT) {
         newcl->WriteFrame = SV_WriteFrameToClient_Default;
     } else {
-        newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
+    	newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
     }
 
     // loopback client doesn't need to reconnect
@@ -1646,6 +1650,10 @@ static void SV_PrepWorldFrame(void)
 
         // events only last for a single keyframe
         ent->s.event = 0;
+
+		if (ent->client) {
+			ent->client->ps.view_events = PEV_NONE;
+		}
     }
 }
 
@@ -2068,6 +2076,7 @@ void SV_Init(void)
     Cvar_Get("skill", "1", CVAR_LATCH);
     Cvar_Get("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);
     Cvar_Get("coop", "0", /*CVAR_SERVERINFO|*/CVAR_LATCH);
+	Cvar_Get("invasion", "0", CVAR_LATCH);
     Cvar_Get("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
     Cvar_Get("dmflags", va("%i", DF_INSTANT_ITEMS), CVAR_SERVERINFO);
     Cvar_Get("fraglimit", "0", CVAR_SERVERINFO);
@@ -2124,7 +2133,7 @@ void SV_Init(void)
     sv_packetdup_hack = Cvar_Get("sv_packetdup_hack", "0", 0);
 #endif
 
-    sv_allow_map = Cvar_Get("sv_allow_map", "0", 0);
+    sv_allow_map = Cvar_Get("sv_allow_map", "0", CVAR_ARCHIVE);
 
 #if !USE_CLIENT
     sv_recycle = Cvar_Get("sv_recycle", "0", 0);
@@ -2165,7 +2174,7 @@ void SV_Init(void)
 #endif
 
     // set up default pmove parameters
-    PmoveInit(&sv_pmp);
+    PmoveInit(&sv_pmp, GAME_NONE);
 
 #if USE_SYSCON
     SV_SetConsoleTitle();

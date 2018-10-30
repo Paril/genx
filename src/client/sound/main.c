@@ -18,6 +18,191 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // snd_main.c -- common sound functions
 
 #include "sound.h"
+#include "common/soundscript.h"
+
+static soundscript_t	r_soundscripts[MAX_SOUND_SCRIPTS];
+static int				r_numSoundScripts;
+
+cvar_t      *s_khz;
+
+static void SSCR_Untouch()
+{
+	for (int i = 0; i < r_numSoundScripts; ++i)
+	{
+		for (int g = 1; g < GAME_TOTAL; ++g)
+		{
+			if (r_soundscripts[i].entries[g].path[0])
+			{
+				r_soundscripts[i].entries[g].loaded = false;
+				r_soundscripts[i].entries[g].sound = (soundhandle_t) { 0 };
+			}
+		}
+	}
+}
+
+static void SSCR_Touch()
+{
+	for (int i = 0; i < r_numSoundScripts; ++i)
+	{
+		for (int g = 1; g < GAME_TOTAL; ++g)
+		{
+			if (r_soundscripts[i].entries[g].path[0])
+			{
+				r_soundscripts[i].entries[g].loaded = true;
+				r_soundscripts[i].entries[g].sound = S_RegisterSound(r_soundscripts[i].entries[g].path);
+			}
+		}
+	}
+}
+
+static soundscript_t *SSCR_Alloc()
+{
+	soundscript_t *script;
+	int i;
+
+	for (i = 0, script = r_soundscripts; i < r_numSoundScripts; ++i, script++)
+	{
+		if (!script->name[0])
+			break;
+	}
+
+	if (i == r_numSoundScripts) {
+		if (r_numSoundScripts == MAX_SOUND_SCRIPTS) {
+			return NULL;
+		}
+		r_numSoundScripts++;
+	}
+
+	return script;
+}
+
+static soundscript_t *SSCR_Find(const char *name)
+{
+	soundscript_t *script;
+	int i;
+
+	for (i = 0, script = r_soundscripts; i < r_numSoundScripts; i++, script++) {
+		if (!script->name[0]) {
+			continue;
+		}
+		if (!FS_pathcmp(script->name, name)) {
+			return script;
+		}
+	}
+
+	return NULL;
+}
+
+static soundscript_t *SSCR_Register(const char *name)
+{
+	char path[MAX_QPATH];
+	char *rawdata;
+	soundscript_t *script;
+	int ret = Q_ERR_INVALID_FORMAT;
+
+	Q_snprintf(path, MAX_QPATH, "soundscripts/%s.ssc", name);
+
+	int filelen = FS_LoadFile(path, (void **)&rawdata);
+
+	if (!rawdata) {
+		// don't spam about missing models
+		if (filelen == Q_ERR_NOENT) {
+			return 0;
+		}
+
+		ret = filelen;
+		goto fail1;
+	}
+
+	script = SSCR_Alloc();
+	memset(script, 0, sizeof(*script));
+
+	Q_snprintf(script->name, MAX_QPATH, "%s", name);
+
+	while (true)
+	{
+		char *tok = COM_Parse((const char**)&rawdata);
+
+		if (!*tok)
+			break;
+
+		if (*tok != '{')
+		{
+			ret = Q_ERR_INVALID_FORMAT;
+			goto fail2;
+		}
+
+		soundentry_t entry;
+		gametype_t game = GAME_NONE;
+
+		memset(&entry, 0, sizeof(entry));
+
+		while (*(tok = COM_Parse((const char**)&rawdata)) != '}')
+		{
+			char *value = COM_Parse((const char**)&rawdata);
+
+			if (!Q_stricmp(tok, "game"))
+			{
+				if (!Q_stricmp(value, "q2"))
+					game = GAME_Q2;
+				else if (!Q_stricmp(value, "q1"))
+					game = GAME_Q1;
+				else if (!Q_stricmp(value, "doom"))
+					game = GAME_DOOM;
+				else if (!Q_stricmp(value, "duke"))
+					game = GAME_DUKE;
+			}
+			else if (!Q_stricmp(tok, "path"))
+			{
+				Q_snprintf(entry.path, MAX_QPATH, "%s", value);
+				entry.sound = S_RegisterSound(entry.path);
+			}
+			else if (!Q_stricmp(tok, "pitch_min"))
+				entry.pitch_min = atoi(value);
+			else if (!Q_stricmp(tok, "pitch_max"))
+				entry.pitch_max = atoi(value);
+		}
+
+		if (game == GAME_NONE)
+		{
+			entry.loaded = qtrue;
+
+			for (game = GAME_Q2; game != GAME_TOTAL; ++game)
+				memcpy(&script->entries[game], &entry, sizeof(entry));
+		}
+		else
+		{
+			if (game == GAME_TOTAL || !entry.path[0])
+				goto fail2;
+
+			entry.loaded = qtrue;
+			memcpy(&script->entries[game], &entry, sizeof(entry));
+		}
+	}
+
+	FS_FreeFile(rawdata);
+
+	return script;
+
+fail2:
+	FS_FreeFile(rawdata);
+fail1:
+	Com_EPrintf("Couldn't load %s: %s\n", path, Q_ErrorString(ret));
+	return 0;
+}
+
+soundentry_t *SSCR_EntryForHandle(soundhandle_t handle, gametype_t game)
+{
+	soundscript_t *script = &r_soundscripts[handle.sound.id - 1];
+
+	if (!script->name[0])
+		return NULL;
+
+	if (game == GAME_NONE)
+		game = GAME_Q2;
+
+	return &script->entries[game];
+}
 
 // =======================================================================
 // Internal sound data & structures
@@ -39,7 +224,7 @@ int         listener_entnum;
 
 bool        s_registering;
 
-int         paintedtime;    // sample PAIRS
+int			paintedtime;    // sample PAIRS
 
 // during registration it is possible to have more sounds
 // than could actually be referenced during gameplay,
@@ -161,6 +346,7 @@ void S_Init(void)
 #endif
     s_auto_focus = Cvar_Get("s_auto_focus", "0", 0);
     s_swapstereo = Cvar_Get("s_swapstereo", "0", 0);
+	s_khz = Cvar_Get("s_khz", "22", CVAR_ARCHIVE | CVAR_SOUND);
 
     // start one of available sound engines
     s_started = SS_NOT;
@@ -301,17 +487,33 @@ void S_Activate(void)
 S_SfxForHandle
 ==================
 */
-sfx_t *S_SfxForHandle(qhandle_t hSfx)
+sfx_t *S_SfxForHandle(soundhandle_t hSfx, gametype_t game)
 {
-    if (!hSfx) {
+    if (!hSfx.handle) {
         return NULL;
     }
 
-    if (hSfx < 1 || hSfx > num_sfx) {
-        Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", hSfx);
-    }
+	switch (hSfx.sound.type)
+	{
+	case SOUNDHANDLE_RAW:
+	default:
+		if (hSfx.sound.id < 1 || hSfx.sound.id > num_sfx) {
+			Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", hSfx.sound.id);
+		}
 
-    return &known_sfx[hSfx - 1];
+		return &known_sfx[hSfx.sound.id - 1];
+	case SOUNDHANDLE_GAMED:
+		if (hSfx.sound.id < 0 || hSfx.sound.id > r_numSoundScripts) {
+			Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", hSfx.sound.id);
+		}
+
+		soundentry_t *entry = SSCR_EntryForHandle(hSfx, game);
+
+		if (!entry->loaded)
+			return NULL;
+
+		return S_SfxForHandle(entry->sound, game);
+	}
 }
 
 static sfx_t *S_AllocSfx(void)
@@ -380,18 +582,18 @@ S_RegisterSound
 
 ==================
 */
-qhandle_t S_RegisterSound(const char *name)
+soundhandle_t S_RegisterSound(const char *name)
 {
     char    buffer[MAX_QPATH];
     sfx_t   *sfx;
     size_t  len;
 
     if (!s_started)
-        return 0;
+		return (soundhandle_t) { 0 };
 
     // empty names are legal, silently ignore them
     if (!*name)
-        return 0;
+		return (soundhandle_t) { 0 };
 
     if (*name == '*') {
         len = Q_strlcpy(buffer, name, MAX_QPATH);
@@ -406,26 +608,52 @@ qhandle_t S_RegisterSound(const char *name)
     // this MAY happen after prepending "sound/"
     if (len >= MAX_QPATH) {
         Com_DPrintf("%s: oversize name\n", __func__);
-        return 0;
+		return (soundhandle_t) { 0 };
     }
 
     // normalized to empty name?
     if (len == 0) {
         Com_DPrintf("%s: empty name\n", __func__);
-        return 0;
+		return (soundhandle_t) { 0 };
     }
+
+	soundhandle_t index;
+
+	if (*name == '%') {
+		index.sound.type = SOUNDHANDLE_GAMED;
+
+		soundscript_t *script = SSCR_Find(name + 1);
+
+		if (script) {
+			index.sound.id = (script - r_soundscripts) + 1;
+			return index;
+		}
+
+		// gotta load it
+		script = SSCR_Register(name + 1);
+
+		if (script) {
+			index.sound.id = (script - r_soundscripts) + 1;
+			return index;
+		}
+
+		return (soundhandle_t) { 0 };
+	}
 
     sfx = S_FindName(buffer, len);
     if (!sfx) {
         Com_DPrintf("%s: out of slots\n", __func__);
-        return 0;
+		return (soundhandle_t) { 0 };
     }
 
     if (!s_registering) {
         S_LoadSound(sfx);
     }
 
-    return (sfx - known_sfx) + 1;
+	index.sound.type = SOUNDHANDLE_RAW;
+	index.sound.id = (sfx - known_sfx) + 1;
+
+    return index;
 }
 
 /*
@@ -521,6 +749,9 @@ void S_EndRegistration(void)
 #endif
 
     S_RegisterSexedSounds();
+
+	SSCR_Untouch();
+	SSCR_Touch();
 
     // clear playsound list, so we don't free sfx still present there
     S_StopAllSounds();
@@ -782,6 +1013,7 @@ void S_IssuePlaysound(playsound_t *ps)
     ch->sfx = ps->sfx;
     VectorCopy(ps->origin, ch->origin);
     ch->fixed_origin = ps->fixed_origin;
+	ch->pitch_offset = ps->pitch_offset;
 
 #if USE_OPENAL
     if (s_started == SS_OAL)
@@ -813,7 +1045,7 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
+void S_StartSound(const vec3_t origin, int entnum, int entchannel, soundhandle_t hSfx, float vol, float attenuation, float timeofs)
 {
     sfxcache_t  *sc;
     playsound_t *ps, *sort;
@@ -824,7 +1056,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     if (!s_active)
         return;
 
-    if (!(sfx = S_SfxForHandle(hSfx))) {
+    if (!(sfx = S_SfxForHandle(hSfx, cl_entities[entnum].current.game))) {
         return;
     }
 
@@ -836,8 +1068,8 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
 
     // make sure the sound is loaded
     sc = S_LoadSound(sfx);
-    if (!sc)
-        return;     // couldn't load the sound's data
+	if (!sc)
+		return;     // couldn't load the sound's data
 
     // make the playsound_t
     ps = S_AllocPlaysound();
@@ -856,6 +1088,18 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
     ps->attenuation = attenuation;
     ps->volume = vol;
     ps->sfx = sfx;
+
+	if (hSfx.sound.type == SOUNDHANDLE_GAMED) {
+		soundentry_t *entry = SSCR_EntryForHandle(hSfx, cl_entities[entnum].current.game);
+
+		if (entry->pitch_min == entry->pitch_max)
+			ps->pitch_offset = entry->pitch_min;
+		else
+			ps->pitch_offset = entry->pitch_min + (Q_rand() % (entry->pitch_max - entry->pitch_min));
+	}
+	else {
+		ps->pitch_offset = 0;
+	}
 
 #if USE_OPENAL
     if (s_started == SS_OAL)
@@ -880,9 +1124,9 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
 
 void S_ParseStartSound(void)
 {
-    qhandle_t handle = cl.sound_precache[snd.index];
+    precache_entry_t entry = cl.precache[snd.index];
 
-    if (!handle)
+    if (entry.type != PRECACHE_SOUND || !entry.sound.handle)
         return;
 
 #ifdef _DEBUG
@@ -891,7 +1135,7 @@ void S_ParseStartSound(void)
 #endif
 
     S_StartSound((snd.flags & SND_POS) ? snd.pos : NULL,
-                 snd.entity, snd.channel, handle,
+                 snd.entity, snd.channel, entry.sound,
                  snd.volume, snd.attenuation, snd.timeofs);
 }
 
@@ -903,7 +1147,7 @@ S_StartLocalSound
 void S_StartLocalSound(const char *sound)
 {
     if (s_started) {
-        qhandle_t sfx = S_RegisterSound(sound);
+        soundhandle_t sfx = S_RegisterSound(sound);
         S_StartSound(NULL, listener_entnum, 0, sfx, 1, ATTN_NONE, 0);
     }
 }
@@ -911,7 +1155,7 @@ void S_StartLocalSound(const char *sound)
 void S_StartLocalSound_(const char *sound)
 {
     if (s_started) {
-        qhandle_t sfx = S_RegisterSound(sound);
+		soundhandle_t sfx = S_RegisterSound(sound);
         S_StartSound(NULL, listener_entnum, 256, sfx, 1, ATTN_NONE, 0);
     }
 }
@@ -1010,15 +1254,16 @@ static void S_AddLoopSounds(void)
         if (!sounds[i])
             continue;
 
-        sfx = S_SfxForHandle(cl.sound_precache[sounds[i]]);
+		num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
+		ent = &cl.entityStates[num];
+
+        sfx = S_SfxForHandle(cl.precache[sounds[i]].sound, ent->game);
+
         if (!sfx)
             continue;       // bad sound effect
-        sc = sfx->cache;
+		sc = sfx->cache;
         if (!sc)
             continue;
-
-        num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
-        ent = &cl.entityStates[num];
 
         // find the total contribution of all sounds of this type
         CL_GetEntitySoundOrigin(ent->number, origin);

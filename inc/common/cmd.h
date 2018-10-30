@@ -85,12 +85,12 @@ then searches for a command or variable that matches the first token.
 */
 
 typedef struct genctx_s {
-    const char  *partial;
-    size_t length;
-    int argnum;
-    char **matches;
-    int count, size;
-    void *data;
+	const char  *partial;
+	size_t length;
+	int argnum;
+	char **matches;
+	int count, size;
+	void *data;
     bool ignorecase;
     bool ignoredups;
 } genctx_t;

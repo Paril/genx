@@ -65,6 +65,7 @@ typedef struct centity_s {
 
     int             trailcount;         // for diminishing grenade trails
     vec3_t          lerp_origin;        // for trails (variable hz)
+	int				last_trail;
 
 #if USE_FPS
     int             prev_frame;
@@ -82,12 +83,12 @@ extern centity_t    cl_entities[MAX_EDICTS];
 
 typedef struct clientinfo_s {
     char name[MAX_QPATH];
-    qhandle_t skin;
-    qhandle_t icon;
+    pichandle_t skin;
+    pichandle_t icon;
     char model_name[MAX_QPATH];
     char skin_name[MAX_QPATH];
-    qhandle_t model;
-    qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
+	modelhandle_t model;
+    modelhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
 } clientinfo_t;
 
 typedef struct {
@@ -137,6 +138,24 @@ typedef struct {
 #define CL_OLDKEYPS     &cl.oldframe.ps
 #define CL_KEYLERPFRAC  cl.lerpfrac
 #endif
+
+typedef struct layout_string_s layout_string_t;
+
+typedef struct {
+	precache_type_e		type;
+
+	union
+	{
+		struct
+		{
+			modelhandle_t	handle;
+			mmodel_t		*clip;
+		} model;
+
+		soundhandle_t sound;
+		pichandle_t image;
+	};
+} precache_entry_t;
 
 //
 // the client_state_t structure is wiped completely at every
@@ -237,8 +256,9 @@ typedef struct client_state_s {
     //
     // transient data from server
     //
-    char        layout[MAX_NET_STRING];     // general 2D overlay
-    int         inventory[MAX_ITEMS];
+    layout_string_t *layout;     // general 2D overlay
+	char			layout_raw[2048];
+    int				inventory[ITI_TOTAL];
 
     //
     // server state information
@@ -258,6 +278,7 @@ typedef struct client_state_s {
 
     char        baseconfigstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
     char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
+	byte		precache_bitset[MAX_PRECACHE_BITSET];
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 
 #if USE_AUTOREPLY
@@ -270,17 +291,16 @@ typedef struct client_state_s {
     //
     bsp_t        *bsp;
 
-    qhandle_t model_draw[MAX_MODELS];
-    mmodel_t *model_clip[MAX_MODELS];
-
-    qhandle_t sound_precache[MAX_SOUNDS];
-    qhandle_t image_precache[MAX_IMAGES];
+	precache_entry_t	precache[MAX_PRECACHE];
 
     clientinfo_t    clientinfo[MAX_CLIENTS];
     clientinfo_t    baseclientinfo;
 
     char    weaponModels[MAX_CLIENTWEAPONMODELS][MAX_QPATH];
     int     numWeaponModels;
+
+	// Generations
+	int		gamemode;
 } client_state_t;
 
 extern    client_state_t    cl;
@@ -560,6 +580,7 @@ const char *CL_Server_g(const char *partial, int argnum, int state);
 void CL_CheckForPause(void);
 void CL_UpdateFrameTimes(void);
 bool CL_CheckForIgnore(const char *s);
+gametype_t CL_GetClientGame();
 
 void cl_timeout_changed(cvar_t *self);
 
@@ -677,8 +698,8 @@ void CL_GetEntitySoundOrigin(int ent, vec3_t org);
 //
 // view.c
 //
-extern    int       gun_frame;
-extern    qhandle_t gun_model;
+extern    int       	gun_frame;
+extern    modelhandle_t gun_model;
 
 void V_Init(void);
 void V_Shutdown(void);
@@ -716,10 +737,13 @@ void CL_SmokeAndFlash(vec3_t origin);
 
 void CL_RegisterTEntSounds(void);
 void CL_RegisterTEntModels(void);
+void CL_RegisterEffectSounds(void);
 void CL_ParseTEnt(void);
 void CL_AddTEnts(void);
 void CL_ClearTEnts(void);
 void CL_InitTEnts(void);
+
+void CL_AddNavLaser(vec3_t first, vec3_t second, int width, color_t color);
 
 
 //
@@ -737,6 +761,19 @@ void CL_CheckPredictionError(void);
 #define BLASTER_PARTICLE_COLOR  0xe0
 #define INSTANT_PARTICLE    -10000.0f
 
+typedef enum
+{
+	PARTICLE_NOPE,
+
+	PARTICLE_Q1_EXPLODE,
+	PARTICLE_Q1_EXPLODE2,
+	PARTICLE_Q1_SLOWGRAV,
+	PARTICLE_Q1_FIRE,
+	PARTICLE_Q1_STATIC,
+	PARTICLE_Q1_BLOB1,
+	PARTICLE_Q1_BLOB2
+} particletype_t;
+
 typedef struct cparticle_s {
     struct cparticle_s    *next;
 
@@ -749,6 +786,11 @@ typedef struct cparticle_s {
     float   alpha;
     float   alphavel;
     color_t rgba;
+
+	// Generations
+	float			die;
+	particletype_t	type;
+	float			ramp;
 } cparticle_t;
 
 #if USE_DLIGHTS
@@ -908,8 +950,8 @@ void    SCR_LagClear(void);
 void    SCR_SetCrosshairColor(void);
 
 float   SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime);
-int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
-void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font);
+int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, pichandle_t font, gametype_t game);
+void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, pichandle_t font, gametype_t game);
 
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
@@ -968,3 +1010,9 @@ void CL_GTV_Shutdown(void);
 // crc.c
 //
 byte COM_BlockSequenceCRCByte(byte *base, size_t length, int sequence);
+
+// Nav stuff
+void Nav_AddEntities();
+void Nav_Frame();
+void Nav_Init();
+void Nav_Shutdown();

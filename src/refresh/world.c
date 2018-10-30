@@ -75,7 +75,9 @@ void GL_SampleLightPoint(vec3_t color)
 static bool _GL_LightPoint(vec3_t start, vec3_t color)
 {
     bsp_t           *bsp;
-    int             i, index;
+	// Generations
+    int             i;
+	modelhandle_t	index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
     entity_t        *ent;
@@ -97,14 +99,16 @@ static bool _GL_LightPoint(vec3_t start, vec3_t color)
     for (i = 0; i < glr.fd.num_entities; i++) {
         ent = &glr.fd.entities[i];
         index = ent->model;
-        if (!(index & 0x80000000))
+		// Generations
+        if (index.model.type != MODELHANDLE_BSP)
             break;  // BSP models are at the start of entity array
 
-        index = ~index;
-        if (index < 1 || index >= bsp->nummodels)
+		// Generations
+        if (index.model.id < 1 || index.model.id >= bsp->nummodels)
             continue;
 
-        model = &bsp->models[index];
+		// Generations
+        model = &bsp->models[index.model.id];
         if (!model->numfaces)
             continue;
 

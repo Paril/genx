@@ -19,9 +19,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-static void CL_LogoutEffect(vec3_t org, int type);
+static void CL_LogoutEffect(gametype_t game, vec3_t org, int type);
 
 static vec3_t avelocities[NUMVERTEXNORMALS];
+
+
+extern int		ramp1[8];
+extern int		ramp2[8];
+extern int		ramp3[8];
 
 /*
 ==============================================================
@@ -243,6 +248,133 @@ void CL_AddDLights(void)
 
 // ==============================================================
 
+soundhandle_t sfx_q2_blaster;
+soundhandle_t sfx_q2_hyperblaster_fire;
+soundhandle_t sfx_q2_machinegun_fire[5];
+soundhandle_t sfx_q2_shotgun_fire;
+soundhandle_t sfx_q2_shotgun_reload;
+soundhandle_t sfx_q2_sshotgun_fire;
+soundhandle_t sfx_q2_railgun_fire;
+soundhandle_t sfx_q2_rocketlauncher_fire;
+soundhandle_t sfx_q2_rocketlauncher_reload;
+soundhandle_t sfx_q2_grenadelauncher_fire;
+soundhandle_t sfx_q2_grenadelauncher_reload;
+soundhandle_t sfx_q2_bfg_fire;
+
+soundhandle_t sfx_q1_lightning_start;
+soundhandle_t sfx_q1_nailgun_fire;
+soundhandle_t sfx_q1_shotgun_fire;
+soundhandle_t sfx_q1_sshotgun_fire;
+soundhandle_t sfx_q1_snailgun_fire;
+soundhandle_t sfx_q1_rocketlauncher_fire;
+soundhandle_t sfx_q1_grenadelauncher_fire;
+
+soundhandle_t sfx_doom_pistol;
+soundhandle_t sfx_doom_shotgun_fire;
+soundhandle_t sfx_doom_sshotgun_fire;
+soundhandle_t sfx_doom_rocketlauncher_fire;
+soundhandle_t sfx_doom_plasma;
+soundhandle_t sfx_doom_bfg_fire;
+
+soundhandle_t sfx_duke_pistol;
+soundhandle_t sfx_duke_shotgun_fire;
+soundhandle_t sfx_duke_cannon_fire;
+soundhandle_t sfx_duke_rpg_fire;
+soundhandle_t sfx_duke_dev_fire;
+
+void CL_RegisterEffectSounds()
+{
+	sfx_q2_blaster = S_RegisterSound("weapons/blastf1a.wav");
+	sfx_q2_hyperblaster_fire = S_RegisterSound("weapons/hyprbf1a.wav");
+	sfx_q1_lightning_start = S_RegisterSound("q1/weapons/lstart.wav");
+
+	for (int i = 0; i < 5; ++i)
+		sfx_q2_machinegun_fire[i] = S_RegisterSound(va("weapons/machgf%ib.wav", i + 1));
+
+	sfx_q1_nailgun_fire = S_RegisterSound("q1/weapons/rocket1i.wav");
+	sfx_q2_shotgun_fire = S_RegisterSound("weapons/shotgf1b.wav");
+	sfx_q2_shotgun_reload = S_RegisterSound("weapons/shotgr1b.wav");
+	sfx_q1_shotgun_fire = S_RegisterSound("q1/weapons/guncock.wav");
+	sfx_q2_sshotgun_fire = S_RegisterSound("weapons/sshotf1b.wav");
+	sfx_q1_sshotgun_fire = S_RegisterSound("q1/weapons/shotgn2.wav");
+	sfx_q1_snailgun_fire = S_RegisterSound("q1/weapons/spike2.wav");
+	sfx_q2_railgun_fire = S_RegisterSound("weapons/railgf1a.wav");
+	sfx_q2_rocketlauncher_fire = S_RegisterSound("weapons/rocklf1a.wav");
+	sfx_q2_rocketlauncher_reload = S_RegisterSound("weapons/rocklr1b.wav");
+	sfx_q1_rocketlauncher_fire = S_RegisterSound("q1/weapons/sgun1.wav");
+	sfx_q2_grenadelauncher_fire = S_RegisterSound("weapons/grenlf1a.wav");
+	sfx_q2_grenadelauncher_reload = S_RegisterSound("weapons/grenlr1b.wav");
+	sfx_q1_grenadelauncher_fire = S_RegisterSound("q1/weapons/grenade.wav");
+	sfx_q2_bfg_fire = S_RegisterSound("weapons/bfg__f1y.wav");
+
+	sfx_doom_pistol = S_RegisterSound("doom/PISTOL.wav");
+	sfx_doom_shotgun_fire = S_RegisterSound("doom/SHOTGN.wav");
+	sfx_doom_sshotgun_fire = S_RegisterSound("doom/DSHTGN.wav");
+	sfx_doom_rocketlauncher_fire = S_RegisterSound("doom/RLAUNC.wav");
+	sfx_doom_plasma = S_RegisterSound("doom/PLASMA.wav");
+	sfx_doom_bfg_fire = S_RegisterSound("doom/BFG.wav");
+
+	sfx_duke_pistol = S_RegisterSound("%s_duke_pistol_fire");
+	sfx_duke_shotgun_fire = S_RegisterSound("%s_duke_shotgun_fire");
+	sfx_duke_cannon_fire = S_RegisterSound("%s_duke_ripper_fire");
+	sfx_duke_rpg_fire = S_RegisterSound("duke/RPGFIRE.wav");
+	sfx_duke_dev_fire = S_RegisterSound("%s_duke_freeze_fire");
+}
+
+void CL_MakeDukeShell(vec3_t origin, vec3_t velocity, bool shotgun);
+
+void CL_DukeThrowShell(bool shotgun, float rVel, float zVel, float originY)
+{
+	vec3_t forward, right, vel = { 0 }, origin;
+
+	if (mz.entity == cl.clientNum + 1)
+	{
+		if (!cl.thirdPersonView)
+		{
+			AngleVectors(cl.refdef.viewangles, forward, right, NULL);
+			VectorCopy(cl.refdef.vieworg, origin);
+		}
+		else
+		{
+			AngleVectors(cl.playerEntityAngles, forward, right, NULL);
+			VectorCopy(cl.playerEntityOrigin, origin);
+
+			originY -= 22;
+		}
+	}
+	else
+	{
+		AngleVectors(cl_entities[mz.entity].current.angles, forward, right, NULL);
+		VectorCopy(cl_entities[mz.entity].current.origin, origin);
+
+		originY -= 22;
+	}
+
+	VectorMA(vel, rVel, right, vel);
+	vel[2] = zVel;
+
+	VectorMA(origin, 2, right, origin);
+	VectorMA(origin, 8, forward, origin);
+	origin[2] -= originY;
+
+	CL_MakeDukeShell(origin, vel, shotgun);
+}
+
+void CL_DukeThrowPistolShell()
+{
+	CL_DukeThrowShell(false, -45 + (crand() * 15), 45 + (crand() * 15), 2);
+}
+
+void CL_DukeThrowCannonShell()
+{
+	CL_DukeThrowShell(false, 60 + (crand() * 5), 25 + (crand() * 5), 4);
+}
+
+void CL_DukeThrowShotgunShell()
+{
+	CL_DukeThrowShell(true, -45 + (crand() * 15), 5 + (crand() * 5), 2);
+}
+
 /*
 ==============
 CL_MuzzleFlash
@@ -256,7 +388,6 @@ void CL_MuzzleFlash(void)
 #endif
     centity_t   *pl;
     float       volume;
-    char        soundname[MAX_QPATH];
 
 #ifdef _DEBUG
     if (developer->integer)
@@ -276,7 +407,7 @@ void CL_MuzzleFlash(void)
     else
         dl->radius = 200 + (Q_rand() & 31);
     //dl->minlight = 32;
-    dl->die = cl.time; // + 0.1;
+    dl->die = cl.time + 50; // + 0.1;
 #define DL_COLOR(r, g, b)   VectorSet(dl->color, r, g, b)
 #define DL_RADIUS(r)        (dl->radius = r)
 #define DL_DIE(t)           (dl->die = cl.time + t)
@@ -294,92 +425,203 @@ void CL_MuzzleFlash(void)
     switch (mz.weapon) {
     case MZ_BLASTER:
         DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_blaster, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DOOM:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_doom_pistol, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_pistol, volume, ATTN_NORM, 0);
+
+			CL_DukeThrowPistolShell();
+			break;
+		}
         break;
     case MZ_BLUEHYPERBLASTER:
         DL_COLOR(0, 0, 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_hyperblaster_fire, volume, ATTN_NORM, 0);
         break;
     case MZ_HYPERBLASTER:
         DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/hyprbf1a.wav"), volume, ATTN_NORM, 0);
-        break;
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_hyperblaster_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_lightning_start, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DOOM:
+			DL_COLOR(0, 0, 1);
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_doom_plasma, volume, ATTN_NORM, 0);
+			break;
+		}
+		break;
     case MZ_MACHINEGUN:
         DL_COLOR(1, 1, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_nailgun_fire, volume, ATTN_NORM, 0);
+			break;
+		}
         break;
     case MZ_SHOTGUN:
         DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/shotgf1b.wav"), volume, ATTN_NORM, 0);
-        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/shotgr1b.wav"), volume, ATTN_NORM, 0.1f);
+
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_shotgun_fire, volume, ATTN_NORM, 0);
+			S_StartSound(NULL, mz.entity, CHAN_AUTO, sfx_q2_shotgun_reload, volume, ATTN_NORM, 0.1);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_shotgun_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DOOM:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_doom_shotgun_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_shotgun_fire, volume, ATTN_NORM, 0);
+			break;
+		}
         break;
     case MZ_SSHOTGUN:
         DL_COLOR(1, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/sshotf1b.wav"), volume, ATTN_NORM, 0);
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_sshotgun_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_sshotgun_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DOOM:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_doom_sshotgun_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			CL_DukeThrowShotgunShell();
+			DL_RADIUS(0);
+			break;
+		}
         break;
     case MZ_CHAINGUN1:
         DL_RADIUS(200 + (Q_rand() & 31));
         DL_COLOR(1, 0.25f, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_snailgun_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_cannon_fire, volume, ATTN_NORM, 0);
+			CL_DukeThrowCannonShell();
+			break;
+		}
         break;
     case MZ_CHAINGUN2:
         DL_RADIUS(225 + (Q_rand() & 31));
         DL_COLOR(1, 0.5f, 0);
-        DL_DIE(0.1f);   // long delay
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.05f);
+        DL_DIE(100);   // long delay
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0.05);
         break;
     case MZ_CHAINGUN3:
         DL_RADIUS(250 + (Q_rand() & 31));
         DL_COLOR(1, 1, 0);
-        DL_DIE(0.1f);   // long delay
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.033f);
-        Q_snprintf(soundname, sizeof(soundname), "weapons/machgf%ib.wav", (Q_rand() % 5) + 1);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound(soundname), volume, ATTN_NORM, 0.066f);
+        DL_DIE(100);   // long delay
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0.033);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_machinegun_fire[(rand() % 5)], volume, ATTN_NORM, 0.066);
         break;
     case MZ_RAILGUN:
         DL_COLOR(0.5f, 0.5f, 1.0f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/railgf1a.wav"), volume, ATTN_NORM, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_railgun_fire, volume, ATTN_NORM, 0);
         break;
     case MZ_ROCKET:
         DL_COLOR(1, 0.5f, 0.2f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/rocklf1a.wav"), volume, ATTN_NORM, 0);
-        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/rocklr1b.wav"), volume, ATTN_NORM, 0.1f);
-        break;
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_rocketlauncher_fire, volume, ATTN_NORM, 0);
+			S_StartSound(NULL, mz.entity, CHAN_AUTO,   sfx_q2_rocketlauncher_reload, volume, ATTN_NORM, 0.1);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_rocketlauncher_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DOOM:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_doom_rocketlauncher_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_rpg_fire, volume, ATTN_NORM, 0);
+			break;
+		}
+		break;
     case MZ_GRENADE:
         DL_COLOR(1, 0.5f, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), volume, ATTN_NORM, 0);
-        S_StartSound(NULL, mz.entity, CHAN_AUTO,   S_RegisterSound("weapons/grenlr1b.wav"), volume, ATTN_NORM, 0.1f);
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_grenadelauncher_fire, volume, ATTN_NORM, 0);
+			S_StartSound(NULL, mz.entity, CHAN_AUTO, sfx_q2_grenadelauncher_reload, volume, ATTN_NORM, 0.1);
+			break;
+		case GAME_Q1:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q1_grenadelauncher_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_rpg_fire, volume, ATTN_NORM, 0);
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_rpg_fire, volume, ATTN_NORM, 0.06);
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON2, sfx_duke_dev_fire, volume, ATTN_NORM, 0);
+			break;
+		}
         break;
     case MZ_BFG:
-        DL_COLOR(0, 1, 0);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/bfg__f1y.wav"), volume, ATTN_NORM, 0);
-        break;
-
+		switch (cl_entities[mz.entity].current.game)
+		{
+		case GAME_Q2:
+			DL_COLOR(0, 1, 0);
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_bfg_fire, volume, ATTN_NORM, 0);
+		break;
+		case GAME_DOOM:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_doom_bfg_fire, volume, ATTN_NORM, 0);
+			break;
+		case GAME_DUKE:
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_duke_dev_fire, volume, ATTN_NORM, 0);
+			break;
+		}
+		break;
     case MZ_LOGIN:
-        DL_COLOR(0, 1, 0);
+		if (pl->current.game == GAME_DUKE)
+			DL_COLOR(0, 0, 1);
+		else
+	        DL_COLOR(0, 1, 0);
         DL_DIE(1.0f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
+        CL_LogoutEffect(pl->current.game, pl->current.origin, mz.weapon);
         break;
     case MZ_LOGOUT:
-        DL_COLOR(1, 0, 0);
-        DL_DIE(1.0f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
+		if (pl->current.game == GAME_DUKE)
+			DL_COLOR(0, 0, 1);
+		else
+			DL_COLOR(1, 0, 0);
+        DL_DIE(100);
+        CL_LogoutEffect(pl->current.game, pl->current.origin, mz.weapon);
         break;
     case MZ_RESPAWN:
-        DL_COLOR(1, 1, 0);
-        DL_DIE(1.0f);
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/grenlf1a.wav"), 1, ATTN_NORM, 0);
-        CL_LogoutEffect(pl->current.origin, mz.weapon);
+		if (pl->current.game == GAME_DUKE)
+			DL_COLOR(0, 0, 1);
+		else
+	        DL_COLOR(1, 1, 0);
+        DL_DIE(100);
+        CL_LogoutEffect(pl->current.game, pl->current.origin, mz.weapon);
         break;
     case MZ_PHALANX:
         DL_COLOR(1, 0.5f, 0.5f);
@@ -406,7 +648,7 @@ void CL_MuzzleFlash(void)
     case MZ_BLASTER2:
         DL_COLOR(0, 1, 0);
         // FIXME - different sound for blaster2 ??
-        S_StartSound(NULL, mz.entity, CHAN_WEAPON, S_RegisterSound("weapons/blastf1a.wav"), volume, ATTN_NORM, 0);
+        S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_blaster, volume, ATTN_NORM, 0);
         break;
     case MZ_TRACKER:
         // negative flashes handled the same in gl/soft until CL_AddDLights
@@ -462,7 +704,7 @@ void CL_MuzzleFlash2(void)
     VectorCopy(origin,  dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
     //dl->minlight = 32;
-    dl->die = cl.time;  // + 0.1;
+    dl->die = cl.time + 100;  // + 0.1;
 #endif
 
     switch (mz.weapon) {
@@ -835,6 +1077,8 @@ cparticle_t *CL_AllocParticle(void)
     p->next = active_particles;
     active_particles = p;
 
+	p->type = PARTICLE_NOPE;
+
     return p;
 }
 
@@ -942,6 +1186,182 @@ void CL_TeleporterParticles(vec3_t org)
     }
 }
 
+void R_Doom_Teleport_Fog(int, vec3_t);
+
+void R_Q1_TeleportSound(int ent)
+{
+	const char *tmpstr;
+
+	float v = frand() * 5;
+	if (v < 1)
+		tmpstr = "q1/misc/r_tele1.wav";
+	else if (v < 2)
+		tmpstr = "q1/misc/r_tele2.wav";
+	else if (v < 3)
+		tmpstr = "q1/misc/r_tele3.wav";
+	else if (v < 4)
+		tmpstr = "q1/misc/r_tele4.wav";
+	else
+		tmpstr = "q1/misc/r_tele5.wav";
+
+	S_StartSound(NULL, ent, CHAN_WEAPON, S_RegisterSound(tmpstr), 1, ATTN_NORM, 0);
+}
+
+void R_Q1_TeleportSplash(int ent, vec3_t org)
+{
+	int			i, j, k;
+	cparticle_t	*p;
+	float		vel;
+	vec3_t		dir;
+
+	R_Q1_TeleportSound(mz.entity);
+
+	for (i = -16; i < 16; i += 4)
+		for (j = -16; j < 16; j += 4)
+			for (k = -24; k < 32; k += 4)
+			{
+				p = CL_AllocParticle();
+
+				if (!p)
+					return;
+
+				p->time = cl.time;
+
+				p->die = cl.time + (0.2f + (Q_rand() & 7) * 0.02f) * 1000;
+				p->color = -1;
+				p->rgba.u32 = d_palettes[GAME_Q1][7 + (Q_rand() & 7)];
+				p->type = PARTICLE_Q1_SLOWGRAV;
+
+				dir[0] = j * 8;
+				dir[1] = i * 8;
+				dir[2] = k * 8;
+
+				p->org[0] = org[0] + i + (Q_rand() & 3);
+				p->org[1] = org[1] + j + (Q_rand() & 3);
+				p->org[2] = org[2] + k + (Q_rand() & 3);
+
+				VectorClear(p->accel);
+				p->alpha = 1;
+				p->alphavel = 0;
+				p->accel[2] = -PARTICLE_GRAVITY;
+
+				VectorNormalize(dir);
+				vel = 50 + (Q_rand() & 63);
+				VectorScale(dir, vel, p->vel);
+			}
+}
+
+void R_Q1_RocketTrail(vec3_t start, vec3_t end, int type)
+{
+	vec3_t		vec, move;
+	float		len;
+	int			j;
+	cparticle_t	*p;
+
+	VectorCopy(start, move);
+	VectorSubtract(end, start, vec);
+	len = VectorNormalize(vec);
+
+	int dec = 3;
+	VectorScale(vec, dec, vec);
+
+	// FIXME: this is a really silly way to have a loop
+	while (len > 0) {
+		len -= dec;
+
+		p = CL_AllocParticle();
+
+		if (!p)
+			return;
+
+		p->time = cl.time;
+
+		VectorCopy(vec3_origin, p->vel);
+		VectorClear(p->accel);
+		p->alpha = 1;
+		p->die = cl.time + 2000;
+
+		/*if (type == 4)
+		{	// slight blood
+			p->type = PARTICLE_Q1_SLOWGRAV;
+			p->color = 67 + (rand() & 3);
+			for (j = 0; j<3; j++)
+				p->org[j] = start[j] + ((rand() % 6) - 3);
+			len -= 3;
+		}
+		else*/ if (type == 2)
+		{	// blood
+			p->accel[2] = -PARTICLE_GRAVITY / 2;
+			p->color = -1;
+			p->rgba.u32 = d_palettes[GAME_Q1][67 + (rand() & 3)];
+			p->type = PARTICLE_Q1_SLOWGRAV;
+			for (j = 0; j<3; j++)
+				p->org[j] = start[j] + ((rand() % 6) - 3);
+		}
+		else if (type == 6)
+		{	// voor trail
+			p->type = PARTICLE_Q1_STATIC;
+			p->color = -1;
+			p->rgba.u32 = d_palettes[GAME_Q1][9 * 16 + 8 + (rand() & 3)];
+			p->die = cl.time + 300;
+
+			for (j = 0; j<3; j++)
+				p->org[j] = start[j] + ((rand() & 15) - 8);
+		}
+		else if (type == 1)
+		{	// smoke smoke
+			p->ramp = (rand() & 3) + 2;
+			p->color = -1;
+			p->rgba.u32 = d_palettes[GAME_Q1][ramp3[(int)p->ramp]];
+			p->type = PARTICLE_Q1_FIRE;
+			for (j = 0; j<3; j++)
+				p->org[j] = start[j] + ((rand() % 6) - 3);
+
+			p->accel[2] = PARTICLE_GRAVITY / 2;
+		}
+		else if (type == 0)
+		{	// rocket trail
+			p->ramp = (rand() & 3);
+			p->color = -1;
+			p->rgba.u32 = d_palettes[GAME_Q1][ramp3[(int)p->ramp]];
+			p->type = PARTICLE_Q1_FIRE;
+			for (j = 0; j<3; j++)
+				p->org[j] = start[j] + ((rand() % 6) - 3);
+
+			p->accel[2] = PARTICLE_GRAVITY / 2;
+		}
+		else if (type == 3 || type == 5)
+		{
+			// tracer
+			static int tracercount = 0;
+
+			p->die = cl.time + 500;
+			p->type = PARTICLE_Q1_STATIC;
+			p->color = -1;
+			if (type == 3)
+				p->rgba.u32 = d_palettes[GAME_Q1][52 + ((tracercount & 4) << 1)];
+			else
+				p->rgba.u32 = d_palettes[GAME_Q1][230 + ((tracercount & 4) << 1)];
+
+			tracercount++;
+
+			VectorCopy(start, p->org);
+			if (tracercount & 1)
+			{
+				p->vel[0] = 30 * vec[1];
+				p->vel[1] = 30 * -vec[0];
+			}
+			else
+			{
+				p->vel[0] = 30 * -vec[1];
+				p->vel[1] = 30 * vec[0];
+			}
+		}
+
+		
+        VectorAdd(move, vec, move);
+	}
+}
 
 /*
 ===============
@@ -949,38 +1369,58 @@ CL_LogoutEffect
 
 ===============
 */
-static void CL_LogoutEffect(vec3_t org, int type)
-{
-    int         i, j;
-    cparticle_t *p;
+void Duke_Teleport(int entity, vec3_t org);
 
-    for (i = 0; i < 500; i++) {
-        p = CL_AllocParticle();
-        if (!p)
-            return;
+static void CL_LogoutEffect(gametype_t game, vec3_t org, int type)
+{
+	switch (game)
+	{
+	case GAME_DOOM:
+		R_Doom_Teleport_Fog(mz.entity, org);
+		break;
+	case GAME_Q1:
+		R_Q1_TeleportSplash(mz.entity, org);
+		break;
+	case GAME_Q2:
+		{
+			S_StartSound(NULL, mz.entity, CHAN_WEAPON, sfx_q2_grenadelauncher_fire, 1, ATTN_NORM, 0);
+
+			int         i, j;
+			cparticle_t *p;
+
+			for (i = 0; i < 500; i++) {
+				p = CL_AllocParticle();
+				if (!p)
+					return;
 
         p->time = cl.time;
 
-        if (type == MZ_LOGIN)
-            p->color = 0xd0 + (Q_rand() & 7); // green
-        else if (type == MZ_LOGOUT)
-            p->color = 0x40 + (Q_rand() & 7); // red
-        else
-            p->color = 0xe0 + (Q_rand() & 7); // yellow
+				if (type == MZ_LOGIN)
+					p->color = 0xd0 + (Q_rand() & 7); // green
+				else if (type == MZ_LOGOUT)
+					p->color = 0x40 + (Q_rand() & 7); // red
+				else
+					p->color = 0xe0 + (Q_rand() & 7); // yellow
 
-        p->org[0] = org[0] - 16 + frand() * 32;
-        p->org[1] = org[1] - 16 + frand() * 32;
-        p->org[2] = org[2] - 24 + frand() * 56;
+				p->org[0] = org[0] - 16 + frand() * 32;
+				p->org[1] = org[1] - 16 + frand() * 32;
+				p->org[2] = org[2] - 24 + frand() * 56;
 
-        for (j = 0; j < 3; j++)
-            p->vel[j] = crand() * 20;
+				for (j = 0; j < 3; j++)
+					p->vel[j] = crand() * 20;
 
-        p->accel[0] = p->accel[1] = 0;
-        p->accel[2] = -PARTICLE_GRAVITY;
-        p->alpha = 1.0f;
+				p->accel[0] = p->accel[1] = 0;
+				p->accel[2] = -PARTICLE_GRAVITY;
+				p->alpha = 1.0f;
 
-        p->alphavel = -1.0f / (1.0f + frand() * 0.3f);
-    }
+				p->alphavel = -1.0f / (1.0f + frand() * 0.3f);
+			}
+			break;
+		}
+	case GAME_DUKE:
+		Duke_Teleport(mz.entity, org);
+		break;
+	}
 }
 
 
@@ -1718,7 +2158,61 @@ void CL_AddParticles(void)
         if (p->alphavel != INSTANT_PARTICLE) {
             time = (cl.time - p->time) * 0.001f;
             alpha = p->alpha + time * p->alphavel;
-            if (alpha <= 0) {
+
+			switch (p->type)
+			{
+			case PARTICLE_Q1_EXPLODE:
+				p->ramp += cls.frametime * 10;
+				if (p->ramp >= 8)
+					p->die = -1;
+				else
+				{
+					p->color = -1;
+					p->rgba.u32 = d_palettes[GAME_Q1][ramp1[(int)p->ramp]];
+				}
+				for (int i = 0; i < 3; i++)
+					p->vel[i] += p->vel[i] * (cls.frametime * cls.frametime * 4);
+				break;
+
+			case PARTICLE_Q1_EXPLODE2:
+				p->ramp += cls.frametime * 15;
+				if (p->ramp >= 8)
+					p->die = -1;
+				else
+				{
+					p->color = -1;
+					p->rgba.u32 = d_palettes[GAME_Q1][ramp2[(int)p->ramp]];
+				}
+				for (int i = 0; i<3; i++)
+					p->vel[i] -= p->vel[i] * cls.frametime * cls.frametime;
+				break;
+
+			case PARTICLE_Q1_BLOB1:
+				for (int i = 0; i<2; i++)
+					p->vel[i] -= p->vel[i] * cls.frametime * cls.frametime;
+				break;
+
+			case PARTICLE_Q1_BLOB2:
+				for (int i = 0; i<3; i++)
+					p->vel[i] -= p->vel[i] * cls.frametime * cls.frametime;
+				break;
+
+			case PARTICLE_Q1_FIRE:
+				alpha = (6 - p->ramp) / 6;
+
+				p->ramp += cls.frametime * 5;
+				if (p->ramp >= 6)
+					p->die = -1;
+				else
+				{
+					p->color = -1;
+					p->rgba.u32 = d_palettes[GAME_Q1][ramp3[(int)p->ramp]];
+				}
+
+				break;
+			}
+
+            if (alpha <= 0 || (p->type != PARTICLE_NOPE && p->die < cl.time)) {
                 // faded out
                 p->next = free_particles;
                 free_particles = p;
@@ -1746,9 +2240,9 @@ void CL_AddParticles(void)
 
         time2 = time * time;
 
-        part->origin[0] = p->org[0] + p->vel[0] * time + p->accel[0] * time2;
-        part->origin[1] = p->org[1] + p->vel[1] * time + p->accel[1] * time2;
-        part->origin[2] = p->org[2] + p->vel[2] * time + p->accel[2] * time2;
+		part->origin[0] = p->org[0] + p->vel[0] * time + p->accel[0] * time2;
+		part->origin[1] = p->org[1] + p->vel[1] * time + p->accel[1] * time2;
+		part->origin[2] = p->org[2] + p->vel[2] * time + p->accel[2] * time2;
 
         if (color == -1) {
             part->rgba.u8[0] = p->rgba.u8[0];
@@ -1764,6 +2258,11 @@ void CL_AddParticles(void)
             p->alphavel = 0.0f;
             p->alpha = 0.0f;
         }
+
+		if (p->type != PARTICLE_NOPE)
+			part->type = PARTICLE_OLDSCHOOL;
+		else
+			part->type = PARTICLE_NOPE;
     }
 
     active_particles = active;

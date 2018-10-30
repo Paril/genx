@@ -56,118 +56,152 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define DLIGHT_CUTOFF       64
 
+enum
+{
+	MODELHANDLE_EMPTY,
+
+	MODELHANDLE_BSP,
+	MODELHANDLE_RAW,
+	MODELHANDLE_GAMED
+};
+
+typedef union {
+	qhandle_t	handle;
+
+	struct
+	{
+		uint16_t		type;
+		uint16_t		id;
+	} model;
+} modelhandle_t;
+
 typedef struct entity_s {
-    qhandle_t           model;          // opaque type outside refresh
-    vec3_t              angles;
+	modelhandle_t   model;          // opaque type outside refresh
+	vec3_t          angles;
 
-    /*
-    ** most recent data
-    */
-    vec3_t              origin;     // also used as RF_BEAM's "from"
-    int                 frame;          // also used as RF_BEAM's diameter
+	/*
+	** most recent data
+	*/
+	vec3_t          origin;     // also used as RF_BEAM's "from"
+	int             frame;          // also used as RF_BEAM's diameter
 
-    /*
-    ** previous data for lerping
-    */
-    vec3_t              oldorigin;  // also used as RF_BEAM's "to"
-    int                 oldframe;
+	/*
+	** previous data for lerping
+	*/
+	vec3_t			oldorigin;  // also used as RF_BEAM's "to"
+	int             oldframe;
 
-    /*
-    ** misc
-    */
-    float   backlerp;               // 0.0 = current, 1.0 = old
-    int     skinnum;                // also used as RF_BEAM's palette index,
-                                    // -1 => use rgba
+	/*
+	** misc
+	*/
+	float			backlerp;               // 0.0 = current, 1.0 = old
+	int				skinnum;                // also used as RF_BEAM's palette index,
+									// -1 => use rgba
 
-    float   alpha;                  // ignore if RF_TRANSLUCENT isn't set
-    color_t rgba;
+	float			alpha;                  // ignore if RF_TRANSLUCENT isn't set
+	color_t			rgba;
 
-    qhandle_t   skin;           // NULL for inline skin
-    int         flags;
+	pichandle_t		skin;           // NULL for inline skin
+	int				flags;
+
+	// Generations
+	gametype_t		game;
+	float			scale;
 } entity_t;
 
 typedef struct dlight_s {
-    vec3_t  origin;
-    vec3_t  transformed;
-    vec3_t  color;
-    float   intensity;
+	vec3_t  origin;
+	vec3_t  transformed;
+	vec3_t  color;
+	float   intensity;
 } dlight_t;
 
+typedef enum
+{
+	PARTICLE_Q2,
+	PARTICLE_OLDSCHOOL
+} particlerendertype_t;
+
 typedef struct particle_s {
-    vec3_t  origin;
-    int     color;              // -1 => use rgba
-    float   alpha;
-    color_t rgba;
+	vec3_t		origin;
+	int			color;              // -1 => use rgba
+	float		alpha;
+	color_t		rgba;
+	particlerendertype_t type;
 } particle_t;
 
 typedef struct lightstyle_s {
-    float           white;          // highest of RGB
-    vec3_t          rgb;            // 0.0 - 2.0
+	float           white;          // highest of RGB
+	vec3_t          rgb;            // 0.0 - 2.0
 } lightstyle_t;
 
 typedef struct refdef_s {
-    int         x, y, width, height;// in virtual screen coordinates
-    float       fov_x, fov_y;
-    vec3_t      vieworg;
-    vec3_t      viewangles;
-    vec4_t      blend;          // rgba 0-1 full screen blend
-    float       time;               // time is uesed to auto animate
-    int         rdflags;            // RDF_UNDERWATER, etc
+	int				x, y, width, height;// in virtual screen coordinates
+	float			fov_x, fov_y;
+	vec3_t			vieworg;
+	vec3_t			viewangles;
+	vec4_t			blend;          // rgba 0-1 full screen blend
+	float			time;               // time is uesed to auto animate
+	int				rdflags;            // RDF_UNDERWATER, etc
 
-    byte        *areabits;          // if not NULL, only areas with set bits will be drawn
+	byte			*areabits;          // if not NULL, only areas with set bits will be drawn
 
-    lightstyle_t    *lightstyles;   // [MAX_LIGHTSTYLES]
+	lightstyle_t    *lightstyles;   // [MAX_LIGHTSTYLES]
 
-    int         num_entities;
-    entity_t    *entities;
+	int				num_entities;
+	entity_t		*entities;
 
-    int         num_dlights;
-    dlight_t    *dlights;
+	int				num_dlights;
+	dlight_t		*dlights;
 
-    int         num_particles;
-    particle_t  *particles;
+	int				num_particles;
+	particle_t		*particles;
 } refdef_t;
 
 typedef enum {
-    QVF_ACCELERATED     = (1 << 0),
-    QVF_GAMMARAMP       = (1 << 1),
+	QVF_ACCELERATED     = (1 << 0),
+	QVF_GAMMARAMP       = (1 << 1),
     QVF_FULLSCREEN      = (1 << 2)
 } vidFlags_t;
 
 typedef struct {
-    int         width;
-    int         height;
-    vidFlags_t  flags;
+	int         width;
+	int         height;
+	vidFlags_t  flags;
 } refcfg_t;
 
 extern refcfg_t r_config;
 
 typedef struct {
-    int left, right, top, bottom;
+	int left, right, top, bottom;
 } clipRect_t;
 
 typedef enum {
-    IF_NONE         = 0,
-    IF_PERMANENT    = (1 << 0),
-    IF_TRANSPARENT  = (1 << 1),
-    IF_PALETTED     = (1 << 2),
-    IF_UPSCALED     = (1 << 3),
-    IF_SCRAP        = (1 << 4),
-    IF_TURBULENT    = (1 << 5),
-    IF_REPEAT       = (1 << 6),
-    IF_NEAREST      = (1 << 7),
-    IF_OPAQUE       = (1 << 8),
+	IF_NONE         = 0,
+	IF_PERMANENT    = (1 << 0),
+	IF_TRANSPARENT  = (1 << 1),
+	IF_PALETTED     = (1 << 2),
+	IF_UPSCALED     = (1 << 3),
+	IF_SCRAP        = (1 << 4),
+	IF_TURBULENT    = (1 << 5),
+	IF_REPEAT       = (1 << 6),
+	IF_NEAREST      = (1 << 7),
+	IF_OPAQUE       = (1 << 8),
+
+	// Paril
+	IF_DELAYED		= (1 << 9),
+	IF_OLDSCHOOL	= (1 << 10)
 } imageflags_t;
 
 typedef enum {
-    IT_PIC,
-    IT_FONT,
-    IT_SKIN,
-    IT_SPRITE,
-    IT_WALL,
-    IT_SKY,
+	IT_PIC,
+	IT_FONT,
+	IT_SKIN,
+	IT_SPRITE,
+	IT_WALL,
+	IT_SKY,
 
-    IT_MAX
+	IT_MAX
 } imagetype_t;
 
 // called when the library is loaded
@@ -190,9 +224,9 @@ void    R_Shutdown(bool total);
 // an implicit "pics/" prepended to the name. (a pic name that starts with a
 // slash will not use the "pics/" prefix or the ".pcx" postfix)
 void    R_BeginRegistration(const char *map);
-qhandle_t R_RegisterModel(const char *name);
-qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-                          imageflags_t flags, int *err_p);
+modelhandle_t R_RegisterModel(const char *name);
+pichandle_t   R_RegisterImage(const char *name, imagetype_t type,
+							  imageflags_t flags, int *err_p);
 void    R_SetSky(const char *name, float rotate, vec3_t axis);
 void    R_EndRegistration(void);
 
@@ -207,16 +241,18 @@ void    R_LightPoint(vec3_t origin, vec3_t light);
 void    R_ClearColor(void);
 void    R_SetAlpha(float clpha);
 void    R_SetColor(uint32_t color);
+// Generations
+color_t	R_GetColor();
 void    R_SetClipRect(const clipRect_t *clip);
 float   R_ClampScale(cvar_t *var);
 void    R_SetScale(float scale);
-void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font);
+void    R_DrawChar(int x, int y, int flags, int ch, pichandle_t font, gametype_t game);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
-                     const char *string, qhandle_t font);  // returns advanced x coord
-bool    R_GetPicSize(int *w, int *h, qhandle_t pic);   // returns transparency bit
-void    R_DrawPic(int x, int y, qhandle_t pic);
-void    R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic);
-void    R_TileClear(int x, int y, int w, int h, qhandle_t pic);
+					 const char *string, pichandle_t font, gametype_t game);  // returns advanced x coord
+bool	R_GetPicSize(int *w, int *h, pichandle_t pic, gametype_t game);   // returns transparency bit
+void    R_DrawPic(int x, int y, pichandle_t pic, gametype_t game);
+void    R_DrawStretchPic(int x, int y, int w, int h, pichandle_t pic, gametype_t game);
+void    R_TileClear(int x, int y, int w, int h, pichandle_t pic, gametype_t game);
 void    R_DrawFill8(int x, int y, int w, int h, int c);
 void    R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 

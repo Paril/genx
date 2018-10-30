@@ -783,7 +783,7 @@ void Sys_Init(void)
     HMODULE module;
     BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
 #endif
-    cvar_t *var q_unused;
+    cvar_t *var;
 
     // check windows version
     vinfo.dwOSVersionInfoSize = sizeof(vinfo);
@@ -888,7 +888,7 @@ void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
     }
 
     if (sym) {
-        entry = GetProcAddress(module, sym);
+        entry = (void *)GetProcAddress(module, sym);
         if (!entry) {
             Com_SetLastError(va("%s: GetProcAddress(%s) failed with error %lu",
                                 path, sym, GetLastError()));
@@ -907,7 +907,7 @@ void *Sys_GetProcAddress(void *handle, const char *sym)
 {
     void    *entry;
 
-    entry = GetProcAddress(handle, sym);
+    entry = (void *)GetProcAddress(handle, sym);
     if (!entry)
         Com_SetLastError(va("GetProcAddress(%s) failed with error %lu",
                             sym, GetLastError()));
@@ -1128,7 +1128,6 @@ static int Sys_Main(int argc, char **argv)
             if (shouldExit == SE_FULL)
 #endif
                 Com_Quit(NULL, ERR_DISCONNECT);
-            break;
         }
     }
 

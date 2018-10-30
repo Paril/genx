@@ -195,10 +195,14 @@ void SV_SpawnServer(mapcmd_t *cmd)
         sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", (int)sv.cm.cache->checksum);
 
         // set inline model names
-        Q_concat(sv.configstrings[CS_MODELS + 1], MAX_QPATH, "maps/", cmd->server, ".bsp", NULL);
-        for (i = 1; i < sv.cm.cache->nummodels; i++) {
-            sprintf(sv.configstrings[CS_MODELS + 1 + i], "*%d", i);
-        }
+        Q_concat(sv.configstrings[CS_PRECACHE + 1], MAX_QPATH, "maps/", cmd->server, ".bsp", NULL);
+		Q_SetPrecacheBitsetType(sv.precache_bitset, 1, PRECACHE_MODEL);
+		
+		for (i = 1; i < sv.cm.cache->nummodels; i++) {
+            sprintf(sv.configstrings[CS_PRECACHE + 1 + i], "*%d", i);
+			Q_SetPrecacheBitsetType(sv.precache_bitset, i + 1, PRECACHE_MODEL);
+		}
+
 
         entitystring = sv.entitystring ? sv.entitystring : sv.cm.cache->entitystring;
     } else {
@@ -375,7 +379,12 @@ void SV_InitGame(unsigned mvd_spawn)
         Cvar_Set("deathmatch", "1");
         Cvar_Set("coop", "0");
     } else {
-        if (Cvar_VariableInteger("coop") &&
+		if (Cvar_VariableInteger("invasion"))
+		{
+			Cvar_Set("coop", "0");
+			Cvar_Set("deathmatch", "0");
+		}
+        else if (Cvar_VariableInteger("coop") &&
             Cvar_VariableInteger("deathmatch")) {
             Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
             Cvar_Set("coop", "0");
@@ -390,7 +399,7 @@ void SV_InitGame(unsigned mvd_spawn)
     }
 
     // init clients
-    if (Cvar_VariableInteger("deathmatch")) {
+    if (Cvar_VariableInteger("deathmatch") || Cvar_VariableInteger("invasion")) {
         if (sv_maxclients->integer <= 1) {
             Cvar_SetInteger(sv_maxclients, 8, FROM_CODE);
         } else if (sv_maxclients->integer > CLIENTNUM_RESERVED) {
@@ -457,3 +466,4 @@ void SV_InitGame(unsigned mvd_spawn)
 
     svs.initialized = true;
 }
+

@@ -39,6 +39,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define COM_POSTEXEC_CFG    "postexec.cfg"
 #define COM_POSTINIT_CFG    "postinit.cfg"
 
+// Paril
+#define COM_GAME_CFG		"games.cfg"
+
 #ifdef _WIN32
 #define COM_CONFIG_CFG      "q2config.cfg"
 #else
@@ -188,5 +191,23 @@ extern time_t       com_startTime;
 
 void Qcommon_Init(int argc, char **argv);
 void Qcommon_Frame(void);
+
+enum
+{
+	PICHANDLE_EMPTY,
+
+	PICHANDLE_RAW,
+	PICHANDLE_GAMED
+};
+
+typedef union {
+	qhandle_t	handle;
+
+	struct
+	{
+		uint16_t		type;
+		uint16_t		id;
+	} pic;
+} pichandle_t;
 
 #endif // COMMON_H

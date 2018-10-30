@@ -28,8 +28,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_OLD        26
 #define PROTOCOL_VERSION_DEFAULT    34
 #define PROTOCOL_VERSION_R1Q2       35
-#define PROTOCOL_VERSION_Q2PRO      36
-#define PROTOCOL_VERSION_MVD        37 // not used for UDP connections
+#define PROTOCOL_VERSION_Q2PRO      38 // Generations
+#define PROTOCOL_VERSION_MVD        39 // not used for UDP connections
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
@@ -136,6 +136,10 @@ typedef enum {
     svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
     svc_setting,
 
+	// Generations
+	svc_precache,
+	svc_precache_baseline,
+
     svc_num_types
 } svc_ops_t;
 
@@ -212,8 +216,9 @@ typedef enum {
 #define PS_KICKANGLES       (1<<9)
 #define PS_BLEND            (1<<10)
 #define PS_FOV              (1<<11)
-#define PS_WEAPONINDEX      (1<<12)
-#define PS_WEAPONFRAME      (1<<13)
+// Generations
+#define PS_GUNS             (1<<12)
+#define PS_VIEWEVENTS       (1<<13)
 #define PS_RDFLAGS          (1<<14)
 #define PS_RESERVED         (1<<15)
 
@@ -233,6 +238,13 @@ typedef enum {
 
 #define EPS_BITS            7
 #define EPS_MASK            ((1<<EPS_BITS)-1)
+
+typedef enum {
+	PS_GUN_INDEX			= 1<<0,
+	PS_GUN_FRAME			= 1<<1,
+	PS_GUN_ANGLE			= 1<<2,
+	PS_GUN_OFFSET			= 1<<3
+} ps_gun_bits;
 
 //==============================================
 
@@ -333,6 +345,10 @@ typedef enum {
 #define U_SKIN16        (1<<25)
 #define U_SOUND         (1<<26)
 #define U_SOLID         (1<<27)
+
+// Paril
+#define U_GAME			(1<<28)
+#define U_CLIPCONTENTS	(1<<29)
 
 // ==============================================================
 

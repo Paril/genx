@@ -30,6 +30,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/utils.h"
 #include "common/mdfour.h"
 #include "system/hunk.h"
+#include "common/nav.h"
 
 extern mtexinfo_t nulltexinfo;
 
@@ -38,7 +39,7 @@ static cvar_t *map_visibility_patch;
 /*
 ===============================================================================
 
-                    LUMP LOADING
+					LUMP LOADING
 
 ===============================================================================
 */
@@ -1057,6 +1058,8 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
 
     FS_FreeFile(buf);
 
+	Nav_MapLoaded(name, bsp);
+
     *bsp_p = bsp;
     return Q_ERR_SUCCESS;
 
@@ -1313,4 +1316,6 @@ void BSP_Init(void)
     Cmd_AddCommand("bsplist", BSP_List_f);
 
     List_Init(&bsp_cache);
+
+	Nav_CmInit();
 }

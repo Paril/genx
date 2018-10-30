@@ -40,6 +40,23 @@ NULL will be returned if the end of the list is reached.
 
 =============
 */
+edict_t *G_FindByType(edict_t *from, entitytype_e type)
+{
+	if (!from)
+		from = g_edicts;
+	else
+		from++;
+
+	for (; from < &g_edicts[globals.num_edicts]; from++) {
+		if (!from->inuse)
+			continue;
+		if (from->entitytype == type)
+			return from;
+	}
+
+	return NULL;
+}
+
 edict_t *G_Find(edict_t *from, int fieldofs, char *match)
 {
     char    *s;
@@ -173,8 +190,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
     if (ent->delay) {
         // create a temp object to fire at a later time
         t = G_Spawn();
-        t->classname = "DelayedUse";
-        t->nextthink = level.time + ent->delay;
+        t->nextthink = level.time + (ent->delay * 1000);
         t->think = Think_Delay;
         t->activator = activator;
         if (!activator)
@@ -218,8 +234,8 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
         t = NULL;
         while ((t = G_Find(t, FOFS(targetname), ent->target))) {
             // doors fire area portals in a specific way
-            if (!Q_stricmp(t->classname, "func_areaportal") &&
-                (!Q_stricmp(ent->classname, "func_door") || !Q_stricmp(ent->classname, "func_door_rotating")))
+            if (t->entitytype == ET_FUNC_AREAPORTAL &&
+                (ent->entitytype == ET_FUNC_DOOR || ent->entitytype == ET_FUNC_DOOR_ROTATING))
                 continue;
 
             if (t == ent) {
@@ -318,7 +334,7 @@ float vectoyaw(vec3_t vec)
         else if (vec[YAW] < 0)
             yaw = -90;
     } else {
-        yaw = (int)RAD2DEG(atan2(vec[YAW], vec[PITCH]));
+        yaw = (int)RAD2DEG(atan2f(vec[YAW], vec[PITCH]));
         if (yaw < 0)
             yaw += 360;
     }
@@ -340,7 +356,7 @@ void vectoangles(vec3_t value1, vec3_t angles)
             pitch = 270;
     } else {
         if (value1[0])
-            yaw = (int)RAD2DEG(atan2(value1[1], value1[0]));
+            yaw = (int)RAD2DEG(atan2f(value1[1], value1[0]));
         else if (value1[1] > 0)
             yaw = 90;
         else
@@ -349,7 +365,7 @@ void vectoangles(vec3_t value1, vec3_t angles)
             yaw += 360;
 
         forward = sqrtf(value1[0] * value1[0] + value1[1] * value1[1]);
-        pitch = (int)RAD2DEG(atan2(value1[2], forward));
+        pitch = (int)RAD2DEG(atan2f(value1[2], forward));
         if (pitch < 0)
             pitch += 360;
     }
@@ -358,6 +374,46 @@ void vectoangles(vec3_t value1, vec3_t angles)
     angles[YAW] = yaw;
     angles[ROLL] = 0;
 }
+
+/*
+======
+vectoangles2 - this is duplicated in the game DLL, but I need it here.
+======
+*/
+void vectoangles2(const vec3_t value1, vec3_t angles)
+{
+	float   forward;
+	float   yaw, pitch;
+
+	if (value1[1] == 0 && value1[0] == 0) {
+		yaw = 0;
+		if (value1[2] > 0)
+			pitch = 90;
+		else
+			pitch = 270;
+	}
+	else {
+		if (value1[0])
+			yaw = atan2f(value1[1], value1[0]) * 180 / M_PI;
+		else if (value1[1] > 0)
+			yaw = 90;
+		else
+			yaw = 270;
+
+		if (yaw < 0)
+			yaw += 360;
+
+		forward = sqrtf(value1[0] * value1[0] + value1[1] * value1[1]);
+		pitch = atan2f(value1[2], forward) * 180 / M_PI;
+		if (pitch < 0)
+			pitch += 360;
+	}
+
+	angles[PITCH] = -pitch;
+	angles[YAW] = yaw;
+	angles[ROLL] = 0;
+}
+
 
 char *G_CopyString(char *in)
 {
@@ -372,9 +428,10 @@ char *G_CopyString(char *in)
 void G_InitEdict(edict_t *e)
 {
     e->inuse = true;
-    e->classname = "noclass";
+    e->entitytype = ET_NULL;
     e->gravity = 1.0f;
     e->s.number = e - g_edicts;
+	e->s.clip_contents = CONTENTS_MONSTER;
 }
 
 /*
@@ -397,7 +454,7 @@ edict_t *G_Spawn(void)
     for (i = game.maxclients + 1 ; i < globals.num_edicts ; i++, e++) {
         // the first couple seconds of server time can involve a lot of
         // freeing and allocating, so relax the replacement policy
-        if (!e->inuse && (e->freetime < 2 || level.time - e->freetime > 0.5f)) {
+        if (!e->inuse && (e->freetime < 2000 || level.time - e->freetime > 500)) {
             G_InitEdict(e);
             return e;
         }
@@ -418,6 +475,10 @@ G_FreeEdict
 Marks the edict as free
 =================
 */
+const char *freed_classname = "freed";
+
+void Wave_MonsterFreed(edict_t *self);
+
 void G_FreeEdict(edict_t *ed)
 {
     gi.unlinkentity(ed);        // unlink from world
@@ -427,8 +488,11 @@ void G_FreeEdict(edict_t *ed)
         return;
     }
 
+	if (ed->monsterinfo.wave_entry.next)
+		Wave_MonsterFreed(ed);
+
+	G_FreeAI(ed); //jabot092(2)
     memset(ed, 0, sizeof(*ed));
-    ed->classname = "freed";
     ed->freetime = level.time;
     ed->inuse = false;
 }
@@ -512,22 +576,28 @@ Kills all entities that would touch the proposed new positioning
 of ent.  Ent should be unlinked before calling this!
 =================
 */
+
+bool G_KillBox(edict_t *ent, vec3_t origin, vec3_t mins, vec3_t maxs)
+{
+	trace_t     tr;
+
+	while (1) {
+		tr = gi.trace(origin, mins, maxs, origin, NULL, MASK_PLAYERSOLID);
+		if (!tr.ent)
+			break;
+
+		// nail it
+		T_Damage(tr.ent, ent, ent, vec3_origin, origin, vec3_origin, 100000, 0, DAMAGE_NO_PROTECTION, MakeAttackerMeansOfDeath(world, ent, MD_TELEFRAG, DT_DIRECT));
+
+		// if we didn't kill it, fail
+		if (tr.ent->solid)
+			return false;
+	}
+
+	return true;        // all clear
+}
+
 bool KillBox(edict_t *ent)
 {
-    trace_t     tr;
-
-    while (1) {
-        tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, ent->s.origin, NULL, MASK_PLAYERSOLID);
-        if (!tr.ent)
-            break;
-
-        // nail it
-        T_Damage(tr.ent, ent, ent, vec3_origin, ent->s.origin, vec3_origin, 100000, 0, DAMAGE_NO_PROTECTION, MOD_TELEFRAG);
-
-        // if we didn't kill it, fail
-        if (tr.ent->solid)
-            return false;
-    }
-
-    return true;        // all clear
+	return G_KillBox(ent, ent->s.origin, ent->mins, ent->maxs);
 }

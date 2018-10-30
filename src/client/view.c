@@ -23,8 +23,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 // development tools for weapons
 //
-int         gun_frame;
-qhandle_t   gun_model;
+int         	gun_frame;
+// Generations
+modelhandle_t   gun_model;
 
 //=============
 
@@ -299,7 +300,8 @@ static void V_Gun_Model_f(void)
     char    name[MAX_QPATH];
 
     if (Cmd_Argc() != 2) {
-        gun_model = 0;
+		// Generations
+		gun_model = (modelhandle_t) { 0 };
         return;
     }
     Q_concat(name, sizeof(name), "models/", Cmd_Argv(1), "/tris.md2", NULL);
@@ -313,11 +315,20 @@ static int entitycmpfnc(const void *_a, const void *_b)
     const entity_t *a = (const entity_t *)_a;
     const entity_t *b = (const entity_t *)_b;
 
+	// Generations
+	float l_dist = Distance(cl.refdef.vieworg, a->origin);
+	float r_dist = Distance(cl.refdef.vieworg, b->origin);
+
+	if (l_dist < r_dist)
+		return -1;
+	else if (r_dist > r_dist)
+		return 1;
+
     // all other models are sorted by model then skin
-    if (a->model == b->model)
-        return a->skin - b->skin;
+    if (a->model.handle == b->model.handle)
+        return a->skin.handle - b->skin.handle;
     else
-        return a->model - b->model;
+        return a->model.handle - b->model.handle;
 }
 
 static void V_SetLightLevel(void)
@@ -453,7 +464,7 @@ void V_RenderView(void)
         cl.refdef.rdflags = cl.frame.ps.rdflags;
 
         // sort entities for better cache locality
-        qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
+		qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
     }
 
     R_RenderFrame(&cl.refdef);

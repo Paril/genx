@@ -168,7 +168,6 @@ void Netchan_OutOfBand(netsrc_t sock, const netadr_t *address,
 static size_t NetchanOld_TransmitNextFragment(netchan_t *netchan)
 {
     Com_Error(ERR_FATAL, "%s: not implemented", __func__);
-    return 0;
 }
 
 /*
@@ -844,7 +843,7 @@ netchan_t *Netchan_Setup(netsrc_t sock, netchan_type_t type,
         netchan = NetchanOld_Setup(sock, adr, qport, maxpacketlen);
         break;
     case NETCHAN_NEW:
-        netchan = NetchanNew_Setup(sock, adr, qport, maxpacketlen);
+    	netchan = NetchanNew_Setup(sock, adr, qport, maxpacketlen);
         break;
     default:
         Com_Error(ERR_FATAL, "Netchan_Setup: bad type");

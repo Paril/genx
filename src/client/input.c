@@ -92,8 +92,8 @@ static bool IN_GetCurrentGrab(void)
         if (cls.demo.playback && !Key_IsDown(K_SHIFT))
             return false;   // playing a demo (and not using freelook)
 
-        if (cl.frame.ps.pmove.pm_type == PM_FREEZE)
-            return false;   // spectator mode
+        if (cl.frame.ps.pmove.pm_type == PM_FREEZE || cl.frame.ps.pmove.pm_type == PM_DUKE_FROZEN)
+            return false;  // spectator mode
     }
 
     if (in_grab->integer >= 1)
@@ -620,17 +620,20 @@ void CL_UpdateCmd(int msec)
     cl.cmd.msec += msec;
 
     // adjust viewangles
-    CL_AdjustAngles(msec);
+	if (cl.frame.ps.pmove.pm_type != PM_DUKE_FROZEN)
+		CL_AdjustAngles(msec);
 
     // get basic movement from keyboard
     CL_BaseMove(cl.localmove);
 
-    // allow mice to add to the move
-    CL_MouseMove();
+	if (cl.frame.ps.pmove.pm_type != PM_DUKE_FROZEN) {
+		// allow mice to add to the move
+		CL_MouseMove();
 
-    // add accumulated mouse forward/side movement
-    cl.localmove[0] += cl.mousemove[0];
-    cl.localmove[1] += cl.mousemove[1];
+    	// add accumulated mouse forward/side movement
+		cl.localmove[0] += cl.mousemove[0];
+		cl.localmove[1] += cl.mousemove[1];
+	}
 
     // clamp to server defined max speed
     CL_ClampSpeed(cl.localmove);
@@ -1103,7 +1106,7 @@ static void CL_SendUserinfo(void)
             } else {
                 // no longer in userinfo
                 MSG_WriteString(NULL);
-            }
+        	}
         }
         MSG_FlushTo(&cls.netchan->message);
     } else {
@@ -1116,7 +1119,7 @@ static void CL_SendReliable(void)
 {
     if (cls.userinfo_modified) {
         CL_SendUserinfo();
-        cls.userinfo_modified = 0;
+    	cls.userinfo_modified = 0;
     }
 
     if (cls.netchan->message.overflowed) {

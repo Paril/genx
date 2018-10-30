@@ -53,7 +53,6 @@ void PlayerTrail_Init(void)
 
     for (n = 0; n < TRAIL_LENGTH; n++) {
         trail[n] = G_Spawn();
-        trail[n]->classname = "player_trail";
     }
 
     trail_head = 0;

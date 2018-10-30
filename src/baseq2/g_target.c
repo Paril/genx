@@ -79,14 +79,14 @@ void SP_target_speaker(edict_t *ent)
 {
     char    buffer[MAX_QPATH];
 
-    if (!st.noise) {
+    if (!spawnTemp.noise) {
         gi.dprintf("target_speaker with no noise set at %s\n", vtos(ent->s.origin));
         return;
     }
-    if (!strstr(st.noise, ".wav"))
-        Q_snprintf(buffer, sizeof(buffer), "%s.wav", st.noise);
+    if (!strstr(spawnTemp.noise, ".wav"))
+        Q_snprintf(buffer, sizeof(buffer), "%s.wav", spawnTemp.noise);
     else
-        Q_strlcpy(buffer, st.noise, sizeof(buffer));
+        Q_strlcpy(buffer, spawnTemp.noise, sizeof(buffer));
     ent->noise_index = gi.soundindex(buffer);
 
     if (!ent->volume)
@@ -133,7 +133,7 @@ void SP_target_help(edict_t *ent)
     }
 
     if (!ent->message) {
-        gi.dprintf("%s with no message at %s\n", ent->classname, vtos(ent->s.origin));
+        gi.dprintf("%s with no message at %s\n", spawnTemp.classname, vtos(ent->s.origin));
         G_FreeEdict(ent);
         return;
     }
@@ -165,9 +165,9 @@ void SP_target_secret(edict_t *ent)
     }
 
     ent->use = use_target_secret;
-    if (!st.noise)
-        st.noise = "misc/secret.wav";
-    ent->noise_index = gi.soundindex(st.noise);
+    if (!spawnTemp.noise)
+        spawnTemp.noise = "misc/secret.wav";
+    ent->noise_index = gi.soundindex(spawnTemp.noise);
     ent->svflags = SVF_NOCLIENT;
     level.total_secrets++;
     // map bug hack
@@ -203,9 +203,9 @@ void SP_target_goal(edict_t *ent)
     }
 
     ent->use = use_target_goal;
-    if (!st.noise)
-        st.noise = "misc/secret.wav";
-    ent->noise_index = gi.soundindex(st.noise);
+    if (!spawnTemp.noise)
+        spawnTemp.noise = "misc/secret.wav";
+    ent->noise_index = gi.soundindex(spawnTemp.noise);
     ent->svflags = SVF_NOCLIENT;
     level.total_goals++;
 }
@@ -228,7 +228,7 @@ void target_explosion_explode(edict_t *self)
     gi.WritePosition(self->s.origin);
     gi.multicast(self->s.origin, MULTICAST_PHS);
 
-    T_RadiusDamage(self, self->activator, self->dmg, NULL, self->dmg + 40, MOD_EXPLOSIVE);
+    T_RadiusDamage(self, self->activator, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
 
     save = self->delay;
     self->delay = 0;
@@ -246,7 +246,7 @@ void use_target_explosion(edict_t *self, edict_t *other, edict_t *activator)
     }
 
     self->think = target_explosion_explode;
-    self->nextthink = level.time + self->delay;
+    self->nextthink = level.time + (self->delay * 1000);
 }
 
 void SP_target_explosion(edict_t *ent)
@@ -273,7 +273,7 @@ void use_target_changelevel(edict_t *self, edict_t *other, edict_t *activator)
 
     // if noexit, do a ton of damage to other
     if (deathmatch->value && !((int)dmflags->value & DF_ALLOW_EXIT) && other != world) {
-        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 10 * other->max_health, 1000, 0, MOD_EXIT);
+        T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 10 * other->max_health, 1000, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
         return;
     }
 
@@ -336,7 +336,7 @@ void use_target_splash(edict_t *self, edict_t *other, edict_t *activator)
     gi.multicast(self->s.origin, MULTICAST_PVS);
 
     if (self->dmg)
-        T_RadiusDamage(self, activator, self->dmg, NULL, self->dmg + 40, MOD_SPLASH);
+        T_RadiusDamage(self, activator, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
 }
 
 void SP_target_splash(edict_t *self)
@@ -372,7 +372,7 @@ void use_target_spawner(edict_t *self, edict_t *other, edict_t *activator)
     edict_t *ent;
 
     ent = G_Spawn();
-    ent->classname = self->target;
+    Q_snprintf(spawnTemp.classname, sizeof(spawnTemp.classname), "%s", self->target);
     VectorCopy(self->s.origin, ent->s.origin);
     VectorCopy(self->s.angles, ent->s.angles);
     ED_CallSpawn(ent);
@@ -415,7 +415,7 @@ void use_target_blaster(edict_t *self, edict_t *other, edict_t *activator)
         effect = EF_BLASTER;
 #endif
 
-    fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, EF_BLASTER, MOD_TARGET_BLASTER);
+    fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, EF_BLASTER, false);
     gi.sound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM, 0);
 }
 
@@ -472,7 +472,7 @@ void SP_target_crosslevel_target(edict_t *self)
     self->svflags = SVF_NOCLIENT;
 
     self->think = target_crosslevel_target_think;
-    self->nextthink = level.time + self->delay;
+    self->nextthink = level.time + (self->delay * 1000);
 }
 
 //==========================================================
@@ -517,7 +517,7 @@ void target_laser_think(edict_t *self)
 
         // hurt it if we can
         if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER))
-            T_Damage(tr.ent, self, self->activator, self->movedir, tr.endpos, vec3_origin, self->dmg, 1, DAMAGE_ENERGY, MOD_TARGET_LASER);
+            T_Damage(tr.ent, self, self->activator, self->movedir, tr.endpos, vec3_origin, self->dmg, 1, DAMAGE_ENERGY, MakeBlankMeansOfDeath(self));
 
         // if we hit something that's not a monster or player or is immune to lasers, we're done
         if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client)) {
@@ -540,7 +540,7 @@ void target_laser_think(edict_t *self)
 
     VectorCopy(tr.endpos, self->s.old_origin);
 
-    self->nextthink = level.time + FRAMETIME;
+    self->nextthink = level.time + 1;
 }
 
 void target_laser_on(edict_t *self)
@@ -599,7 +599,7 @@ void target_laser_start(edict_t *self)
         if (self->target) {
             ent = G_Find(NULL, FOFS(targetname), self->target);
             if (!ent)
-                gi.dprintf("%s at %s: %s is a bad target\n", self->classname, vtos(self->s.origin), self->target);
+                gi.dprintf("entityid %i at %s: %s is a bad target\n", self->entitytype, vtos(self->s.origin), self->target);
             self->enemy = ent;
         } else {
             G_SetMovedir(self->s.angles, self->movedir);
@@ -625,7 +625,7 @@ void SP_target_laser(edict_t *self)
 {
     // let everything else get spawned before we start firing
     self->think = target_laser_start;
-    self->nextthink = level.time + 1;
+    self->nextthink = level.time + 1000;
 }
 
 //==========================================================
@@ -639,12 +639,12 @@ void target_lightramp_think(edict_t *self)
 {
     char    style[2];
 
-    style[0] = 'a' + self->movedir[0] + (level.time - self->timestamp) / FRAMETIME * self->movedir[2];
+    style[0] = 'a' + self->movedir[0] + (level.time / 1000.0f - self->timestamp) / game.frameseconds * self->movedir[2];
     style[1] = 0;
     gi.configstring(CS_LIGHTS + self->enemy->style, style);
 
-    if ((level.time - self->timestamp) < self->speed) {
-        self->nextthink = level.time + FRAMETIME;
+    if ((level.time / 1000.0f - self->timestamp) < self->speed) {
+        self->nextthink = level.time + 1;
     } else if (self->spawnflags & 1) {
         char    temp;
 
@@ -666,22 +666,22 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
             e = G_Find(e, FOFS(targetname), self->target);
             if (!e)
                 break;
-            if (strcmp(e->classname, "light") != 0) {
-                gi.dprintf("%s at %s ", self->classname, vtos(self->s.origin));
-                gi.dprintf("target %s (%s at %s) is not a light\n", self->target, e->classname, vtos(e->s.origin));
+            if (e->entitytype != ET_LIGHT) {
+                gi.dprintf("entityid %i at %s ", self->entitytype, vtos(self->s.origin));
+                gi.dprintf("target %s (entityid %i at %s) is not a light\n", self->target, e->entitytype, vtos(e->s.origin));
             } else {
                 self->enemy = e;
             }
         }
 
         if (!self->enemy) {
-            gi.dprintf("%s target %s not found at %s\n", self->classname, self->target, vtos(self->s.origin));
+            gi.dprintf("entityid %i target %s not found at %s\n", self->entitytype, self->target, vtos(self->s.origin));
             G_FreeEdict(self);
             return;
         }
     }
 
-    self->timestamp = level.time;
+    self->timestamp = level.time / 1000.0f;
     target_lightramp_think(self);
 }
 
@@ -699,7 +699,7 @@ void SP_target_lightramp(edict_t *self)
     }
 
     if (!self->target) {
-        gi.dprintf("%s with no target at %s\n", self->classname, vtos(self->s.origin));
+        gi.dprintf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
         G_FreeEdict(self);
         return;
     }
@@ -710,7 +710,7 @@ void SP_target_lightramp(edict_t *self)
 
     self->movedir[0] = self->message[0] - 'a';
     self->movedir[1] = self->message[1] - 'a';
-    self->movedir[2] = (self->movedir[1] - self->movedir[0]) / (self->speed / FRAMETIME);
+    self->movedir[2] = (self->movedir[1] - self->movedir[0]) / (self->speed / game.frameseconds);
 }
 
 //==========================================================
@@ -729,7 +729,7 @@ void target_earthquake_think(edict_t *self)
 
     if (self->last_move_time < level.time) {
         gi.positioned_sound(self->s.origin, self, CHAN_AUTO, self->noise_index, 1.0f, ATTN_NONE, 0);
-        self->last_move_time = level.time + 0.5f;
+        self->last_move_time = level.time + 500;
     }
 
     for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++) {
@@ -746,14 +746,14 @@ void target_earthquake_think(edict_t *self)
         e->velocity[2] = self->speed * (100.0f / e->mass);
     }
 
-    if (level.time < self->timestamp)
-        self->nextthink = level.time + FRAMETIME;
+    if (level.time / 1000.0f < self->timestamp)
+        self->nextthink = level.time + 1;
 }
 
 void target_earthquake_use(edict_t *self, edict_t *other, edict_t *activator)
 {
-    self->timestamp = level.time + self->count;
-    self->nextthink = level.time + FRAMETIME;
+    self->timestamp = level.time + (self->count * 1000);
+    self->nextthink = level.time + 1;
     self->activator = activator;
     self->last_move_time = 0;
 }
@@ -761,7 +761,7 @@ void target_earthquake_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_earthquake(edict_t *self)
 {
     if (!self->targetname)
-        gi.dprintf("untargeted %s at %s\n", self->classname, vtos(self->s.origin));
+        gi.dprintf("untargeted %s at %s\n", spawnTemp.classname, vtos(self->s.origin));
 
     if (!self->count)
         self->count = 5;

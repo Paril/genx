@@ -544,9 +544,9 @@ static void build_surface_poly(mface_t *surf, vec_t *vbo)
             surf->statebits |= GLS_INTENSITY_ENABLE;
         }
     } else {
-        if (!(surf->drawflags & SURF_COLOR_MASK)) {
-            surf->statebits |= GLS_TEXTURE_REPLACE;
-        }
+	    if (!(surf->drawflags & SURF_COLOR_MASK)) {
+	        surf->statebits |= GLS_TEXTURE_REPLACE;
+	    }
     }
 
     if (surf->drawflags & SURF_WARP) {

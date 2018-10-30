@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 dma_t       dma;
 
-cvar_t      *s_khz;
 cvar_t      *s_testsound;
 #if USE_DSOUND
 static cvar_t       *s_direct;
@@ -45,7 +44,6 @@ bool DMA_Init(void)
 {
     sndinitstat_t ret = SIS_FAILURE;
 
-    s_khz = Cvar_Get("s_khz", "22", CVAR_ARCHIVE | CVAR_SOUND);
     s_mixahead = Cvar_Get("s_mixahead", "0.2", CVAR_ARCHIVE);
     s_testsound = Cvar_Get("s_testsound", "0", 0);
 

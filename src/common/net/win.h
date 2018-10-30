@@ -103,15 +103,15 @@ static const char *os_error_string(int err)
 }
 
 static int os_udp_recv(qsocket_t sock, void *data,
-                       size_t len, netadr_t *from)
+                           size_t len, netadr_t *from)
 {
     struct sockaddr_storage addr;
     int addrlen;
     int ret;
-    int tries;
+	int tries;
 
-    for (tries = 0; tries < MAX_ERROR_RETRIES; tries++) {
-        memset(&addr, 0, sizeof(addr));
+	for (tries = 0; tries < MAX_ERROR_RETRIES; tries++) {
+		memset(&addr, 0, sizeof(addr));
         addrlen = sizeof(addr);
         ret = recvfrom(sock, data, len, 0,
                        (struct sockaddr *)&addr, &addrlen);
@@ -143,7 +143,7 @@ static int os_udp_recv(qsocket_t sock, void *data,
 }
 
 static int os_udp_send(qsocket_t sock, const void *data,
-                       size_t len, const netadr_t *to)
+                           size_t len, const netadr_t *to)
 {
     struct sockaddr_storage addr;
     int addrlen;

@@ -293,14 +293,43 @@ void GL_RotateForEntity(vec3_t origin)
     GL_ForceMatrix(glr.entmatrix);
 }
 
-static void GL_DrawSpriteModel(model_t *model)
+static glCullResult_t cull_sprite(vec3_t origin, model_t *model)
 {
+	glCullResult_t cull = GL_CullSphere(origin, model->radius);
+
+	if (cull == CULL_OUT) {
+		c.spheresCulled++;
+		return cull;
+	}
+
+	return cull;
+}
+
+
+static void GL_DrawSpriteModel(entity_t *ent, model_t *model)
+{
+	vec3_t origin;
+
+	float backlerp = ent->backlerp;
+	float frontlerp = 1.0f - backlerp;
+
+	// interpolate origin, if necessarry
+	if (ent->flags & RF_FRAMELERP) {
+		LerpVector2(ent->oldorigin, ent->origin,
+			backlerp, frontlerp, origin);
+	} else {
+		VectorCopy(ent->origin, origin);
+	}
+
+	if (cull_sprite(origin, model) == CULL_OUT)
+		return;
+
     static const vec_t tcoords[8] = { 0, 1, 0, 0, 1, 1, 1, 0 };
     entity_t *e = glr.ent;
     mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     image_t *image = frame->image;
     float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1;
-    int bits = GLS_DEPTHMASK_FALSE;
+    int bits = GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE;
     vec3_t up, down, left, right;
     vec3_t points[4];
 
@@ -320,7 +349,23 @@ static void GL_DrawSpriteModel(model_t *model)
     GL_BindTexture(0, image->texnum);
     GL_StateBits(bits);
     GL_ArrayBits(GLA_VERTEX | GLA_TC);
-    GL_Color(1, 1, 1, alpha);
+
+	vec3_t color;
+
+	if (ent->flags & RF_SPECTRE)
+		color[0] = color[1] = color[2] = 0;
+	else if (ent->flags & RF_FULLBRIGHT)
+		VectorSet(color, 1, 1, 1);
+	else
+		GL_LightPoint(origin, color);
+
+	if (ent->flags & RF_FROZEN)
+	{
+		color[0] /= 1.5f;
+		color[1] /= 1.5f;
+	}
+
+	GL_Color(color[0], color[1], color[2], alpha);
 
     VectorScale(glr.viewaxis[1], frame->origin_x, left);
     VectorScale(glr.viewaxis[1], frame->origin_x - frame->width, right);
@@ -364,6 +409,145 @@ static void GL_DrawNullModel(void)
     qglDrawArrays(GL_LINES, 0, 6);
 }
 
+#define ANGLE_ONE_TURN ((360.0f / 8.0f) / 2)
+
+static void GL_DrawDirSpriteModel(entity_t *ent, model_t *model)
+{
+	vec3_t origin;
+
+	float backlerp = ent->backlerp;
+	float frontlerp = 1.0f - backlerp;
+
+	// interpolate origin, if necessarry
+	if (ent->flags & RF_FRAMELERP) {
+		LerpVector2(ent->oldorigin, ent->origin,
+			backlerp, frontlerp, origin);
+	} else {
+		VectorCopy(ent->origin, origin);
+	}
+
+	if (cull_sprite(origin, model) == CULL_OUT)
+		return;
+
+	vec3_t player_fwd, diff_angle;
+
+	VectorSubtract(origin, glr.fd.vieworg, player_fwd);
+	player_fwd[2] = 0;
+	VectorNormalize(player_fwd);
+
+	vectoangles2(player_fwd, diff_angle);
+
+	float yaw_diff = diff_angle[1] - ent->angles[1];
+
+	yaw_diff += 180 + ANGLE_ONE_TURN;
+
+	while (yaw_diff > 360)
+		yaw_diff = yaw_diff - 360;
+
+	int rot;
+
+	if (model->numdirs == 1)
+		rot = 0;
+	else
+	{
+		int ndm = model->numdirs - 1;
+
+		rot = min(ndm, (int)((yaw_diff / 360) * model->numdirs));
+
+		if (rot < 0)
+			rot = ndm + rot;
+	}
+
+	int frame_num;
+	
+	if (ent->flags & RF_ANIM_BOUNCE)
+	{
+		frame_num = ent->frame % ((model->numframes * 2) - 2);
+
+		if (frame_num >= model->numframes)
+			frame_num = model->numframes + (model->numframes - frame_num - 2);
+
+		frame_num = abs(frame_num);
+	}
+	else
+		frame_num = ent->frame;
+
+	mspritedirframe_t *frame = &model->spritedirframes[frame_num % model->numframes].directions[rot];
+
+	static const vec_t tcoords[8] = { 0, 0, 1, 0, 1, 1, 0, 1 };
+	image_t *image = frame->image;
+	float alpha = (ent->flags & RF_TRANSLUCENT) ? ent->alpha : 1;
+	int bits = GLS_CULL_DISABLE | GLS_ALPHATEST_ENABLE;
+	vec3_t up, down, left, right;
+	vec3_t points[4];
+
+	if (ent->flags & RF_SPECTRE)
+		alpha = 0.25f;
+
+	if (alpha == 1) {
+		if (image->flags & IF_TRANSPARENT) {
+			if (image->flags & IF_PALETTED) {
+				bits |= GLS_ALPHATEST_ENABLE;
+			}
+			else {
+				bits |= GLS_BLEND_BLEND;
+			}
+		}
+	}
+	else {
+		bits |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+	}
+
+	GL_LoadMatrix(glr.viewmatrix);
+	GL_BindTexture(0, image->texnum);
+	GL_StateBits(bits);
+	GL_ArrayBits(GLA_VERTEX | GLA_TC);
+
+	vec3_t color;
+
+	if (ent->flags & RF_SPECTRE)
+		color[0] = color[1] = color[2] = 0;
+	else if (ent->flags & RF_FULLBRIGHT)
+		VectorSet(color, 1, 1, 1);
+	else
+		GL_LightPoint(origin, color);
+
+	if (ent->flags & RF_FROZEN)
+	{
+		color[0] /= 1.5f;
+		color[1] /= 1.5f;
+	}
+
+	GL_Color(color[0], color[1], color[2], alpha);
+
+	if (frame->invert_x)
+		VectorScale(glr.viewaxis_nopitch[1], -frame->origin_x, left);
+	else
+		VectorScale(glr.viewaxis_nopitch[1], frame->origin_x, left);
+	VectorScale(glr.viewaxis_nopitch[2], frame->origin_y, up);
+	if (frame->invert_x)
+		VectorScale(glr.viewaxis_nopitch[1], -(frame->origin_x - frame->width), right);
+	else
+		VectorScale(glr.viewaxis_nopitch[1], frame->origin_x - frame->width, right);
+	VectorScale(glr.viewaxis_nopitch[2], frame->origin_y - frame->height, down);
+
+	VectorScale(left, ent->scale, left);
+	VectorScale(right, ent->scale, right);
+	VectorScale(up, ent->scale, up);
+	VectorScale(down, ent->scale, down);
+
+	VectorAdd3(origin, up, left, points[0]);
+	VectorAdd3(origin, up, right, points[1]);
+	VectorAdd3(origin, down, right, points[2]);
+	VectorAdd3(origin, down, left, points[3]);
+
+	GL_TexCoordPointer(2, 0, tcoords);
+
+	GL_VertexPointer(3, 0, &points[0][0]);
+
+	qglDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+}
+
 static void GL_DrawEntities(int mask)
 {
     entity_t *ent, *last;
@@ -398,25 +582,24 @@ static void GL_DrawEntities(int mask)
         }
 
         // inline BSP model
-        if (ent->model & 0x80000000) {
+        if (ent->model.model.type == MODELHANDLE_BSP) {
             bsp_t *bsp = gl_static.world.cache;
-            int index = ~ent->model;
 
             if (glr.fd.rdflags & RDF_NOWORLDMODEL) {
                 Com_Error(ERR_DROP, "%s: inline model without world",
                           __func__);
             }
 
-            if (index < 1 || index >= bsp->nummodels) {
+            if (ent->model.model.id < 1 || ent->model.model.id >= bsp->nummodels) {
                 Com_Error(ERR_DROP, "%s: inline model %d out of range",
-                          __func__, index);
+                          __func__, ent->model.model.id);
             }
 
-            GL_DrawBspModel(&bsp->models[index]);
+            GL_DrawBspModel(&bsp->models[ent->model.model.id]);
             continue;
         }
 
-        model = MOD_ForHandle(ent->model);
+        model = MOD_ForHandle(ent->model, ent->game);
         if (!model) {
             GL_DrawNullModel();
             continue;
@@ -427,9 +610,13 @@ static void GL_DrawEntities(int mask)
             GL_DrawAliasModel(model);
             break;
         case MOD_SPRITE:
-            GL_DrawSpriteModel(model);
+            GL_DrawSpriteModel(ent, model);
             break;
+		case MOD_DIR_SPRITE:
+			GL_DrawDirSpriteModel(ent, model);
+			break;
         case MOD_EMPTY:
+		case MOD_WEAPONSCRIPT:
             break;
         default:
             Com_Error(ERR_FATAL, "%s: bad model type", __func__);
@@ -710,7 +897,7 @@ static void GL_Register(void)
     gl_coloredlightmaps->changed = gl_lightmap_changed;
     gl_brightness = Cvar_Get("gl_brightness", "0", 0);
     gl_brightness->changed = gl_lightmap_changed;
-    gl_dynamic = Cvar_Get("gl_dynamic", "2", 0);
+    gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_dynamic->changed = gl_lightmap_changed;
 #if USE_DLIGHTS
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);

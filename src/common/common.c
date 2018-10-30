@@ -485,6 +485,8 @@ void Com_Error(error_type_t code, const char *fmt, ...)
     va_list         argptr;
     size_t          len;
 
+	Sys_DebugBreak();
+
     // may not be entered recursively
     if (com_errorEntered) {
 #ifdef _DEBUG
@@ -576,7 +578,7 @@ void Com_AbortFunc(void (*func)(void *), void *arg)
 }
 
 #ifdef _WIN32
-void Com_AbortFrame(void)
+void q_noreturn Com_AbortFrame(void)
 {
     longjmp(com_abortframe, -1);
 }
@@ -613,7 +615,7 @@ void Com_Quit(const char *reason, error_type_t type)
     // doesn't get there
 }
 
-static void Com_Quit_f(void)
+static q_noreturn void Com_Quit_f(void)
 {
     Com_Quit(Cmd_Args(), ERR_DISCONNECT);
 }

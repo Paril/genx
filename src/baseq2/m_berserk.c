@@ -164,7 +164,7 @@ void berserk_run(edict_t *self)
 void berserk_attack_spike(edict_t *self)
 {
     static  vec3_t  aim = {MELEE_DISTANCE, 0, -24};
-    fire_hit(self, aim, (15 + (Q_rand() % 6)), 400);    //  Faster attack -- upwards and backwards
+    fire_hit(self, aim, (15 + (Q_rand() % 6)), 400);      //  Faster attack -- upwards and backwards
 }
 
 
@@ -191,7 +191,7 @@ void berserk_attack_club(edict_t *self)
     vec3_t  aim;
 
     VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
-    fire_hit(self, aim, (5 + (Q_rand() % 6)), 400);     // Slower attack
+    fire_hit(self, aim, (5 + (Q_rand() % 6)), 400);       // Slower attack
 }
 
 mframe_t berserk_frames_attack_club [] = {
@@ -309,7 +309,7 @@ void berserk_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
 
     if (skill->value == 3)
@@ -328,6 +328,7 @@ void berserk_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }

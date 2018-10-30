@@ -19,12 +19,30 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SOUND_H
 #define SOUND_H
 
+enum
+{
+	SOUNDHANDLE_EMPTY,
+
+	SOUNDHANDLE_RAW,
+	SOUNDHANDLE_GAMED
+};
+
+typedef union {
+	qhandle_t	handle;
+
+	struct
+	{
+		uint16_t	type;
+		uint16_t	id;
+	} sound;
+} soundhandle_t;
+
 void S_Init(void);
 void S_Shutdown(void);
 
 // if origin is NULL, the sound will be dynamically sourced from the entity
 void S_StartSound(const vec3_t origin, int entnum, int entchannel,
-                  qhandle_t sfx, float fvol, float attenuation, float timeofs);
+				  soundhandle_t sfx, float fvol, float attenuation, float timeofs);
 void S_ParseStartSound(void);
 void S_StartLocalSound(const char *s);
 void S_StartLocalSound_(const char *s);
@@ -36,7 +54,7 @@ void S_Update(void);
 void S_Activate(void);
 
 void S_BeginRegistration(void);
-qhandle_t S_RegisterSound(const char *sample);
+soundhandle_t S_RegisterSound(const char *sample);
 void S_EndRegistration(void);
 
 extern  vec3_t  listener_origin;

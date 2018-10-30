@@ -531,7 +531,7 @@ void floater_zap(edict_t *self)
     gi.WriteByte(1);    //sparks
     gi.multicast(origin, MULTICAST_PVS);
 
-    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 5 + Q_rand() % 6, -10, DAMAGE_ENERGY, MOD_UNKNOWN);
+    T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 5 + Q_rand() % 6, -10, DAMAGE_ENERGY, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 }
 
 void floater_attack(edict_t *self)
@@ -559,7 +559,7 @@ void floater_pain(edict_t *self, edict_t *other, float kick, int damage)
     if (level.time < self->pain_debounce_time)
         return;
 
-    self->pain_debounce_time = level.time + 3;
+    self->pain_debounce_time = level.time + 3000;
     if (skill->value == 3)
         return;     // no pain anims in nightmare
 
@@ -579,6 +579,7 @@ void floater_dead(edict_t *self)
     VectorSet(self->maxs, 16, 16, -8);
     self->movetype = MOVETYPE_TOSS;
     self->svflags |= SVF_DEADMONSTER;
+	self->s.clip_contents = CONTENTS_DEADMONSTER;
     self->nextthink = 0;
     gi.linkentity(self);
 }
