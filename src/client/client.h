@@ -958,12 +958,6 @@ void    SCR_AddToChatHUD(const char *text);
 
 
 //
-// ascii.c
-//
-void CL_InitAscii(void);
-
-
-//
 // http.c
 //
 #if USE_CURL

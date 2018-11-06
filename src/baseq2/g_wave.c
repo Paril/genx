@@ -31,7 +31,11 @@ wave_monster_entry_t wave_monster_entries[] =
 	{ ET_Q1_MONSTER_DOG,		"1	25%		2	35%	5	20%" },
 	{ ET_DOOM_MONSTER_TROO,		"4	15%" },
 	{ ET_DOOM_MONSTER_SKUL,		"2	12%" },
-	{ ET_Q1_MONSTER_WIZARD,		"4	18%" }
+	{ ET_Q1_MONSTER_WIZARD,		"4	18%" },
+	{ ET_Q1_MONSTER_OGRE,		"3	20%" },
+	{ ET_Q1_MONSTER_KNIGHT,		"2	35%" },
+	{ ET_Q1_MONSTER_ZOMBIE,		"5	35%" },
+	{ ET_Q1_MONSTER_DEMON,		"5	15%		7	35%" }
 };
 
 const uint32_t num_wave_monster_entries = q_countof(wave_monster_entries);
@@ -253,7 +257,7 @@ void Wave_Begin()
 	}
 
 	wave_globals.next_monster_spawn = level.time + 3000;
-	wave_globals.num_monsters_to_spawn = 10;
+	wave_globals.num_monsters_to_spawn = 20;
 	
 	wave_globals.wave_state = WAVE_SPAWNING;
 	List_Init(&wave_globals.monsters_list);
@@ -317,7 +321,7 @@ void Wave_Frame()
 			if (wave_globals.num_monsters_to_spawn)
 			{
 				Wave_SpawnMonster();
-				wave_globals.next_monster_spawn = level.time + 500;
+				wave_globals.next_monster_spawn = level.time + 100;
 			}
 			else if (!wave_globals.num_monsters_left)
 			{

@@ -1,0 +1,411 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Source Files\shared">
+      <UniqueIdentifier>{3f6af205-b509-47d1-9f8e-d59db86f5e8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\baseq2">
+      <UniqueIdentifier>{298028b6-e91f-4955-8455-a1ffdc26ddd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\baseq2\ai">
+      <UniqueIdentifier>{f73a9147-2e21-463f-a795-23da3c82e844}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\q1">
+      <UniqueIdentifier>{ed49bb1e-2cd7-421f-b53e-4a6df0b5ea27}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\doom">
+      <UniqueIdentifier>{7aeacf62-9e80-410f-aa85-4164a85c37ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\duke">
+      <UniqueIdentifier>{4557fb3c-8855-4bd8-bfc1-da773e382d40}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\shared\m_flash.c">
+      <Filter>Source Files\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\shared\shared.c">
+      <Filter>Source Files\shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_ai.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_chase.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_cmds.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_combat.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_func.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_items.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_main.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_misc.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_monster.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_phys.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_save.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_spawn.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_svcmds.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_target.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_trigger.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_turret.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_utils.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_weapon.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_actor.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_berserk.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_boss2.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_boss3.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_boss31.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_boss32.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_brain.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_chick.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_flipper.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_float.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_flyer.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_gladiator.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_gunner.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_hover.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_infantry.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_insane.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_medic.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_move.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_mutant.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_parasite.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_soldier.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_supertank.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_tank.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_client.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_hud.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_view.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_weapon.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_class_dmbot.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_dropnodes.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_items.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_links.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_main.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_movement.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_navigation.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_nodes.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_tools.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\ai_weapons.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\AStar.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\bot_common.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\ai\bot_spawn.c">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_soldier.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_dog.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_enforcer.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_ogre.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_wizard.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_boss.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_zombie.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_fish.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_tarbaby.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_shalrath.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_poss.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_knight.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_demon.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_shambler.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_q1_hknight.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_troo.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_sarg.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_cpos.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_head.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_skul.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_pain.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_bspi.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_skel.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_boss.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_spid.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_wave.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_doom_weapons.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_q1_weapons.c">
+      <Filter>Source Files\q1</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\p_duke_weapons.c">
+      <Filter>Source Files\duke</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\baseq2\g_local.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_actor.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_berserk.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_boss2.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_boss31.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_boss32.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_brain.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_chick.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_flipper.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_float.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_flyer.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_gladiator.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_gunner.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_hover.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_infantry.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_insane.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_medic.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_mutant.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_parasite.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_player.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_rider.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_soldier.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_supertank.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_tank.h">
+      <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\ai\ai.h">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\ai\ai_local.h">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\ai\ai_nodes_local.h">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\ai\ai_nodes_shared.h">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\ai\ai_weapons.h">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\ai\AStar.h">
+      <Filter>Source Files\baseq2\ai</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\game.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\shared.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

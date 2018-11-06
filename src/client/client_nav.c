@@ -191,7 +191,7 @@ void Nav_AddEntities()
 			uint32_t connection_hash = node_hash(i, connection_id);
 
 			//if (!Nav_NodeConnectedTo(connection, &loaded_nodes[i], false) || i < connection_id)
-			if (hashset_is_member(connections_rendered, (void*)(connection_hash + 2)) == -1)
+			if (!hashset_is_member(connections_rendered, (void*)(connection_hash + 2)))
 			{
 				hashset_add(connections_rendered, (void*)(connection_hash + 2));
 
@@ -294,6 +294,11 @@ void Nav_SelectNode()
 		nav_debug.node_selected_b = nav_debug.node_selected_a;
 		nav_debug.node_selected_a = Nav_NodeToNodeID(closest);
 	}
+}
+
+void Nav_UnselectNodes()
+{
+	nav_debug.node_selected_a = nav_debug.node_selected_b = NAV_NODE_INVALID;
 }
 
 void Nav_TestPath()
@@ -527,12 +532,13 @@ void Nav_Init()
 	Cmd_AddCommand("nav_line_select", Nav_SelectLine);
 	Cmd_AddCommand("nav_line_dir", Nav_SwitchDir);
 	Cmd_AddCommand("nav_save", Nav_Save);
-	Cmd_AddCommand("nav_node_telect", Nav_SelectNode);
+	Cmd_AddCommand("nav_node_select", Nav_SelectNode);
+	Cmd_AddCommand("nav_node_unselect", Nav_UnselectNodes);
 	Cmd_AddCommand("nav_node_delete", Nav_DeleteNodeCmd);
-	Cmd_AddCommand("nav_node_tplice", Nav_SpliceNode);
-	Cmd_AddCommand("nav_node_tlice", Nav_SliceNode);
+	Cmd_AddCommand("nav_node_splice", Nav_SpliceNode);
+	Cmd_AddCommand("nav_node_slice", Nav_SliceNode);
 	Cmd_AddCommand("nav_node_move", Nav_MoveNodeCmd);
-	Cmd_AddCommand("nav_node_tettype", Nav_SetTypeCmd);
+	Cmd_AddCommand("nav_node_settype", Nav_SetTypeCmd);
 	Cmd_AddCommand("nav_generate", Nav_Generate);
 }
 

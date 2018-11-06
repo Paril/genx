@@ -93,10 +93,11 @@ void NavStateDestroyNagivator()
 
 void ResetNavState()
 {
-	nav_debug.node_selected_a = nav_debug.node_selected_b = NAV_NODE_INVALID;
 	NavStateDestroyNagivator();
 
 	memset(&nav_debug, 0, sizeof(nav_debug));
+
+	nav_debug.node_selected_a = nav_debug.node_selected_b = NAV_NODE_INVALID;
 }
 
 nav_node_t *Nav_GetClosestNode(vec3_t position)

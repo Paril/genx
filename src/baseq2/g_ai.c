@@ -1072,6 +1072,9 @@ bool ai_checkattack(edict_t *self, float dist)
 	// see if the enemy is dead
 	hesDeadJim = false;
 	if ((!self->enemy) || (!self->enemy->inuse)) {
+		if (self->monsterinfo.navigator)
+			return false; // trying to go somewhere
+
 		hesDeadJim = true;
 	}
 	else if (self->monsterinfo.aiflags & AI_MEDIC) {
@@ -1228,20 +1231,24 @@ void ai_run(edict_t *self, float dist)
 		return;
 	}
 
-	if ((self->monsterinfo.search_time) && (level.time > (self->monsterinfo.search_time + 20000)))
+	// if we don't have a navigator, start searchin'
+	if (!self->monsterinfo.navigator)
 	{
-		M_MoveToGoal(self, dist);
-		self->monsterinfo.search_time = 0;
-		return;
-	}
+		if ((self->monsterinfo.search_time) && (level.time > (self->monsterinfo.search_time + 20000)))
+		{
+			M_MoveToGoal(self, dist);
+			self->monsterinfo.search_time = 0;
+			return;
+		}
 
-	if (!(self->monsterinfo.aiflags & AI_LOST_SIGHT))
-	{
-		self->monsterinfo.aiflags |= AI_LOST_SIGHT;
+		if (!(self->monsterinfo.aiflags & AI_LOST_SIGHT))
+		{
+			self->monsterinfo.aiflags |= AI_LOST_SIGHT;
 
-		//path us to where we last saw the guy
-		M_NavigatorPathToSpot(self, self->monsterinfo.last_sighting);
-		self->monsterinfo.trail_time = level.time;
+			//path us to where we last saw the guy
+			M_NavigatorPathToSpot(self, self->monsterinfo.last_sighting);
+			self->monsterinfo.trail_time = level.time;
+		}
 	}
 
 	M_MoveToGoal(self, dist);

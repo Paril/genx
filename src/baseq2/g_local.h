@@ -1144,13 +1144,6 @@ void ValidateSelectedItem(edict_t *ent);
 void DeathmatchScoreboardMessage(edict_t *client, edict_t *killer);
 
 //
-// g_pweapon.c
-//
-void PlayerNoise(edict_t *who, vec3_t where, int type);
-void P_ProjectSource(gclient_t *client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
-void AttemptBetterWeaponSwap(edict_t *ent);
-
-//
 // m_move.c
 //
 bool M_CheckBottom(edict_t *ent);
@@ -1176,6 +1169,21 @@ void UpdateChaseCam(edict_t *ent);
 void ChaseNext(edict_t *ent);
 void ChasePrev(edict_t *ent);
 void GetChaseTarget(edict_t *ent);
+
+//
+// p_weapon.c
+//
+void NoAmmoWeaponChange(edict_t *ent, gunindex_e gun);
+void check_dodge(edict_t *, vec3_t, vec3_t, int);
+void P_ProjectSource(gclient_t *client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
+void Weapon_QuadDamage(edict_t *ent);
+void PlayerNoise(edict_t *who, vec3_t where, int type);
+void AttemptBetterWeaponSwap(edict_t *ent);
+
+// p_q1_weapons.c
+void ApplyMultiDamage(edict_t *self, int dflags, meansOfDeath_t multi_mod);
+void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all);
+
 
 //============================================================================
 

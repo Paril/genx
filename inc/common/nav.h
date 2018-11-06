@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef struct {
 	vec3_t				position;
-	nav_node_type_e		type;
+	uint8_t				type;
 	nav_node_id			connections[MAX_NODE_CONNECTIONS];
 	uint32_t			num_connections;
 

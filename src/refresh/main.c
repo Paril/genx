@@ -902,9 +902,9 @@ static void GL_Register(void)
 #if USE_DLIGHTS
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
 #endif
-    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
+    gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", CVAR_ARCHIVE);
     gl_modulate_entities->changed = gl_modulate_entities_changed;
-    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
+    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", CVAR_ARCHIVE);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
     gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
 

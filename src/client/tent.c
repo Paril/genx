@@ -604,7 +604,7 @@ LASER MANAGEMENT
 ==============================================================
 */
 
-#define MAX_LASERS  32
+#define MAX_LASERS  1024
 
 typedef struct {
     vec3_t      start;
