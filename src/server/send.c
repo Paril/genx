@@ -19,9 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
-// Generations
-#define USE_VIEW_ORIGIN_PVS
-
 /*
 =============================================================================
 
@@ -262,7 +259,6 @@ void SV_Multicast(vec3_t origin, multicast_t to)
     mleaf_t     *leaf1, *leaf2;
     int         leafnum;
     int         flags;
-    vec3_t      org;
 
     if (!sv.cm.cache) {
         Com_Error(ERR_DROP, "%s: no map loaded", __func__);
@@ -310,17 +306,7 @@ void SV_Multicast(vec3_t origin, multicast_t to)
         }
 
         if (leaf1) {
-            // find the client's PVS
-// Generations
-#ifdef USE_VIEW_ORIGIN_PVS
-            player_state_t *ps = &client->edict->client->ps;
-            VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, org);
-#else
-            // FIXME: for some strange reason, game code assumes the server
-            // uses entity origin for PVS/PHS culling, not the view origin
-            VectorCopy(client->edict->s.origin, org);
-#endif
-            leaf2 = CM_PointLeaf(&sv.cm, org);
+            leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
             if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
                 continue;
             if (leaf2->cluster == -1)
@@ -1057,8 +1043,8 @@ void SV_InitClientSend(client_t *newcl)
 
     // setup protocol
     if (newcl->netchan->type == NETCHAN_NEW) {
-    newcl->AddMessage = add_message_new;
-    newcl->WriteDatagram = write_datagram_new;
+        newcl->AddMessage = add_message_new;
+        newcl->WriteDatagram = write_datagram_new;
     } else {
         newcl->AddMessage = add_message_old;
         newcl->WriteDatagram = write_datagram_old;

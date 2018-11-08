@@ -370,8 +370,8 @@ static void Cmd_UnAlias_f(void)
         return;
     }
 
-    List_Delete(&a->listEntry);
-    List_Delete(&a->hashEntry);
+    List_Remove(&a->listEntry);
+    List_Remove(&a->hashEntry);
 
     Z_Free(a->value);
     Z_Free(a);
@@ -1385,10 +1385,23 @@ static cmd_function_t *Cmd_Find(const char *name)
     return NULL;
 }
 
+static void Cmd_LinkCommand(cmd_function_t *cmd)
+{
+    cmd_function_t *cur;
+    unsigned hash;
+
+    FOR_EACH_CMD(cur)
+        if (strcmp(cmd->name, cur->name) < 0)
+            break;
+    List_Append(&cur->listEntry, &cmd->listEntry);
+
+    hash = Com_HashString(cmd->name, CMD_HASH_SIZE);
+    List_Append(&cmd_hash[hash], &cmd->hashEntry);
+}
+
 static void Cmd_RegCommand(const cmdreg_t *reg)
 {
     cmd_function_t *cmd;
-    unsigned hash;
 
 // fail if the command is a variable name
     if (Cvar_Exists(reg->name, false)) {
@@ -1413,10 +1426,7 @@ static void Cmd_RegCommand(const cmdreg_t *reg)
     cmd->function = reg->function;
     cmd->completer = reg->completer;
 
-    List_Append(&cmd_functions, &cmd->listEntry);
-
-    hash = Com_HashString(reg->name, CMD_HASH_SIZE);
-    List_Append(&cmd_hash[hash], &cmd->hashEntry);
+    Cmd_LinkCommand(cmd);
 }
 
 /*
@@ -1426,28 +1436,20 @@ Cmd_AddCommand
 */
 void Cmd_AddCommand(const char *name, xcommand_t function)
 {
-    cmdreg_t reg;
-
-    reg.name = name;
-    reg.function = function;
-    reg.completer = NULL;
+    cmdreg_t reg = { .name = name, .function = function };
     Cmd_RegCommand(&reg);
 }
 
 void Cmd_Register(const cmdreg_t *reg)
 {
-    while (reg->name) {
+    for (; reg->name; reg++)
         Cmd_RegCommand(reg);
-        reg++;
-    }
 }
 
 void Cmd_Deregister(const cmdreg_t *reg)
 {
-    while (reg->name) {
+    for (; reg->name; reg++)
         Cmd_RemoveCommand(reg->name);
-        reg++;
-    }
 }
 
 /*
@@ -1465,8 +1467,8 @@ void Cmd_RemoveCommand(const char *name)
         return;
     }
 
-    List_Delete(&cmd->listEntry);
-    List_Delete(&cmd->hashEntry);
+    List_Remove(&cmd->listEntry);
+    List_Remove(&cmd->hashEntry);
     Z_Free(cmd);
 }
 
@@ -1847,7 +1849,6 @@ static void Cmd_Complete_f(void)
 {
     cmd_function_t *cmd;
     char *name;
-    unsigned hash;
     size_t len;
 
     if (cmd_argc < 2) {
@@ -1877,10 +1878,7 @@ static void Cmd_Complete_f(void)
     cmd->function = NULL;
     cmd->completer = NULL;
 
-    List_Append(&cmd_functions, &cmd->listEntry);
-
-    hash = Com_HashString(name, CMD_HASH_SIZE);
-    List_Append(&cmd_hash[hash], &cmd->hashEntry);
+    Cmd_LinkCommand(cmd);
 }
 
 static const cmdreg_t c_cmd[] = {

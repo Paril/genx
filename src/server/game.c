@@ -512,7 +512,7 @@ static qboolean PF_inPHS(vec3_t p1, vec3_t p2)
 
 /*
 ==================
-PF_StartSound
+SV_StartSound
 
 Each entity can have eight independant sound sources, like voice,
 weapon, feet, etc.
@@ -536,44 +536,30 @@ If origin is NULL, the origin is determined from the entity origin
 or the midpoint of the entity box for bmodels.
 ==================
 */
-
-#define CHECK_PARAMS \
-    if (volume < 0 || volume > 1.0f) \
-        Com_Error(ERR_DROP, "%s: volume = %f", __func__, volume); \
-    if (attenuation < ATTN_NONE || attenuation > ATTN_STATIC) \
-        Com_Error(ERR_DROP, "%s: attenuation = %f", __func__, attenuation); \
-    if (timeofs < 0 || timeofs > 0.255f) \
-        Com_Error(ERR_DROP, "%s: timeofs = %f", __func__, timeofs); \
-    if (soundindex < 0 || soundindex >= MAX_PRECACHE) \
-        Com_Error(ERR_DROP, "%s: soundindex = %d", __func__, soundindex);
-
-static void PF_StartSound(edict_t *edict, int channel,
+static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 						  int soundindex, float volume,
 						  float attenuation, float timeofs)
 {
-	int         sendchan;
-	int         flags;
-	int         ent;
-	vec3_t      origin;
+    int         i, ent, flags, sendchan;
+    vec3_t      origin_v;
 	client_t    *client;
 	byte        mask[VIS_MAX_BYTES];
-	mleaf_t     *leaf;
-	int         area;
-	player_state_t      *ps;
+    mleaf_t     *leaf1, *leaf2;
 	message_packet_t    *msg;
-	int         i;
+    bool        force_pos;
 
 	if (!edict)
-		return;
+        Com_Error(ERR_DROP, "%s: edict = NULL", __func__);
+    if (volume < 0 || volume > 1)
+        Com_Error(ERR_DROP, "%s: volume = %f", __func__, volume);
+    if (attenuation < 0 || attenuation > 255.0f / 64)
+        Com_Error(ERR_DROP, "%s: attenuation = %f", __func__, attenuation);
+    if (timeofs < 0 || timeofs > 0.255f)
+        Com_Error(ERR_DROP, "%s: timeofs = %f", __func__, timeofs);
+    if (soundindex < 0 || soundindex >= MAX_SOUNDS)
+        Com_Error(ERR_DROP, "%s: soundindex = %d", __func__, soundindex);
 
-	CHECK_PARAMS
-
-		ent = NUM_FOR_EDICT(edict);
-
-	if ((g_features->integer & GMF_PROPERINUSE) && !edict->inuse) {
-		Com_DPrintf("%s: entnum not in use: %d\n", __func__, ent);
-		return;
-	}
+	ent = NUM_FOR_EDICT(edict);
 
     sendchan = (ent << 3) | (channel & 7);
 
@@ -586,84 +572,100 @@ static void PF_StartSound(edict_t *edict, int channel,
 	if (timeofs)
 		flags |= SND_OFFSET;
 
-	// if the sound doesn't attenuate,send it to everyone
-	// (global radio chatter, voiceovers, etc)
-	if (attenuation == ATTN_NONE) {
-		channel |= CHAN_NO_PHS_ADD;
-	}
+    // send origin for invisible entities
+    // the origin can also be explicitly set
+    force_pos = (edict->svflags & SVF_NOCLIENT) || origin;
 
-	FOR_EACH_CLIENT(client) {
-		// do not send sounds to connecting clients
-		if (client->state != cs_spawned || client->download || client->nodata) {
-			continue;
-		}
-
-		if (client->edict != edict && (channel & CHAN_NO_EAVESDROP))
-			continue;
-
-		// PHS cull this sound
-		if (!(channel & CHAN_NO_PHS_ADD)) {
-			// get client viewpos
-			ps = &client->edict->client->ps;
-            VectorMA(ps->viewoffset, 0.125f, ps->pmove.origin, origin);
-			leaf = CM_PointLeaf(&sv.cm, origin);
-			area = CM_LeafArea(leaf);
-			if (!CM_AreasConnected(&sv.cm, area, edict->areanum)) {
-				// doors can legally straddle two areas, so
-				// we may need to check another one
-				if (!edict->areanum2 || !CM_AreasConnected(&sv.cm, area, edict->areanum2)) {
-					continue;        // blocked by a door
-				}
-			}
-			BSP_ClusterVis(sv.cm.cache, mask, leaf->cluster, DVIS_PHS);
-			if (!SV_EdictIsVisible(&sv.cm, edict, mask)) {
-				continue; // not in PHS
-			}
-		}
-
-		// use the entity origin unless it is a bmodel
+    // use the entity origin unless it is a bmodel or explicitly specified
+    if (!origin) {
 		if (edict->solid == SOLID_BSP) {
-			VectorAvg(edict->mins, edict->maxs, origin);
-			VectorAdd(edict->s.origin, origin, origin);
+            VectorAvg(edict->mins, edict->maxs, origin_v);
+            VectorAdd(origin_v, edict->s.origin, origin_v);
+            origin = origin_v;
         } else {
-			VectorCopy(edict->s.origin, origin);
+            origin = edict->s.origin;
 		}
+    }
 
-		// reliable sounds will always have position explicitly set,
-		// as no one gurantees reliables to be delivered in time
-		if (channel & CHAN_RELIABLE) {
-			MSG_WriteByte(svc_sound);
-			MSG_WriteByte(flags | SND_POS);
-			MSG_WriteShort(soundindex);
+    // prepare multicast message
+    MSG_WriteByte(svc_sound);
+    MSG_WriteByte(flags | SND_POS);
+	MSG_WriteShort(soundindex);
 
-			if (flags & SND_VOLUME)
-				MSG_WriteByte(volume * 255);
-			if (flags & SND_ATTENUATION)
-				MSG_WriteByte((byte)attenuation);
-			if (flags & SND_OFFSET)
-				MSG_WriteByte(timeofs * 1000);
+    if (flags & SND_VOLUME)
+        MSG_WriteByte(volume * 255);
+    if (flags & SND_ATTENUATION)
+		MSG_WriteByte((byte)attenuation);
+    if (flags & SND_OFFSET)
+        MSG_WriteByte(timeofs * 1000);
 
-			MSG_WriteShort(sendchan);
-			MSG_WritePos(origin);
+    MSG_WriteShort(sendchan);
+    MSG_WritePos(origin);
 
-			SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
+    // if the sound doesn't attenuate, send it to everyone
+    // (global radio chatter, voiceovers, etc)
+    if (attenuation == ATTN_NONE)
+        channel |= CHAN_NO_PHS_ADD;
+
+    // multicast if force sending origin
+    if (force_pos) {
+        if (channel & CHAN_NO_PHS_ADD) {
+            if (channel & CHAN_RELIABLE) {
+                SV_Multicast(NULL, MULTICAST_ALL_R);
+            } else {
+                SV_Multicast(NULL, MULTICAST_ALL);
+            }
+        } else {
+            if (channel & CHAN_RELIABLE) {
+                SV_Multicast(origin, MULTICAST_PHS_R);
+            } else {
+                SV_Multicast(origin, MULTICAST_PHS);
+            }
+        }
+        return;
+    }
+
+    leaf1 = NULL;
+    if (!(channel & CHAN_NO_PHS_ADD)) {
+        leaf1 = CM_PointLeaf(&sv.cm, origin);
+        BSP_ClusterVis(sv.cm.cache, mask, leaf1->cluster, DVIS_PHS);
+    }
+
+    // decide per client if origin needs to be sent
+    FOR_EACH_CLIENT(client) {
+        // do not send sounds to connecting clients
+        if (client->state != cs_spawned || client->download || client->nodata) {
 			continue;
 		}
 
-		if (LIST_EMPTY(&client->msg_free_list)) {
-			Com_WPrintf("%s: %s: out of message slots\n",
-				__func__, client->name);
-			continue;
+        // PHS cull this sound
+        if (!(channel & CHAN_NO_PHS_ADD)) {
+            leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
+            if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
+                continue;
+            if (leaf2->cluster == -1)
+                continue;
+            if (!Q_IsBitSet(mask, leaf2->cluster))
+                continue;
 		}
 
-		// send origin for invisible entities
-		if (edict->svflags & SVF_NOCLIENT) {
-			flags |= SND_POS;
+        // reliable sounds will always have position explicitly set,
+        // as no one guarantees reliables to be delivered in time
+        if (channel & CHAN_RELIABLE) {
+            SV_ClientAddMessage(client, MSG_RELIABLE);
+            continue;
 		}
 
 		// default client doesn't know that bmodels have weird origins
         if (edict->solid == SOLID_BSP && client->protocol == PROTOCOL_VERSION_DEFAULT) {
-            flags |= SND_POS;
+            SV_ClientAddMessage(client, 0);
+            continue;
+        }
+
+        if (LIST_EMPTY(&client->msg_free_list)) {
+            Com_WPrintf("%s: %s: out of message slots\n",
+                        __func__, client->name);
+            continue;
         }
 
 		msg = LIST_FIRST(message_packet_t, &client->msg_free_list, entry);
@@ -682,70 +684,23 @@ static void PF_StartSound(edict_t *edict, int channel,
 		List_Remove(&msg->entry);
 		List_Append(&client->msg_unreliable_list, &msg->entry);
 		client->msg_unreliable_bytes += MAX_SOUND_PACKET;
-
-		flags &= ~SND_POS;
 	}
+
+    // clear multicast buffer
+    SZ_Clear(&msg_write);
 
 	SV_MvdStartSound(ent, channel, flags, soundindex,
                      volume * 255, attenuation * 64, timeofs * 1000);
 }
 
-static void PF_PositionedSound(vec3_t origin, edict_t *entity, int channel,
-							   int soundindex, float volume,
-							   float attenuation, float timeofs)
+static void PF_StartSound(edict_t *entity, int channel,
+                          int soundindex, float volume,
+                          float attenuation, float timeofs)
 {
-	int     sendchan;
-	int     flags;
-	int     ent;
-
-	if (!origin)
-		Com_Error(ERR_DROP, "%s: NULL origin", __func__);
-	CHECK_PARAMS
-
-		ent = NUM_FOR_EDICT(entity);
-
-    sendchan = (ent << 3) | (channel & 7);
-
-	// always send the entity number for channel overrides
-	flags = SND_ENT | SND_POS;
-	if (volume != DEFAULT_SOUND_PACKET_VOLUME)
-		flags |= SND_VOLUME;
-	if (attenuation != DEFAULT_SOUND_PACKET_ATTENUATION)
-		flags |= SND_ATTENUATION;
-	if (timeofs)
-		flags |= SND_OFFSET;
-
-	MSG_WriteByte(svc_sound);
-	MSG_WriteByte(flags);
-	MSG_WriteShort(soundindex);
-
-	if (flags & SND_VOLUME)
-		MSG_WriteByte(volume * 255);
-	if (flags & SND_ATTENUATION)
-        MSG_WriteByte(attenuation * 64);
-	if (flags & SND_OFFSET)
-		MSG_WriteByte(timeofs * 1000);
-
-	MSG_WriteShort(sendchan);
-	MSG_WritePos(origin);
-
-	// if the sound doesn't attenuate,send it to everyone
-	// (global radio chatter, voiceovers, etc)
-	if (attenuation == ATTN_NONE || (channel & CHAN_NO_PHS_ADD)) {
-		if (channel & CHAN_RELIABLE) {
-			SV_Multicast(NULL, MULTICAST_ALL_R);
-        } else {
-			SV_Multicast(NULL, MULTICAST_ALL);
-		}
-    } else {
-		if (channel & CHAN_RELIABLE) {
-			SV_Multicast(origin, MULTICAST_PHS_R);
-        } else {
-			SV_Multicast(origin, MULTICAST_PHS);
-		}
-	}
+    if (!entity)
+        return;
+    SV_StartSound(NULL, entity, channel, soundindex, volume, attenuation, timeofs);
 }
-
 
 void init_pmove_and_es_flags(client_t *newcl);
 void PF_Pmove(pmove_t *pm)
@@ -1016,7 +971,7 @@ void SV_InitGameProgs(void)
 
 	import.configstring = PF_configstring;
 	import.sound = PF_StartSound;
-	import.positioned_sound = PF_PositionedSound;
+    import.positioned_sound = SV_StartSound;
 
 	import.WriteChar = MSG_WriteChar;
 	import.WriteByte = MSG_WriteByte;

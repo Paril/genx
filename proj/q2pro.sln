@@ -5,13 +5,11 @@ VisualStudioVersion = 15.0.25428.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "compiler", "..\..\..\Quake-master\maps\compiler\compiler\compiler.csproj", "{E17670F9-4135-4CE2-BDB2-681630311F69}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asset_compiler", "asset_compiler\asset_compiler.csproj", "{E1285607-4C0D-4D92-8C22-8FE05C64B537}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "game", "game.vcxproj", "{D4DA9CCE-6640-4596-8158-01DAB8FA6306}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "genx", "genx.vcxproj", "{1C23A7A4-8184-44C8-AA05-0364B9027C91}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asset_transpiler", "asset_porter\asset_transpiler.csproj", "{D6AA6062-1428-4278-B494-0596486F2943}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "asset_transpiler", "asset_porter\asset_transpiler.csproj", "{D6AA6062-1428-4278-B494-0596486F2943}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,18 +33,6 @@ Global
 		{E17670F9-4135-4CE2-BDB2-681630311F69}.Release|x64.Build.0 = Release|Any CPU
 		{E17670F9-4135-4CE2-BDB2-681630311F69}.Release|x86.ActiveCfg = Release|Any CPU
 		{E17670F9-4135-4CE2-BDB2-681630311F69}.Release|x86.Build.0 = Release|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Debug|x64.Build.0 = Debug|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Debug|x86.Build.0 = Debug|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Release|Any CPU.Build.0 = Release|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Release|x64.ActiveCfg = Release|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Release|x64.Build.0 = Release|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Release|x86.ActiveCfg = Release|Any CPU
-		{E1285607-4C0D-4D92-8C22-8FE05C64B537}.Release|x86.Build.0 = Release|Any CPU
 		{D4DA9CCE-6640-4596-8158-01DAB8FA6306}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{D4DA9CCE-6640-4596-8158-01DAB8FA6306}.Debug|x64.ActiveCfg = Debug|x64
 		{D4DA9CCE-6640-4596-8158-01DAB8FA6306}.Debug|x64.Build.0 = Debug|x64
