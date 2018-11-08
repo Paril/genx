@@ -20,8 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "shared/list.h"
 
-struct gitem_t;
-
 // define GAME_INCLUDE so that game.h does not define the
 // short, server-visible gclient_t and edict_t structures,
 // because we define the full size ones in this file
@@ -497,6 +495,22 @@ typedef enum {
 	WEAP_TOTAL
 } weapmodel_e;
 
+// total default ammo
+#define DEFAULT_MAX_AMMO				150.0f
+
+// get # of ammo used by individual shots if this many shots are delivered
+// relative to total default ammo
+#define COUNT_FOR_SHOTS(total_shots)				(DEFAULT_MAX_AMMO / total_shots)
+
+// get # of individual shots that can be fired if we have this count
+#define SHOTS_FOR_COUNT(ammo, max_ammo, per_shot)	(ammo / max_ammo) * ((DEFAULT_MAX_AMMO / per_shot) * (max_ammo / DEFAULT_MAX_AMMO))
+
+// get # of shots we can fire for current weapon with current ammo
+#define PLAYER_SHOTS_FOR_WEAPON(ent, weapon)			SHOTS_FOR_COUNT(ent->client->pers.ammo, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)])
+
+// get # of shots we can fire total for current weapon
+#define PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, weapon)		SHOTS_FOR_COUNT(GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)])
+
 typedef struct gitem_s {
 	char        *classname; // spawning name
 	bool		(*pickup)(edict_t *ent, edict_t *other);
@@ -541,8 +555,6 @@ typedef struct {
 		itemid_e	to;
 	}			item_redirects[ITI_TOTAL];
 
-	int			ammo_maxes[ITI_AMMO_LAST - ITI_AMMO_FIRST + 1];
-
 	struct
 	{
 		itemid_e	item;
@@ -554,7 +566,7 @@ typedef struct {
 	struct
 	{
 		itemid_e	item;
-		int			num;
+		float		num;
 	}			ammo_pickups[ITI_TOTAL];
 
 	gitem_armor_t armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR + 1];
@@ -562,7 +574,7 @@ typedef struct {
 	struct
 	{
 		itemid_e	item;
-		int			ammo_usage;
+		float		ammo_usage;
 	}			ammo_usages[ITI_TOTAL];
 
 	struct
@@ -574,20 +586,23 @@ typedef struct {
 	struct
 	{
 		itemid_e		item_redirects[ITI_TOTAL];
-		int				ammo_pickup_amounts[ITI_TOTAL];
-		int				weapon_usage_counts[ITI_TOTAL];
-		itemid_e		weapon_uses_this_ammo[ITI_TOTAL];
+		float			weapon_usage_counts[ITI_TOTAL];
+		float			item_pickup_counts[ITI_TOTAL];
 	}			dynamic;
 } game_iteminfo_t;
 
 extern game_iteminfo_t game_iteminfos[GAME_TOTAL];
 
-int GetWeaponUsageCount(edict_t *ent, gitem_t *weapon);
+float GetWeaponUsageCount(edict_t *ent, gitem_t *weapon);
 #define CHECK_INVENTORY -1
-int GetMaxAmmo(edict_t *ent, itemid_e ammo_type, int has_bandolier, int has_ammo_pack);
+float GetMaxAmmo(edict_t *ent, int has_bandolier, int has_ammo_pack);
 gitem_t *ResolveItemRedirect(edict_t *ent, gitem_t *item);
 gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item);
 bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result);
+bool HasEnoughAmmoToFireShots(edict_t *ent, gitem_t *weapon, int shots);
+#define HasEnoughAmmoToFire(ent, weapon) HasEnoughAmmoToFireShots(ent, weapon, 1)
+void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots);
+#define RemoveAmmoFromFiring(ent, weapon) RemoveAmmoFromFiringShots(ent, weapon, 1)
 
 //
 // this structure is left intact through an entire game
@@ -975,7 +990,7 @@ void Think_Weapon(edict_t *ent);
 itemid_e ArmorIndex(edict_t *ent);
 power_armor_type_e PowerArmorType(edict_t *ent);
 gitem_t *GetItemByIndex(itemid_e index);
-bool Add_Ammo(edict_t *ent, itemid_e ammo, int count, bool pickup);
+bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup);
 void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf);
 
 //
@@ -1232,6 +1247,7 @@ typedef struct {
 	bool        spectator;          // client is a spectator
 	gametype_t	game;
 
+	float		ammo;
 	int			pistol_clip; // duke only
 	int			pipebomb_hold;
 	bool    	alt_weapon;
@@ -1292,7 +1308,6 @@ struct gclient_s {
 		gtime_t			kick_time;
 		gtime_t			weapon_time;
 		gitem_t			*newweapon;
-		int				ammo_index;
 		int				machinegun_shots;   // for weapon raising
 	}			gunstates[MAX_PLAYER_GUNS];
 
@@ -1457,7 +1472,7 @@ struct edict_s {
 	int         radius_dmg;
 	int         dmg;
 
-	byte		pack_shells, pack_nails, pack_rockets, pack_cells;
+	float		pack_ammo;
 	int			pack_weapons;
 
 	int         viewheight;     // height above origin where eyesight is determined

@@ -1,11 +1,12 @@
-﻿using System;
+﻿using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace asset_compiler
+namespace asset_transpiler
 {
 	class Quake
 	{
@@ -116,8 +117,8 @@ namespace asset_compiler
 			{
 				Q1BSPTexture texture = new Q1BSPTexture();
 
-				texture.Width = (uint)w;
-				texture.Height = (uint)h;
+				texture.Width = w;
+				texture.Height = h;
 
 				foreach (var frame in Frames)
 					texture.Frames.Add(frame.Crop(this, x, y, w, h));
@@ -239,15 +240,15 @@ namespace asset_compiler
 						for (int m = 0; m < mipoffsets.Length; ++m)
 						{
 							texture.Mips[m] = new Q1BSPTexture();
-							texture.Mips[m].Width = (uint)(width >> m);
-							texture.Mips[m].Height = (uint)(height >> m);
+							texture.Mips[m].Width = width >> m;
+							texture.Mips[m].Height = height >> m;
 						}
 					}
 
 					for (int m = 0; m < mipoffsets.Length; ++m)
 					{
-						uint mw = (uint)(width >> m);
-						uint mh = (uint)(height >> m);
+						uint mw = width >> m;
+						uint mh = height >> m;
 						int offset = mipoffsets[m];
 
 						Q1BSPTextureAnim animation = new Q1BSPTextureAnim();
@@ -351,29 +352,6 @@ namespace asset_compiler
 								if (Globals.FileExists(outwal))
 									continue;
 
-								// Test PNGs
-								/*for (var f = 0; f < texture.Mips[0].Frames.Count; ++f)
-								{
-									string outpng;
-
-									if (texture.Mips[0].Frames.Count == 1)
-										outpng = "textures/q1/" + name + ".png";
-									else
-										outpng = "textures/q1/" + name + '_' + texture.Mips[0].Frames[f].Frame + ".png";
-
-									using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap((int)texture.Mips[0].Width, (int)texture.Mips[0].Height))
-									{
-										for (var y = 0; y < texture.Mips[0].Height; ++y)
-											for (var x = 0; x < texture.Mips[0].Width; ++x)
-											{
-												var c = texture.Mips[0].Frames[f].Data[(y * (int)texture.Mips[0].Width) + x];
-												bmp.SetPixel(x, y, _q1Palette[c]);
-											}
-
-										bmp.Save(outpng);
-									}
-								}*/
-
 								// Write WALs
 								for (var f = 0; f < texture.Mips[0].Frames.Count; ++f)
 								{
@@ -399,6 +377,7 @@ namespace asset_compiler
 									}
 
 									outwal = "textures/" + walname + ".wal";
+									string outpng = "textures/" + walname + ".png";
 
 									int surf = 0, contents = 0;
 
@@ -427,43 +406,20 @@ namespace asset_compiler
 									else if (walname.StartsWith("q1/sky"))
 										surf = Quake2.SURF_SKY | Quake2.SURF_NODRAW;
 
-									surf |= Quake2.SURF_Q1;
-
-									int headerwidth = 32 + 4 + 4 + 16 + 32 + 4 + 4 + 4;
-
-									BinaryWriter bw = new BinaryWriter(Globals.OpenFileStream(outwal));
-
-									for (var k = 0; k < 32; ++k)
-										bw.Write((byte)(k < walname.Length ? walname[k] : 0));
-
-									bw.Write(texture.Width);
-									bw.Write(texture.Height);
-
-									bw.Write((int)headerwidth);
-									bw.Write((int)(headerwidth + (texture.Width * texture.Height)));
-									bw.Write((int)(headerwidth + (texture.Width * texture.Height) + (texture.Width / 2 * texture.Height / 2)));
-									bw.Write((int)(headerwidth + (texture.Width * texture.Height) + (texture.Width / 2 * texture.Height / 2) + (texture.Width / 4 * texture.Height / 4)));
-
-									for (var k = 0; k < 32; ++k)
-										bw.Write((byte)(k < next_name.Length ? next_name[k] : 0));
-
-									bw.Write(surf);
-									bw.Write(contents);
-									bw.Write(0);
-
-									for (var m = 0; m < texture.Mips.Length; ++m)
+									using (var bmp = new Image<Rgba32>((int)texture.Width, (int)texture.Height))
 									{
-										var frame = texture.Mips[m].Frames[f];
+										for (var y = 0; y < texture.Height; ++y)
+											for (var x = 0; x < texture.Width; ++x)
+											{
+												var c = texture.Mips[0].Frames[f].Data[(y * (int)texture.Width) + x];
+												bmp[x, y] = Globals.GetMappedColor(PaletteID.Q1, c);
+											}
 
-										for (var d = 0; d < frame.Data.Length; ++d)
-#if CONVERT_TEXTURES
-											bw.Write(GetClosestMappedColor(PaletteID.Q1, PaletteID.Q2, frame.Data[d]));
-#else
-											bw.Write(frame.Data[d]);
-#endif
+										using (var strm = Globals.OpenFileStream(outpng))
+											bmp.SaveAsPng(strm);
+
+										Globals.SaveWal(outwal, walname, next_name, surf, contents, texture.Mips[0].Frames[f].Data, PaletteID.Q1, (int)texture.Width, (int)texture.Height);
 									}
-
-									bw.Close();
 								}
 							}
 						}

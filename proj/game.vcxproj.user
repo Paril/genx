@@ -3,4 +3,16 @@
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>+set game genx +set cl_autopause 0 +map xdm10c</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>+set game genx +set cl_autopause 0 +map xdm10c</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
 </Project>

@@ -580,14 +580,7 @@ IMG_LOAD(WAL)
     image->upload_width = image->width = w;
     image->upload_height = image->height = h;
 
-	gametype_t game_palette = GAME_Q2;
-
-	if (mt->flags & SURF_Q1)
-		game_palette = GAME_Q1;
-	else if (mt->flags & SURF_DOOM)
-		game_palette = GAME_DOOM;
-
-    image->flags |= IMG_Unpack8((uint32_t *)*pic, (uint8_t *)mt + offset, w, h, d_palettes[game_palette]);
+    image->flags |= IMG_Unpack8((uint32_t *)*pic, (uint8_t *)mt + offset, w, h, d_palettes[GAME_Q2]);
 
     return Q_ERR_SUCCESS;
 }

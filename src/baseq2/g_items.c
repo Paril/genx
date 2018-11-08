@@ -17,7 +17,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 #include "g_local.h"
 
-
 bool        Pickup_Weapon(edict_t *ent, edict_t *other);
 void        Use_Weapon(edict_t *ent, gitem_t *inv);
 void        Drop_Weapon(edict_t *ent, gitem_t *inv);
@@ -53,8 +52,6 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 			{ ITI_BULLETS_LARGE, ITI_BULLETS }
 		},
 
-		{ 200, 100, 50, 50, 200, 50 },
-
 		{
 			{ ITI_BLASTER, 1 }
 		},
@@ -62,19 +59,6 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 		ITI_BLASTER,
 
 		{
-			{ ITI_SHELLS, 10 },
-			{ ITI_BULLETS, 50 },
-			{ ITI_GRENADES, 5 },
-			{ ITI_ROCKETS, 5 },
-			{ ITI_CELLS, 50 },
-			{ ITI_SLUGS, 10 },
-
-			// these have to be there because ammo redirects
-			// will use the counts from the real ID but pickup the
-			// new ID.
-			{ ITI_SHELLS_LARGE, 10 },
-			{ ITI_BULLETS_LARGE, 50 },
-
 			// weapon pickups
 			{ ITI_SHOTGUN, 10 },
 			{ ITI_SUPER_SHOTGUN, 10 },
@@ -83,8 +67,8 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 			{ ITI_GRENADE_LAUNCHER, 5 },
 			{ ITI_ROCKET_LAUNCHER, 5 },
 			{ ITI_HYPERBLASTER, 50 },
-			{ ITI_RAILGUN, 10 },
-			{ ITI_BFG10K, 50 },
+			{ ITI_RAILGUN, 5 },
+			{ ITI_BFG10K, 1 },
 
 			// health pickups
 			{ ITI_STIMPACK, 2 },
@@ -100,8 +84,16 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 		},
 
 		{
-			{ ITI_SUPER_SHOTGUN, 2 },
-			{ ITI_BFG10K, 50 },
+			{ ITI_SHOTGUN, COUNT_FOR_SHOTS(40) },
+			{ ITI_SUPER_SHOTGUN, COUNT_FOR_SHOTS(20) },
+			{ ITI_MACHINEGUN, COUNT_FOR_SHOTS(200) },
+			{ ITI_CHAINGUN, COUNT_FOR_SHOTS(200) },
+			{ ITI_GRENADES, COUNT_FOR_SHOTS(25) },
+			{ ITI_GRENADE_LAUNCHER, COUNT_FOR_SHOTS(25) },
+			{ ITI_ROCKET_LAUNCHER, COUNT_FOR_SHOTS(25) },
+			{ ITI_HYPERBLASTER, COUNT_FOR_SHOTS(80) },
+			{ ITI_RAILGUN, COUNT_FOR_SHOTS(15) },
+			{ ITI_BFG10K, COUNT_FOR_SHOTS(4) },
 		},
 
 		{
@@ -145,37 +137,24 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 			{ ITI_AMMO_PACK, ITI_NULL }
 		},
 
-		{ 200, 100, 100, 0, 100, 0 },
-
 		{
 			{ ITI_Q1_AXE, 1 },
-			{ ITI_Q1_SHOTGUN, 1 },
-			{ ITI_Q1_SHELLS, 25 }
+			{ ITI_Q1_SHOTGUN, 1 }
 		},
 
 		ITI_Q1_SHOTGUN,
 
 		{
-			{ ITI_Q1_NAILS, 25 },
-			{ ITI_Q1_NAILS_LARGE, 50 },
-			{ ITI_Q1_SHELLS, 20 },
-			{ ITI_Q1_SHELLS_LARGE, 40 },
-			{ ITI_Q1_ROCKETS_SMALL, 5 },
-			{ ITI_Q1_ROCKETS_LARGE, 10 },
-			{ ITI_Q1_CELLS_SMALL, 6 },
-			{ ITI_Q1_CELLS_LARGE, 12 },
-		
-			{ ITI_Q1_SHOTGUN, 5 },
-			{ ITI_Q1_SUPER_SHOTGUN, 5 },
-			{ ITI_Q1_NAILGUN, 30 },
-			{ ITI_Q1_SUPER_NAILGUN, 30 },
+			// weapon pickups
+			{ ITI_Q1_SHOTGUN, 20 },
+			{ ITI_Q1_SUPER_SHOTGUN, 10 },
+			{ ITI_Q1_NAILGUN, 50 },
+			{ ITI_Q1_SUPER_NAILGUN, 25 },
 			{ ITI_Q1_GRENADE_LAUNCHER, 5 },
 			{ ITI_Q1_ROCKET_LAUNCHER, 5 },
-			{ ITI_Q1_THUNDERBOLT, 15 },
-
-			// weapons that Q1 replaces
-			{ ITI_RAILGUN, 15 },
-			{ ITI_BFG10K, 15 },
+			{ ITI_Q1_THUNDERBOLT, 25 },
+			{ ITI_RAILGUN, 25 }, // tbolt
+			{ ITI_BFG10K, 25 }, // tbolt
 
 			// health
 			{ ITI_MEDIUM_HEALTH, 10 },
@@ -190,7 +169,13 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 		},
 
 		{
-			{ ITI_Q1_SUPER_NAILGUN, 2 }
+			{ ITI_Q1_SHOTGUN, COUNT_FOR_SHOTS(40) },
+			{ ITI_Q1_SUPER_SHOTGUN, COUNT_FOR_SHOTS(20) },
+			{ ITI_Q1_NAILGUN, COUNT_FOR_SHOTS(200) },
+			{ ITI_Q1_SUPER_NAILGUN, COUNT_FOR_SHOTS(100) },
+			{ ITI_Q1_GRENADE_LAUNCHER, COUNT_FOR_SHOTS(25) },
+			{ ITI_Q1_ROCKET_LAUNCHER, COUNT_FOR_SHOTS(25) },
+			{ ITI_Q1_THUNDERBOLT, COUNT_FOR_SHOTS(60) }
 		},
 
 		{
@@ -229,37 +214,24 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 			{ ITI_BANDOLIER, ITI_NULL }
 		},
 
-		{ 200, 50, 50, 0, 300, 0 },
-
 		{
 			{ ITI_DOOM_FIST, 1 },
-			{ ITI_DOOM_PISTOL, 1 },
-			{ ITI_DOOM_BULLETS, 50 }
+			{ ITI_DOOM_PISTOL, 1 }
 		},
 
 		ITI_DOOM_PISTOL,
 
 		{
-			{ ITI_DOOM_SHELLS, 4 },
-			{ ITI_DOOM_SHELLS_LARGE, 20 },
-			{ ITI_DOOM_BULLETS, 10 },
-			{ ITI_DOOM_BULLETS_LARGE, 50 },
-			{ ITI_DOOM_ROCKETS_SMALL, 1 },
-			{ ITI_DOOM_ROCKETS_LARGE, 10 },
-			{ ITI_DOOM_CELLS_SMALL, 5 },
-			{ ITI_DOOM_CELLS_LARGE, 20 },
-
-			{ ITI_DOOM_SHOTGUN, 8 },
-			{ ITI_DOOM_SUPER_SHOTGUN, 8 },
-			{ ITI_DOOM_CHAINGUN, 20 },
-			{ ITI_DOOM_PISTOL, 20 },
-			{ ITI_DOOM_ROCKET_LAUNCHER, 2 },
-			{ ITI_DOOM_PLASMA_GUN, 40 },
-			{ ITI_DOOM_BFG, 40 },
-
-			// weapons that Q1 replaces
-			{ ITI_MACHINEGUN, 20 }, // is a chaingun
-			{ ITI_GRENADE_LAUNCHER, 2 }, // is a RL,
+			// weapon pickups
+			{ ITI_DOOM_SHOTGUN, 15 },
+			{ ITI_DOOM_SUPER_SHOTGUN, 5 },
+			{ ITI_DOOM_CHAINGUN, 50 },
+			{ ITI_DOOM_PISTOL, 50 },
+			{ ITI_DOOM_ROCKET_LAUNCHER, 5 },
+			{ ITI_DOOM_PLASMA_GUN, 50 },
+			{ ITI_DOOM_BFG, 1 },
+			{ ITI_MACHINEGUN, 50 }, // is a chaingun
+			{ ITI_GRENADE_LAUNCHER, 5 }, // is a RL
 
 			// health
 			{ ITI_STIMPACK, 2 },
@@ -275,8 +247,13 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 		},
 
 		{
-			{ ITI_DOOM_BFG, 40 },
-			{ ITI_DOOM_SUPER_SHOTGUN, 2 },
+			{ ITI_DOOM_SHOTGUN, COUNT_FOR_SHOTS(40) },
+			{ ITI_DOOM_SUPER_SHOTGUN, COUNT_FOR_SHOTS(20) },
+			{ ITI_DOOM_CHAINGUN, COUNT_FOR_SHOTS(150) },
+			{ ITI_DOOM_PISTOL, COUNT_FOR_SHOTS(150) },
+			{ ITI_DOOM_ROCKET_LAUNCHER, COUNT_FOR_SHOTS(25) },
+			{ ITI_DOOM_PLASMA_GUN, COUNT_FOR_SHOTS(60) },
+			{ ITI_DOOM_BFG, COUNT_FOR_SHOTS(4) }
 		},
 
 		{
@@ -305,31 +282,21 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 			{ ITI_SUPER_SHOTGUN, ITI_NULL }
 		},
 
-		{ 200, 50, 50, 50, 99, 99, 0, 200 },
-
 		{
 			{ ITI_DUKE_FOOT, 1 },
-			{ ITI_DUKE_PISTOL, 1 },
-			{ ITI_DUKE_CLIP, 48 }
+			{ ITI_DUKE_PISTOL, 1 }
 		},
 
 		ITI_DUKE_PISTOL,
 
 		{
-			{ ITI_DUKE_CLIP, 12 },
-			{ ITI_DUKE_SHELLS, 5 },
-			{ ITI_DUKE_SHELLS_LARGE, 5 },
-			{ ITI_DUKE_CANNON_AMMO, 50 },
-			{ ITI_DUKE_RPG_ROCKETS, 5 },
-			{ ITI_DUKE_DEVASTATOR_ROCKETS, 15 },
-			{ ITI_DUKE_PIPEBOMBS, 5 },
-			{ ITI_DUKE_FREEZER_AMMO, 25 },
-
-			{ ITI_ROCKETS, 10 },
-			{ ITI_SLUGS, 20 },
-			
+			{ ITI_DUKE_PISTOL, 35 },
+			{ ITI_DUKE_CANNON, 50 },
 			{ ITI_DUKE_SHOTGUN, 10 },
-			{ ITI_DUKE_PISTOL, 48 },
+			{ ITI_DUKE_RPG, 4 },
+			{ ITI_DUKE_DEVASTATOR, 15 },
+			{ ITI_DUKE_PIPEBOMBS, 5 },
+			{ ITI_DUKE_FREEZER, 25 },
 
 			// health
 			{ ITI_MEDIUM_HEALTH, 10 },
@@ -341,12 +308,16 @@ game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
 			{ 100,  100, .50, .50 },
 			{ 0, 0, 0, 0 },
 			{ 0, 0, 0, 0 }
-		  },
+		},
 
 		{
-			// this allows us to always use Pipebombs, although it will
-			// use the detonator
-			{ ITI_DUKE_PIPEBOMBS, 0 },
+			{ ITI_DUKE_PISTOL, COUNT_FOR_SHOTS(150) },
+			{ ITI_DUKE_CANNON, COUNT_FOR_SHOTS(150) },
+			{ ITI_DUKE_SHOTGUN, COUNT_FOR_SHOTS(45) },
+			{ ITI_DUKE_RPG, COUNT_FOR_SHOTS(20) },
+			{ ITI_DUKE_DEVASTATOR, COUNT_FOR_SHOTS(75) },
+			{ ITI_DUKE_PIPEBOMBS, COUNT_FOR_SHOTS(15) },
+			{ ITI_DUKE_FREEZER, COUNT_FOR_SHOTS(75) }
 		},
 
 		{
@@ -369,9 +340,8 @@ static void InitItemInfo()
 		for (itemid_e x = ITI_NULL; x < ITI_TOTAL; x++)
 		{
 			game_iteminfos[i].dynamic.item_redirects[x] = x;
-			game_iteminfos[i].dynamic.ammo_pickup_amounts[x] = -1;
 			game_iteminfos[i].dynamic.weapon_usage_counts[x] = -1;
-			game_iteminfos[i].dynamic.weapon_uses_this_ammo[x] = ITI_NULL;
+			game_iteminfos[i].dynamic.item_pickup_counts[x] = 0;
 		}
 
 		for (int x = 0; x < ITI_TOTAL; ++x)
@@ -386,22 +356,16 @@ static void InitItemInfo()
 					game_iteminfos[i].dynamic.item_redirects[from] = ITI_NULL;
 			}
 
-			if (game_iteminfos[i].ammo_pickups[x].item)
-			{
-				itemid_e from = game_iteminfos[i].ammo_pickups[x].item;
-				game_iteminfos[i].dynamic.ammo_pickup_amounts[from] = game_iteminfos[i].ammo_pickups[x].num;
-			}
-
 			if (game_iteminfos[i].ammo_usages[x].item)
 			{
 				itemid_e from = game_iteminfos[i].ammo_usages[x].item;
 				game_iteminfos[i].dynamic.weapon_usage_counts[from] = game_iteminfos[i].ammo_usages[x].ammo_usage;
 			}
 
-			if (game_iteminfos[i].weapon_ammo_bindings[x].weapon)
+			if (game_iteminfos[i].ammo_pickups[x].item)
 			{
-				itemid_e from = game_iteminfos[i].weapon_ammo_bindings[x].weapon;
-				game_iteminfos[i].dynamic.weapon_uses_this_ammo[from] = game_iteminfos[i].weapon_ammo_bindings[x].ammo;
+				itemid_e from = game_iteminfos[i].ammo_pickups[x].item;
+				game_iteminfos[i].dynamic.item_pickup_counts[from] = game_iteminfos[i].ammo_pickups[x].num;
 			}
 		}
 	}
@@ -495,25 +459,23 @@ gitem_t *ResolveItemRedirect(edict_t *ent, gitem_t *item)
 	return NULL;
 }
 
-int GetWeaponUsageCount(edict_t *ent, gitem_t *weapon)
+#include <assert.h>
+
+float GetWeaponUsageCount(edict_t *ent, gitem_t *weapon)
 {
 	if (game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)] == -1)
-		return 1; // assume it uses 1 ammo
+	{
+		assert(false);
+		return 1; // assume it uses 1 ammo. this is temporary only; all weapons need a defined value.
+	}
 
 	return game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)];
 }
 
 // Ammo routines
-int GetMaxAmmo(edict_t *ent, itemid_e ammo_type, int has_bandolier, int has_ammo_pack)
+float GetMaxAmmo(edict_t *ent, int has_bandolier, int has_ammo_pack)
 {
-	int max_ammo;
-
-	if (ammo_type < 0)
-		return 0;
-
-	itemid_e ammo_index = (itemid_e)(ammo_type - ITI_AMMO_FIRST);
-
-	max_ammo = game_iteminfos[ent->s.game].ammo_maxes[ammo_index];
+	float max_ammo = DEFAULT_MAX_AMMO;
 
 	if (has_bandolier == -1)
 		has_bandolier = ent->client->pers.inventory[ITI_BANDOLIER];
@@ -521,35 +483,27 @@ int GetMaxAmmo(edict_t *ent, itemid_e ammo_type, int has_bandolier, int has_ammo
 		has_ammo_pack = ent->client->pers.inventory[ITI_AMMO_PACK];
 
 	// Bandolier/Ammo Pack
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-		if (has_ammo_pack)
-		{
-			if (max_ammo == 200)
-				max_ammo *= 1.5;
-			else
-				max_ammo *= 2.0;
-		}
-		else if (has_bandolier)
-		{
-			if (ammo_type != ITI_GRENADES && ammo_type != ITI_ROCKETS)
-			{
-				if (max_ammo == 200)
-					max_ammo *= 1.25;
-				else
-					max_ammo *= 1.5;
-			}
-		}
-		break;
-	case GAME_DOOM:
-		if (has_ammo_pack)
-			max_ammo *= 2;
-		break;
-	}
+	if (has_ammo_pack)
+		max_ammo *= 2.0;
+	else if (has_bandolier)
+		max_ammo *= 1.5;
 
 	return max_ammo;
 }
+
+bool HasEnoughAmmoToFireShots(edict_t *ent, gitem_t *weapon, int shots)
+{
+	return ent->client->pers.ammo >= GetWeaponUsageCount(ent, weapon) * shots;
+}
+
+void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots)
+{
+	ent->client->pers.ammo -= GetWeaponUsageCount(ent, weapon) * shots;
+
+	if (ent->client->pers.ammo < 0)
+		ent->client->pers.ammo = 0;
+}
+
 
 //======================================================================
 
@@ -560,7 +514,7 @@ GetItemByIndex
 */
 gitem_t *GetItemByIndex(itemid_e index)
 {
-	if (index == 0 || index >= game.num_items)
+	if (index == 0 || index > game.num_items)
 		return NULL;
 
 	return &itemlist[index];
@@ -752,24 +706,7 @@ bool Pickup_AncientHead(edict_t *ent, edict_t *other)
 
 bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 {
-	itemid_e ammos_to_get[] = { ITI_BULLETS, ITI_SHELLS };
-
-	for (size_t i = 0; i < q_countof(ammos_to_get); ++i)
-	{
-		gitem_t *item = GetItemByIndex(ammos_to_get[i]);
-		
-		if (!item)
-			continue;
-
-		item = ResolveItemRedirect(other, item);
-
-		if (!item)
-			continue;
-
-		itemid_e index = ITEM_INDEX(item);
-		int max_ammo = GetMaxAmmo(other, index, true, CHECK_INVENTORY);
-		other->client->pers.inventory[index] = min(max_ammo, other->client->pers.inventory[index] + game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index]);
-	}
+	other->client->pers.ammo = min(GetMaxAmmo(other, true, CHECK_INVENTORY), other->client->pers.ammo + (DEFAULT_MAX_AMMO / 4));
 
 	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
 		SetRespawn(ent, ent->item->respawn_time);
@@ -781,30 +718,7 @@ bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 
 bool Pickup_Pack(edict_t *ent, edict_t *other)
 {
-	itemid_e ammos_to_get[] = { ITI_BULLETS, ITI_SHELLS, ITI_CELLS, ITI_ROCKETS, ITI_GRENADES, ITI_SLUGS };
-
-	if (ent->s.game != GAME_Q2)
-		ammos_to_get[4] = ammos_to_get[5] = ITI_NULL;
-
-	for (size_t i = 0; i < q_countof(ammos_to_get); ++i)
-	{
-		if (!ammos_to_get[i])
-			continue;
-
-		gitem_t *item = GetItemByIndex(ammos_to_get[i]);
-
-		if (!item)
-			continue;
-
-		item = ResolveItemRedirect(other, item);
-
-		if (!item)
-			continue;
-
-		itemid_e index = ITEM_INDEX(item);
-		int max_ammo = GetMaxAmmo(other, index, CHECK_INVENTORY, true);
-		other->client->pers.inventory[index] = min(max_ammo, other->client->pers.inventory[index] + game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index]);
-	}
+	other->client->pers.ammo = min(GetMaxAmmo(other, CHECK_INVENTORY, true), other->client->pers.ammo + (DEFAULT_MAX_AMMO / 2));
 
 	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
 		SetRespawn(ent, ent->item->respawn_time);
@@ -931,27 +845,28 @@ bool Pickup_Key(edict_t *ent, edict_t *other)
 
 bool ShouldSwapToPotentiallyBetterWeapon(edict_t *ent, gitem_t *new_item, bool is_new);
 
-bool Add_Ammo(edict_t *ent, itemid_e index, int count, bool pickup)
+bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup)
 {
 	int         max_ammo;
-	gitem_t		*item = GetItemByIndex(index);
 
 	if (!ent->client)
 		return false;
 
-	max_ammo = GetMaxAmmo(ent, index, CHECK_INVENTORY, CHECK_INVENTORY);
+	max_ammo = GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY);
 
-	if (!max_ammo || ent->client->pers.inventory[index] == max_ammo)
+	if (!max_ammo || ent->client->pers.ammo >= max_ammo)
 		return false;
 
-	if (pickup && (item->flags & IT_WEAPON))
+	if (pickup)
 	{
+		gitem_t		*item = GetItemByIndex(index);
+
 		// only affects Q2 and Duke realistically
-		if (ShouldSwapToPotentiallyBetterWeapon(ent, item, true))
+		if ((item->flags & IT_WEAPON) && ShouldSwapToPotentiallyBetterWeapon(ent, item, true))
 			ent->client->gunstates[GUN_MAIN].newweapon = item;
 	}
 
-	ent->client->pers.inventory[index] = min(max_ammo, ent->client->pers.inventory[index] + count);
+	ent->client->pers.ammo = min(max_ammo, ent->client->pers.ammo + count);
 
 	return true;
 }
@@ -959,20 +874,20 @@ bool Add_Ammo(edict_t *ent, itemid_e index, int count, bool pickup)
 bool do_propagate = true;
 bool Pickup_Ammo(edict_t *ent, edict_t *other)
 {
-	int         oldcount;
-	int         count;
+	float       count;
 	bool        weapon;
 	gitem_t		*item = ent->item;
 
 	weapon = !!(item->flags & IT_WEAPON);
 
 	if ((weapon) && ((int)dmflags->value & DF_INFINITE_AMMO))
-		count = 1000;
+		count = DEFAULT_MAX_AMMO * 100;
 	else if (ent->count)
 		count = ent->count;
 	else
 	{
-		int real_num = game_iteminfos[other->s.game].dynamic.ammo_pickup_amounts[ITEM_INDEX(ent->real_item)];
+		// TODO
+		float real_num = 20;//game_iteminfos[other->s.game].dynamic.ammo_pickup_amounts[ITEM_INDEX(ent->real_item)];
 
 		if (real_num != -1)
 			count = real_num;
@@ -983,9 +898,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 		}
 	}
 
-	oldcount = other->client->pers.inventory[ITEM_INDEX(item)];
-
-	if (!Add_Ammo(other, GetIndexByItem(item), count, true) && !invasion->value)
+	if (!Add_Ammo(other, count, GetIndexByItem(item), true) && !invasion->value)
 		return false;
 
 	if (!(ent->spawnflags & DROPPED_PLAYER_ITEM))
@@ -1017,7 +930,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 
 void Drop_Ammo(edict_t *ent, gitem_t *item)
 {
-	edict_t *dropped;
+	/*edict_t *dropped;
 	int     index;
 
 	index = ITEM_INDEX(item);
@@ -1037,7 +950,7 @@ void Drop_Ammo(edict_t *ent, gitem_t *item)
 		!ent->client->pers.inventory[index])
 		AttemptBetterWeaponSwap(ent);
 
-	ValidateSelectedItem(ent);
+	ValidateSelectedItem(ent);*/
 }
 
 
@@ -1090,7 +1003,7 @@ bool Pickup_Health(edict_t *ent, edict_t *other)
 	}
 	else
 	{
-		other->health += (ent->count) ? ent->count : game_iteminfos[other->s.game].dynamic.ammo_pickup_amounts[GetIndexByItem(ent->item)];
+		other->health += (ent->count) ? ent->count : (int) game_iteminfos[other->s.game].dynamic.item_pickup_counts[GetIndexByItem(ent->item)];
 
 		if (!(flags & HEALTH_IGNORE_MAX))
 		{

@@ -1,10 +1,13 @@
-﻿using System;
+﻿using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace asset_compiler
+namespace asset_transpiler
 {
 	enum WADFileType : sbyte
 	{
@@ -433,7 +436,7 @@ namespace asset_compiler
 
 						var framedir = pic.Name.Substring(4);
 
-						int frame = (int)(framedir[0] - 'A');
+						int frame = framedir[0] - 'A';
 						int dir = int.Parse(framedir[1].ToString());
 
 						num_frames = Math.Max(num_frames, frame + 1);
@@ -461,7 +464,7 @@ namespace asset_compiler
 
 							if (framedir.Length == 4)
 							{
-								frame = (int)(framedir[2] - 'A');
+								frame = framedir[2] - 'A';
 								dir = int.Parse(framedir[3].ToString());
 
 								num_frames = Math.Max(num_frames, frame + 1);
@@ -686,17 +689,18 @@ namespace asset_compiler
 					// Test PNGs
 					string outpng = "textures/doom/" + name + ".png";
 
-					/*using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(64, 64))
+					using (var bmp = new Image<Rgba32>(64, 64))
 					{
 						for (var y = 0; y < 64; ++y)
 							for (var x = 0; x < 64; ++x)
 							{
 								var c = flat.Value[(y * 64) + x];
-								bmp.SetPixel(x, y, _doomPalette[c]);
+								bmp[x, y] = Globals.GetMappedColor(PaletteID.Doom, c);
 							}
 
-						bmp.Save(outpng);
-					}*/
+						using (var stream = Globals.OpenFileStream(outpng))
+							bmp.SaveAsPng(stream);
+					}
 
 					// Write WALs
 					string walname = name, next_name;
@@ -716,58 +720,42 @@ namespace asset_compiler
 					bw.Write(64);
 					bw.Write(64);
 
-					bw.Write((int)headerwidth);
-					bw.Write((int)(headerwidth + (64 * 64)));
-					bw.Write((int)(headerwidth + (64 * 64) + (64 / 2 * 64 / 2)));
-					bw.Write((int)(headerwidth + (64 * 64) + (64 / 2 * 64 / 2) + (64 / 4 * 64 / 4)));
+					bw.Write(headerwidth);
+					bw.Write(headerwidth + (64 * 64));
+					bw.Write(headerwidth + (64 * 64) + (64 / 2 * 64 / 2));
+					bw.Write(headerwidth + (64 * 64) + (64 / 2 * 64 / 2) + (64 / 4 * 64 / 4));
 
 					for (var k = 0; k < 32; ++k)
 						bw.Write((byte)(k < next_name.Length ? next_name[k] : 0));
 
-					bw.Write(Quake2.SURF_DOOM);
+					bw.Write(0);
 					bw.Write(0);
 					bw.Write(0);
 
 					var frame = flat.Value;
 
 					for (var d = 0; d < frame.Length; ++d)
-#if CONVERT_TEXTURES
-						bw.Write(GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[d]));
-#else
-						bw.Write(frame[d]);
-#endif
+						bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[d]));
 
 					for (var y = 0; y < 64; y += 2)
 						for (var x = 0; x < 64; x += 2)
 						{
 							var i = (y * 64) + x;
-#if CONVERT_TEXTURES
-							bw.Write(GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-#else
-							bw.Write(frame[i]);
-#endif
+							bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
 						}
 
 					for (var y = 0; y < 64; y += 4)
 						for (var x = 0; x < 64; x += 4)
 						{
 							var i = (y * 64) + x;
-#if CONVERT_TEXTURES
-							bw.Write(GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-#else
-							bw.Write(frame[i]);
-#endif
+							bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
 						}
 
 					for (var y = 0; y < 64; y += 8)
 						for (var x = 0; x < 64; x += 8)
 						{
 							var i = (y * 64) + x;
-#if CONVERT_TEXTURES
-							bw.Write(GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-#else
-							bw.Write(frame[i]);
-#endif
+							bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
 						}
 
 					bw.Close();
@@ -788,7 +776,7 @@ namespace asset_compiler
 			{
 				var patchData = texture.Patches[i];
 				var patch = mapPatches[mapPatchNames[patchData.Patch]];
-
+				
 				ByteBuffer.BoxCopy(patch.Pixels, 0, 0, patch.Width, patch.Height, pixels, patchData.OriginX, patchData.OriginY, texture.Width, texture.Height, patch.Width, patch.Height, true);
 			}
 
@@ -802,78 +790,31 @@ namespace asset_compiler
 			if (Globals.FileExists(outwal))
 				return;
 
-			// Test PNGs
-			string outpng = "textures/doom/" + name + ".png";
-
-			/*using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(texture.Width, texture.Height))
+			using (var bmp = new Image<Rgba32>(texture.Width, texture.Height))
 			{
 				for (var y = 0; y < texture.Height; ++y)
 					for (var x = 0; x < texture.Width; ++x)
 					{
 						var c = pixels[(y * texture.Width) + x];
-						bmp.SetPixel(x, y, _doomPalette[c]);
+						bmp[x, y] = Globals.GetMappedColor(PaletteID.Doom, c);
 					}
 
-				bmp.Save(outpng);
-			}*/
+				// Write PNG
+				string outpng = "textures/doom/" + name + ".png";
 
-			// Write WALs
-			string walname = name, next_name;
+				using (var stream = Globals.OpenFileStream(outpng))
+					bmp.SaveAsPng(stream);
 
-			if (!animated.TryGetValue(texture.Name, out next_name))
-				next_name = "";
+				// Write WAL
+				string walname = name, next_name;
 
-			outwal = "textures/doom/" + walname + ".wal";
+				if (!animated.TryGetValue(texture.Name, out next_name))
+					next_name = "";
 
-			int headerwidth = 32 + 4 + 4 + 16 + 32 + 4 + 4 + 4;
-
-			BinaryWriter bw = new BinaryWriter(Globals.OpenFileStream(outwal));
-
-			for (var k = 0; k < 32; ++k)
-				bw.Write((byte)(k < walname.Length ? walname[k] : 0));
-
-			bw.Write((int)texture.Width);
-			bw.Write((int)texture.Height);
-
-			bw.Write((int)headerwidth);
-			bw.Write((int)(headerwidth + (texture.Width * texture.Height)));
-			bw.Write((int)(headerwidth + (texture.Width * texture.Height) + (texture.Width / 2 * texture.Height / 2)));
-			bw.Write((int)(headerwidth + (texture.Width * texture.Height) + (texture.Width / 2 * texture.Height / 2) + (texture.Width / 4 * texture.Height / 4)));
-
-			for (var k = 0; k < 32; ++k)
-				bw.Write((byte)(k < next_name.Length ? next_name[k] : 0));
-
-			bw.Write(0);
-			bw.Write(0);
-			bw.Write(0);
-
-			var frame = pixels;
-
-			for (var d = 0; d < frame.Length; ++d)
-				bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[d]));
-
-			for (var y = 0; y < texture.Height; y += 2)
-				for (var x = 0; x < texture.Width; x += 2)
-				{
-					var i = (y * texture.Width) + x;
-					bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-				}
-
-			for (var y = 0; y < texture.Height; y += 4)
-				for (var x = 0; x < texture.Width; x += 4)
-				{
-					var i = (y * texture.Width) + x;
-					bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-				}
-
-			for (var y = 0; y < texture.Height; y += 8)
-				for (var x = 0; x < texture.Width; x += 8)
-				{
-					var i = (y * texture.Width) + x;
-					bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-				}
-
-			bw.Close();
+				outwal = "textures/doom/" + walname + ".wal";
+			
+				Globals.SaveWal(outwal, walname, next_name, 0, 0, pixels, PaletteID.Doom, texture.Width, texture.Height);
+			}
 		}
 
 		static void DoomLumpMarkers(WAD wad, ref int lumpPos, string prefix, Action<WADFile> callback)

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace asset_compiler
+﻿namespace asset_transpiler
 {
 	class Quake2
 	{
@@ -54,8 +49,6 @@ namespace asset_compiler
 		public const int SURF_NODRAW = 0x80; // don't bother referencing the texture
 
 		public const int SURF_ALPHATEST = 0x02000000; // used by kmquake2
-		public const int SURF_Q1 = 0x04000000;
-		public const int SURF_DOOM = 0x08000000;
 
 	}
 }

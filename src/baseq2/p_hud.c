@@ -531,13 +531,14 @@ void G_SetStats(edict_t *ent)
     //
     // ammo
     //
-    if (!ent->client->gunstates[GUN_MAIN].ammo_index /* || !ent->client->pers.inventory[ent->client->ammo_index] */) {
+    if (game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) {
         ent->client->ps.stats[STAT_AMMO_ICON] = 0;
         ent->client->ps.stats[STAT_AMMO] = 0;
     } else {
-        item = &itemlist[ent->client->gunstates[GUN_MAIN].ammo_index];
-        ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
-        ent->client->ps.stats[STAT_AMMO] = ent->client->pers.inventory[ent->client->gunstates[GUN_MAIN].ammo_index];
+        //item = &itemlist[ent->client->gunstates[GUN_MAIN].ammo_index];
+        //ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
+		ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex("a_shells");
+        ent->client->ps.stats[STAT_AMMO] = (int) floorf(PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon));
     }
 
     //
@@ -659,10 +660,10 @@ void G_SetStats(edict_t *ent)
 	// Q1 stuff
 	if (ent->s.game == GAME_Q1)
 	{
-		int shells = ent->client->pers.inventory[ITI_SHELLS];
-		int nails = ent->client->pers.inventory[ITI_BULLETS];
-		int rockets = ent->client->pers.inventory[ITI_ROCKETS];
-		cells = ent->client->pers.inventory[ITI_CELLS];
+		int shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_SHOTGUN));
+		int nails = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_NAILGUN));
+		int rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_ROCKET_LAUNCHER));
+		cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_THUNDERBOLT));
 
 		ent->client->ps.stats[STAT_Q1_AMMO] = shells | (nails << 8) | (rockets << 16) | (cells << 24);
 
@@ -707,7 +708,7 @@ void G_SetStats(edict_t *ent)
 	}
 
 	// Doom stuff
-	else  if (ent->s.game == GAME_DOOM)
+	else if (ent->s.game == GAME_DOOM)
 	{
 		int shells = ent->client->pers.inventory[ITI_SHELLS];
 		int bullets = ent->client->pers.inventory[ITI_BULLETS];
@@ -717,8 +718,8 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats[STAT_DOOM_AMMO1] = bullets | (shells << 16);
 		ent->client->ps.stats[STAT_DOOM_AMMO2] = rockets | (cells << 16);
 
-		ent->client->ps.stats[STAT_DOOM_MAXAMMO1] = GetMaxAmmo(ent, ITI_BULLETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_SHELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
-		ent->client->ps.stats[STAT_DOOM_MAXAMMO2] = GetMaxAmmo(ent, ITI_ROCKETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_CELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
+		ent->client->ps.stats[STAT_DOOM_MAXAMMO1] = 0;//GetMaxAmmo(ent, ITI_BULLETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_SHELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
+		ent->client->ps.stats[STAT_DOOM_MAXAMMO2] = 0;//GetMaxAmmo(ent, ITI_ROCKETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_CELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
 
 		ent->client->ps.stats[STAT_DOOM_WEAPONS] = 0;
 
@@ -739,7 +740,7 @@ void G_SetStats(edict_t *ent)
 	}
 
 	// Duke stuff
-	else  if (ent->s.game == GAME_DUKE)
+	else if (ent->s.game == GAME_DUKE)
 	{
 		ent->client->ps.stats[STAT_DUKE_WEAPONS] = 0;
 

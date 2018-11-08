@@ -96,19 +96,14 @@ bool AI_CanUseArmor (gitem_t *item, edict_t *other)
 //==========================================
 bool AI_CanPick_Ammo (edict_t *ent, gitem_t *item)
 {
-	itemid_e	index;
-	int			max;
+	float		max;
 
 	if (!ent->client)
 		return false;
 
-	item = ResolveItemRedirect(ent, item);
+	max = GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY);
 
-	index = ITEM_INDEX(item);
-
-	max = GetMaxAmmo(ent, index, CHECK_INVENTORY, CHECK_INVENTORY);
-
-	if (ent->client->pers.inventory[index] >= max)
+	if (ent->client->pers.ammo >= max)
 		return false;
 
 	return true;

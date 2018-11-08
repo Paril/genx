@@ -51,8 +51,8 @@ void Weapon_Q1(edict_t *ent, int num_frames, void(*fire) (edict_t *ent, gunindex
 			if ((level.time - ent->client->respawn_time) > 500 &&
 				ent->attack_finished_time < ent->client->player_time)
 			{
-				if ((!ent->client->gunstates[gun].ammo_index) || (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] >= GetWeaponUsageCount(ent, ent->client->pers.weapon)))
-				{
+				if ((game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
+								(ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon))) {
 					fire(ent, gun);
 
 					ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
@@ -340,7 +340,7 @@ void weapon_q1_gl_fire(edict_t *ent, gunindex_e gun)
 {
 	if (ent->client->ps.guns[gun].frame != 0)
 	{
-		if (ent->client->ps.guns[gun].frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] && !ent->client->gunstates[gun].newweapon)
+		if (ent->client->ps.guns[gun].frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
 			ent->client->ps.guns[gun].frame = 0;
 		else
 		{
@@ -372,7 +372,7 @@ void weapon_q1_gl_fire(edict_t *ent, gunindex_e gun)
 	ent->client->ps.guns[gun].frame++;
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	Weapon_Q1_Anim_Rock(ent);
 	ent->client->gunstates[gun].kick_angles[0] = -1;
@@ -485,7 +485,7 @@ void weapon_q1_rl_fire(edict_t *ent, gunindex_e gun)
 	ent->client->ps.guns[gun].frame++;
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	ent->attack_finished_time = ent->client->player_time + 700;
 	Weapon_Q1_Anim_Rock(ent);
@@ -654,8 +654,8 @@ void W_FireLightning(edict_t *ent, gunindex_e gun, int damage, int blowup_damage
 		else
 			mod = MakeGenericMeansOfDeath(ent, MD_NONE, DT_INDIRECT);
 
-		int cells = ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index];
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] = 0;
+		float cells = PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon);
+		ent->client->pers.ammo = 0;
 		T_RadiusDamage(ent, ent, blowup_damage * cells, world, DAMAGE_Q1, blowup_damage * cells, mod);
 		return;
 	}
@@ -694,7 +694,7 @@ void W_FireLightning(edict_t *ent, gunindex_e gun, int damage, int blowup_damage
 
 void weapon_q1_lightning_fire(edict_t *ent, gunindex_e gun)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 	{
 		ent->client->ps.guns[gun].frame = 5;
 		return;
@@ -723,8 +723,8 @@ void weapon_q1_lightning_fire(edict_t *ent, gunindex_e gun)
 	W_FireLightning(ent, gun, damage, blowup_damage);
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
-	if (!((int)dmflags->value & DF_INFINITE_AMMO) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+	if (!((int)dmflags->value & DF_INFINITE_AMMO) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	if (ent->client->ps.guns[gun].frame == 3)
 		ent->client->ps.guns[gun].frame = 1;
@@ -895,7 +895,7 @@ void W_FireSpikes(edict_t *ent, int damage, float ox)
 
 void weapon_q1_nailgun_fire(edict_t *ent, gunindex_e gun)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 	{
 		ent->client->ps.guns[gun].frame = 9;
 		return;
@@ -919,7 +919,7 @@ void weapon_q1_nailgun_fire(edict_t *ent, gunindex_e gun)
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	if (ent->client->ps.guns[gun].frame == 8)
 		ent->client->ps.guns[gun].frame = 1;
@@ -934,7 +934,7 @@ void weapon_q1_nailgun_fire(edict_t *ent, gunindex_e gun)
 
 void weapon_q1_snailgun_fire(edict_t *ent, gunindex_e gun)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 	{
 		ent->client->ps.guns[gun].frame = 9;
 		return;
@@ -949,10 +949,10 @@ void weapon_q1_snailgun_fire(edict_t *ent, gunindex_e gun)
 		damage *= 4;
 	}
 
-	if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] > 2)
+	//if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] > 2)
 		W_FireSuperSpikes(ent, damage);
-	else
-		W_FireSpikes(ent, damage, (ent->client->ps.guns[gun].frame % 2) == 0 ? 4 : -4);
+	//else
+	//	W_FireSpikes(ent, damage, (ent->client->ps.guns[gun].frame % 2) == 0 ? 4 : -4);
 
 	// send muzzle flash
 	gi.WriteByte(svc_muzzleflash);
@@ -962,7 +962,7 @@ void weapon_q1_snailgun_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] = max(0, ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] - 2);
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	if (ent->client->ps.guns[gun].frame == 8)
 		ent->client->ps.guns[gun].frame = 1;
@@ -978,7 +978,7 @@ void weapon_q1_shotgun_fire(edict_t *ent, gunindex_e gun)
 {
 	if (ent->client->ps.guns[gun].frame != 0)
 	{
-		if (ent->client->ps.guns[gun].frame >= 5 && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] && !ent->client->gunstates[gun].newweapon)
+		if (ent->client->ps.guns[gun].frame >= 5 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
 			ent->client->ps.guns[gun].frame = 0;
 		else
 		{
@@ -1010,7 +1010,7 @@ void weapon_q1_shotgun_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	Weapon_Q1_Anim_Shot(ent);
 	ent->client->gunstates[gun].kick_time = level.time + 100;
@@ -1026,11 +1026,11 @@ void weapon_q1_sshotgun_fire(edict_t *ent, gunindex_e gun)
 		return;
 	}
 
-	if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] == 1)
+	/*if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] == 1)
 	{
 		weapon_q1_shotgun_fire(ent, gun);
 		return;
-	}
+	}*/
 
 	vec3_t      forward, right, up;
 	int         damage = 4;
@@ -1055,7 +1055,7 @@ void weapon_q1_sshotgun_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 2;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	Weapon_Q1_Anim_Shot(ent);
 	ent->client->gunstates[gun].kick_angles[0] = -3;

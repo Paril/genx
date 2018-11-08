@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace asset_compiler
+﻿namespace asset_transpiler
 {
 
 	static class ByteBuffer

@@ -829,19 +829,16 @@ void Touch_Backpack(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *s
 	if (other->health < 1)
 		return;     // dead people can't pickup
 
-	int cur, max;
+	int max;
 
-#define TRY_AMMO(index, where) \
-	if (where && (cur = other->client->pers.inventory[index]) < (max = GetMaxAmmo(other, index, CHECK_INVENTORY, CHECK_INVENTORY))) \
+#define TRY_AMMO(where) \
+	if (where && other->client->pers.ammo < (max = GetMaxAmmo(other, CHECK_INVENTORY, CHECK_INVENTORY))) \
 	{ \
-		other->client->pers.inventory[index] = min(max, cur + where); \
+		other->client->pers.ammo = min(max, other->client->pers.ammo + where); \
 		taken = true; \
 	}
 
-	TRY_AMMO(ITI_SHELLS, ent->pack_shells);
-	TRY_AMMO(ITI_BULLETS, ent->pack_nails);
-	TRY_AMMO(ITI_ROCKETS, ent->pack_rockets);
-	TRY_AMMO(ITI_CELLS, ent->pack_cells);
+	TRY_AMMO(ent->pack_ammo);
 
 #define TRY_WEAPON(index, flag) \
 	if ((ent->pack_weapons & flag) && !other->client->pers.inventory[index]) \
@@ -913,10 +910,7 @@ edict_t *Drop_Backpack(edict_t *ent)
 
 	if (ent->client)
 	{
-		dropped->pack_shells = ent->client->pers.inventory[ITI_SHELLS];
-		dropped->pack_nails = ent->client->pers.inventory[ITI_BULLETS];
-		dropped->pack_rockets = ent->client->pers.inventory[ITI_ROCKETS];
-		dropped->pack_cells = ent->client->pers.inventory[ITI_CELLS];
+		dropped->pack_ammo = ent->client->pers.ammo;
 
 		if (ent->client->pers.inventory[ITI_Q1_SUPER_SHOTGUN])
 			dropped->pack_weapons |= IT_Q1_SSHOTGUN;
@@ -973,13 +967,13 @@ void TossClientWeapon(edict_t *self)
 	{
 	case GAME_Q2:
 		item = self->client->pers.weapon;
-		if (!self->client->pers.inventory[self->client->gunstates[GUN_MAIN].ammo_index])
+		if (game_iteminfos[self->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(item)] <= 0)
 			item = NULL;
 		if (item && !item->world_model)
 			item = NULL;
 
 		if (!((int)(dmflags->value) & DF_QUAD_DROP))
-        quad = false;
+			quad = false;
 		else
 			quad = (self->client->quad_time > (level.time + 1000));
 
@@ -1285,6 +1279,16 @@ static void InitClientItems(edict_t *ent)
 			ent->client->pers.weapon = GetItemByIndex(itemIndex);
 		}
 	}
+
+	for (int i = ITI_FIRST; i < ITI_TOTAL; ++i)
+	{
+		gitem_t *item = GetItemByIndex(i);
+
+		if ((item->flags & (IT_AMMO | IT_WEAPON)) == (IT_AMMO | IT_WEAPON))
+			ent->client->pers.inventory[i] = 1;
+	}
+
+	ent->client->pers.ammo = DEFAULT_MAX_AMMO / 4;
 }
 
 void InitClientResp(gclient_t *client)

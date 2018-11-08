@@ -266,7 +266,7 @@ void enf_drop(edict_t *self)
 {
 	self->solid = SOLID_NOT;
 	edict_t *backpack = Drop_Backpack(self);
-	backpack->pack_cells = 5;
+	//backpack->pack_cells = 5;
 	gi.linkentity(self);
 }
 

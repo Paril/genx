@@ -194,10 +194,10 @@ void weapon_duke_pipebomb_fire(edict_t *ent, gunindex_e gun, bool first)
 			return;
 		}
 
-		if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+		if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 		{
 			if (!((int)dmflags->value & DF_INFINITE_AMMO))
-				ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+				RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 			vec3_t start, forward, right, offset;
 
@@ -230,7 +230,7 @@ void weapon_duke_detonator_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame >= 3)
 	{
-		if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+		if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 			ent->client->gunstates[gun].newweapon = ent->client->pers.weapon;
 		else
 			NoAmmoWeaponChange(ent, gun);
@@ -317,12 +317,12 @@ void weapon_duke_devastate_fire(edict_t *ent, gunindex_e gun, bool first)
 {
 	ent->client->ps.guns[gun].frame++;
 
-	if (ent->client->ps.guns[gun].frame == 3 && (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] < 2 || ent->client->gunstates[gun].newweapon))
+	if (ent->client->ps.guns[gun].frame == 3 && (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon))
 	{
 		ent->client->ps.guns[gun].frame = 6;
 		return;
 	}
-	else if (ent->client->ps.guns[gun].frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] >= 2 && !ent->client->gunstates[gun].newweapon)
+	else if (ent->client->ps.guns[gun].frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
 		ent->client->ps.guns[gun].frame = 1;
 
 	if (ent->client->ps.guns[gun].frame == 1 || ent->client->ps.guns[gun].frame == 3)
@@ -339,7 +339,7 @@ void weapon_duke_devastate_fire(edict_t *ent, gunindex_e gun, bool first)
 
 		for (int i = 0; i < 2; ++i)
 		{
-			if (!ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+			if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 				break;
 
 			VectorCopy(ent->client->v_angle, angles);
@@ -353,7 +353,7 @@ void weapon_duke_devastate_fire(edict_t *ent, gunindex_e gun, bool first)
 			fire_duke_rocket(ent, start, forward, 38, 50, 850 - i * 50, true);
 
 			if (!((int)dmflags->value & DF_INFINITE_AMMO))
-				ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+				RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 		}
 	}
 }
@@ -372,7 +372,7 @@ void weapon_duke_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 
@@ -622,7 +622,7 @@ void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
 
 void weapon_duke_freezer_fire(edict_t *ent, gunindex_e gun, bool first)
 {
-	if (!ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] || ent->client->gunstates[gun].newweapon || !((ent->client->buttons | ent->client->latched_buttons) & BUTTON_ATTACK))
+	if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon || !((ent->client->buttons | ent->client->latched_buttons) & BUTTON_ATTACK))
 	{
 		ent->client->ps.guns[gun].frame = 5;
 		return;
@@ -649,7 +649,7 @@ void weapon_duke_freezer_fire(edict_t *ent, gunindex_e gun, bool first)
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
@@ -657,7 +657,7 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 	if (ent->client->ps.guns[gun].frame == 0 ||
 		ent->client->ps.guns[gun].frame == 2)
 	{
-		if ((ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] && !ent->client->gunstates[gun].newweapon && ent->client->pers.pistol_clip)
+		if ((ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon && ent->client->pers.pistol_clip)
 			ent->client->ps.guns[gun].frame = 1;
 		else
 			ent->client->ps.guns[gun].frame = 21;
@@ -686,7 +686,7 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 
@@ -702,7 +702,7 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 
 void weapon_duke_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || !ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] || ent->client->gunstates[gun].newweapon)
+	if (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon)
 	{
 		ent->client->ps.guns[gun].frame = 5;
 		return;
@@ -716,7 +716,7 @@ void weapon_duke_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	vec3_t start, forward, right, offset;
 
@@ -756,7 +756,7 @@ void weapon_duke_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 

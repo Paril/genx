@@ -146,7 +146,7 @@ extern bool do_propagate;
 
 bool ShouldSwapToPotentiallyBetterWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 {
-	bool weapon_uses_ammo = !!game_iteminfos[ent->s.game].dynamic.weapon_uses_this_ammo[GetIndexByItem(ent->client->pers.weapon)];
+	bool weapon_uses_ammo = game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[GetIndexByItem(ent->client->pers.weapon)] > 0;
 	bool swap_back_to_pipebombs;
 
 	switch (ent->s.game)
@@ -187,7 +187,6 @@ bool ShouldSwapToPotentiallyBetterWeapon(edict_t *ent, gitem_t *new_item, bool i
 bool Pickup_Weapon(edict_t *ent, edict_t *other)
 {
 	int         index;
-	gitem_t     *ammo;
 	bool		is_new;
 
 	index = ITEM_INDEX(ent->item);
@@ -206,36 +205,20 @@ bool Pickup_Weapon(edict_t *ent, edict_t *other)
 	if (!(ent->spawnflags & DROPPED_ITEM) || ent->count)
 	{
 		// give them some ammo with it
-		itemid_e ammo_index = game_iteminfos[other->s.game].dynamic.weapon_uses_this_ammo[index];
-
-		if (ammo_index != ITI_NULL)
+		if (game_iteminfos[other->s.game].dynamic.item_pickup_counts[index] > 0 &&
+			game_iteminfos[other->s.game].dynamic.weapon_usage_counts[index] > 0)
 		{
-			ammo = GetItemByIndex(ammo_index);
-
-			int real_num;
+			float real_num;
 
 			if (ent->count)
-				real_num = ent->count;
+				real_num = ent->count; // TODO: float (use pack_ammo maybe?)
 			else
-				// the count we get for ammo is from the real item, not the item we're getting.
-				// this is so "Bullets (Large)" gives the right amount for Q1, for instance,
-				// while not affecting Q2
-				// ...
-				real_num = game_iteminfos[other->s.game].dynamic.ammo_pickup_amounts[GetIndexByItem(ent->real_item)];
-
-			ammo = ResolveItemRedirect(other, ammo);
-			ammo_index = GetIndexByItem(ammo);
+				real_num = game_iteminfos[other->s.game].dynamic.item_pickup_counts[index] * game_iteminfos[other->s.game].dynamic.weapon_usage_counts[index];
 
 			if ((int)dmflags->value & DF_INFINITE_AMMO)
-				Add_Ammo(other, ammo_index, 1000, false);
+				Add_Ammo(other, 1000, index, false);
 			else
-			{
-				// ...unless it's -1
-				if (real_num != -1)
-					Add_Ammo(other, ammo_index, real_num, false);
-				else
-					Add_Ammo(other, ammo_index, game_iteminfos[other->s.game].dynamic.ammo_pickup_amounts[ammo_index], false);
-			}
+				Add_Ammo(other, real_num, index, false);
 		}
 
 		if (!(ent->spawnflags & (DROPPED_ITEM|DROPPED_PLAYER_ITEM)))
@@ -332,7 +315,7 @@ void weapon_grenade_fire(edict_t *ent, gunindex_e gun, bool held)
 	fire_grenade2(ent, start, forward, damage, speed, timer, radius, held);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	ent->client->grenade_time = level.time + 1000;
 
@@ -395,11 +378,6 @@ void ChangeWeapon(edict_t *ent, gunindex_e gun)
 			i = 0;
 		ent->s.skinnum = (ent - g_edicts - 1) | i;
 	}
-
-	if (ent->client->pers.weapon && game_iteminfos[ent->s.game].dynamic.weapon_uses_this_ammo[GetIndexByItem(ent->client->pers.weapon)])
-		ent->client->gunstates[gun].ammo_index = game_iteminfos[ent->s.game].dynamic.weapon_uses_this_ammo[GetIndexByItem(ent->client->pers.weapon)];
-	else
-		ent->client->gunstates[gun].ammo_index = 0;
 
 	if (!ent->client->pers.weapon) {
 		// dead
@@ -466,29 +444,29 @@ void ChangeWeapon(edict_t *ent, gunindex_e gun)
 	}
 }
 
-static bool HasAmmoCount(edict_t *ent, itemid_e ammo_index, itemid_e new_item_index, int count)
+/*static bool HasAmmoCount(edict_t *ent, itemid_e ammo_index, itemid_e new_item_index, int count)
 {
 	if (ent->client->pers.inventory[ammo_index] >= count)
 		return true;
 
 	if (new_item_index == ammo_index)
 	{
-		int pickup_count = game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[new_item_index];
-		return pickup_count >= count;
+		//int pickup_count = game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[new_item_index];
+		//return pickup_count >= count;
 	}
 
 	return false;
-}
+}*/
 
-#define HasAmmo(ent, ammo_index, new_item_index) HasAmmoCount(ent, ammo_index, new_item_index, 1)
+//#define HasAmmo(ent, ammo_index, new_item_index) HasAmmoCount(ent, ammo_index, new_item_index, 1)
 
 static bool HasWeapon(edict_t *ent, itemid_e weapon_index, itemid_e new_item_index)
 {
-	return ent->client->pers.inventory[weapon_index] || new_item_index == weapon_index;
+	return (ent->client->pers.inventory[weapon_index] || new_item_index == weapon_index) && HasEnoughAmmoToFire(ent, GetItemByIndex(weapon_index));
 }
 
-#define HasAmmoCountQuick(type, count) HasAmmoCount(ent, type, new_item_index, count)
-#define HasAmmoQuick(type) HasAmmo(ent, type, new_item_index)
+#define HasAmmoCountQuick(weapon, count) HasEnoughAmmoToFireShots(ent, GetItemByIndex(weapon), count)
+//#define HasAmmoQuick(type) HasAmmo(ent, type, new_item_index)
 #define HasWeaponQuick(type) HasWeapon(ent, type, new_item_index)
 
 static itemid_e dukeWeaponChoice[] = {
@@ -513,50 +491,49 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 	switch (ent->s.game)
 	{
 	case GAME_Q2:
-		if (HasAmmoQuick(ITI_SLUGS) && HasWeaponQuick(ITI_RAILGUN))
+		if (HasWeaponQuick(ITI_RAILGUN))
 			return GetItemByIndex(ITI_RAILGUN);
-		else if (HasAmmoQuick(ITI_CELLS) && HasWeaponQuick(ITI_HYPERBLASTER))
+		else if (HasWeaponQuick(ITI_HYPERBLASTER))
 			return GetItemByIndex(ITI_HYPERBLASTER);
-		else if ((HasAmmoCountQuick(ITI_BULLETS, 25) ||
-				(HasAmmoQuick(ITI_BULLETS) && !HasWeaponQuick(ITI_MACHINEGUN))) && HasWeaponQuick(ITI_CHAINGUN))
+		else if ((HasAmmoCountQuick(ITI_BULLETS, 25) ||!HasWeaponQuick(ITI_MACHINEGUN)) && HasWeaponQuick(ITI_CHAINGUN))
 			return GetItemByIndex(ITI_CHAINGUN);
-		else if (HasAmmoQuick(ITI_BULLETS) && HasWeaponQuick(ITI_MACHINEGUN))
+		else if (HasWeaponQuick(ITI_MACHINEGUN))
 			return GetItemByIndex(ITI_MACHINEGUN);
-		else if (HasAmmoCountQuick(ITI_SHELLS, 2) && HasWeaponQuick(ITI_SUPER_SHOTGUN))
+		else if (HasWeaponQuick(ITI_SUPER_SHOTGUN))
 			return GetItemByIndex(ITI_SUPER_SHOTGUN);
-		else if (HasAmmoQuick(ITI_SHELLS) && HasWeaponQuick(ITI_SHOTGUN))
+		else if (HasWeaponQuick(ITI_SHOTGUN))
 			return GetItemByIndex(ITI_SHOTGUN);
 		break;
 
 	case GAME_Q1:
-		if (ent->waterlevel <= 1 && HasAmmoQuick(ITI_CELLS) && HasWeaponQuick(ITI_Q1_THUNDERBOLT))
+		if (ent->waterlevel <= 1 && HasWeaponQuick(ITI_Q1_THUNDERBOLT))
 			return GetItemByIndex(ITI_Q1_THUNDERBOLT);
-		else if (HasAmmoCountQuick(ITI_BULLETS, 2) && HasWeaponQuick(ITI_Q1_SUPER_NAILGUN))
+		else if (HasWeaponQuick(ITI_Q1_SUPER_NAILGUN))
 			return GetItemByIndex(ITI_Q1_SUPER_NAILGUN);
-		else if (HasAmmoCountQuick(ITI_SHELLS, 2) && HasWeaponQuick(ITI_Q1_SUPER_SHOTGUN))
+		else if (HasWeaponQuick(ITI_Q1_SUPER_SHOTGUN))
 			return GetItemByIndex(ITI_Q1_SUPER_SHOTGUN);
-		else if (HasAmmoQuick(ITI_BULLETS) && HasWeaponQuick(ITI_Q1_NAILGUN))
+		else if (HasWeaponQuick(ITI_Q1_NAILGUN))
 			return GetItemByIndex(ITI_Q1_NAILGUN);
-		else if (HasAmmoQuick(ITI_SHELLS) && HasWeaponQuick(ITI_Q1_SHOTGUN))
+		else if (HasWeaponQuick(ITI_Q1_SHOTGUN))
 			return GetItemByIndex(ITI_Q1_SHOTGUN);
 		break;
 
 	case GAME_DOOM:
-		if (HasWeaponQuick(ITI_DOOM_PLASMA_GUN) && HasAmmoQuick(ITI_CELLS))
+		if (HasWeaponQuick(ITI_DOOM_PLASMA_GUN))
 			return GetItemByIndex(ITI_DOOM_PLASMA_GUN);
-		else if (HasWeaponQuick(ITI_DOOM_SUPER_SHOTGUN) && HasAmmoCountQuick(ITI_SHELLS, 2))
+		else if (HasWeaponQuick(ITI_DOOM_SUPER_SHOTGUN))
 			return GetItemByIndex(ITI_DOOM_SUPER_SHOTGUN);
-		else if (HasWeaponQuick(ITI_DOOM_CHAINGUN) && HasAmmoQuick(ITI_BULLETS))
+		else if (HasWeaponQuick(ITI_DOOM_CHAINGUN))
 			return GetItemByIndex(ITI_DOOM_CHAINGUN);
-		else if (HasWeaponQuick(ITI_DOOM_SHOTGUN) && HasAmmoQuick(ITI_SHELLS))
+		else if (HasWeaponQuick(ITI_DOOM_SHOTGUN))
 			return GetItemByIndex(ITI_DOOM_SHOTGUN);
-		else if (HasWeaponQuick(ITI_DOOM_PISTOL) && HasAmmoQuick(ITI_BULLETS))
+		else if (HasWeaponQuick(ITI_DOOM_PISTOL))
 			return GetItemByIndex(ITI_DOOM_PISTOL);
 		else if (HasWeaponQuick(ITI_DOOM_CHAINSAW))
 			return GetItemByIndex(ITI_DOOM_CHAINSAW);
-		else if (HasWeaponQuick(ITI_DOOM_ROCKET_LAUNCHER) && HasAmmoQuick(ITI_ROCKETS))
+		else if (HasWeaponQuick(ITI_DOOM_ROCKET_LAUNCHER))
 			return GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER);
-		else if (HasWeaponQuick(ITI_DOOM_BFG) && HasAmmoCountQuick(ITI_CELLS, 40))
+		else if (HasWeaponQuick(ITI_DOOM_BFG))
 			return GetItemByIndex(ITI_DOOM_BFG);
 
 		break;
@@ -568,9 +545,7 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 		{
 			weap = dukeWeaponChoice[i];
 
-			itemid_e ammo = game_iteminfos[GAME_DUKE].dynamic.weapon_uses_this_ammo[weap];
-
-			if (HasWeaponQuick(weap) && (ammo == ITI_NULL || HasAmmoQuick(ammo)))
+			if (HasWeaponQuick(weap))
 				break;
 		}
 
@@ -648,28 +623,20 @@ Make the weapon ready if there is ammo
 */
 void Use_Weapon(edict_t *ent, gitem_t *item)
 {
-	itemid_e    ammo_index;
-	gitem_t     *ammo_item;
-
 	// see if we're already using it
 	// and we're not pipebombs, which Duke can always switch to
 	if (item == ent->client->pers.weapon && !(ent->s.game == GAME_DUKE && GetIndexByItem(item) == ITI_DUKE_PIPEBOMBS))
 		return;
 
-	ammo_index = game_iteminfos[ent->s.game].dynamic.weapon_uses_this_ammo[GetIndexByItem(item)];
-
-	if (ammo_index != ITI_NULL && !g_select_empty->value && !(item->flags & IT_AMMO) && game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ammo_index] != 0)
+	if (!g_select_empty->value && !(item->flags & IT_AMMO) && game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(item)] > 0)
 	{
-		ammo_item = ResolveItemRedirect(ent, GetItemByIndex(ammo_index));
-		ammo_index = ITEM_INDEX(ammo_item);
-
-		if (!ent->client->pers.inventory[ammo_index]) {
-			gi.cprintf(ent, PRINT_HIGH, "No %s for %s.\n", ammo_item->pickup_name, item->pickup_name);
+		if (!ent->client->pers.ammo) {
+			gi.cprintf(ent, PRINT_HIGH, "No ammo for %s.\n", item->pickup_name);
 			return;
 		}
 
-		if (ent->client->pers.inventory[ammo_index] < GetWeaponUsageCount(ent, item)) {
-			gi.cprintf(ent, PRINT_HIGH, "Not enough %s for %s.\n", ammo_item->pickup_name, item->pickup_name);
+		if (ent->client->pers.ammo < GetWeaponUsageCount(ent, item)) {
+			gi.cprintf(ent, PRINT_HIGH, "Not enough ammo for %s.\n", item->pickup_name);
 			return;
 		}
 	}
@@ -781,8 +748,8 @@ void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST, 
 	if (ent->client->gunstates[gun].weaponstate == WEAPON_READY) {
 		if (((ent->client->latched_buttons | ent->client->buttons) & BUTTON_ATTACK)) {
 			ent->client->latched_buttons &= ~BUTTON_ATTACK;
-			if ((!ent->client->gunstates[gun].ammo_index) ||
-				(ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] >= GetWeaponUsageCount(ent, ent->client->pers.weapon))) {
+			if ((game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
+				(ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon))) {
 				ent->client->ps.guns[gun].frame = FRAME_FIRE_FIRST;
 				ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
 
@@ -889,7 +856,7 @@ void Weapon_Grenade(edict_t *ent, gunindex_e gun)
 	if (ent->client->gunstates[gun].weaponstate == WEAPON_READY) {
 		if (((ent->client->latched_buttons | ent->client->buttons) & BUTTON_ATTACK)) {
 			ent->client->latched_buttons &= ~BUTTON_ATTACK;
-			if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]) {
+			if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon)) {
 				ent->client->ps.guns[gun].frame = 1;
 				ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
 				ent->client->grenade_time = 0;
@@ -1002,7 +969,7 @@ void weapon_grenadelauncher_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void Weapon_GrenadeLauncher(edict_t *ent, gunindex_e gun)
@@ -1071,7 +1038,7 @@ void Weapon_RocketLauncher_Fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void Weapon_RocketLauncher(edict_t *ent, gunindex_e gun)
@@ -1188,7 +1155,7 @@ void Weapon_HyperBlaster_Fire(edict_t *ent, gunindex_e gun)
 		ent->client->ps.guns[gun].frame++;
 	}
 	else {
-		if (!ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]) {
+		if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon)) {
 			if (level.time >= ent->pain_debounce_time) {
 				gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
 				ent->pain_debounce_time = level.time + 1000;
@@ -1214,7 +1181,7 @@ void Weapon_HyperBlaster_Fire(edict_t *ent, gunindex_e gun)
 			Blaster_Fire(ent, gun, offset, damage, true, effect);
 			
 			if (!((int)dmflags->value & DF_INFINITE_AMMO))
-				ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+				RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 			ent->client->anim_priority = ANIM_ATTACK;
 			if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
@@ -1228,7 +1195,7 @@ void Weapon_HyperBlaster_Fire(edict_t *ent, gunindex_e gun)
 		}
 
 		ent->client->ps.guns[gun].frame++;
-		if (ent->client->ps.guns[gun].frame == 12 && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+		if (ent->client->ps.guns[gun].frame == 12 && HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 			ent->client->ps.guns[gun].frame = 6;
 	}
 
@@ -1291,7 +1258,7 @@ void Machinegun_Fire(edict_t *ent, gunindex_e gun)
 	else
 		ent->client->ps.guns[gun].frame = 5;
 
-	if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] < 1) {
+	if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon)) {
 		ent->client->ps.guns[gun].frame = 6;
 		if (level.time >= ent->pain_debounce_time) {
 			gi.sound(ent, CHAN_VOICE, gi.soundindex("weapons/noammo.wav"), 1, ATTN_NORM, 0);
@@ -1336,7 +1303,7 @@ void Machinegun_Fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	ent->client->anim_priority = ANIM_ATTACK;
 	if (ent->client->ps.pmove.pm_flags & PMF_DUCKED) {
@@ -1369,7 +1336,7 @@ void Weapon_Machinegun(edict_t *ent, gunindex_e gun)
 		break;
 	case GAME_DUKE:
 		if (ent->client->gunstates[gun].weaponstate == WEAPON_READY && !ent->client->pers.pistol_clip &&
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] && ent->client->ps.guns[gun].frame < 3)
+			HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && ent->client->ps.guns[gun].frame < 3)
 		{
 			ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
 			ent->client->ps.guns[gun].frame = 3;
@@ -1409,7 +1376,7 @@ void Chaingun_Fire(edict_t *ent, gunindex_e gun)
 		return;
 	}
 	else if ((ent->client->ps.guns[gun].frame == 21) && (ent->client->buttons & BUTTON_ATTACK)
-		&& ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]) {
+		&& HasEnoughAmmoToFire(ent, ent->client->pers.weapon)) {
 		ent->client->ps.guns[gun].frame = 15;
 	}
 	else {
@@ -1445,8 +1412,8 @@ void Chaingun_Fire(edict_t *ent, gunindex_e gun)
 	else
 		shots = 3;
 
-	if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] < shots)
-		shots = ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index];
+	if (ent->client->pers.ammo < GetWeaponUsageCount(ent, ent->client->pers.weapon) * shots)
+		shots = floorf(ent->client->pers.ammo / GetWeaponUsageCount(ent, ent->client->pers.weapon));
 
 	if (!shots) {
 		if (level.time >= ent->pain_debounce_time) {
@@ -1488,7 +1455,7 @@ void Chaingun_Fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= shots;
+		RemoveAmmoFromFiringShots(ent, ent->client->pers.weapon, shots);
 }
 
 void Weapon_Chaingun(edict_t *ent, gunindex_e gun)
@@ -1566,7 +1533,7 @@ void weapon_shotgun_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void Weapon_Shotgun(edict_t *ent, gunindex_e gun)
@@ -1635,7 +1602,7 @@ void weapon_supershotgun_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 2;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void Weapon_SuperShotgun(edict_t *ent, gunindex_e gun)
@@ -1712,7 +1679,7 @@ void weapon_railgun_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void Weapon_Railgun(edict_t *ent, gunindex_e gun)
@@ -1790,7 +1757,7 @@ void weapon_bfg_fire(edict_t *ent, gunindex_e gun)
 
 	// cells can go down during windup (from power armor hits), so
 	// check again and abort firing if we don't have enough now
-	if (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] < 50) {
+	if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon)) {
 		ent->client->ps.guns[gun].frame++;
 		return;
 	}
@@ -1817,7 +1784,7 @@ void weapon_bfg_fire(edict_t *ent, gunindex_e gun)
 	PlayerNoise(ent, start, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 50;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 void Weapon_BFG(edict_t *ent, gunindex_e gun)

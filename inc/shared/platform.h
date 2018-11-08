@@ -130,6 +130,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifdef _WIN32
 #define q_exported          __attribute__((dllexport))
+#undef q_likely
+#undef q_unlikely
+#define q_unlikely(x) x
+#define q_likely(x) x
 #else
 #define q_exported          __attribute__((visibility("default")))
 #endif

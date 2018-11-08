@@ -1,12 +1,15 @@
-﻿using System;
+﻿using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using SixLabors.ImageSharp.Processing;
+using SixLabors.ImageSharp.Processing.Processors.Transforms;
 
-namespace asset_compiler
+namespace asset_transpiler
 {
 	class GRPFile
 	{
@@ -334,11 +337,11 @@ namespace asset_compiler
 						artFiles.Read(grp, file);
 				}
 
-				// test PNGs, woo
+				// write PNGs
 
 				foreach (var art in artFiles.Tiles)
 				{
-					var outpng = "duke_tmp/" + art.Key + ".png";
+					var outpng = "textures/duke/" + art.Key + ".png";
 					grp.Reader.BaseStream.Position = art.Value.GRPOffset;
 
 					if (!Directory.Exists(Path.GetDirectoryName(outpng)))
@@ -347,18 +350,19 @@ namespace asset_compiler
 					if (File.Exists(outpng))
 						continue;
 
-					Bitmap bmp = new Bitmap(art.Value.Width, art.Value.Height);
+					var bmp = new Image<Rgba32>(art.Value.Width, art.Value.Height);
+
+					byte[] pixels = new byte[art.Value.Width * art.Value.Height];
 
 					for (var x = 0; x < art.Value.Width; ++x)
 						for (var y = 0; y < art.Value.Height; ++y)
-						{
-							var pixel = grp.Reader.ReadByte();
-							var color = Globals._palettes[(int)PaletteID.Duke][pixel];
+							bmp[x, y] = Globals.GetMappedColor(PaletteID.Duke, pixels[(y * art.Value.Width) + x] = grp.Reader.ReadByte());
 
-							bmp.SetPixel(x, y, color);
-						}
+					using (var stream = Globals.OpenFileStream(outpng))
+						bmp.SaveAsPng(stream);
 
-					bmp.Save(outpng);
+					var outwal = "textures/duke/" + art.Key + ".wal";
+					Globals.SaveWal(outwal, "duke/" + art.Key, "", 0, 0, pixels, PaletteID.Duke, art.Value.Width, art.Value.Height);
 				}
 
 				Dictionary<uint, string> pics = new Dictionary<uint, string>()

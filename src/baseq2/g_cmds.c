@@ -237,14 +237,8 @@ static void Cmd_Give_f(edict_t *ent)
     }
 
     if (give_all || Q_stricmp(name, "ammo") == 0) {
-        for (i = 0 ; i < game.num_items ; i++) {
-            it = itemlist + i;
-            if (!it->pickup)
-                continue;
-            if (!(it->flags & IT_AMMO))
-                continue;
-            Add_Ammo(ent, (itemid_e)i, 1000, false);
-        }
+        Add_Ammo(ent, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), ITI_NULL, false);
+
         if (!give_all)
             return;
     }
@@ -305,10 +299,10 @@ static void Cmd_Give_f(edict_t *ent)
     index = ITEM_INDEX(it);
 
     if (it->flags & IT_AMMO) {
-        if (gi.argc() == 3)
+        /*if (gi.argc() == 3)
             ent->client->pers.inventory[index] = atoi(gi.argv(2));
         else
-            ent->client->pers.inventory[index] += game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];
+            ent->client->pers.inventory[index] += game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];*/
     } else {
         it_ent = G_Spawn();
         SpawnItem(it_ent, it);

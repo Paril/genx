@@ -132,6 +132,7 @@ typedef enum
 	ITI_AIRSTRIKE_MARKER,
 
 	ITI_TOTAL,
+	ITI_LAST = ITI_TOTAL - 1,
 
 	// Special items
 	ITI_Q1_SILVER_KEY = ITI_RED_KEY,
@@ -895,9 +896,6 @@ COLLISION DETECTION
 #define SURF_NODRAW     0x80    // don't bother referencing the texture
 
 #define SURF_ALPHATEST  0x02000000  // used by kmquake2
-// Generations
-#define SURF_Q1			0x04000000
-#define SURF_DOOM		0x08000000
 
 
 

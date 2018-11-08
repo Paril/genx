@@ -93,8 +93,8 @@ void Weapon_Doom(edict_t *ent, int num_frames, void(*fire) (edict_t *ent, gunind
 			if ((level.time - ent->client->respawn_time) > 500 &&
 				ent->attack_finished_time < level.time)
 			{
-				if ((!ent->client->gunstates[gun].ammo_index) || (ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] >= GetWeaponUsageCount(ent, ent->client->pers.weapon)))
-				{
+				if ((game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
+						((ent->s.game == GAME_DUKE && ITEM_INDEX(ent->client->pers.weapon) == ITI_DUKE_PIPEBOMBS && ent->client->pers.alt_weapon) || (ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon)))) {
 					fire(ent, gun, true);
 
 					if (ent->client->ps.guns[gun].frame >= num_frames)
@@ -248,7 +248,7 @@ void weapon_doom_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
 {
 	bool fire = false;
 
-	if (ent->client->ps.guns[gun].frame >= 7 && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] && !ent->client->gunstates[gun].newweapon)
+	if (ent->client->ps.guns[gun].frame >= 7 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
 	{
 		ent->client->ps.guns[gun].frame = 1;
 		fire = true;
@@ -266,7 +266,7 @@ void weapon_doom_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 
@@ -412,7 +412,7 @@ void weapon_doom_hyperblaster_fire(edict_t *ent, gunindex_e gun, bool first)
 		return;
 	}
 
-	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index])
+	if (!(ent->client->buttons & BUTTON_ATTACK) || ent->client->gunstates[gun].newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 	{
 		ent->attack_finished_time = level.time + 571;
 		ent->client->ps.guns[gun].frame = 3;
@@ -438,7 +438,7 @@ void weapon_doom_hyperblaster_fire(edict_t *ent, gunindex_e gun, bool first)
 	ent->client->ps.guns[gun].frame = 1 + (Q_rand() % 2);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index]--;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
 static void fire_doom_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int hspread, int vspread, meansOfDeath_t mod)
@@ -515,7 +515,7 @@ void fire_doom_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, i
 
 void weapon_doom_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 {
-	if (ent->client->ps.guns[gun].frame >= 3 && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] && !ent->client->gunstates[gun].newweapon)
+	if (ent->client->ps.guns[gun].frame >= 3 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
 		ent->client->ps.guns[gun].frame = 0;
 	else
 		ent->client->ps.guns[gun].frame++;
@@ -530,7 +530,7 @@ void weapon_doom_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 
@@ -549,7 +549,7 @@ void weapon_doom_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 
 void weapon_doom_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 {
-	if ((ent->client->ps.guns[gun].frame == 2 && !(ent->client->buttons & BUTTON_ATTACK)) || !ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] || ent->client->gunstates[gun].newweapon)
+	if ((ent->client->ps.guns[gun].frame == 2 && !(ent->client->buttons & BUTTON_ATTACK)) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon)
 	{
 		ent->client->ps.guns[gun].frame = 3;
 		return;
@@ -563,7 +563,7 @@ void weapon_doom_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	vec3_t start, forward, right, offset;
 
@@ -594,7 +594,7 @@ void weapon_doom_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 1;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 
@@ -611,7 +611,7 @@ void weapon_doom_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 
 void weapon_doom_sshotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 {
-	if (ent->client->ps.guns[gun].frame >= 16 && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] >= 2 && !ent->client->gunstates[gun].newweapon)
+	if (ent->client->ps.guns[gun].frame >= 16 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
 		ent->client->ps.guns[gun].frame = 0;
 
 	ent->client->ps.guns[gun].frame++;
@@ -626,7 +626,7 @@ void weapon_doom_sshotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
 		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 2;
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 
@@ -834,7 +834,7 @@ void weapon_doom_bfg_fire(edict_t *ent, gunindex_e gun, bool first)
 {
 	if (ent->yaw_speed > 0)
 	{
-		if (ent->client->ps.guns[gun].frame >= 3 && !ent->client->gunstates[gun].newweapon && (ent->client->buttons & BUTTON_ATTACK) && ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] >= 40)
+		if (ent->client->ps.guns[gun].frame >= 3 && !ent->client->gunstates[gun].newweapon && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 		{
 			ent->client->ps.guns[gun].frame = 0;
 			ent->yaw_speed = 0;
@@ -874,7 +874,7 @@ void weapon_doom_bfg_fire(edict_t *ent, gunindex_e gun, bool first)
 				Weapon_Doom_Anim_Regular(ent);
 
 				if (!((int)dmflags->value & DF_INFINITE_AMMO))
-					ent->client->pers.inventory[ent->client->gunstates[gun].ammo_index] -= 40;
+					RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 			}
 			break;
 		case 3:

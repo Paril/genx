@@ -428,11 +428,11 @@ static bool BOT_DMClass_ChangeWeapon (edict_t *ent, gitem_t *item)
 		return false;
 
 	// Do we have ammo for it?
-	itemid_e ammo = game_iteminfos[ent->s.game].dynamic.weapon_uses_this_ammo[ITEM_INDEX(item)];
+	float ammo = game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(item)];
 
-	if (ammo != ITI_NULL)
+	if (ammo > 0)
 	{
-		if ( !ent->client->pers.inventory[ammo] && !g_select_empty->value )
+		if (ent->client->pers.ammo < ammo && !g_select_empty->value )
 			return false;
 	}
 
