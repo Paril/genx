@@ -341,6 +341,7 @@ static void InitItemInfo()
 		{
 			game_iteminfos[i].dynamic.item_redirects[x] = x;
 			game_iteminfos[i].dynamic.weapon_usage_counts[x] = -1;
+			game_iteminfos[i].dynamic.default_weapon_usage_counts[x] = -1;
 			game_iteminfos[i].dynamic.item_pickup_counts[x] = 0;
 		}
 
@@ -359,7 +360,7 @@ static void InitItemInfo()
 			if (game_iteminfos[i].ammo_usages[x].item)
 			{
 				itemid_e from = game_iteminfos[i].ammo_usages[x].item;
-				game_iteminfos[i].dynamic.weapon_usage_counts[from] = game_iteminfos[i].ammo_usages[x].ammo_usage;
+				game_iteminfos[i].dynamic.weapon_usage_counts[from] = game_iteminfos[i].dynamic.default_weapon_usage_counts[from] = game_iteminfos[i].ammo_usages[x].ammo_usage;
 			}
 
 			if (game_iteminfos[i].ammo_pickups[x].item)
@@ -1900,6 +1901,24 @@ gitem_t itemlist[] = {
 		WEAP_CHAINGUN,
 		/* precache */ "weapons/chngnu1a.wav weapons/chngnd1a.wav weapons/chngnl1a.wav"
 	},
+			
+	/*QUAKED ammo_grenades (.3 .3 1) (-16 -16 -16) (16 16 16)
+	*/
+	{
+		"ammo_grenades",
+		Pickup_Ammo,
+		Use_Weapon,
+		Drop_Ammo,
+		Weapon_Grenade,
+		"%s_ammopickup",
+		"%wa_grenades", 0,
+		"%wv_grenades",
+		/* icon */      "a_grenades",
+		/* pickup */    "Grenades",
+		IT_AMMO | IT_WEAPON,
+		WEAP_GRENADES,
+		/* precache */ "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav"
+	},
 
 	/*QUAKED weapon_grenadelauncher (.3 .3 1) (-16 -16 -16) (16 16 16)
 	*/
@@ -2047,24 +2066,6 @@ gitem_t itemlist[] = {
 		IT_AMMO,
 		WEAP_NONE,
 		/* precache */ ""
-	},
-			
-	/*QUAKED ammo_grenades (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_grenades",
-		Pickup_Ammo,
-		Use_Weapon,
-		Drop_Ammo,
-		Weapon_Grenade,
-		"%s_ammopickup",
-		"%wa_grenades", 0,
-		"%wv_grenades",
-		/* icon */      "a_grenades",
-		/* pickup */    "Grenades",
-		IT_AMMO | IT_WEAPON,
-		WEAP_GRENADES,
-		/* precache */ "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav"
 	},
 
 	/*QUAKED ammo_cells (.3 .3 1) (-16 -16 -16) (16 16 16)
@@ -2557,19 +2558,112 @@ gitem_t itemlist[] = {
 
 void Weapons_Init();
 
-void InitItems(void)
+const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] = {
+	{ }, // null
+	// Q2
+	{
+		"blaster",
+		"shotgun",
+		"super_shotgun",
+		"machinegun",
+		"chaingun",
+		"grenades",
+		"grenade_launcher",
+		"rocket_launcher",
+		"hyperblaster",
+		"railgun",
+		"bfg10k"
+	},
+	// Q1
+	{
+		"axe",
+		"shotgun",
+		"super_shotgun",
+		"nailgun",
+		"super_nailgun",
+		NULL,
+		"grenade_launcher",
+		"rocket_launcher",
+		"thunderbolt",
+		NULL,
+		NULL
+	},
+	// Doom
+	{
+		"fist",
+		"shotgun",
+		"super_shotgun",
+		"pistol",
+		"chaingun",
+		NULL,
+		NULL,
+		"rocket_launcher",
+		"plasma_gun",
+		"chaingun",
+		"bfg9000"
+	},
+	// Duke
+	{
+		"foot",
+		"shotgun",
+		NULL,
+		"pistol",
+		"cannon",
+		NULL,
+		"devastator",
+		"rpg",
+		"freezer",
+		NULL,
+		NULL
+	}
+};
+
+const char *game_names[GAME_TOTAL] = {
+	NULL,
+	"q2",
+	"q1",
+	"doom",
+	"duke"
+};
+
+void CheckWeaponBalanceCvars()
 {
-	game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
+	gametype_t game;
+	int i;
+
+	for (game = GAME_Q2; game < GAME_TOTAL; game++)
+		for (i = ITI_WEAPONS_START; i <= ITI_WEAPONS_END; i++)
+		{
+			if (game_iteminfos[game].dynamic.weapon_usage_counts[i] <= 0)
+				continue;
+
+			const char *weapon_name = weapon_names[game][i - ITI_WEAPONS_START];
+
+			if (!weapon_name)
+				continue;
+
+			char cvar_name[MAX_QPATH];
+
+			Q_snprintf(cvar_name, sizeof(cvar_name), "balance_%s_%s", game_names[game], weapon_name);
+
+			cvar_t *cvar = gi.cvar(cvar_name, "", CVAR_ARCHIVE);
+
+			if (!cvar->value)
+			{
+				game_iteminfos[game].dynamic.weapon_usage_counts[i] = game_iteminfos[game].dynamic.default_weapon_usage_counts[i];
+				continue;
+			}
+
+			game_iteminfos[game].dynamic.weapon_usage_counts[i] = COUNT_FOR_SHOTS(cvar->value);
+		}
 }
 
 /*
 ===============
 SetItemNames
-
-Called by worldspawn
 ===============
 */
-void SetItemNames(void)
+static void SetItemNames(void)
 {
 	int     i;
 	gitem_t *it;
@@ -2578,6 +2672,17 @@ void SetItemNames(void)
 		it = &itemlist[i];
 		gi.configstring(CS_ITEMS + i, it->pickup_name);
 	}
+}
 
+
+void InitItems(void)
+{
+	game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
+	
 	InitItemInfo();
+
+	CheckWeaponBalanceCvars();
+
+	// set configstrings for items
+	SetItemNames();
 }

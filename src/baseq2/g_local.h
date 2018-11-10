@@ -496,7 +496,7 @@ typedef enum {
 } weapmodel_e;
 
 // total default ammo
-#define DEFAULT_MAX_AMMO				150.0f
+#define DEFAULT_MAX_AMMO				100.0f
 
 // get # of ammo used by individual shots if this many shots are delivered
 // relative to total default ammo
@@ -587,6 +587,7 @@ typedef struct {
 	{
 		itemid_e		item_redirects[ITI_TOTAL];
 		float			weapon_usage_counts[ITI_TOTAL];
+		float			default_weapon_usage_counts[ITI_TOTAL];
 		float			item_pickup_counts[ITI_TOTAL];
 	}			dynamic;
 } game_iteminfo_t;
@@ -976,7 +977,6 @@ void Cmd_Score_f(edict_t *ent);
 //
 void PrecacheItem(gitem_t *it);
 void InitItems(void);
-void SetItemNames(void);
 gitem_t *FindItem(const char *pickup_name);
 gitem_t *FindItemByClassname(const char *classname);
 #define ITEM_INDEX(x) GetIndexByItem(x)
@@ -992,6 +992,7 @@ power_armor_type_e PowerArmorType(edict_t *ent);
 gitem_t *GetItemByIndex(itemid_e index);
 bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup);
 void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf);
+void CheckWeaponBalanceCvars();
 
 //
 // g_utils.c

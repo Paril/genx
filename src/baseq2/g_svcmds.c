@@ -303,6 +303,9 @@ void    ServerCommand(void)
         SVCmd_ListIP_f();
     else if (Q_stricmp(cmd, "writeip") == 0)
         SVCmd_WriteIP_f();
+	// Paril
+	else if (Q_stricmp(cmd, "balance") == 0)
+		CheckWeaponBalanceCvars();
     else
         gi.cprintf(NULL, PRINT_HIGH, "Unknown server command \"%s\"\n", cmd);
 }

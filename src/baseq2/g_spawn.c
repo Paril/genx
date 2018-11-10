@@ -1463,9 +1463,6 @@ void SP_worldspawn(edict_t *ent)
 	// reserve some spots for dead player bodies for coop / deathmatch
 	InitBodyQue();
 
-	// set configstrings for items
-	SetItemNames();
-
 	if (spawnTemp.nextmap)
 		Q_strlcpy(level.nextmap, spawnTemp.nextmap, sizeof(level.nextmap));
 
