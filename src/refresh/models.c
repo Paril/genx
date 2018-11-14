@@ -19,15 +19,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "gl.h"
 
-// Paril
-#include "format/mdl.h"
-#include "format/spr.h"
-
 #include "format/md2.h"
 #if USE_MD3
 #include "format/md3.h"
 #endif
 #include "format/sp2.h"
+
+// Paril
+#include "format/mdl.h"
+#include "format/spr.h"
+#include "format/mdx.h"
 
 typedef int (*mod_load_t) (model_t *, const void *, size_t);
 
@@ -603,13 +604,11 @@ fail:
 
 typedef struct {
 	short x, y;
-	short width, height;
 } d2s_temp_t;
 
 // Paril
 static int MOD_LoadD2S(model_t *model, const void *rawdata, size_t length)
 {
-	uint32_t ident = *(uint32_t*)rawdata;
 	byte *ptr = (byte*)rawdata + 4;
 
 	byte num_pics = *ptr++;
@@ -622,23 +621,11 @@ static int MOD_LoadD2S(model_t *model, const void *rawdata, size_t length)
 	{
 		// read x/y offsets
 		offsets[i] = *(d2s_temp_t*)ptr;
-
 		ptr += sizeof(d2s_temp_t);
 
-		MOD_AddIDToName(model->name, i, buffer, MAX_QPATH);
-		byte *temppic = (byte*)IMG_AllocPixels(offsets[i].width * offsets[i].height * 4);
-		image_t *image = IMG_Find(buffer, IT_SPRITE, IF_DELAYED | IF_OLDSCHOOL);
-
-		image->upload_width = image->width = offsets[i].width;
-		image->upload_height = image->height = offsets[i].height;
-		image->flags |= IMG_Unpack8((uint32_t *)temppic, ptr, offsets[i].width, offsets[i].height, d_palettes[ident == D2S_IDENT ? GAME_DOOM : GAME_DUKE]);
-
-		IMG_Load(image, temppic);
-
-		IMG_FreePixels(temppic);
-		images[i] = image;
-
-		ptr += offsets[i].width * offsets[i].height;
+		Q_strlcpy(buffer, model->name, strlen(model->name) - 3);
+		Q_snprintf(buffer, sizeof(buffer), "%s_%i.tga", buffer, i);
+		images[i] = IMG_Find(buffer, IT_SPRITE, IF_OLDSCHOOL);
 	}
 
 	byte num_frames = *ptr++;
@@ -687,8 +674,8 @@ static int MOD_LoadD2S(model_t *model, const void *rawdata, size_t length)
 		// 0,0 is top-left
 		int x1 = -offsets[i].x;
 		int y1 = -offsets[i].y;
-		int x2 = -offsets[i].x + offsets[i].width;
-		int y2 = -offsets[i].y + offsets[i].height;
+		int x2 = -offsets[i].x + images[i]->width;
+		int y2 = -offsets[i].y + images[i]->height;
 
 		int highest = max(abs(y2), max(abs(x2), max(abs(x1), abs(y1))));
 
@@ -767,9 +754,9 @@ static int MOD_ValidateMD2(dmd2header_t *header, size_t length)
             return Q_ERR_BAD_EXTENT;
     }
 
-    if (header->skinwidth < 1 || header->skinwidth > MD2_MAX_SKINWIDTH)
+    if (header->skinwidth < 1/* || header->skinwidth > MD2_MAX_SKINWIDTH*/)
         return Q_ERR_INVALID_FORMAT;
-    if (header->skinheight < 1 || header->skinheight > MD2_MAX_SKINHEIGHT)
+    if (header->skinheight < 1/* || header->skinheight > MD2_MAX_SKINHEIGHT*/)
         return Q_ERR_INVALID_FORMAT;
 
     return Q_ERR_SUCCESS;
@@ -976,6 +963,303 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
 
         src_frame = (dmd2frame_t *)((byte *)src_frame + header.framesize);
         dst_frame++;
+    }
+
+    Hunk_End(&model->hunk);
+    return Q_ERR_SUCCESS;
+
+fail:
+    Hunk_Free(&model->hunk);
+    return ret;
+}
+
+static int MOD_ValidateMDX(dmdxheader_t *header, size_t length)
+{
+    size_t end;
+
+    // check ident and version
+    if (header->ident != MDX_IDENT)
+        return Q_ERR_UNKNOWN_FORMAT;
+    if (header->version != MDX_VERSION)
+        return Q_ERR_UNKNOWN_FORMAT;
+
+    // check triangles
+    /*if (header->num_tris < 1)
+        return Q_ERR_TOO_FEW;
+    if (header->num_tris > MDX_MAX_TRIANGLES)
+        return Q_ERR_TOO_MANY;
+
+    end = header->ofs_tris + sizeof(dmdxtriangle_t) * header->num_tris;
+    if (header->ofs_tris < sizeof(header) || end < header->ofs_tris || end > length)
+        return Q_ERR_BAD_EXTENT;
+
+    // check st
+    if (header->num_st < 3)
+        return Q_ERR_TOO_FEW;
+    if (header->num_st > MAX_ALIAS_VERTS)
+        return Q_ERR_TOO_MANY;
+
+    end = header->ofs_st + sizeof(dmd2stvert_t) * header->num_st;
+    if (header->ofs_st < sizeof(header) || end < header->ofs_st || end > length)
+        return Q_ERR_BAD_EXTENT;*/
+
+    // check xyz and frames
+    if (header->num_xyz < 3)
+        return Q_ERR_TOO_FEW;
+    if (header->num_xyz > MAX_ALIAS_VERTS)
+        return Q_ERR_TOO_MANY;
+    if (header->num_frames < 1)
+        return Q_ERR_TOO_FEW;
+    if (header->num_frames > MDX_MAX_FRAMES)
+        return Q_ERR_TOO_MANY;
+
+    end = sizeof(dmdxframe_t) + (header->num_xyz - 1) * sizeof(dmdxtrivertx_t);
+    if (header->framesize < end || header->framesize > MDX_MAX_FRAMESIZE)
+        return Q_ERR_BAD_EXTENT;
+
+    end = header->ofs_frames + (size_t)header->framesize * header->num_frames;
+    if (header->ofs_frames < sizeof(header) || end < header->ofs_frames || end > length)
+        return Q_ERR_BAD_EXTENT;
+
+    // check skins
+    if (header->num_skins) {
+        if (header->num_skins > MAX_ALIAS_SKINS)
+            return Q_ERR_TOO_MANY;
+
+        end = header->ofs_skins + (size_t)MDX_MAX_SKINNAME * header->num_skins;
+        if (header->ofs_skins < sizeof(header) || end < header->ofs_skins || end > length)
+            return Q_ERR_BAD_EXTENT;
+    }
+
+    if (header->skinwidth < 1)
+        return Q_ERR_INVALID_FORMAT;
+    if (header->skinheight < 1)
+        return Q_ERR_INVALID_FORMAT;
+
+    return Q_ERR_SUCCESS;
+}
+
+static int MOD_LoadMDX(model_t *model, const void *rawdata, size_t length)
+{
+    dmdxheader_t    header;
+    dmdxframe_t     *src_frame;
+    maliasframe_t   *dst_frame;
+    int             i, j, k, ret;
+
+    if (length < sizeof(header)) {
+        return Q_ERR_FILE_TOO_SMALL;
+    }
+
+    // byte swap the header
+    header = *(dmdxheader_t *)rawdata;
+    for (i = 0; i < sizeof(header) / 4; i++) {
+        ((uint32_t *)&header)[i] = LittleLong(((uint32_t *)&header)[i]);
+    }
+
+    // validate the header
+    ret = MOD_ValidateMDX(&header, length);
+    if (ret) {
+        if (ret == Q_ERR_TOO_FEW) {
+            // empty models draw nothing
+            model->type = MOD_EMPTY;
+            return Q_ERR_SUCCESS;
+        }
+        return ret;
+    }
+
+	// load all meshes
+	dmdxglcmds_t *src_cmds = (dmdxglcmds_t *) ((byte *)rawdata + header.ofs_glcmds);
+
+	// count all of the triangles in the list
+	uint16_t num_glcmds[MDX_MAX_SUBOBJECTS] = { 0 };
+
+	for (j = 0; j < header.num_glcmds; j++) {
+		if (src_cmds->num_verts == 0) {
+			break;
+		}
+
+		int numVertices = abs(src_cmds->num_verts);
+		num_glcmds[src_cmds->sub_object] += numVertices;
+
+		src_cmds = (dmdxglcmds_t *) ((byte *)(src_cmds + 1) + sizeof(dmdxglcmd_t) * numVertices);
+	}
+
+	// count all the vertices in the list
+	uint16_t num_vertices[MDX_MAX_SUBOBJECTS] = { 0 };
+
+	uint32_t *src_vertex = (uint32_t  *)((byte *)rawdata + header.ofs_vertex_info);
+	for (j = 0; j < header.num_xyz; j++) {
+		num_vertices[(*src_vertex) - 1]++;
+		src_vertex++;
+	}
+
+	// allocate memory
+    Hunk_Begin(&model->hunk, 0x600000);
+    model->type = MOD_ALIAS;
+    model->nummeshes = header.num_sub_objects;
+    model->numframes = header.num_frames;
+    model->meshes = MOD_Malloc(sizeof(maliasmesh_t) * header.num_sub_objects);
+    model->frames = MOD_Malloc(header.num_frames * sizeof(maliasframe_t));
+
+    // load initial frame data
+    dst_frame = model->frames;
+    for (j = 0; j < header.num_frames; j++, dst_frame++) {
+		src_frame = (dmd2frame_t *)((byte *)rawdata + header.ofs_frames + j * header.framesize);
+        LittleVector(src_frame->scale, dst_frame->scale);
+        LittleVector(src_frame->translate, dst_frame->translate);
+		ClearBounds(dst_frame->bounds[0], dst_frame->bounds[1]);
+	}
+
+	// make meshes
+	for (i = 0; i < header.num_sub_objects; i++) {
+		maliasmesh_t *out_mesh = &model->meshes[i];
+
+		// fetch texcoord/vertex mappings
+		dmdxglcmd_t cmds[MDX_MAX_VERTS];
+		int32_t fanstrips[MDX_MAX_VERTS];
+		int cmdCount = 0, stripCount = 0;
+
+		dmdxglcmds_t *src_cmds = (dmdxglcmds_t *) ((byte *)rawdata + header.ofs_glcmds);
+
+		for (j = 0; j < header.num_glcmds; j++) {
+			if (src_cmds->num_verts == 0) {
+				break;
+			}
+
+			size_t skip = sizeof(dmdxglcmd_t) * abs(src_cmds->num_verts);
+
+			if (src_cmds->sub_object == i) {
+				memcpy(cmds + cmdCount, src_cmds + 1, skip);
+				cmdCount += abs(src_cmds->num_verts);
+				fanstrips[stripCount++] = src_cmds->num_verts;
+			}
+
+			src_cmds = (dmdxglcmds_t *) ((byte *)(src_cmds + 1) + sizeof(dmdxglcmd_t) * abs(src_cmds->num_verts));
+		}
+
+		// map vertices and texcoords
+		out_mesh->numskins = header.num_skins;
+		out_mesh->numverts = cmdCount;
+		out_mesh->verts = MOD_Malloc(cmdCount * header.num_frames * sizeof(maliasvert_t));
+		out_mesh->tcoords = MOD_Malloc(cmdCount * sizeof(maliastc_t));
+
+		for (j = 0; j < cmdCount; j++) {
+			for (k = 0; k < 2; k++) {
+				out_mesh->tcoords[j].st[k] = LittleFloat(cmds[j].st.st[k]);
+			}
+		}
+
+		int l = 0, m = 0;
+		maliasvert_t *dst_vert = out_mesh->verts;
+
+		// load vertices
+		for (j = 0; j < header.num_frames; j++) {
+			dmdxframe_t *frame = (dmdxframe_t *) ((byte *)rawdata + header.ofs_frames + header.framesize * j);
+			maliasframe_t *out_frame = &model->frames[j];
+
+			for (k = 0; k < cmdCount; k++, l++, dst_vert++) {
+				dmdxtrivertx_t *src_vert = &frame->verts[cmds[k].vertexIndex];
+
+				byte val = src_vert->lightnormalindex;
+				if (val >= NUMVERTEXNORMALS) {
+					dst_vert->norm[0] = 0;
+					dst_vert->norm[1] = 0;
+				} else {
+					dst_vert->norm[0] = gl_static.latlngtab[val][0];
+					dst_vert->norm[1] = gl_static.latlngtab[val][1];
+				}
+
+				dst_vert->pos[0] = src_vert->v[0];
+				dst_vert->pos[1] = src_vert->v[1];
+				dst_vert->pos[2] = src_vert->v[2];
+
+				for (m = 0; m < 3; m++) {
+					val = dst_vert->pos[m];
+					if (val < out_frame->bounds[0][m])
+						out_frame->bounds[0][m] = val;
+					if (val > out_frame->bounds[1][m])
+						out_frame->bounds[1][m] = val;
+				}
+			}
+		}
+
+		// convert cmds from fans/strips to triangles
+		int num_tris = 0;
+		
+		for (k = 0; k < stripCount; k++) {
+			num_tris += abs(fanstrips[k]) - 2;
+		}
+
+		out_mesh->numtris = num_tris;
+		out_mesh->numindices = num_tris * 3;
+		out_mesh->indices = MOD_Malloc(num_tris * 3 * sizeof(QGL_INDEX_TYPE));
+		
+		int curIndex = 0, fan_start = 0;
+		QGL_INDEX_TYPE *index = out_mesh->indices;
+
+		for (k = 0; k < stripCount; k++) {
+			for (j = 0; j < abs(fanstrips[k]); j++) {
+				if (j < 3) {
+					if (j == 0) {
+						fan_start = curIndex;
+					}
+
+					*index++ = curIndex++;
+					continue;
+				}
+
+				// 012345
+
+				if (fanstrips[k] < 0) {
+					// 012 023 034 045
+					// fan
+					*index++ = fan_start;
+					*index++ = curIndex - 1;
+					*index++ = curIndex++;
+				} else {
+					// 012 123 234 345
+					// strip
+					if (j & 1) {
+						*index++ = curIndex;
+						*index++ = curIndex - 1;
+						*index++ = curIndex - 2;
+					} else {
+						*index++ = curIndex - 2;
+						*index++ = curIndex - 1;
+						*index++ = curIndex;
+					}
+					curIndex++;
+				}
+			}
+		}
+	}
+
+	for (j = 0; j < header.num_frames; j++) {
+		maliasframe_t *dst_frame = &model->frames[j];
+
+        VectorVectorScale(dst_frame->bounds[0], dst_frame->scale, dst_frame->bounds[0]);
+        VectorVectorScale(dst_frame->bounds[1], dst_frame->scale, dst_frame->bounds[1]);
+
+        dst_frame->radius = RadiusFromBounds(dst_frame->bounds[0], dst_frame->bounds[1]);
+
+        VectorAdd(dst_frame->bounds[0], dst_frame->translate, dst_frame->bounds[0]);
+        VectorAdd(dst_frame->bounds[1], dst_frame->translate, dst_frame->bounds[1]);
+	}
+
+    // load all skins
+    char skinname[MAX_QPATH];
+    char *src_skin = (char *)rawdata + header.ofs_skins;
+    for (i = 0; i < header.num_skins; i++) {
+        if (!Q_memccpy(skinname, src_skin, 0, sizeof(skinname))) {
+            ret = Q_ERR_STRING_TRUNCATED;
+            goto fail;
+        }
+        FS_NormalizePath(skinname, skinname);
+        image_t *img = IMG_Find(skinname, IT_SKIN, IF_NONE);
+		for (j = 0; j < header.num_sub_objects; j++) {
+			model->meshes[j].skins[i] = img;
+		}
+        src_skin += MD2_MAX_SKINNAME;
     }
 
     Hunk_End(&model->hunk);
@@ -1300,16 +1584,19 @@ modelhandle_t R_RegisterModel(const char *name)
 		load = MOD_LoadMDL;
 	else if (!Q_stricmp(extension, "spr"))
 		load = MOD_LoadSPR;
-	else if (!Q_stricmp(extension, "d2s") || !Q_stricmp(extension, "dns"))
-		load = MOD_LoadD2S;
 	else if (!Q_stricmp(extension, "md2"))
 		load = MOD_LoadMD2;
 #if USE_MD3
-	else if (!Q_stricmp(extension, "sp2"))
-		load = MOD_LoadSP2;
+	else if (!Q_stricmp(extension, "md3"))
+		load = MOD_LoadMD3;
 #endif
+	// Paril
 	else if (!Q_stricmp(extension, "sp2"))
 		load = MOD_LoadSP2;
+	else if (!Q_stricmp(extension, "d2s") || !Q_stricmp(extension, "dns"))
+		load = MOD_LoadD2S;
+	else if (!Q_stricmp(extension, "mdx"))
+		load = MOD_LoadMDX;
 	else if (!Q_stricmp(extension, "wsc"))
 		load = MOD_LoadWSC;
 	else
@@ -1979,6 +2266,7 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 	mweaponscript_t *script_ptr = &temp_script;
 
 	int cur_sprite = 0;
+	int cur_frame = 0;
 
 	while ((token = COM_Parse(&file))[0] != '}')
 	{
@@ -2002,14 +2290,11 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 			token = COM_Parse(&file);
 			script_ptr->sprites[cur_sprite++].model = R_RegisterModel(token);
 		}
-		else if (!Q_stricmpn(token, "frame_", 6))
+		else if (!Q_stricmp(token, "{"))
 		{
-			int frame_id = atoi(token + 6);
+			int frame_id = cur_frame++;
 
 			mweaponscript_frame_t *frame = &script_ptr->frames[frame_id];
-
-			if ((token = COM_Parse(&file))[0] != '{')
-				return Q_ERR_INVALID_FORMAT;
 
 			while ((token = COM_Parse(&file))[0] != '}')
 			{

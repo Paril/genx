@@ -775,9 +775,6 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
 		MSG_WriteLong(to->clip_contents);
 }
 
-const float KICKANGLE_DIV = 4;
-const float KICKANGLE_INV_DIV = 1.0f / KICKANGLE_DIV;
-
 static inline int OFFSET2CHAR(float x)
 {
     return clamp(x, -32, 127.0f / 4) * 4;
@@ -818,7 +815,7 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
     out->rdflags = in->rdflags;
 	out->view_events = in->view_events;
 
-	memcpy(out->stats, in->stats, sizeof(in->stats[0]) * MAX_STATS);
+	memcpy(&out->stats, &in->stats, sizeof(in->stats));
 }
 
 void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to)
@@ -971,7 +968,7 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
         MSG_WriteByte(to->rdflags);
 
     // send stats
-    statbits = 0;
+    /*statbits = 0;
     for (i = 0; i < MAX_STATS; i++)
         if (to->stats[i] != from->stats[i])
             statbits |= 1U << i;
@@ -979,7 +976,7 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
     MSG_WriteLong(statbits);
     for (i = 0; i < MAX_STATS; i++)
         if (statbits & (1U << i))
-            MSG_WriteShort(to->stats[i]);
+            MSG_WriteShort(to->stats[i]);*/
 }
 
 int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
@@ -1087,7 +1084,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 	if (to->view_events != from->view_events)
 		pflags |= PS_VIEWEVENTS;
 
-	int statbits[3] = { 0, 0, 0 };
+	/*int statbits[3] = { 0, 0, 0 };
 	byte whiches = 0;
 
 	for (int i = 0; i < MAX_STATS; i++)
@@ -1107,7 +1104,39 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 		}
 	}
 
-	if (whiches)
+	if (whiches)*/
+	int16_t numSpans = -1;
+	uint8_t spans[sizeof(player_stats_t)] = { 0 };
+	uint8_t *toStatPtr = (uint8_t *) &to->stats;
+	uint8_t *fromStatPtr = (uint8_t *) &from->stats;
+	bool currentZero = true;
+
+	for (size_t i = 0; i <= sizeof(player_stats_t); i++)
+	{
+		bool isFirst = numSpans == -1;
+		bool isLast = i == sizeof(player_stats_t);
+		bool isZero = isLast ? true : !(*toStatPtr - *fromStatPtr);
+
+		if (isFirst || i == sizeof(player_stats_t) ||
+			spans[numSpans] == 127 || currentZero != isZero)
+		{
+			// mark as having content and not zeros
+			if (!isFirst && !currentZero)
+				spans[numSpans] |= 1 << 7;
+
+			if (isLast)
+				break;
+
+			numSpans++;
+			currentZero = isZero;
+		}
+		
+		spans[numSpans]++;
+		toStatPtr++;
+		fromStatPtr++;
+	}
+
+	if (numSpans)
 		eflags |= EPS_STATS;
 
 	//
@@ -1250,7 +1279,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 
 	// send stats
 	if (eflags & EPS_STATS) {
-		MSG_WriteByte(whiches);
+		/*MSG_WriteByte(whiches);
 
 		for (byte b = 0; b < whiches; ++b) {
 			MSG_WriteLong(statbits[b]);
@@ -1272,7 +1301,8 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 					}
 				}
 			}
-		}
+		}*/
+		MSG_WriteData(&to->stats, sizeof(to->stats));
 	}
 
 	if (pflags & PS_VIEWEVENTS)
@@ -2156,10 +2186,10 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
         to->rdflags = MSG_ReadByte();
 
     // parse stats
-    statbits = MSG_ReadLong();
+    /*statbits = MSG_ReadLong();
     for (i = 0; i < MAX_STATS; i++)
         if (statbits & (1U << i))
-            to->stats[i] = MSG_ReadShort();
+            to->stats[i] = MSG_ReadShort();*/
 }
 
 
@@ -2294,7 +2324,7 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 	// parse stats
 	if (extraflags & EPS_STATS) {
 		// parse stats
-		byte whiches = MSG_ReadByte();
+		/*byte whiches = MSG_ReadByte();
 
 		for (byte b = 0; b < whiches; ++b)
 		{
@@ -2316,7 +2346,8 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 					}
 				}
 			}
-		}
+		}*/
+		memcpy(&to->stats, MSG_ReadData(sizeof(to->stats)), sizeof(to->stats));
 	}
 
 	if (flags & PS_VIEWEVENTS)

@@ -519,5 +519,8 @@
     <ClInclude Include="..\src\refresh\arbfp.h">
       <Filter>Source Files\refresh</Filter>
     </ClInclude>
+    <ClInclude Include="..\inc\format\mdx.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

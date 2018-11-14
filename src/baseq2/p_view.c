@@ -82,11 +82,11 @@ void P_DamageFeedback(edict_t *player)
 	// flash the backgrounds behind the status numbers
 	if (player->s.game == GAME_Q2)
 	{
-		client->ps.stats[STAT_FLASHES] = 0;
+		client->ps.stats.flashes = 0;
 		if (client->damage_blood)
-			client->ps.stats[STAT_FLASHES] |= 1;
+			client->ps.stats.flashes |= 1;
 		if (client->damage_armor && !(player->flags & FL_GODMODE) && (client->invincible_time <= level.time))
-			client->ps.stats[STAT_FLASHES] |= 2;
+			client->ps.stats.flashes |= 2;
 	}
 
 	// total points of damage shot at the player this frame
@@ -146,7 +146,7 @@ void P_DamageFeedback(edict_t *player)
 	}
 
 	if (player->s.game == GAME_Q1)
-		client->ps.stats[STAT_Q1_FACEANIM] = 5;
+		client->ps.stats.q1.face_anim = 5;
 
 	realcount = count;
 	if (count < 10)

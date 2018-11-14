@@ -2,144 +2,116 @@
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 
 namespace asset_transpiler
 {
-	enum WADFileType : sbyte
+	class DoomMapTexture
 	{
-		Pal = 0x40,
-		Pic = 0x42,
-		Mip = 0x44,
-		Con = 0x45
-	}
+		public struct DoomPatch
+		{
+			public short OriginX;
+			public short OriginY;
+			public short Patch;
+			public short StepDir;
+			public short Colormap;
+		}
 
-	class WADFile
-	{
 		public string Name;
-		public int Offset;
-		public uint Length;
-		public WADFileType Type;
+		public int Masked;
+		public short Width;
+		public short Height;
+		public int ColumnDirectory;
+		public DoomPatch[] Patches;
 
-		public override string ToString()
+		public DoomMapTexture(WAD wad)
 		{
-			return Name + "(" + Offset + " : " + Length + ")";
+			Name = Encoding.ASCII.GetString(wad.Reader.ReadBytes(8));
+
+			if (Name.IndexOf('\0') != -1)
+				Name = Name.Substring(0, Name.IndexOf('\0'));
+
+			Masked = wad.Reader.ReadInt32();
+
+			Width = wad.Reader.ReadInt16();
+			Height = wad.Reader.ReadInt16();
+
+			ColumnDirectory = wad.Reader.ReadInt32();
+
+			short patchCount = wad.Reader.ReadInt16();
+
+			Patches = new DoomPatch[patchCount];
+
+			for (var i = 0; i < patchCount; ++i)
+			{
+				Patches[i].OriginX = wad.Reader.ReadInt16();
+				Patches[i].OriginY = wad.Reader.ReadInt16();
+				Patches[i].Patch = wad.Reader.ReadInt16();
+				Patches[i].StepDir = wad.Reader.ReadInt16();
+				Patches[i].Colormap = wad.Reader.ReadInt16();
+			}
 		}
 	}
 
-	class WAD : IDisposable
+	class DoomPicture
 	{
-		public List<WADFile> Files = new List<WADFile>();
-		public BinaryReader Reader;
+		public short Width, Height;
+		public short X, Y;
+		public byte[] Pixels;
 
-		public WAD(Stream stream)
+		public DoomPicture(WAD wad, WADFile file)
 		{
-			Reader = new BinaryReader(stream);
+			wad.Reader.BaseStream.Position = file.Offset;
+			Width = wad.Reader.ReadInt16();
+			Height = wad.Reader.ReadInt16();
 
-			var magic = Encoding.ASCII.GetString(Reader.ReadBytes(4));
+			X = wad.Reader.ReadInt16();
+			Y = wad.Reader.ReadInt16();
 
-			switch (magic)
+			int[] columns = new int[Width];
+
+			for (int i = 0; i < Width; ++i)
+				columns[i] = wad.Reader.ReadInt32();
+
+			Pixels = new byte[Width * Height];
+
+			for (int i = 0; i < Pixels.Length; ++i)
+				Pixels[i] = 255;
+
+			for (int i = 0; i < Width; ++i)
 			{
-				case "WAD2":
-				case "IWAD":
-				case "PWAD":
-					break;
-				default:
-					throw new Exception();
-			}
+				wad.Reader.BaseStream.Position = file.Offset + columns[i];
+				int rowstart = 0;
 
-			var num_entries = Reader.ReadUInt32();
-			var dir_offset = Reader.ReadUInt32();
-
-			Reader.BaseStream.Position = dir_offset;
-
-			for (uint i = 0; i < num_entries; ++i)
-			{
-				WADFile file = new WADFile();
-
-				switch (magic)
+				while (rowstart != 255)
 				{
-					case "WAD2":
-						file.Offset = Reader.ReadInt32();
-						file.Length = Reader.ReadUInt32();
-						Reader.ReadUInt32();
-						file.Type = (WADFileType)Reader.ReadSByte();
+					rowstart = wad.Reader.ReadByte();
 
-						if (Reader.ReadSByte() != 0)
-							throw new Exception();
-
-						Reader.ReadUInt16();
-						file.Name = Encoding.ASCII.GetString(Reader.ReadBytes(16));
+					if (rowstart == 255)
 						break;
-					case "IWAD":
-					case "PWAD":
-						file.Offset = Reader.ReadInt32();
-						file.Length = Reader.ReadUInt32();
 
-						file.Name = Encoding.ASCII.GetString(Reader.ReadBytes(8));
-						break;
+					byte pixel_count = wad.Reader.ReadByte();
+					wad.Reader.ReadByte();
+
+					for (int j = 0; j < pixel_count; ++j)
+					{
+						byte pixel = wad.Reader.ReadByte();
+						Pixels[((j + rowstart) * Width) + i] = pixel;
+					}
+
+					wad.Reader.ReadByte();
 				}
-
-				if (file.Name.IndexOf('\0') != -1)
-					file.Name = file.Name.Substring(0, file.Name.IndexOf('\0'));
-
-				Files.Add(file);
 			}
-		}
-
-		public WADFile Get(string name)
-		{
-			foreach (var file in Files)
-				if (file.Name == name)
-					return file;
-
-			return null;
-		}
-
-		public byte[] GetBytes(WADFile file)
-		{
-			Reader.BaseStream.Position = file.Offset;
-			return Reader.ReadBytes((int)file.Length);
-		}
-
-		public void WriteFileTo(WADFile file, string output)
-		{
-			Globals.CreateDirectory(Path.GetDirectoryName(output));
-			Globals.WriteFile(output, GetBytes(file));
-		}
-
-		public void WriteFileTo(WADFile file, string output, Action<BinaryWriter> writeHeader)
-		{
-			Globals.CreateDirectory(Path.GetDirectoryName(output));
-
-			using (var bw = new BinaryWriter(Globals.OpenFileStream(output)))
-			{
-				writeHeader(bw);
-				bw.Write(GetBytes(file));
-			}
-		}
-		public void WriteFileTo(WADFile file, string output, Action<BinaryWriter, byte[]> writeData)
-		{
-			Globals.CreateDirectory(Path.GetDirectoryName(output));
-
-			using (var bw = new BinaryWriter(Globals.OpenFileStream(output)))
-				writeData(bw, GetBytes(file));
-		}
-
-		public void Dispose()
-		{
-			Reader.Dispose();
 		}
 	}
 
-	class Doom
+	class Doom : GameParser
 	{
 		static WADFile LumpExpect(WAD wad, ref int lumpPos, string name)
 		{
-			var file = wad.Files[lumpPos];
+			var file = (WADFile) wad.Files[lumpPos];
 
 			if (file.Name != name)
 				throw new Exception("wrong wad?");
@@ -153,63 +125,124 @@ namespace asset_transpiler
 			return wad.Files[lumpPos].Name;
 		}
 
-		class DoomMapTexture
+		void UnpackDoomTexture(DoomMapTexture texture, Dictionary<string, string> animated, Dictionary<string, DoomPicture> mapPatches, List<string> mapPatchNames)
 		{
-			public struct DoomPatch
+			byte[] pixels = new byte[texture.Width * texture.Height];
+
+			for (var i = 0; i < pixels.Length; ++i)
+				pixels[i] = 255;
+
+			for (var i = 0; i < texture.Patches.Length; ++i)
 			{
-				public short OriginX;
-				public short OriginY;
-				public short Patch;
-				public short StepDir;
-				public short Colormap;
+				var patchData = texture.Patches[i];
+				var patch = mapPatches[mapPatchNames[patchData.Patch]];
+
+				ByteBuffer.BoxCopy(patch.Pixels, 0, 0, patch.Width, patch.Height, pixels, patchData.OriginX, patchData.OriginY, texture.Width, texture.Height, patch.Width, patch.Height, true);
 			}
 
-			public string Name;
-			public int Masked;
-			public short Width;
-			public short Height;
-			public int ColumnDirectory;
-			public DoomPatch[] Patches;
+			var name = texture.Name;
+			string outwal = "textures/doom/" + name + ".wal";
+			string outpng = "textures/doom/" + name + ".tga";
 
-			public DoomMapTexture(WAD wad)
+			CreateDirectory(Path.GetDirectoryName(outwal));
+
+			if (FileExists(outpng))
+				return;
+
+			Status("Writing patched texture " + name + "...", 2);
+
+			using (var bmp = new Image<Rgba32>(texture.Width, texture.Height))
 			{
-				Name = Encoding.ASCII.GetString(wad.Reader.ReadBytes(8));
+				for (var y = 0; y < texture.Height; ++y)
+					for (var x = 0; x < texture.Width; ++x)
+					{
+						var c = pixels[(y * texture.Width) + x];
+						bmp[x, y] = Globals.GetMappedColor(PaletteID.Doom, c);
+					}
 
-				if (Name.IndexOf('\0') != -1)
-					Name = Name.Substring(0, Name.IndexOf('\0'));
+				using (var stream = OpenFileStream(outpng))
+					bmp.SaveAsTga(stream);
 
-				Masked = wad.Reader.ReadInt32();
+				// Write WAL
+				string walname = name, next_name;
 
-				Width = wad.Reader.ReadInt16();
-				Height = wad.Reader.ReadInt16();
+				if (!animated.TryGetValue(texture.Name, out next_name))
+					next_name = "";
 
-				ColumnDirectory = wad.Reader.ReadInt32();
+				outwal = "textures/doom/" + walname + ".wal";
 
-				short patchCount = wad.Reader.ReadInt16();
-
-				Patches = new DoomPatch[patchCount];
-
-				for (var i = 0; i < patchCount; ++i)
-				{
-					Patches[i].OriginX = wad.Reader.ReadInt16();
-					Patches[i].OriginY = wad.Reader.ReadInt16();
-					Patches[i].Patch = wad.Reader.ReadInt16();
-					Patches[i].StepDir = wad.Reader.ReadInt16();
-					Patches[i].Colormap = wad.Reader.ReadInt16();
-				}
+				SaveWal(outwal, walname, next_name, 0, 0, pixels, PaletteID.Doom, texture.Width, texture.Height);
 			}
 		}
 
-		public static void D2CopyStuff(string wadfile)
+		static void DoomLumpMarkers(WAD wad, ref int lumpPos, string prefix, Action<WADFile> callback)
 		{
-			Globals.OpenStatus("Parsing WAD file...");
+			LumpExpect(wad, ref lumpPos, prefix + "START");
+			string lumpName;
 
-			using (var wad = new WAD(File.Open(wadfile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+			while ((lumpName = LumpPeek(wad, ref lumpPos)) != prefix + "END")
+				callback(LumpExpect(wad, ref lumpPos, lumpName));
+
+			LumpExpect(wad, ref lumpPos, prefix + "END");
+		}
+
+		void WriteSimpleDoomTexture(WAD wad, WADFile file, string output)
+		{
+			CreateDirectory(Path.GetDirectoryName(output));
+
+			DoomPicture picture = new DoomPicture(wad, file);
+			wad.WriteImageTo(picture.Pixels, PaletteID.Doom, output, picture.Width, picture.Height);
+		}
+
+		static void LumpLoadTexture(WAD wad, ref int lumpPos, List<DoomMapTexture> mapTextures, string name)
+		{
+			var file = LumpExpect(wad, ref lumpPos, name);
+
+			wad.Reader.BaseStream.Position = file.Offset;
+
+			int numTextures = wad.Reader.ReadInt32();
+			int[] offsets = new int[numTextures];
+
+			for (int i = 0; i < numTextures; ++i)
+				offsets[i] = wad.Reader.ReadInt32();
+
+			for (int i = 0; i < numTextures; ++i)
+			{
+				wad.Reader.BaseStream.Position = file.Offset + offsets[i];
+				mapTextures.Add(new DoomMapTexture(wad));
+			}
+		}
+
+		static void LumpLoadPatchNames(WAD wad, ref int lumpPos, List<string> mapPatchNames, string name)
+		{
+			var file = LumpExpect(wad, ref lumpPos, name);
+
+			wad.Reader.BaseStream.Position = file.Offset;
+
+			int numPatches = wad.Reader.ReadInt32();
+
+			for (int i = 0; i < numPatches; ++i)
+			{
+				string pname = Encoding.ASCII.GetString(wad.Reader.ReadBytes(8));
+
+				if (pname.IndexOf('\0') != -1)
+					pname = pname.Substring(0, pname.IndexOf('\0'));
+
+				mapPatchNames.Add(pname.ToLower());
+			}
+		}
+
+		void D2CopyStuff(string wadfile)
+		{
+			Status("Parsing " + wadfile + "...", 0);
+
+			using (var wad = new WAD(this, File.Open(wadfile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
 			{
 				int lumpPos = 0;
 				string lumpName;
 
-				Globals.Status("Parsing palette...");
+				Status("Parsing palette...", 1);
+				
 				// read PLAYPAL lump
 				var lump = LumpExpect(wad, ref lumpPos, "PLAYPAL");
 
@@ -218,12 +251,12 @@ namespace asset_transpiler
 				byte[] palette = wad.Reader.ReadBytes(256 * 3);
 				var outpal = "pics/doom/palette.dat";
 
-				Globals.CreateDirectory(Path.GetDirectoryName(outpal));
+				CreateDirectory(Path.GetDirectoryName(outpal));
 
-				using (var wr = new BinaryWriter(Globals.OpenFileStream(outpal)))
+				using (var wr = new BinaryWriter(OpenFileStream(outpal)))
 					wr.Write(palette);
 
-				Globals.Status("Skipping nonsense...");
+				Status("Skipping nonsense...", 1);
 
 				// skip COLORMAP, ENDOOM
 				LumpExpect(wad, ref lumpPos, "COLORMAP");
@@ -247,7 +280,7 @@ namespace asset_transpiler
 				var mapTextures = new List<DoomMapTexture>();
 				var mapPatchNames = new List<string>();
 
-				Globals.Status("Loading TEXTURE1...");
+				Status("Loading TEXTURE1...", 1);
 
 				// Load TEXTURE1
 				LumpLoadTexture(wad, ref lumpPos, mapTextures, "TEXTURE1");
@@ -255,16 +288,16 @@ namespace asset_transpiler
 				// Get rid of AASHITTY
 				mapTextures.RemoveAt(0);
 
-				Globals.Status("Loading PNAMES...");
+				Status("Loading PNAMES...", 1);
 				LumpLoadPatchNames(wad, ref lumpPos, mapPatchNames, "PNAMES");
 
-				Globals.Status("Skipping nonsense...");
+				Status("Skipping nonsense...", 1);
 
 				// Skip music stuff
 				LumpExpect(wad, ref lumpPos, "GENMIDI");
 				LumpExpect(wad, ref lumpPos, "DMXGUSC");
 
-				Globals.Status("Parsing sound lumps...");
+				Status("Parsing sound lumps...", 1);
 				while ((lumpName = LumpPeek(wad, ref lumpPos)).StartsWith("D"))
 				{
 					lump = LumpExpect(wad, ref lumpPos, lumpName);
@@ -282,14 +315,14 @@ namespace asset_transpiler
 
 						var outwav = "sound/doom/" + lumpName.Substring(2) + ".wav";
 
-						Globals.Status("Writing sound " + lumpName.Substring(2) + "...");
-						Globals.CreateDirectory(Path.GetDirectoryName(outwav));
+						Status("Writing sound " + lumpName.Substring(2) + "...", 2);
+						CreateDirectory(Path.GetDirectoryName(outwav));
 
-						Globals.WriteWav(outwav, sampleRate, numSamples, samples);
+						WriteWav(outwav, sampleRate, numSamples, samples);
 					}
 				}
 
-				Globals.Status("Skipping nonsense...");
+				Status("Skipping nonsense...", 1);
 				// Picture stuff, yay.
 				// Skip full-screen garbage.
 				var skipFullNames = new HashSet<string>() { "HELP", "HELP1", "HELP2", "BOSSBACK", "TITLEPIC", "CREDIT", "VICTORY2", "PFUB1", "PFUB2" };
@@ -301,13 +334,13 @@ namespace asset_transpiler
 				while ((lumpName = LumpPeek(wad, ref lumpPos)).StartsWith("END"))
 					LumpExpect(wad, ref lumpPos, lumpName);
 
-				Globals.Status("Parsing status bar images...");
+				Status("Parsing status bar images...", 1);
 				// We actually want AMMNUMx
 				while ((lumpName = LumpPeek(wad, ref lumpPos)).StartsWith("AMMNUM"))
 				{
 					lump = LumpExpect(wad, ref lumpPos, lumpName);
 
-					WriteSimpleDoomTexture(wad, lump, "pics/doom/" + lumpName + ".d2p");
+					WriteSimpleDoomTexture(wad, lump, "pics/doom/" + lumpName + ".tga");
 				}
 
 				// Status bar stuff
@@ -315,10 +348,10 @@ namespace asset_transpiler
 				{
 					lump = LumpExpect(wad, ref lumpPos, lumpName);
 
-					WriteSimpleDoomTexture(wad, lump, "pics/doom/" + lumpName + ".d2p");
+					WriteSimpleDoomTexture(wad, lump, "pics/doom/" + lumpName + ".tga");
 				}
 
-				Globals.Status("Skipping nonsense...");
+				Status("Skipping nonsense...", 1);
 				// Skip M_x names
 				while ((lumpName = LumpPeek(wad, ref lumpPos)).StartsWith("M_"))
 					LumpExpect(wad, ref lumpPos, lumpName);
@@ -338,7 +371,7 @@ namespace asset_transpiler
 				// Skip INTERPIC
 				LumpExpect(wad, ref lumpPos, "INTERPIC");
 
-				Globals.Status("Parsing sprites...");
+				Status("Parsing sprites...", 1);
 
 				var sprites_to_save = new HashSet<string>
 				{
@@ -429,6 +462,8 @@ namespace asset_transpiler
 					int num_frames = 0;
 					var frameMappings = new Dictionary<int, Tuple<int, bool>[]>();
 
+					Status("Parsing sprite " + sprite.Key + "...", 2);
+
 					for (int i = 0; i < sprite.Value.Count; ++i)
 					{
 						var pic = sprite.Value[i];
@@ -500,10 +535,15 @@ namespace asset_transpiler
 								throw new Exception();
 					}
 
-					var file = "sprites/doom/" + sprite.Key.Substring(0, 4) + ".d2s";
-					Globals.CreateDirectory(Path.GetDirectoryName(file));
+					var fileBase = "sprites/doom/" + sprite.Key.Substring(0, 4);
+					var spriteFile = fileBase + ".d2s";
+					CreateDirectory(Path.GetDirectoryName(spriteFile));
 
-					using (var bw = new BinaryWriter(Globals.OpenFileStream(file)))
+					int picIndex = 0;
+					foreach (var pic in pics)
+						wad.WriteImageTo(pic.Pixels, PaletteID.Doom, fileBase + "_" + picIndex++ + ".tga", pic.Width, pic.Height);
+
+					using (var bw = new BinaryWriter(OpenFileStream(spriteFile)))
 					{
 						bw.Write(Encoding.ASCII.GetBytes("D2SP"));
 						bw.Write((byte)pics.Count);
@@ -512,9 +552,6 @@ namespace asset_transpiler
 						{
 							bw.Write(pic.X);
 							bw.Write(pic.Y);
-							bw.Write(pic.Width);
-							bw.Write(pic.Height);
-							bw.Write(pic.Pixels);
 						}
 
 						bw.Write((byte)actual_max);
@@ -533,7 +570,7 @@ namespace asset_transpiler
 
 				var mapPatches = new Dictionary<string, DoomPicture>();
 
-				Globals.Status("Parsing patches...");
+				Status("Parsing patches...", 1);
 				// Patches
 				DoomLumpMarkers(wad, ref lumpPos, "P_", (lmp) =>
 				{
@@ -606,12 +643,13 @@ namespace asset_transpiler
 					{ "DBRAIN3", "DBRAIN4" },
 					{ "DBRAIN4", "DBRAIN1" }
 				};
-
-				Globals.Status("Unpacking textures...");
-
+				
 				// now that we have patches, we can write textures!
 				foreach (var texture in mapTextures)
+				{
+					Status("Unpacking texture " + texture.Name + "...", 2);
 					UnpackDoomTexture(texture, animated_textures, mapPatches, mapPatchNames);
+				}
 
 				// Flats
 				var flats = new Dictionary<WADFile, byte[]>();
@@ -656,7 +694,7 @@ namespace asset_transpiler
 					{ "SLIME12", "SLIME09" }
 				};
 
-				Globals.Status("Parsing flats...");
+				Status("Parsing flats...", 1);
 				DoomLumpMarkers(wad, ref lumpPos, "F_", (lmp) =>
 				{
 					if (lmp.Length == 0)
@@ -672,22 +710,16 @@ namespace asset_transpiler
 					var name = flat.Key.Name;
 					string outwal = "textures/doom/" + name + ".wal";
 
-					Globals.Status("Writing flat " + name + "...");
+					Status("Writing flat " + name + "...", 2);
 
 					if (name == "FLOOR7_2")
-					{
-						BinaryWriter btw = new BinaryWriter(Globals.OpenFileStream("pics/doom/backtile.d2p"));
-						btw.Write(64);
-						btw.Write(64);
-						btw.Write(flat.Value);
-						btw.Close();
-					}
+						wad.WriteImageTo(flat.Value, PaletteID.Doom, "pics/doom/backtile.tga", 64, 64);
 
-					if (Globals.FileExists(outwal))
+					if (FileExists(outwal))
 						continue;
 
 					// Test PNGs
-					string outpng = "textures/doom/" + name + ".png";
+					string outpng = "textures/doom/" + name + ".tga";
 
 					using (var bmp = new Image<Rgba32>(64, 64))
 					{
@@ -698,8 +730,8 @@ namespace asset_transpiler
 								bmp[x, y] = Globals.GetMappedColor(PaletteID.Doom, c);
 							}
 
-						using (var stream = Globals.OpenFileStream(outpng))
-							bmp.SaveAsPng(stream);
+						using (var stream = OpenFileStream(outpng))
+							bmp.SaveAsTga(stream);
 					}
 
 					// Write WALs
@@ -709,230 +741,17 @@ namespace asset_transpiler
 						next_name = "";
 
 					outwal = "textures/doom/" + walname + ".wal";
-
-					int headerwidth = 32 + 4 + 4 + 16 + 32 + 4 + 4 + 4;
-
-					BinaryWriter bw = new BinaryWriter(Globals.OpenFileStream(outwal));
-
-					for (var k = 0; k < 32; ++k)
-						bw.Write((byte)(k < walname.Length ? walname[k] : 0));
-
-					bw.Write(64);
-					bw.Write(64);
-
-					bw.Write(headerwidth);
-					bw.Write(headerwidth + (64 * 64));
-					bw.Write(headerwidth + (64 * 64) + (64 / 2 * 64 / 2));
-					bw.Write(headerwidth + (64 * 64) + (64 / 2 * 64 / 2) + (64 / 4 * 64 / 4));
-
-					for (var k = 0; k < 32; ++k)
-						bw.Write((byte)(k < next_name.Length ? next_name[k] : 0));
-
-					bw.Write(0);
-					bw.Write(0);
-					bw.Write(0);
-
-					var frame = flat.Value;
-
-					for (var d = 0; d < frame.Length; ++d)
-						bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[d]));
-
-					for (var y = 0; y < 64; y += 2)
-						for (var x = 0; x < 64; x += 2)
-						{
-							var i = (y * 64) + x;
-							bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-						}
-
-					for (var y = 0; y < 64; y += 4)
-						for (var x = 0; x < 64; x += 4)
-						{
-							var i = (y * 64) + x;
-							bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-						}
-
-					for (var y = 0; y < 64; y += 8)
-						for (var x = 0; x < 64; x += 8)
-						{
-							var i = (y * 64) + x;
-							bw.Write(Globals.GetClosestMappedColor(PaletteID.Doom, PaletteID.Q2, frame[i]));
-						}
-
-					bw.Close();
+					SaveWal(outwal, walname, next_name, 0, 0, flat.Value, PaletteID.Doom, 64, 64);
 				}
 			}
 
-			Globals.CloseStatus();
+			ClearStatus();
+			Status("Done!", 0);
 		}
 
-		private static void UnpackDoomTexture(DoomMapTexture texture, Dictionary<string, string> animated, Dictionary<string, DoomPicture> mapPatches, List<string> mapPatchNames)
+		public override void Run()
 		{
-			byte[] pixels = new byte[texture.Width * texture.Height];
-
-			for (var i = 0; i < pixels.Length; ++i)
-				pixels[i] = 255;
-
-			for (var i = 0; i < texture.Patches.Length; ++i)
-			{
-				var patchData = texture.Patches[i];
-				var patch = mapPatches[mapPatchNames[patchData.Patch]];
-				
-				ByteBuffer.BoxCopy(patch.Pixels, 0, 0, patch.Width, patch.Height, pixels, patchData.OriginX, patchData.OriginY, texture.Width, texture.Height, patch.Width, patch.Height, true);
-			}
-
-			var name = texture.Name;
-			string outwal = "textures/doom/" + name + ".wal";
-
-			Globals.CreateDirectory(Path.GetDirectoryName(outwal));
-
-			Globals.Status("Writing patched texture " + name + "...");
-
-			if (Globals.FileExists(outwal))
-				return;
-
-			using (var bmp = new Image<Rgba32>(texture.Width, texture.Height))
-			{
-				for (var y = 0; y < texture.Height; ++y)
-					for (var x = 0; x < texture.Width; ++x)
-					{
-						var c = pixels[(y * texture.Width) + x];
-						bmp[x, y] = Globals.GetMappedColor(PaletteID.Doom, c);
-					}
-
-				// Write PNG
-				string outpng = "textures/doom/" + name + ".png";
-
-				using (var stream = Globals.OpenFileStream(outpng))
-					bmp.SaveAsPng(stream);
-
-				// Write WAL
-				string walname = name, next_name;
-
-				if (!animated.TryGetValue(texture.Name, out next_name))
-					next_name = "";
-
-				outwal = "textures/doom/" + walname + ".wal";
-			
-				Globals.SaveWal(outwal, walname, next_name, 0, 0, pixels, PaletteID.Doom, texture.Width, texture.Height);
-			}
-		}
-
-		static void DoomLumpMarkers(WAD wad, ref int lumpPos, string prefix, Action<WADFile> callback)
-		{
-			LumpExpect(wad, ref lumpPos, prefix + "START");
-			string lumpName;
-
-			while ((lumpName = LumpPeek(wad, ref lumpPos)) != prefix + "END")
-				callback(LumpExpect(wad, ref lumpPos, lumpName));
-
-			LumpExpect(wad, ref lumpPos, prefix + "END");
-		}
-
-		class DoomPicture
-		{
-			public short Width, Height;
-			public short X, Y;
-			public byte[] Pixels;
-
-			public DoomPicture(WAD wad, WADFile file)
-			{
-				wad.Reader.BaseStream.Position = file.Offset;
-				Width = wad.Reader.ReadInt16();
-				Height = wad.Reader.ReadInt16();
-
-				X = wad.Reader.ReadInt16();
-				Y = wad.Reader.ReadInt16();
-
-				int[] columns = new int[Width];
-
-				for (int i = 0; i < Width; ++i)
-					columns[i] = wad.Reader.ReadInt32();
-
-				Pixels = new byte[Width * Height];
-
-				for (int i = 0; i < Pixels.Length; ++i)
-					Pixels[i] = 255;
-
-				for (int i = 0; i < Width; ++i)
-				{
-					wad.Reader.BaseStream.Position = file.Offset + columns[i];
-					int rowstart = 0;
-
-					while (rowstart != 255)
-					{
-						rowstart = wad.Reader.ReadByte();
-
-						if (rowstart == 255)
-							break;
-
-						byte pixel_count = wad.Reader.ReadByte();
-						wad.Reader.ReadByte();
-
-						for (int j = 0; j < pixel_count; ++j)
-						{
-							byte pixel = wad.Reader.ReadByte();
-							//Pixels[(i * Height) + (j + rowstart)] = pixel;
-							//write Pixel to image, j + rowstart = row, i = column
-							Pixels[((j + rowstart) * Width) + i] = pixel;
-						}
-
-						wad.Reader.ReadByte();
-					}
-				}
-			}
-		}
-
-		static void WriteSimpleDoomTexture(WAD wad, WADFile file, string output)
-		{
-			Globals.CreateDirectory(Path.GetDirectoryName(output));
-
-			DoomPicture picture = new DoomPicture(wad, file);
-
-			using (var bw = new BinaryWriter(Globals.OpenFileStream(output)))
-			{
-				bw.Write((uint)picture.Width);
-				bw.Write((uint)picture.Height);
-
-				bw.Write(picture.Pixels);
-			}
-		}
-
-		static void LumpLoadTexture(WAD wad, ref int lumpPos, List<DoomMapTexture> mapTextures, string name)
-		{
-			var file = LumpExpect(wad, ref lumpPos, name);
-
-			wad.Reader.BaseStream.Position = file.Offset;
-
-			int numTextures = wad.Reader.ReadInt32();
-			int[] offsets = new int[numTextures];
-
-			for (int i = 0; i < numTextures; ++i)
-				offsets[i] = wad.Reader.ReadInt32();
-
-			for (int i = 0; i < numTextures; ++i)
-			{
-				wad.Reader.BaseStream.Position = file.Offset + offsets[i];
-				mapTextures.Add(new DoomMapTexture(wad));
-			}
-		}
-
-		static void LumpLoadPatchNames(WAD wad, ref int lumpPos, List<string> mapPatchNames, string name)
-		{
-			var file = LumpExpect(wad, ref lumpPos, name);
-
-			wad.Reader.BaseStream.Position = file.Offset;
-
-			int numPatches = wad.Reader.ReadInt32();
-
-			for (int i = 0; i < numPatches; ++i)
-			{
-				string pname = Encoding.ASCII.GetString(wad.Reader.ReadBytes(8));
-
-				if (pname.IndexOf('\0') != -1)
-					pname = pname.Substring(0, pname.IndexOf('\0'));
-
-				mapPatchNames.Add(pname.ToLower());
-			}
+			D2CopyStuff(Globals.DoomPath + "\\doom2.wad");
 		}
 	}
 }

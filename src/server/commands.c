@@ -504,7 +504,7 @@ static void dump_clients(void)
         "--- ----- ---- --------------- ------- --------------------- ----- -- ---\n");
     FOR_EACH_CLIENT(client) {
         Com_Printf("%3i %5i ", client->number,
-                   client->edict->client->ps.stats[STAT_FRAGS]);
+                   client->edict->client->ps.stats.frags);
 
         switch (client->state) {
         case cs_zombie:

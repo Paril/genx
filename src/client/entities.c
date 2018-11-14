@@ -1256,7 +1256,7 @@ static void CL_SetupThirdPersionView(void)
 	static vec3_t mins = { -4, -4, -4 }, maxs = { 4, 4, 4 };
 
 	// if dead, set a nice view angle
-	if (cl.frame.ps.stats[STAT_HEALTH] <= 0) {
+	if (cl.frame.ps.stats.health <= 0) {
 		cl.refdef.viewangles[ROLL] = 0;
 		cl.refdef.viewangles[PITCH] = 10;
 	}

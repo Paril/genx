@@ -580,7 +580,10 @@ void duke_freezer_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_
 		G_FreeEdict(ent);
 	}
 	else
+	{
 		--ent->count;
+		ent->dmg /= 2;
+	}
 }
 
 void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed)
@@ -605,7 +608,7 @@ void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
 	rocket->touch = duke_freezer_touch;
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
-	rocket->dmg = (damage + (Q_rand() & 7)) >> 2;
+	rocket->dmg = (damage + (Q_rand_uniform(4) + 1));
 	rocket->count = 3;
 	rocket->entitytype = ET_DOOM_PLASMA;
 

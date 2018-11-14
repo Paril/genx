@@ -478,8 +478,7 @@ static itemid_e dukeWeaponChoice[] = {
 	ITI_DUKE_PIPEBOMBS,
 	ITI_DUKE_FREEZER,
 	ITI_DUKE_PISTOL,
-	//ITI_DUKE_TRIPBOMBS,
-	ITI_DUKE_FOOT
+	//ITI_DUKE_TRIPBOMBS
 };
 
 gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
@@ -495,7 +494,7 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 			return GetItemByIndex(ITI_RAILGUN);
 		else if (HasWeaponQuick(ITI_HYPERBLASTER))
 			return GetItemByIndex(ITI_HYPERBLASTER);
-		else if ((HasAmmoCountQuick(ITI_BULLETS, 25) ||!HasWeaponQuick(ITI_MACHINEGUN)) && HasWeaponQuick(ITI_CHAINGUN))
+		else if ((HasAmmoCountQuick(ITI_MACHINEGUN, 25) ||!HasWeaponQuick(ITI_MACHINEGUN)) && HasWeaponQuick(ITI_CHAINGUN))
 			return GetItemByIndex(ITI_CHAINGUN);
 		else if (HasWeaponQuick(ITI_MACHINEGUN))
 			return GetItemByIndex(ITI_MACHINEGUN);
@@ -503,6 +502,14 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 			return GetItemByIndex(ITI_SUPER_SHOTGUN);
 		else if (HasWeaponQuick(ITI_SHOTGUN))
 			return GetItemByIndex(ITI_SHOTGUN);
+		else if (HasWeaponQuick(ITI_ROCKET_LAUNCHER))
+			return GetItemByIndex(ITI_ROCKET_LAUNCHER);
+		else if (HasWeaponQuick(ITI_GRENADE_LAUNCHER))
+			return GetItemByIndex(ITI_GRENADE_LAUNCHER);
+		else if (HasWeaponQuick(ITI_BFG10K))
+			return GetItemByIndex(ITI_BFG10K);
+		else if (HasWeaponQuick(ITI_GRENADES))
+			return GetItemByIndex(ITI_GRENADES);
 		break;
 
 	case GAME_Q1:
@@ -541,7 +548,7 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 	case GAME_DUKE:
 		weap = ITI_DUKE_FOOT;
 
-		for (i = 0; i < 10; ++i)
+		for (i = 0; i < q_countof(dukeWeaponChoice); ++i)
 		{
 			weap = dukeWeaponChoice[i];
 

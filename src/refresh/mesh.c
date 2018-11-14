@@ -39,6 +39,8 @@ static float    celscale;
 
 static GLfloat  shadowmatrix[16];
 
+extern cvar_t	 *scr_gunfov;
+
 static void setup_dotshading(void)
 {
     float cp, cy, sp, sy;
@@ -633,6 +635,42 @@ static void draw_alias_mesh(maliasmesh_t *mesh)
     GL_UnlockArrays();
 }
 
+// Generations
+
+
+static void GL3_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
+{
+	// calculation of left, right, bottom, top is from R_MYgluPerspective() of old gl backend
+	// which seems to be slightly different from the real gluPerspective()
+	// and thus also from HMM_Perspective()
+	GLdouble left, right, bottom, top;
+	float A, B, C, D;
+
+	top = zNear * tan(fovy * M_PI / 360.0);
+	bottom = -top;
+
+	left = bottom * aspect;
+	right = top * aspect;
+
+	// TODO:  stereo stuff
+	// left += - gl1_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
+	// right += - gl1_stereo_convergence->value * (2 * gl_state.camera_separation) / zNear;
+
+	// the following emulates glFrustum(left, right, bottom, top, zNear, zFar)
+	// see https://www.khronos.org/registry/OpenGL-Refpages/gl2.1/xhtml/glFrustum.xml
+	A = (right+left)/(right-left);
+	B = (top+bottom)/(top-bottom);
+	C = -(zFar+zNear)/(zFar-zNear);
+	D = -(2.0*zFar*zNear)/(zFar-zNear);
+
+	gl_static.backend.proj_matrix((const float []) {
+		(2.0*zNear)/(right-left), 0, 0, 0, // first *column*
+		0, (2.0*zNear)/(top-bottom), 0, 0,
+		A, B, C, -1.0,
+		0, 0, D, 0
+	});
+}
+
 void GL_DrawAliasModel(model_t *model)
 {
     entity_t *ent = glr.ent;
@@ -706,6 +744,12 @@ void GL_DrawAliasModel(model_t *model)
 
     GL_RotateForEntity(origin);
 
+	if (ent->flags & RF_WEAPONMODEL) {
+		// render weapon with a different FOV (r_gunfov) so it's not distorted at high view FOV
+		float screenaspect = (float)r_config.width / r_config.height;
+		GL3_MYgluPerspective(scr_gunfov->value, screenaspect, gl_znear->value, gl_static.world.size);
+	}
+
     if ((ent->flags & (RF_WEAPONMODEL | RF_LEFTHAND)) ==
         (RF_WEAPONMODEL | RF_LEFTHAND)) {
         GL_Reflect();
@@ -724,7 +768,10 @@ void GL_DrawAliasModel(model_t *model)
 
     if ((ent->flags & (RF_WEAPONMODEL | RF_LEFTHAND)) ==
         (RF_WEAPONMODEL | RF_LEFTHAND)) {
-        GL_Reflect();
         qglFrontFace(GL_CW);
     }
+
+	if (ent->flags & RF_WEAPONMODEL) {
+		GL_Frustum();
+	}
 }

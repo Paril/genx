@@ -1,64 +1,260 @@
 ﻿using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.IO.Compression;
-using System.Text;
 
 namespace asset_transpiler
 {
+	public static class ImageExtensions
+	{
+		public static void SaveAsTga(this Image<Rgba32> image, Stream stream)
+		{
+			using (var bw = new BinaryWriter(stream))
+			{
+				bw.Write((byte)0);
+				bw.Write((byte)0);
+				bw.Write((byte)2);
+
+				bw.Write((ushort)0);
+				bw.Write((ushort)0);
+				bw.Write((byte)0);
+
+				bw.Write((ushort)0);
+				bw.Write((ushort)0);
+				bw.Write((ushort)image.Width);
+				bw.Write((ushort)image.Height);
+				bw.Write((byte)32);
+				bw.Write((byte)0);
+
+				for (var y = 0; y < image.Height; y++)
+					for (var x = 0; x < image.Width; x++)
+					{
+						var pixel = image[x, image.Height - y - 1];
+	
+						bw.Write(pixel.B);
+						bw.Write(pixel.G);
+						bw.Write(pixel.R);
+						bw.Write(pixel.A);
+					}
+			}
+		}
+	}
+
+	public class ColorFinder
+	{
+		// Declare a root node to contain all of the source colors.
+		private Node _nodRoot;
+
+		public ColorFinder(Rgba32[] sourceColors)
+		{
+			// Create the root node.
+			_nodRoot = new Node(0, sourceColors);
+
+			// Add all source colors to it.
+			for (int i = 0; i < sourceColors.Length; i++)
+				_nodRoot.AddColor(i);
+		}
+
+		public int GetNearestColorIndex(Rgba32 color)
+		{
+			return _nodRoot.GetNearestColorIndex(color, out int iTmp);
+		}
+
+		private class Node
+		{
+			private int _iLevel;
+			private Rgba32[] _aclSourceColors;
+			private Node[] _anodChildren = new Node[16];
+			private int _iColorIndex = -1;
+
+			// Cached distance calculations.
+			private static int[,] Distance = new int[256, 256];
+
+			// Cached bit masks.
+			private static int[] Mask = { 32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1 };
+
+			static Node()
+			{
+				// precalculate every possible distance
+				for (int i = 0; i < 256; i++)
+				{
+					for (int ii = 0; ii < 256; ii++)
+					{
+						Distance[i, ii] = (i - ii) * (i - ii);
+					}
+				}
+			}
+
+			public Node(int level, Rgba32[] sourceColors)
+			{
+				_iLevel = level;
+				_aclSourceColors = sourceColors;
+			}
+
+			public void AddColor(int colorIndex)
+			{
+				if (_iLevel == 15)
+				{
+					// LEAF MODE.
+					// The deepest level contains the color index and no children.
+					_iColorIndex = colorIndex;
+				}
+				else
+				{
+					// BRANCH MODE.
+					// Get the oct index for the specified source color at this level.
+					int iIndex = _GetOctIndex(_aclSourceColors[colorIndex], _iLevel);
+					// If the necessary child node doesn't exist, create it.
+					if (_anodChildren[iIndex] == null)
+						_anodChildren[iIndex] = new Node(_iLevel + 1, _aclSourceColors);
+					// Pass the color along to the proper child node.
+					_anodChildren[iIndex].AddColor(colorIndex);
+				}
+			}
+
+			public int GetNearestColorIndex(Rgba32 color, out int distance)
+			{
+				int ret = -1;
+				if (_iLevel == 15)
+				{
+					// LEAF MODE.
+					// Return our color index.
+					ret = _iColorIndex;
+					// Output the distance in case the caller is comparing distances.
+					distance =	Distance[color.R, _aclSourceColors[ret].R] +
+								Distance[color.G, _aclSourceColors[ret].G] +
+								Distance[color.B, _aclSourceColors[ret].B] +
+								Distance[color.A, _aclSourceColors[ret].A];
+				}
+				else
+				{
+					// BRANCH MODE.
+					// Get the oct index for the specified color at this level.
+					int iIndex = _GetOctIndex(color, _iLevel);
+					if (_anodChildren[iIndex] == null)
+					{
+						// NO DIRECT CHILD EXISTS.
+						// Return the child containing the closeset color.
+						int iMinDistance = int.MaxValue;
+						int iMinColor = -1;
+						foreach (Node nod in _anodChildren)
+						{
+							if (nod != null)
+							{
+								// Get the closeset color contained in the child node and its distance.
+								int iDistance_nod;
+								int iColor_nod = nod.GetNearestColorIndex(color, out iDistance_nod);
+								// If the return color the closest color found, remember it.
+								if (iDistance_nod < iMinDistance)
+								{
+									iMinDistance = iDistance_nod;
+									iMinColor = iColor_nod;
+								}
+							}
+						}
+						// Return the closest color index found and output its distance.
+						ret = iMinColor;
+						distance = iMinDistance;
+					}
+					else
+					{
+						// DIRECT CHILD EXISTS.
+						// Return its closest color and distance.
+						ret = _anodChildren[iIndex].GetNearestColorIndex(color, out distance);
+					}
+				}
+				return ret;
+			}
+
+			private int _GetOctIndex(Rgba32 color, int level)
+			{
+				// Take 1 bit from each color channel to return a 4-bit value ranging from 0 to 15.
+				// Level 0 uses the highest bit, level 1 uses the second-highest bit, etc.
+				int iShift = 15 - level;
+				return ((color.R & Mask[level]) >> iShift) |
+						 ((color.G & Mask[level]) << 1 >> iShift) |
+						 ((color.B & Mask[level]) << 2 >> iShift) |
+						 ((color.A & Mask[level]) << 3 >> iShift);
+			}
+		}
+	}
+
 	public static class Rgba32Extensions
 	{
+		public static byte GetIndex(this Rgba32 c, int i)
+		{
+			switch (i)
+			{
+				case 0:
+					return c.R;
+				case 1:
+					return c.G;
+				case 2:
+					return c.B;
+			}
+
+			throw new Exception();
+		}
+
+		public static void SetIndex(this Rgba32 c, byte v, int i)
+		{
+			switch (i)
+			{
+				case 0:
+					c.R = v;
+					return;
+				case 1:
+					c.G = v;
+					return;
+				case 2:
+					c.B = v;
+					return;
+			}
+
+			throw new Exception();
+		}
+
 		public static Rgba32[] MakePalette(string hex)
 		{
 			var colors = new Rgba32[hex.Length / 6];
 
 			for (int x = 0, i = 0; x < colors.Length; i += 6, ++x)
 			{
+				colors[x].A = (byte)(x == 255 ? 0 : 255);
+
+				if (colors[x].A == 0)
+					continue;
+
 				colors[x].R = byte.Parse(hex.Substring(i, 2), NumberStyles.HexNumber);
 				colors[x].G = byte.Parse(hex.Substring(i + 2, 2), NumberStyles.HexNumber);
 				colors[x].B = byte.Parse(hex.Substring(i + 4, 2), NumberStyles.HexNumber);
-				colors[x].A = (byte)(x == 255 ? 0 : 255);
 			}
 
 			return colors;
 		}
-
-		public static int Distance(this Rgba32 a, Rgba32 b)
+		
+		public static int ClosestColor(this Rgba32 to, PaletteID palette)
 		{
-			if (a.A == 0 && b.A == 0)
-				return 0;
-
-			var dr = Math.Abs(a.R - b.R);
-			var dg = Math.Abs(a.G - b.G);
-			var db = Math.Abs(a.B - b.B);
-
-			return dr * dr + dg * dg + db * db;
+			return Globals._finders[(int)palette].GetNearestColorIndex(to);
 		}
 
-		public static int ClosestColor(this Rgba32 to, Rgba32[] palette)
+		public static Dictionary<uint, byte> MakePaletteMap(Rgba32[] palette)
 		{
-			var currentClosest = -1;
-			var currentDist = int.MaxValue;
+			var dict = new Dictionary<uint, byte>();
 
-			for (var i = 0; i < palette.Length; ++i)
+			for (var i = 0; i < palette.Length; i++)
 			{
-				var pc = palette[i];
-				var dist = pc.Distance(to);
+				var c = palette[i];
 
-				if (dist == 0)
-					return i;
-				else if (dist >= currentDist)
+				if (dict.ContainsKey(c.PackedValue))
 					continue;
 
-				currentDist = dist;
-				currentClosest = i;
+				dict[c.PackedValue] = (byte) i;
 			}
 
-			return currentClosest;
+			return dict;
 		}
 	}
 
@@ -74,52 +270,11 @@ namespace asset_transpiler
 
 	public class Globals
 	{
-		public static ZipArchive _writeToZip = null;
-		public static HashSet<string> _zipFiles = null;
-
-		public static void MakeZip(string zip_location)
-		{
-			_writeToZip = new ZipArchive(File.Create(zip_location), ZipArchiveMode.Create, false);
-			_zipFiles = new HashSet<string>();
-		}
-
-		public static void WriteFile(string local_file, byte[] data)
-		{
-			if (_writeToZip != null)
-			{
-				_zipFiles.Add(local_file);
-
-				using (var writer = new BinaryWriter(_writeToZip.CreateEntry(local_file, CompressionLevel.Optimal).Open()))
-					writer.Write(data);
-			}
-			else
-				File.WriteAllBytes(local_file, data);
-		}
-
-		public static void CreateDirectory(string dir)
-		{
-			if (_writeToZip == null)
-				Directory.CreateDirectory(dir);
-		}
-
-		public static bool FileExists(string local_file)
-		{
-			if (_writeToZip != null)
-				return _zipFiles.Contains(local_file);
-
-			return File.Exists(local_file);
-		}
-
-		public static Stream OpenFileStream(string local_file)
-		{
-			if (_writeToZip != null)
-			{
-				_zipFiles.Add(local_file);
-				return _writeToZip.CreateEntry(local_file, CompressionLevel.Optimal).Open();
-			}
-
-			return File.Create(local_file);
-		}
+		// properties
+		public static bool SaveWals = false;
+		public static string Quake1Path = "";
+		public static string DoomPath = "";
+		public static string DukePath = "";
 
 		public static Rgba32[][] _palettes = new Rgba32[(int)PaletteID.Total][]
 		{
@@ -129,201 +284,55 @@ namespace asset_transpiler
 			Rgba32Extensions.MakePalette("000000040404100C101818182420202C282C383434403C3C4C484858505060585C6C6064746C70807478887C8094888C988C90A09498A89CA0ACA4A8B0ACACB8B0B4C0B8B8C8BCC0CCC4C8D4CCD0D8D4D8E0D8DCE4E0E4ECE8ECF4F0F4FCFCFC0000000404000C0404180C0420100828140C301C103C20144424184C2C1854301C603420683C2470402878442C844C308C5438905C3C986444A06C48A87450AC7C58B08460B89068BC9870C4A078CCAC80D4B08CD8B894DCC49CE4CCA8ECD8B05060945468985C70A06078A86880AC7088B47890BC7C98C484A4CC8CACD094B0D89CB8DCA4C4E4ACCCECB4D4F4BCDCFC0000000404040408100C0C1810142014182C182034202840242C482834502C385C34406438446C3C4C7840508048588C0000000404040C0C0818140C20201028281830301C3C38244440284C4C2C545434605C38686440706C447874488480508C8854949454989C589CA45CA0AC60A4B060A8B864ACC068ACC868ACD06CB0D86CB0DC70B0E470B0EC74B0F474B0FC780000000C0000180400280400340804440C04541004601404701808801C088C200C9C240CAC280CB82C10C83010D834146444186850047458048064048C6C08947808A08008AC8C08B09410BCA010C8AC10D4B414D8C014E4C814F0D814FCE018000000040400080804100C081410101C1414201C1828201C302420342C283C302C403430483C344C40385444405C4C4464544C6C5C50786458806C608C7468947C709C8478A88C7CAC9484B49C8CC0A494C8AC9CD4B0A4D8B8ACE0C4B0ECCCB8341C004428005830006C3800804000904800A45000B45404C85C04CC6818D47430D88444DC9058E4A070ECAC88F4C0A0D84018D84C1CDC5C28E06830E47838E88440EC9048F0A050F0AC5CF0B864F4C474F4D07CF8D88CF8E094F8E8A4FCF0AC08103408084014084C1C085830085C4010645414686818707C187888207498206CA41860B0284CBC2C38CC3018D83414444400A4A400FCFC00440044A400A4FC00FC580000AC0000FC000000440000A40000FC000000440000A40000FCFC00FC")
 		};
 
-		public static void WriteWav(string outwav, int sampleRate, int numSamples, byte[] samples, int channels = 1, int bps = 8)
+		public static Dictionary<uint, byte>[] _paletteMaps = new Dictionary<uint, byte>[]
 		{
-			using (var ms = new MemoryStream())
-			using (var wr = new BinaryWriter(ms))
-			{
-				wr.Write(Encoding.ASCII.GetBytes("RIFF"));
-				wr.Write(0);
-				wr.Write(Encoding.ASCII.GetBytes("WAVE"));
+			Rgba32Extensions.MakePaletteMap(_palettes[0]),
+			Rgba32Extensions.MakePaletteMap(_palettes[1]),
+			Rgba32Extensions.MakePaletteMap(_palettes[2]),
+			Rgba32Extensions.MakePaletteMap(_palettes[3])
+		};
 
-				wr.Write(Encoding.ASCII.GetBytes("fmt "));
-				wr.Write(16);
-				wr.Write((short)0x0001);
-				wr.Write((short)1);
-				wr.Write(sampleRate);
-				wr.Write(sampleRate * channels * (bps / 8));
-				wr.Write((short)(channels * (bps / 8)));
-				wr.Write((short)bps);
-
-				wr.Write(Encoding.ASCII.GetBytes("data"));
-				wr.Write(numSamples);
-				wr.Write(samples);
-				if ((numSamples & 1) == 1)
-					wr.Write((byte)0);
-
-				int len = (int)wr.BaseStream.Length;
-				wr.BaseStream.Position = 4;
-				wr.Write(len - 8);
-
-				using (var os = OpenFileStream(outwav))
-					os.Write(ms.ToArray());
-			}
-		}
-
-		public static byte[][,] GenerateColorMappings()
+		public static ColorFinder[] _finders = new ColorFinder[]
 		{
-			var mappings = new byte[(int)PaletteID.Total][,];
+			new ColorFinder(_palettes[0]),
+			new ColorFinder(_palettes[1]),
+			new ColorFinder(_palettes[2]),
+			new ColorFinder(_palettes[3])
+		};
+
+		public static byte[,,] GenerateColorMappings()
+		{
+			var mappings = new byte[(int)PaletteID.Total, (int)PaletteID.Total, 256];
 
 			for (PaletteID palette = 0; palette < PaletteID.Total; ++palette)
 			{
 				var from = _palettes[(int)palette];
-				mappings[(int)palette] = new byte[256, (int)PaletteID.Total];
 
 				for (PaletteID palette2 = 0; palette2 < PaletteID.Total; ++palette2)
 				{
+					if (palette == palette2)
+						continue;
+
 					var to = _palettes[(int)palette2];
 
-					for (int i = 0; i < 256; ++i)
-						mappings[(int)palette][i, (int)palette2] = (byte)from[i].ClosestColor(to);
+					for (var i = 0; i < 256; ++i)
+						mappings[(int)palette, (int)palette2, i] = (byte) _finders[(int)palette].GetNearestColorIndex(to[i]);
 				}
 			}
 
 			return mappings;
 		}
 
-		public static byte[][,] _colorMappings = GenerateColorMappings();
+		public static byte[,,] _colorMappings = GenerateColorMappings();
 
 		public static byte GetClosestMappedColor(PaletteID from, PaletteID to, int index)
 		{
-			return _colorMappings[(int)from][index, (int)to];
+			return _colorMappings[(int)from, (int)to, index];
 		}
 
 		public static Rgba32 GetMappedColor(PaletteID from, int index)
 		{
 			return _palettes[(int)from][index];
-		}
-
-		static int _statusTop;
-		static int _headerWidth, _statusWidth = 0;
-
-		public static void OpenStatus(string whatwedoing)
-		{
-			Console.WriteLine(whatwedoing);
-			_statusTop = Console.CursorTop;
-			_headerWidth = whatwedoing.Length;
-			_statusWidth = 0;
-		}
-
-		public static void Status(string status)
-		{
-			Console.CursorTop = _statusTop;
-			Console.CursorLeft = 0;
-
-			if (_statusWidth != 0)
-			{
-				Console.Write(new string('\0', _statusWidth));
-				Console.CursorLeft = 0;
-			}
-
-			Console.WriteLine(status);
-
-			_statusWidth = status.Length;
-		}
-
-		public static void ChangeStatusHeader(string newheader)
-		{
-			var oldTop = Console.CursorTop;
-			Console.CursorTop = _statusTop - 1;
-			Console.CursorLeft = 0;
-
-			Console.Write(new string('\0', _headerWidth));
-			Console.CursorLeft = 0;
-
-			Console.WriteLine(newheader);
-			Console.CursorTop = oldTop;
-
-			_headerWidth = newheader.Length;
-		}
-
-		public static void CloseStatus()
-		{
-			ChangeStatusHeader("Done");
-			Status("");
-			Console.WriteLine();
-		}
-		
-		static int NearestPow2(int x)
-		{
-			x--;
-			x |= x >> 1;  // handle  2 bit numbers
-			x |= x >> 2;  // handle  4 bit numbers
-			x |= x >> 4;  // handle  8 bit numbers
-			x |= x >> 8;  // handle 16 bit numbers
-			x |= x >> 16; // handle 32 bit numbers
-			x++;
-
-			return x;
-		}
-
-		public static void SaveWal(string outwal, string name, string next_name, int surf, int contents, byte[] data, PaletteID palette, int width, int height)
-		{
-			/*if (image.Width != NearestPow2(image.Width) ||
-				image.Height != NearestPow2(image.Height))
-			{
-				using (var newImage = image.Clone(c => c.Resize(NearestPow2(image.Width), NearestPow2(image.Height), KnownResamplers.NearestNeighbor)))
-				{
-					SaveWal(outwal, name, next_name, surf, contents, newImage);
-					return;
-				}
-			}*/
-
-			int sizedWidth = NearestPow2(width);
-			int sizedHeight = NearestPow2(height);
-			double xFrac = (double)width / sizedWidth;
-			double yFrac = (double)height / sizedHeight;
-			Func<int, int, byte> FetchPixel = (x, y) =>
-			{
-				var rx = (int)Math.Floor(xFrac * x);
-				var ry = (int)Math.Floor(yFrac * y);
-				return data[(ry * width) + rx];
-			};
-
-			int headerwidth = 32 + 4 + 4 + 16 + 32 + 4 + 4 + 4;
-
-			BinaryWriter bw = new BinaryWriter(Globals.OpenFileStream(outwal));
-
-			for (var k = 0; k < 32; ++k)
-				bw.Write((byte)(k < name.Length ? name[k] : 0));
-
-			bw.Write(sizedWidth);
-			bw.Write(sizedHeight);
-			
-			var ofs = headerwidth;
-			bw.Write(ofs);
-			bw.Write(ofs += sizedWidth * sizedHeight);
-			bw.Write(ofs += (int)Math.Ceiling(sizedWidth / 2.0) * (int)Math.Ceiling(sizedHeight / 2.0));
-			bw.Write(ofs += (int)Math.Ceiling(sizedWidth / 4.0) * (int)Math.Ceiling(sizedHeight / 4.0));
-
-			for (var k = 0; k < 32; ++k)
-				bw.Write((byte)(k < next_name.Length ? next_name[k] : 0));
-
-			bw.Write(surf);
-			bw.Write(contents);
-			bw.Write(0);
-			
-			byte[,] quantized = new byte[sizedWidth, sizedHeight];
-
-			// quantize
-			for (var y = 0; y < sizedHeight; y++)
-				for (var x = 0; x < sizedWidth; x++)
-				{
-					var pixel = FetchPixel(x, y);
-
-					if (_palettes[(int)palette][pixel].A == 255)
-						quantized[x, y] = GetClosestMappedColor(palette, PaletteID.Q2, pixel);
-					else
-						quantized[x, y] = 255;
-				}
-
-			// mips
-			for (var inc = 1; inc <= 8; inc *= 2)
-				for (var y = 0; y < sizedHeight; y += inc)
-					for (var x = 0; x < sizedWidth; x += inc)
-						bw.Write(quantized[x, y]);
-
-			bw.Close();
 		}
 	}
 }

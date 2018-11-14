@@ -63,7 +63,7 @@ typedef struct {
     uint8_t         blend[4];
     uint8_t         fov;
 	uint8_t         rdflags;
-    int32_t         stats[MAX_STATS];
+    player_stats_t  stats;
 
 	// Generations
 	uint8_t			view_events;

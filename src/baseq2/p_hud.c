@@ -505,7 +505,7 @@ void ST_updateFaceWidget(edict_t *plyr)
 	}
 
 	plyr->client->st_facecount--;
-	plyr->client->ps.stats[STAT_DOOM_FACE] = plyr->client->st_faceindex;
+	plyr->client->ps.stats.doom.face = plyr->client->st_faceindex;
 }
 
 
@@ -525,20 +525,20 @@ void G_SetStats(edict_t *ent)
     // health
     //
 	if (ent->s.game == GAME_Q2)
-	    ent->client->ps.stats[STAT_HEALTH_ICON] = level.pic_health;
-    ent->client->ps.stats[STAT_HEALTH] = ent->health;
+	    ent->client->ps.stats.q2.health_icon = level.pic_health;
+    ent->client->ps.stats.health = ent->health;
 
     //
     // ammo
     //
     if (game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) {
-        ent->client->ps.stats[STAT_AMMO_ICON] = 0;
-        ent->client->ps.stats[STAT_AMMO] = 0;
+        ent->client->ps.stats.ammo_icon = 0;
+        ent->client->ps.stats.ammo = 0;
     } else {
         //item = &itemlist[ent->client->gunstates[GUN_MAIN].ammo_index];
         //ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
-		ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex("a_shells");
-        ent->client->ps.stats[STAT_AMMO] = (int) floorf(PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon));
+		ent->client->ps.stats.ammo_icon = gi.imageindex("a_shells");
+        ent->client->ps.stats.ammo = (int) floorf(PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon));
     }
 
     //
@@ -561,15 +561,15 @@ void G_SetStats(edict_t *ent)
     index = ArmorIndex(ent);
     if (power_armor_type && (!index || (level.framenum & (8 * game.framediv)))) {
         // flash between power armor and other armor icon
-        ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex("i_powershield");
-        ent->client->ps.stats[STAT_ARMOR] = cells;
+        ent->client->ps.stats.armor_icon = gi.imageindex("i_powershield");
+        ent->client->ps.stats.armor = cells;
     } else if (index) {
         item = GetItemByIndex(index);
-        ent->client->ps.stats[STAT_ARMOR_ICON] = gi.imageindex(item->icon);
-        ent->client->ps.stats[STAT_ARMOR] = ent->client->pers.inventory[index];
+        ent->client->ps.stats.armor_icon = gi.imageindex(item->icon);
+        ent->client->ps.stats.armor = ent->client->pers.inventory[index];
     } else {
-        ent->client->ps.stats[STAT_ARMOR_ICON] = 0;
-        ent->client->ps.stats[STAT_ARMOR] = 0;
+        ent->client->ps.stats.armor_icon = 0;
+        ent->client->ps.stats.armor = 0;
     }
 
     //
@@ -578,68 +578,68 @@ void G_SetStats(edict_t *ent)
 	if (ent->s.game == GAME_Q2)
 	{
 		if (level.time > ent->client->pickup_msg_time) {
-			ent->client->ps.stats[STAT_PICKUP_ICON] = 0;
-			ent->client->ps.stats[STAT_PICKUP_STRING] = 0;
+			ent->client->ps.stats.q2.pickup_icon = 0;
+			ent->client->ps.stats.q2.pickup_string = 0;
 		}
 		else
 		{
-			ent->client->ps.stats[STAT_PICKUP_ICON] = gi.imageindex(ent->client->pickup_item->icon);
-			ent->client->ps.stats[STAT_PICKUP_STRING] = CS_ITEMS + ITEM_INDEX(ent->client->pickup_item);
+			ent->client->ps.stats.q2.pickup_icon = gi.imageindex(ent->client->pickup_item->icon);
+			ent->client->ps.stats.q2.pickup_string = CS_ITEMS + ITEM_INDEX(ent->client->pickup_item);
 		}
 
 		//
 		// timers
 		//
 		if (ent->client->quad_time > level.time) {
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_quad");
-			ent->client->ps.stats[STAT_TIMER] = (ent->client->quad_time - level.time) / 1000;
+			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_quad");
+			ent->client->ps.stats.q2.timer = (ent->client->quad_time - level.time) / 1000;
 		} else if (ent->client->invincible_time > level.time) {
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_invulnerability");
-			ent->client->ps.stats[STAT_TIMER] = (ent->client->invincible_time - level.time) / 1000;
+			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_invulnerability");
+			ent->client->ps.stats.q2.timer = (ent->client->invincible_time - level.time) / 1000;
 		} else if (ent->client->enviro_time > level.time) {
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_envirosuit");
-			ent->client->ps.stats[STAT_TIMER] = (ent->client->enviro_time - level.time) / 1000;
+			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_envirosuit");
+			ent->client->ps.stats.q2.timer = (ent->client->enviro_time - level.time) / 1000;
 		} else if (ent->client->breather_time > level.time) {
-			ent->client->ps.stats[STAT_TIMER_ICON] = gi.imageindex("p_rebreather");
-			ent->client->ps.stats[STAT_TIMER] = (ent->client->breather_time - level.time) / 1000;
+			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_rebreather");
+			ent->client->ps.stats.q2.timer = (ent->client->breather_time - level.time) / 1000;
 		} else {
-			ent->client->ps.stats[STAT_TIMER_ICON] = 0;
-			ent->client->ps.stats[STAT_TIMER] = 0;
+			ent->client->ps.stats.q2.timer_icon = 0;
+			ent->client->ps.stats.q2.timer = 0;
 		}
 
 		//
 		// selected item
 		//
 		if (ent->client->pers.selected_item == ITI_NULL)
-			ent->client->ps.stats[STAT_SELECTED_ICON] = 0;
+			ent->client->ps.stats.q2.selected_icon = 0;
 		else
-			ent->client->ps.stats[STAT_SELECTED_ICON] = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
+			ent->client->ps.stats.q2.selected_icon = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
 	}
 
-	ent->client->ps.stats[STAT_SELECTED_ITEM] = ent->client->pers.selected_item;
+	ent->client->ps.stats.selected_item = ent->client->pers.selected_item;
 
     //
     // layouts
     //
-    ent->client->ps.stats[STAT_LAYOUTS] = 0;
+    ent->client->ps.stats.layouts = 0;
 
     if (deathmatch->value) {
         if (ent->client->pers.health <= 0 || level.intermissiontime
             || ent->client->showscores)
-            ent->client->ps.stats[STAT_LAYOUTS] |= 1;
+            ent->client->ps.stats.layouts |= 1;
         if (ent->client->showinventory && ent->client->pers.health > 0)
-            ent->client->ps.stats[STAT_LAYOUTS] |= 2;
+            ent->client->ps.stats.layouts |= 2;
     } else {
         if (ent->client->showscores || ent->client->showhelp)
-            ent->client->ps.stats[STAT_LAYOUTS] |= 1;
+            ent->client->ps.stats.layouts |= 1;
         if (ent->client->showinventory && ent->client->pers.health > 0)
-            ent->client->ps.stats[STAT_LAYOUTS] |= 2;
+            ent->client->ps.stats.layouts |= 2;
     }
 
     //
     // frags
     //
-    ent->client->ps.stats[STAT_FRAGS] = ent->client->resp.score;
+    ent->client->ps.stats.frags = ent->client->resp.score;
 
     //
     // help icon / current weapon if not shown
@@ -647,94 +647,88 @@ void G_SetStats(edict_t *ent)
 	if (ent->s.game == GAME_Q2)
 	{
 		if (ent->client->pers.helpchanged && (level.framenum & (8 * game.framediv)))
-			ent->client->ps.stats[STAT_HELPICON] = gi.imageindex("i_help");
+			ent->client->ps.stats.q2.help_icon = gi.imageindex("i_help");
 		else if ((ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
 			&& ent->client->pers.weapon)
-			ent->client->ps.stats[STAT_HELPICON] = gi.imageindex(ent->client->pers.weapon->icon);
+			ent->client->ps.stats.q2.help_icon = gi.imageindex(ent->client->pers.weapon->icon);
 		else
-			ent->client->ps.stats[STAT_HELPICON] = 0;
+			ent->client->ps.stats.q2.help_icon = 0;
 	}
 
-    ent->client->ps.stats[STAT_SPECTATOR] = 0;
+    ent->client->ps.stats.spectator = 0;
 
 	// Q1 stuff
 	if (ent->s.game == GAME_Q1)
 	{
-		int shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_SHOTGUN));
-		int nails = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_NAILGUN));
-		int rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_ROCKET_LAUNCHER));
-		cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_THUNDERBOLT));
+		ent->client->ps.stats.q1.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_SHOTGUN));
+		ent->client->ps.stats.q1.ammo_nails = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_NAILGUN));
+		ent->client->ps.stats.q1.ammo_rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_ROCKET_LAUNCHER));
+		ent->client->ps.stats.q1.ammo_cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_THUNDERBOLT));
 
-		ent->client->ps.stats[STAT_Q1_AMMO] = shells | (nails << 8) | (rockets << 16) | (cells << 24);
-
-		ent->client->ps.stats[STAT_Q1_ITEMS] = 0;
+		ent->client->ps.stats.q1.items = 0;
 
 		if (ent->client->pers.inventory[ITI_Q1_SHOTGUN])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SHOTGUN;
+			ent->client->ps.stats.q1.items |= IT_Q1_SHOTGUN;
 		if (ent->client->pers.inventory[ITI_Q1_SUPER_SHOTGUN])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SSHOTGUN;
+			ent->client->ps.stats.q1.items |= IT_Q1_SSHOTGUN;
 		if (ent->client->pers.inventory[ITI_Q1_NAILGUN])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_NAILGUN;
+			ent->client->ps.stats.q1.items |= IT_Q1_NAILGUN;
 		if (ent->client->pers.inventory[ITI_Q1_SUPER_NAILGUN])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SNAILGUN;
+			ent->client->ps.stats.q1.items |= IT_Q1_SNAILGUN;
 		if (ent->client->pers.inventory[ITI_Q1_GRENADE_LAUNCHER])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_GLAUNCHER;
+			ent->client->ps.stats.q1.items |= IT_Q1_GLAUNCHER;
 		if (ent->client->pers.inventory[ITI_Q1_ROCKET_LAUNCHER])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_RLAUNCHER;
+			ent->client->ps.stats.q1.items |= IT_Q1_RLAUNCHER;
 		if (ent->client->pers.inventory[ITI_Q1_THUNDERBOLT])
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_LIGHTNING;
+			ent->client->ps.stats.q1.items |= IT_Q1_LIGHTNING;
 
 		if (ent->client->quad_time > level.time)
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_QUAD;
+			ent->client->ps.stats.q1.items |= IT_Q1_QUAD;
 		if (ent->client->invincible_time > level.time)
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_INVUL;
+			ent->client->ps.stats.q1.items |= IT_Q1_INVUL;
 		if (ent->client->enviro_time > level.time)
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_SUIT;
+			ent->client->ps.stats.q1.items |= IT_Q1_SUIT;
 		if (ent->client->breather_time > level.time)
-			ent->client->ps.stats[STAT_Q1_ITEMS] |= IT_Q1_INVIS;
-
-		ent->client->ps.stats[STAT_Q1_CURWEAP] = 0;
+			ent->client->ps.stats.q1.items |= IT_Q1_INVIS;
 
 		if (ent->health <= 0)
-			ent->client->ps.stats[STAT_Q1_FACEANIM] = 0;
-		else
-		{
-			if (ent->client->ps.stats[STAT_Q1_FACEANIM])
-				--ent->client->ps.stats[STAT_Q1_FACEANIM];
-		}
+			ent->client->ps.stats.q1.face_anim = 0;
+		else if (ent->client->ps.stats.q1.face_anim)
+			--ent->client->ps.stats.q1.face_anim;
 
 		if (ent->client->pers.weapon)
-			ent->client->ps.stats[STAT_Q1_CURWEAP] = ITEM_INDEX(ent->client->pers.weapon) - ITI_BLASTER;
+			ent->client->ps.stats.q1.cur_weap = ITEM_INDEX(ent->client->pers.weapon) - ITI_BLASTER;
+		else
+			ent->client->ps.stats.q1.cur_weap = 0;
 	}
 
 	// Doom stuff
 	else if (ent->s.game == GAME_DOOM)
 	{
-		int shells = ent->client->pers.inventory[ITI_SHELLS];
-		int bullets = ent->client->pers.inventory[ITI_BULLETS];
-		int rockets = ent->client->pers.inventory[ITI_ROCKETS];
-		cells = ent->client->pers.inventory[ITI_CELLS];
+		ent->client->ps.stats.doom.ammo_bullets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PISTOL));
+		ent->client->ps.stats.doom.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_SHOTGUN));
+		ent->client->ps.stats.doom.ammo_rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER));
+		ent->client->ps.stats.doom.ammo_cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PLASMA_GUN));
 
-		ent->client->ps.stats[STAT_DOOM_AMMO1] = bullets | (shells << 16);
-		ent->client->ps.stats[STAT_DOOM_AMMO2] = rockets | (cells << 16);
+		ent->client->ps.stats.doom.max_ammo_bullets = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PISTOL));
+		ent->client->ps.stats.doom.max_ammo_shells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_SHOTGUN));
+		ent->client->ps.stats.doom.max_ammo_rockets = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER));
+		ent->client->ps.stats.doom.max_ammo_cells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PLASMA_GUN));
 
-		ent->client->ps.stats[STAT_DOOM_MAXAMMO1] = 0;//GetMaxAmmo(ent, ITI_BULLETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_SHELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
-		ent->client->ps.stats[STAT_DOOM_MAXAMMO2] = 0;//GetMaxAmmo(ent, ITI_ROCKETS, CHECK_INVENTORY, CHECK_INVENTORY) | (GetMaxAmmo(ent, ITI_CELLS, CHECK_INVENTORY, CHECK_INVENTORY) << 16);
-
-		ent->client->ps.stats[STAT_DOOM_WEAPONS] = 0;
+		ent->client->ps.stats.doom.weapons = 0;
 
 		if (ent->client->pers.inventory[ITI_DOOM_PISTOL])
-			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_PISTOL;
+			ent->client->ps.stats.doom.weapons |= IT_DOOM_PISTOL;
 		if (ent->client->pers.inventory[ITI_DOOM_SHOTGUN] || ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN])
-			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_SHOTGUNS;
+			ent->client->ps.stats.doom.weapons |= IT_DOOM_SHOTGUNS;
 		if (ent->client->pers.inventory[ITI_DOOM_CHAINGUN])
-			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_CHAINGUN;
+			ent->client->ps.stats.doom.weapons |= IT_DOOM_CHAINGUN;
 		if (ent->client->pers.inventory[ITI_DOOM_ROCKET_LAUNCHER])
-			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_ROCKET;
+			ent->client->ps.stats.doom.weapons |= IT_DOOM_ROCKET;
 		if (ent->client->pers.inventory[ITI_DOOM_PLASMA_GUN])
-			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_PLASMA;
+			ent->client->ps.stats.doom.weapons |= IT_DOOM_PLASMA;
 		if (ent->client->pers.inventory[ITI_DOOM_BFG])
-			ent->client->ps.stats[STAT_DOOM_WEAPONS] |= IT_DOOM_BFG;
+			ent->client->ps.stats.doom.weapons |= IT_DOOM_BFG;
 
 		ST_updateFaceWidget(ent);
 	}
@@ -742,58 +736,52 @@ void G_SetStats(edict_t *ent)
 	// Duke stuff
 	else if (ent->s.game == GAME_DUKE)
 	{
-		ent->client->ps.stats[STAT_DUKE_WEAPONS] = 0;
+		ent->client->ps.stats.duke.weapons = 0;
 
 		struct {
 			itemid_e	item;
 			uint16_t	flag;
+			uint8_t		index;
 		} weapon_hud_mapping[] = {
-			{ ITI_DUKE_PISTOL, IT_DUKE_PISTOL },
-			{ ITI_DUKE_SHOTGUN, IT_DUKE_SHOTGUN },
-			{ ITI_DUKE_CANNON, IT_DUKE_CANNON },
-			{ ITI_DUKE_RPG, IT_DUKE_RPG },
-			{ ITI_DUKE_PIPEBOMBS, IT_DUKE_PIPE },
-			//{ ITI_DUKE_SHRINKER, IT_DUKE_SHRINKER },
-			{ ITI_DUKE_DEVASTATOR, IT_DUKE_DEVASTATOR },
-			//{ ITI_DUKE_TRIPWIRE, IT_DUKE_TRIPWIRE },
-			{ ITI_DUKE_FREEZER, IT_DUKE_FREEZETHROWER }
+			{ ITI_DUKE_PISTOL, IT_DUKE_PISTOL, IT_DUKE_INDEX_PISTOL },
+			{ ITI_DUKE_SHOTGUN, IT_DUKE_SHOTGUN, IT_DUKE_INDEX_SHOTGUN },
+			{ ITI_DUKE_CANNON, IT_DUKE_CANNON, IT_DUKE_INDEX_CANNON },
+			{ ITI_DUKE_RPG, IT_DUKE_RPG, IT_DUKE_INDEX_RPG },
+			{ ITI_DUKE_PIPEBOMBS, IT_DUKE_PIPE, IT_DUKE_INDEX_PIPE },
+			//{ ITI_DUKE_SHRINKER, IT_DUKE_SHRINKER, IT_DUKE_INDEX_SHRINKER },
+			{ ITI_DUKE_DEVASTATOR, IT_DUKE_DEVASTATOR, IT_DUKE_INDEX_DEVASTATOR },
+			//{ ITI_DUKE_TRIPWIRE, IT_DUKE_TRIPWIRE, IT_DUKE_INDEX_TRIPWIRE },
+			{ ITI_DUKE_FREEZER, IT_DUKE_FREEZETHROWER, IT_DUKE_INDEX_FREEZETHROWER }
 		};
 
 		for (size_t i = 0; i < q_countof(weapon_hud_mapping); i++)
 		{
 			if (ent->client->pers.inventory[weapon_hud_mapping[i].item])
-				ent->client->ps.stats[STAT_DUKE_WEAPONS] |= weapon_hud_mapping[i].flag;
+				ent->client->ps.stats.duke.weapons |= weapon_hud_mapping[i].flag;
 
 			if (GetIndexByItem(ent->client->pers.weapon) == weapon_hud_mapping[i].item)
-				ent->client->ps.stats[STAT_DUKE_WEAPONS] |= (weapon_hud_mapping[i].flag << 16);
+				ent->client->ps.stats.duke.selected_weapon = weapon_hud_mapping[i].index;
 		}
-
-		/*
-
-{
-	IT_DUKE_PISTOL_AMMO			= 0,
-	IT_DUKE_SHOTGUN_AMMO		= 1,
-	IT_DUKE_CANNON_AMMO			= 2,
-	IT_DUKE_RPG_AMMO			= 3,
-	IT_DUKE_PIPE_AMMO			= 0,
-	IT_DUKE_SHRINKER_AMMO		= 1,
-	IT_DUKE_DEVASTATOR_AMMO		= 2,
-	IT_DUKE_TRIPWIRE_AMMO		= 3,
-	IT_DUKE_FREEZETHROWER_AMMO	= 0
-};
-*/
-
-		ent->client->ps.stats[STAT_DUKE_AMMO1] = ent->client->pers.inventory[ITI_DUKE_CLIP] |
-												 (ent->client->pers.inventory[ITI_DUKE_SHELLS] << 8) |
-												 (ent->client->pers.inventory[ITI_DUKE_CANNON_AMMO] << 16) |
-												 (ent->client->pers.inventory[ITI_DUKE_RPG_ROCKETS] << 24);
-
-		ent->client->ps.stats[STAT_DUKE_AMMO2] = ent->client->pers.inventory[ITI_DUKE_PIPEBOMBS] |
-												 //(ent->client->pers.inventory[ITI_DUKE_SHRINKER_AMMO] << 8) |
-												 (ent->client->pers.inventory[ITI_DUKE_DEVASTATOR_ROCKETS] << 16);
-												 // | (ent->client->pers.inventory[ITI_DUKE_TRIPWIRE_AMMO] << 24)
-
-		ent->client->ps.stats[STAT_DUKE_AMMO3] = ent->client->pers.inventory[ITI_DUKE_FREEZER_AMMO];
+		
+		ent->client->ps.stats.duke.ammo_clip = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
+		ent->client->ps.stats.duke.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHOTGUN));
+		ent->client->ps.stats.duke.ammo_cannon = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_CANNON));
+		ent->client->ps.stats.duke.ammo_rpg = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_RPG));
+		ent->client->ps.stats.duke.ammo_pipebombs = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
+		//ent->client->ps.stats.duke.ammo_shrinker = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
+		ent->client->ps.stats.duke.ammo_devastator = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
+//		ent->client->ps.stats.duke.ammo_tripwire = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRE));
+		ent->client->ps.stats.duke.ammo_freezer = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
+		
+		ent->client->ps.stats.duke.max_ammo_clip = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
+		ent->client->ps.stats.duke.max_ammo_shells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHOTGUN));
+		ent->client->ps.stats.duke.max_ammo_cannon = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_CANNON));
+		ent->client->ps.stats.duke.max_ammo_rpg = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_RPG));
+		ent->client->ps.stats.duke.max_ammo_pipebombs = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
+		//ent->client->ps.stats.duke.max_ammo_shrinker = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
+		ent->client->ps.stats.duke.max_ammo_devastator = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
+//		ent->client->ps.stats.duke.max_ammo_tripwire = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRE));
+		ent->client->ps.stats.duke.max_ammo_freezer = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
 	}
 }
 
@@ -811,7 +799,7 @@ void G_CheckChaseStats(edict_t *ent)
         cl = g_edicts[i].client;
         if (!g_edicts[i].inuse || cl->chase_target != ent)
             continue;
-        memcpy(cl->ps.stats, ent->client->ps.stats, sizeof(cl->ps.stats));
+        memcpy(&cl->ps.stats, &ent->client->ps.stats, sizeof(cl->ps.stats));
         G_SetSpectatorStats(g_edicts + i);
     }
 }
@@ -828,19 +816,19 @@ void G_SetSpectatorStats(edict_t *ent)
     if (!cl->chase_target)
         G_SetStats(ent);
 
-    cl->ps.stats[STAT_SPECTATOR] = 1;
+    cl->ps.stats.spectator = 1;
 
     // layouts are independant in spectator
-    cl->ps.stats[STAT_LAYOUTS] = 0;
+    cl->ps.stats.layouts = 0;
     if (cl->pers.health <= 0 || level.intermissiontime || cl->showscores)
-        cl->ps.stats[STAT_LAYOUTS] |= 1;
+        cl->ps.stats.layouts |= 1;
     if (cl->showinventory && cl->pers.health > 0)
-        cl->ps.stats[STAT_LAYOUTS] |= 2;
+        cl->ps.stats.layouts |= 2;
 
     if (cl->chase_target && cl->chase_target->inuse)
-        cl->ps.stats[STAT_CHASE] = CS_PLAYERSKINS +
-                                   (cl->chase_target - g_edicts) - 1;
+        cl->ps.stats.chase = CS_PLAYERSKINS +
+							 (cl->chase_target - g_edicts) - 1;
     else
-        cl->ps.stats[STAT_CHASE] = 0;
+        cl->ps.stats.chase = 0;
 }
 

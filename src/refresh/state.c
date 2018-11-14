@@ -158,7 +158,7 @@ void GL_Setup2D(void)
     gl_static.backend.view_matrix(NULL);
 }
 
-static void GL_Frustum(void)
+void GL_Frustum(void)
 {
     GLfloat xmin, xmax, ymin, ymax, zfar, znear;
     GLfloat width, height, depth;

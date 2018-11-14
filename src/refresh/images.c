@@ -470,81 +470,6 @@ IMG_LOAD(PCX)
 /*
 =================================================================
 
-Q1P LOADING
-
-=================================================================
-*/
-
-IMG_LOAD(Q1P)
-{
-	uint32_t *ptr = (uint32_t*)rawdata;
-	uint32_t w = LittleLong(*ptr);
-	uint32_t h = LittleLong(*(ptr + 1));
-	byte *buffer = rawdata + 8;
-
-	*pic = (byte*)IMG_AllocPixels(w * h * 4);
-
-	image->upload_width = image->width = w;
-	image->upload_height = image->height = h;
-	image->flags |= IF_OLDSCHOOL;
-	image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_Q1]);
-
-	return Q_ERR_SUCCESS;
-}
-
-/*
-=================================================================
-
-D2P LOADING
-
-=================================================================
-*/
-
-IMG_LOAD(D2P)
-{
-	uint32_t *ptr = (uint32_t*)rawdata;
-	uint32_t w = LittleLong(*ptr);
-	uint32_t h = LittleLong(*(ptr + 1));
-	byte *buffer = rawdata + 8;
-
-	*pic = IMG_AllocPixels(w * h * 4);
-
-	image->upload_width = image->width = w;
-	image->upload_height = image->height = h;
-	image->flags |= IF_OLDSCHOOL;
-	image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_DOOM]);
-
-	return Q_ERR_SUCCESS;
-}
-
-/*
-=================================================================
-
-DNP LOADING
-
-=================================================================
-*/
-
-IMG_LOAD(DNP)
-{
-	uint32_t *ptr = (uint32_t*)rawdata;
-	uint32_t w = LittleLong(*ptr);
-	uint32_t h = LittleLong(*(ptr + 1));
-	byte *buffer = rawdata + 8;
-
-	*pic = IMG_AllocPixels(w * h * 4);
-
-	image->upload_width = image->width = w;
-	image->upload_height = image->height = h;
-	image->flags |= IF_OLDSCHOOL;
-	image->flags |= IMG_Unpack8((uint32_t *)*pic, buffer, w, h, d_palettes[GAME_DUKE]);
-
-	return Q_ERR_SUCCESS;
-}
-
-/*
-=================================================================
-
 WAL LOADING
 
 =================================================================
@@ -1615,11 +1540,6 @@ static const struct {
     { "pcx", IMG_LoadPCX },
     { "wal", IMG_LoadWAL },
 
-	// Paril
-	{ "q1p", IMG_LoadQ1P },
-	{ "d2p", IMG_LoadD2P },
-	{ "dnp", IMG_LoadDNP },
-
 #if USE_TGA
     { "tga", IMG_LoadTGA },
 #endif
@@ -1798,46 +1718,6 @@ static void get_image_dimensions(imageformat_t fmt, image_t *image)
             }
             FS_FCloseFile(f);
         }
-    }
-	// Paril
-	else if (fmt == IM_Q1P) {
-		memcpy(buffer + image->baselen + 1, "q1p", 4);
-		FS_FOpenFile(buffer, &f, FS_MODE_READ);
-		if (f) {
-			FS_Read(&w, sizeof(uint32_t), f);
-			FS_Read(&h, sizeof(uint32_t), f);
-
-			w = LittleLong(w);
-			h = LittleLong(h);
-
-			FS_FCloseFile(f);
-		}
-	}
-	else if (fmt == IM_D2P) {
-		memcpy(buffer + image->baselen + 1, "d2p", 4);
-		FS_FOpenFile(buffer, &f, FS_MODE_READ);
-		if (f) {
-			FS_Read(&w, sizeof(uint32_t), f);
-			FS_Read(&h, sizeof(uint32_t), f);
-
-			w = LittleLong(w);
-			h = LittleLong(h);
-
-			FS_FCloseFile(f);
-		}
-	}
-	else if (fmt == IM_DNP) {
-		memcpy(buffer + image->baselen + 1, "dnp", 4);
-		FS_FOpenFile(buffer, &f, FS_MODE_READ);
-		if (f) {
-			FS_Read(&w, sizeof(uint32_t), f);
-			FS_Read(&h, sizeof(uint32_t), f);
-	
-			w = LittleLong(w);
-			h = LittleLong(h);
-	
-			FS_FCloseFile(f);
-		}
 	} else {
         memcpy(buffer + image->baselen + 1, "pcx", 4);
         FS_FOpenFile(buffer, &f, FS_MODE_READ);

@@ -3,290 +3,234 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace asset_transpiler
 {
-	class Quake
+	class Q1BSPTextureAnim : IComparable<Q1BSPTextureAnim>
 	{
-		class PAKFile
+		public char Frame;
+		public byte[] Data;
+
+		public int CompareTo(Q1BSPTextureAnim other)
 		{
-			public string FileName;
-			public uint Offset;
-			public uint Length;
+			return Frame.CompareTo(other.Frame);
 		}
 
-		class PAK : IDisposable
+		public Q1BSPTextureAnim Crop(Q1BSPTexture texture, uint x, uint y, uint w, uint h)
 		{
-			public List<PAKFile> Files = new List<PAKFile>();
-			public BinaryReader Reader;
+			Q1BSPTextureAnim anim = new Q1BSPTextureAnim();
 
-			public PAK(Stream stream)
-			{
-				Reader = new BinaryReader(stream);
+			anim.Frame = Frame;
+			anim.Data = new byte[w * h];
 
-				if (Encoding.ASCII.GetString(Reader.ReadBytes(4)) != "PACK")
-					throw new Exception();
+			ByteBuffer.BoxCopy(Data, (int)x, (int)y, (int)texture.Width, (int)texture.Height, anim.Data, 0, 0, (int)w, (int)h, (int)w, (int)h);
 
-				uint offset = Reader.ReadUInt32();
-				uint length = Reader.ReadUInt32();
+			return anim;
+		}
 
-				uint num_files = length / (56 + 4 + 4);
+		public Q1BSPTextureAnim Extend(Q1BSPTexture texture, int scaleX, int scaleY)
+		{
+			Q1BSPTextureAnim anim = new Q1BSPTextureAnim();
 
-				Reader.BaseStream.Position = offset;
+			anim.Frame = Frame;
+			anim.Data = new byte[texture.Width * scaleX * texture.Height * scaleY];
 
-				for (uint i = 0; i < num_files; ++i)
+			for (int y = 0; y < scaleY; ++y)
+				for (var x = 0; x < scaleX; ++x)
 				{
-					PAKFile file = new PAKFile();
-					file.FileName = Encoding.ASCII.GetString(Reader.ReadBytes(56));
-
-					if (file.FileName.IndexOf('\0') != -1)
-						file.FileName = file.FileName.Substring(0, file.FileName.IndexOf('\0'));
-
-					file.Offset = Reader.ReadUInt32();
-					file.Length = Reader.ReadUInt32();
-					Files.Add(file);
+					ByteBuffer.BoxCopy(Data, 0, 0, (int)texture.Width, (int)texture.Height, anim.Data, (int)(x * texture.Width), (int)(y * texture.Height), (int)(scaleX * texture.Width), (int)(scaleY * texture.Height), (int)texture.Width, (int)texture.Height);
 				}
-			}
 
-			public byte[] GetBytes(PAKFile file)
-			{
-				Reader.BaseStream.Position = file.Offset;
-				return Reader.ReadBytes((int)file.Length);
-			}
+			return anim;
+		}
+	}
 
-			public void WriteFileTo(PAKFile file, string output)
-			{
-				Globals.CreateDirectory(Path.GetDirectoryName(output));
-				Globals.WriteFile(output, GetBytes(file));
-			}
+	class Q1BSPTexture
+	{
+		public List<Q1BSPTextureAnim> Frames = new List<Q1BSPTextureAnim>();
+		public uint Width;
+		public uint Height;
 
-			public void Dispose()
-			{
-				Reader.Dispose();
-			}
+		public Q1BSPTexture Crop(uint x, uint y, uint w, uint h)
+		{
+			Q1BSPTexture texture = new Q1BSPTexture();
+
+			texture.Width = w;
+			texture.Height = h;
+
+			foreach (var frame in Frames)
+				texture.Frames.Add(frame.Crop(this, x, y, w, h));
+
+			return texture;
 		}
 
-		class Q1BSPTextureAnim : IComparable<Q1BSPTextureAnim>
+		public Q1BSPTexture Extend(int scaleX, int scaleY)
 		{
-			public char Frame;
-			public byte[] Data;
+			Q1BSPTexture texture = new Q1BSPTexture();
 
-			public int CompareTo(Q1BSPTextureAnim other)
-			{
-				return Frame.CompareTo(other.Frame);
-			}
+			texture.Width = (uint)(Width * scaleX);
+			texture.Height = (uint)(Height * scaleY);
 
-			public Q1BSPTextureAnim Crop(Q1BSPTexture texture, uint x, uint y, uint w, uint h)
-			{
-				Q1BSPTextureAnim anim = new Q1BSPTextureAnim();
+			foreach (var frame in Frames)
+				texture.Frames.Add(frame.Extend(this, scaleX, scaleY));
 
-				anim.Frame = Frame;
-				anim.Data = new byte[w * h];
+			return texture;
+		}
+	}
 
-				ByteBuffer.BoxCopy(Data, (int)x, (int)y, (int)texture.Width, (int)texture.Height, anim.Data, 0, 0, (int)w, (int)h, (int)w, (int)h);
+	class Q1BSPTextureMips
+	{
+		public string Name;
+		public uint Width;
+		public uint Height;
 
-				return anim;
-			}
+		public Q1BSPTexture[] Mips = new Q1BSPTexture[4];
+	}
 
-			public Q1BSPTextureAnim Extend(Q1BSPTexture texture, int scaleX, int scaleY)
-			{
-				Q1BSPTextureAnim anim = new Q1BSPTextureAnim();
+	class Q1BSP : IDisposable
+	{
+		public List<Q1BSPTextureMips> Textures = new List<Q1BSPTextureMips>();
+		public BinaryReader Reader;
 
-				anim.Frame = Frame;
-				anim.Data = new byte[(texture.Width * scaleX) * (texture.Height * scaleY)];
-
-				for (int y = 0; y < scaleY; ++y)
-					for (var x = 0; x < scaleX; ++x)
-					{
-						ByteBuffer.BoxCopy(Data, 0, 0, (int)texture.Width, (int)texture.Height, anim.Data, (int)(x * texture.Width), (int)(y * texture.Height), (int)(scaleX * texture.Width), (int)(scaleY * texture.Height), (int)texture.Width, (int)texture.Height);
-					}
-
-				return anim;
-			}
+		struct EntryDef
+		{
+			public int Offset;
+			public uint Size;
 		}
 
-		class Q1BSPTexture
+		EntryDef ReadEntryDef()
 		{
-			public List<Q1BSPTextureAnim> Frames = new List<Q1BSPTextureAnim>();
-			public uint Width;
-			public uint Height;
-
-			public Q1BSPTexture Crop(uint x, uint y, uint w, uint h)
-			{
-				Q1BSPTexture texture = new Q1BSPTexture();
-
-				texture.Width = w;
-				texture.Height = h;
-
-				foreach (var frame in Frames)
-					texture.Frames.Add(frame.Crop(this, x, y, w, h));
-
-				return texture;
-			}
-
-			public Q1BSPTexture Extend(int scaleX, int scaleY)
-			{
-				Q1BSPTexture texture = new Q1BSPTexture();
-
-				texture.Width = (uint)(Width * scaleX);
-				texture.Height = (uint)(Height * scaleY);
-
-				foreach (var frame in Frames)
-					texture.Frames.Add(frame.Extend(this, scaleX, scaleY));
-
-				return texture;
-			}
+			return new EntryDef() { Offset = Reader.ReadInt32(), Size = Reader.ReadUInt32() };
 		}
 
-		class Q1BSPTextureMips
+		public Q1BSP(Stream stream)
 		{
-			public string Name;
-			public uint Width;
-			public uint Height;
+			Reader = new BinaryReader(stream);
 
-			public Q1BSPTexture[] Mips = new Q1BSPTexture[4];
-		}
+			var version = Reader.ReadUInt32();
 
-		class Q1BSP : IDisposable
-		{
-			public List<Q1BSPTextureMips> Textures = new List<Q1BSPTextureMips>();
-			public BinaryReader Reader;
+			var entities = ReadEntryDef(); // entities
+			var planes = ReadEntryDef(); // planes
+			var miptex = ReadEntryDef(); // miptex
+			var vertices = ReadEntryDef(); // vertices
+			var visilist = ReadEntryDef(); // visilist
+			var nodes = ReadEntryDef(); // nodes
+			var texinfo = ReadEntryDef(); // texinfo
+			var faces = ReadEntryDef(); // faces
+			var lightmap = ReadEntryDef(); // lightmap
+			var clipnode = ReadEntryDef(); // clipnode
+			var leaves = ReadEntryDef(); // leaves
+			var lface = ReadEntryDef(); // lface
+			var edges = ReadEntryDef(); // edges
+			var ledges = ReadEntryDef(); // ledges
+			var models = ReadEntryDef(); // models
 
-			struct EntryDef
+			Reader.BaseStream.Position = miptex.Offset;
+
+			uint numtex = Reader.ReadUInt32();
+			int[] offsets = new int[numtex];
+
+			for (uint i = 0; i < numtex; ++i)
+				offsets[i] = Reader.ReadInt32();
+
+			for (uint i = 0; i < numtex; ++i)
 			{
-				public int Offset;
-				public uint Size;
-			}
+				if (offsets[i] == -1)
+					continue;
 
-			EntryDef ReadEntryDef()
-			{
-				return new EntryDef() { Offset = Reader.ReadInt32(), Size = Reader.ReadUInt32() };
-			}
+				Reader.BaseStream.Position = miptex.Offset + offsets[i];
 
-			public Q1BSP(Stream stream)
-			{
-				Reader = new BinaryReader(stream);
+				var name = Encoding.ASCII.GetString(Reader.ReadBytes(16));
 
-				var version = Reader.ReadUInt32();
+				if (name.IndexOf('\0') != -1)
+					name = name.Substring(0, name.IndexOf('\0'));
 
-				var entities = ReadEntryDef(); // entities
-				var planes = ReadEntryDef(); // planes
-				var miptex = ReadEntryDef(); // miptex
-				var vertices = ReadEntryDef(); // vertices
-				var visilist = ReadEntryDef(); // visilist
-				var nodes = ReadEntryDef(); // nodes
-				var texinfo = ReadEntryDef(); // texinfo
-				var faces = ReadEntryDef(); // faces
-				var lightmap = ReadEntryDef(); // lightmap
-				var clipnode = ReadEntryDef(); // clipnode
-				var leaves = ReadEntryDef(); // leaves
-				var lface = ReadEntryDef(); // lface
-				var edges = ReadEntryDef(); // edges
-				var ledges = ReadEntryDef(); // ledges
-				var models = ReadEntryDef(); // models
+				var width = Reader.ReadUInt32();
+				var height = Reader.ReadUInt32();
+				var mipoffsets = new int[] { Reader.ReadInt32(), Reader.ReadInt32(), Reader.ReadInt32(), Reader.ReadInt32() };
+				char anim = ' ';
 
-				Reader.BaseStream.Position = miptex.Offset;
-
-				uint numtex = Reader.ReadUInt32();
-				int[] offsets = new int[numtex];
-
-				for (uint i = 0; i < numtex; ++i)
-					offsets[i] = Reader.ReadInt32();
-
-				for (uint i = 0; i < numtex; ++i)
+				if (name.StartsWith("+"))
 				{
-					if (offsets[i] == -1)
-						continue;
+					anim = name[1];
+					name = name.Substring(2);
+				}
 
-					Reader.BaseStream.Position = miptex.Offset + offsets[i];
+				Q1BSPTextureMips texture = null;
 
-					var name = Encoding.ASCII.GetString(Reader.ReadBytes(16));
-
-					if (name.IndexOf('\0') != -1)
-						name = name.Substring(0, name.IndexOf('\0'));
-
-					var width = Reader.ReadUInt32();
-					var height = Reader.ReadUInt32();
-					var mipoffsets = new int[] { Reader.ReadInt32(), Reader.ReadInt32(), Reader.ReadInt32(), Reader.ReadInt32() };
-					char anim = ' ';
-
-					if (name.StartsWith("+"))
+				foreach (var tex in Textures)
+				{
+					if (tex.Name == name)
 					{
-						anim = name[1];
-						name = name.Substring(2);
+						texture = tex;
+						break;
 					}
+				}
 
-					Q1BSPTextureMips texture = null;
-
-					foreach (var tex in Textures)
-					{
-						if (tex.Name == name)
-						{
-							texture = tex;
-							break;
-						}
-					}
-
-					if (texture == null)
-					{
-						texture = new Q1BSPTextureMips();
-						texture.Name = name;
-						texture.Width = width;
-						texture.Height = height;
-						Textures.Add(texture);
-
-						for (int m = 0; m < mipoffsets.Length; ++m)
-						{
-							texture.Mips[m] = new Q1BSPTexture();
-							texture.Mips[m].Width = width >> m;
-							texture.Mips[m].Height = height >> m;
-						}
-					}
+				if (texture == null)
+				{
+					texture = new Q1BSPTextureMips();
+					texture.Name = name;
+					texture.Width = width;
+					texture.Height = height;
+					Textures.Add(texture);
 
 					for (int m = 0; m < mipoffsets.Length; ++m)
 					{
-						uint mw = width >> m;
-						uint mh = height >> m;
-						int offset = mipoffsets[m];
-
-						Q1BSPTextureAnim animation = new Q1BSPTextureAnim();
-						animation.Frame = anim;
-						Reader.BaseStream.Position = miptex.Offset + offsets[i] + offset;
-						animation.Data = Reader.ReadBytes((int)(mw * mh));
-						texture.Mips[m].Frames.Add(animation);
+						texture.Mips[m] = new Q1BSPTexture();
+						texture.Mips[m].Width = width >> m;
+						texture.Mips[m].Height = height >> m;
 					}
 				}
 
-				foreach (var tex in Textures)
-					foreach (var mip in tex.Mips)
-						mip.Frames.Sort();
+				for (int m = 0; m < mipoffsets.Length; ++m)
+				{
+					uint mw = width >> m;
+					uint mh = height >> m;
+					int offset = mipoffsets[m];
+
+					Q1BSPTextureAnim animation = new Q1BSPTextureAnim();
+					animation.Frame = anim;
+					Reader.BaseStream.Position = miptex.Offset + offsets[i] + offset;
+					animation.Data = Reader.ReadBytes((int)(mw * mh));
+					texture.Mips[m].Frames.Add(animation);
+				}
 			}
 
-			public void Dispose()
-			{
-				Reader.Dispose();
-			}
-
-			public Q1BSPTextureMips GetTexture(string side_texture)
-			{
-				foreach (var texture in Textures)
-					if (texture.Name == side_texture)
-						return texture;
-
-				throw new IndexOutOfRangeException();
-			}
+			foreach (var tex in Textures)
+				foreach (var mip in tex.Mips)
+					mip.Frames.Sort();
 		}
 
-		class ModelFace
+		public void Dispose()
 		{
-			public float[,] Vertices;
-			public float[,] TexCoords;
-
-			public byte[] VertIndexes = new byte[4];
+			Reader.Dispose();
 		}
 
+		public Q1BSPTextureMips GetTexture(string side_texture)
+		{
+			foreach (var texture in Textures)
+				if (texture.Name == side_texture)
+					return texture;
+
+			throw new IndexOutOfRangeException();
+		}
+	}
+
+	class ModelFace
+	{
+		public float[,] Vertices;
+		public float[,] TexCoords;
+
+		public byte[] VertIndexes = new byte[4];
+	}
+
+	class Quake : GameParser
+	{
 		static uint[] GetTextureDimensions(params Q1BSPTexture[] textures)
 		{
 			uint[] p = new uint[2] { 0, 0 };
@@ -314,42 +258,75 @@ namespace asset_transpiler
 			"sound/*.wav"
 		};
 
-		public static string WildcardToRegex(string pattern)
+		static string WildcardToRegex(string pattern)
 		{
 			return "^" + Regex.Escape(pattern).
 			Replace("\\*", ".*").
 			Replace("\\?", ".") + "$";
 		}
+		
+		Dictionary<string, IList<byte[]>> _textureHashes = new Dictionary<string, IList<byte[]>>();
 
-		public static void Q1CopyStuff(string file)
+		void Q1CopyStuff(string file)
 		{
-			Globals.OpenStatus("Parsing PAK file...");
+			Status("Parsing " + file, 0);
 
-			using (var pak = new PAK(File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
+			using (var pak = new PAK(this, File.Open(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
 			{
 				foreach (var pakfile in pak.Files)
 				{
-					Globals.ChangeStatusHeader("Checking " + pakfile.FileName + "...");
+					Status("Checking " + pakfile.Name + "...", 1);
 
-					if (pakfile.FileName.EndsWith(".bsp") && !Path.GetFileName(pakfile.FileName).StartsWith("b_"))
+					if (pakfile.Name.EndsWith(".bsp") && !Path.GetFileName(pakfile.Name).StartsWith("b_"))
 					{
-						Globals.Status("BSP: " + pakfile.FileName);
-						Globals.ChangeStatusHeader("Parsing BSP...");
+						Status("BSP: " + pakfile.Name, 1);
+						Status("Parsing BSP...", 2);
 
 						using (var bsp = new Q1BSP(new MemoryStream(pak.GetBytes(pakfile))))
 						{
-							Globals.CreateDirectory("textures/q1/");
+							CreateDirectory("textures/q1/");
 
-							Globals.ChangeStatusHeader("BSP: " + pakfile.FileName + " - compiling textures...");
+							Status("BSP: " + pakfile.Name + " - compiling textures...", 2);
 
 							foreach (var texture in bsp.Textures)
 							{
 								var name = texture.Name.Trim('*');
+			
+								using (var sha256 = SHA256.Create())
+								{
+									var hash = sha256.ComputeHash(texture.Mips[0].Frames[0].Data);
+
+									if (_textureHashes.ContainsKey(name))
+									{
+										var otherHashes = _textureHashes[name];
+										var doesMatch = false;
+
+										foreach (var otherHash in otherHashes)
+										{
+											if (hash.SequenceEqual(otherHash))
+											{
+												doesMatch = true;
+												break;
+											}
+										}
+
+										if (doesMatch)
+											continue;
+
+										otherHashes.Add(hash);
+									}
+									else
+										_textureHashes.Add(name, new List<byte[]>(new byte[][] { hash }));
+								}
+
+								name = Path.GetFileNameWithoutExtension(pakfile.Name) + "/" + name;
+
 								string outwal = "textures/q1/" + name + ".wal";
+								string outpng = "textures/q1/" + name + ".tga";
 
-								Globals.Status(name);
+								Status(name, 3);
 
-								if (Globals.FileExists(outwal))
+								if (FileExists(outpng))
 									continue;
 
 								// Write WALs
@@ -377,7 +354,7 @@ namespace asset_transpiler
 									}
 
 									outwal = "textures/" + walname + ".wal";
-									string outpng = "textures/" + walname + ".png";
+									outpng = "textures/" + walname + ".tga";
 
 									int surf = 0, contents = 0;
 
@@ -415,10 +392,10 @@ namespace asset_transpiler
 												bmp[x, y] = Globals.GetMappedColor(PaletteID.Q1, c);
 											}
 
-										using (var strm = Globals.OpenFileStream(outpng))
-											bmp.SaveAsPng(strm);
+										using (var strm = OpenFileStream(outpng))
+											bmp.SaveAsTga(strm);
 
-										Globals.SaveWal(outwal, walname, next_name, surf, contents, texture.Mips[0].Frames[f].Data, PaletteID.Q1, (int)texture.Width, (int)texture.Height);
+										SaveWal(outwal, walname, next_name, surf, contents, texture.Mips[0].Frames[f].Data, PaletteID.Q1, (int)texture.Width, (int)texture.Height);
 									}
 								}
 							}
@@ -429,7 +406,7 @@ namespace asset_transpiler
 
 					foreach (var match in q1FilesWeNeed)
 					{
-						if (Regex.IsMatch(pakfile.FileName, WildcardToRegex(match)))
+						if (Regex.IsMatch(pakfile.Name, WildcardToRegex(match)))
 						{
 							matches = true;
 							break;
@@ -438,32 +415,31 @@ namespace asset_transpiler
 
 					if (!matches)
 						continue;
+					
+					Status("Handling " + pakfile.Name + "...", 1);
 
-					Globals.ChangeStatusHeader("Handling " + pakfile.FileName + "...");
-					Globals.Status("");
-
-					if (pakfile.FileName.EndsWith(".mdl"))
-						pak.WriteFileTo(pakfile, "models/q1/" + pakfile.FileName.Substring("progs/".Length));
-					else if (pakfile.FileName.EndsWith(".wav"))
-						pak.WriteFileTo(pakfile, "sound/q1/" + pakfile.FileName.Substring("sound/".Length));
-					else if (pakfile.FileName.EndsWith(".spr"))
-						pak.WriteFileTo(pakfile, "sprites/q1/" + pakfile.FileName.Substring("progs/".Length));
-					else if (pakfile.FileName.EndsWith(".lmp"))
+					if (pakfile.Name.EndsWith(".mdl"))
+						pak.WriteFileTo(pakfile, "models/q1/" + pakfile.Name.Substring("progs/".Length));
+					else if (pakfile.Name.EndsWith(".wav"))
+						pak.WriteFileTo(pakfile, "sound/q1/" + pakfile.Name.Substring("sound/".Length));
+					else if (pakfile.Name.EndsWith(".spr"))
+						pak.WriteFileTo(pakfile, "sprites/q1/" + pakfile.Name.Substring("progs/".Length));
+					else if (pakfile.Name.EndsWith(".lmp"))
 					{
-						if (pakfile.FileName.EndsWith("palette.lmp"))
+						if (pakfile.Name.EndsWith("palette.lmp"))
 							pak.WriteFileTo(pakfile, "pics/q1/palette.dat");
-						else if (!pakfile.FileName.EndsWith("colormap.lmp") && !pakfile.FileName.EndsWith("pop.lmp"))
-							pak.WriteFileTo(pakfile, "pics/q1/" + pakfile.FileName.Substring("gfx/".Length, pakfile.FileName.Length - 4 - "gfx/".Length) + ".q1p");
+						else if (!pakfile.Name.EndsWith("colormap.lmp") && !pakfile.Name.EndsWith("pop.lmp"))
+							pak.WriteImageTo(pakfile, PaletteID.Q1, "pics/q1/" + pakfile.Name.Substring("gfx/".Length, pakfile.Name.Length - 4 - "gfx/".Length) + ".tga");
 					}
-					else if (pakfile.FileName.EndsWith(".wad"))
+					else if (pakfile.Name.EndsWith(".wad"))
 					{
-						Globals.Status("Opening subwad...");
+						Status("Opening subwad...", 2);
 
-						using (var wad = new WAD(new MemoryStream(pak.GetBytes(pakfile))))
+						using (var wad = new WAD(this, new MemoryStream(pak.GetBytes(pakfile))))
 						{
-							foreach (var wadfile in wad.Files)
+							foreach (WADFile wadfile in wad.Files)
 							{
-								Globals.Status("Handling wadfile " + wadfile.Name + "...");
+								Status("Handling wadfile " + wadfile.Name + "...", 3);
 
 								switch (wadfile.Type)
 								{
@@ -472,20 +448,10 @@ namespace asset_transpiler
 										switch (wadfile.Name.ToLower())
 										{
 											case "conchars":
-												wad.WriteFileTo(wadfile, "pics/q1/" + wadfile.Name.ToLower() + ".q1p", (writer, data) =>
-												{
-													writer.Write(128);
-													writer.Write(128);
-
-													for (int i = 0; i < data.Length; ++i)
-														if (data[i] == 0)
-															data[i] = 255;
-
-													writer.Write(data);
-												});
+												wad.WriteImageTo(wad.GetBytes(wadfile), PaletteID.Q1, "pics/q1/" + wadfile.Name.ToLower() + ".tga", 128, 128, color => (byte)(color == 0 ? 255 : color));
 												break;
 											default:
-												wad.WriteFileTo(wadfile, "pics/q1/" + wadfile.Name.ToLower() + ".q1p");
+												wad.WriteImageTo(wadfile, PaletteID.Q1, "pics/q1/" + wadfile.Name.ToLower() + ".tga");
 												break;
 										}
 										break;
@@ -493,13 +459,13 @@ namespace asset_transpiler
 							}
 						}
 					}
-					else if (Path.GetFileNameWithoutExtension(pakfile.FileName).StartsWith("b_") && pakfile.FileName.EndsWith(".bsp"))
+					else if (Path.GetFileNameWithoutExtension(pakfile.Name).StartsWith("b_") && pakfile.Name.EndsWith(".bsp"))
 					{
-						Globals.Status("Parsing BSP model...");
+						Status("Parsing BSP model...", 2);
 
 						using (var bsp = new Q1BSP(new MemoryStream(pak.GetBytes(pakfile))))
 						{
-							switch (Path.GetFileNameWithoutExtension(pakfile.FileName))
+							switch (Path.GetFileNameWithoutExtension(pakfile.Name))
 							{
 								case "b_shell0":
 									{
@@ -601,7 +567,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 24, 24, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 24, 24, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -704,7 +670,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -808,7 +774,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 24, 24, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 24, 24, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -912,7 +878,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1016,7 +982,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 24, 24, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 24, 24, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1119,7 +1085,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 24 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1220,7 +1186,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 16, 16, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 16, 16, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1321,7 +1287,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 16 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 16 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1422,7 +1388,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 16 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 16 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1523,7 +1489,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1627,7 +1593,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 16, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 16, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 
@@ -1728,7 +1694,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 64 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName), 32);
+										CompileCubeModel(new Q1BSPTexture[] { side, top }, new uint[] { 32, 32, 64 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name), 32);
 									}
 									break;
 
@@ -1828,7 +1794,7 @@ namespace asset_transpiler
 											}
 										};
 
-										CompileCubeModel(new Q1BSPTexture[] { top }, new uint[] { 32, 32, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.FileName));
+										CompileCubeModel(new Q1BSPTexture[] { top }, new uint[] { 32, 32, 32 }, td, new ModelFace[] { topSide, pxSide, nxSide, pySide, nySide }, Path.GetFileNameWithoutExtension(pakfile.Name));
 									}
 									break;
 							}
@@ -1837,14 +1803,15 @@ namespace asset_transpiler
 				}
 			}
 
-			Globals.CloseStatus();
+			ClearStatus();
+			Status("Done!", 0);
 		}
 
-		static void CompileCubeModel(Q1BSPTexture[] textures, uint[] boxSize, uint[] textureSize, ModelFace[] faces, string name, int yofs = 16)
+		void CompileCubeModel(Q1BSPTexture[] textures, uint[] boxSize, uint[] textureSize, ModelFace[] faces, string name, int yofs = 16)
 		{
-			Globals.CreateDirectory("models/q1");
+			CreateDirectory("models/q1");
 
-			using (var bw = new BinaryWriter(Globals.OpenFileStream("models/q1/" + name + ".q1m")))
+			using (var bw = new BinaryWriter(OpenFileStream("models/q1/" + name + ".q1m")))
 			{
 				var _verts = new List<Tuple<sbyte, sbyte, sbyte, byte, byte>>();
 
@@ -1852,7 +1819,7 @@ namespace asset_transpiler
 				{
 					for (var i = 0; i < 4; ++i)
 					{
-						var vert = Tuple.Create((sbyte)(boxSize[0] * face.Vertices[i, 0]), (sbyte)(boxSize[1] * face.Vertices[i, 1]), (sbyte)(boxSize[2] * face.Vertices[i, 2]), (byte)(face.TexCoords[i, 0]), (byte)(face.TexCoords[i, 1]));
+						var vert = Tuple.Create((sbyte)(boxSize[0] * face.Vertices[i, 0]), (sbyte)(boxSize[1] * face.Vertices[i, 1]), (sbyte)(boxSize[2] * face.Vertices[i, 2]), (byte)face.TexCoords[i, 0], (byte)face.TexCoords[i, 1]);
 						int vi = _verts.IndexOf(vert);
 
 						if (vi == -1)
@@ -1923,6 +1890,12 @@ namespace asset_transpiler
 					bw.Write(face.VertIndexes[0]);
 				}
 			}
+		}
+
+		public override void Run()
+		{
+			Q1CopyStuff(Globals.Quake1Path + "\\pak0.pak");
+			Q1CopyStuff(Globals.Quake1Path + "\\pak1.pak");
 		}
 	}
 }

@@ -1441,6 +1441,23 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 void Wave_Precache();
 void Weapons_Init();
 
+/*
+===============
+SetItemNames
+===============
+*/
+static void SetItemNames(void)
+{
+	int     i;
+	gitem_t *it;
+
+    for (i = 0 ; i < game.num_items ; i++) {
+		it = &itemlist[i];
+		gi.configstring(CS_ITEMS + i, it->pickup_name);
+	}
+}
+
+
 /*QUAKED worldspawn (0 0 0) ?
 
 Only used for the world.
@@ -1462,6 +1479,8 @@ void SP_worldspawn(edict_t *ent)
 
 	// reserve some spots for dead player bodies for coop / deathmatch
 	InitBodyQue();
+
+	SetItemNames();
 
 	if (spawnTemp.nextmap)
 		Q_strlcpy(level.nextmap, spawnTemp.nextmap, sizeof(level.nextmap));

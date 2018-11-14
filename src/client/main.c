@@ -2298,17 +2298,17 @@ static size_t CL_Lag_m(char *buffer, size_t size)
 
 static size_t CL_Health_m(char *buffer, size_t size)
 {
-	return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_HEALTH]);
+	return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats.health);
 }
 
 static size_t CL_Ammo_m(char *buffer, size_t size)
 {
-	return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_AMMO]);
+	return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats.ammo);
 }
 
 static size_t CL_Armor_m(char *buffer, size_t size)
 {
-	return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats[STAT_ARMOR]);
+	return Q_scnprintf(buffer, size, "%i", cl.frame.ps.stats.armor);
 }
 
 static size_t CL_WeaponModel_m(char *buffer, size_t size)

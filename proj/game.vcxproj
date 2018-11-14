@@ -103,7 +103,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link />
   </ItemDefinitionGroup>
@@ -112,6 +112,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -124,7 +125,7 @@
       <DisableSpecificWarnings>4018;4996;4244;4305;4838</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -138,6 +139,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

@@ -102,7 +102,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -DVID_MODELIST='"640x480 800x600 1024x768"' -DVERSION='"1.0"' -DCPUSTRING='"$(PROCESSOR_ARCHITECTURE)"' -DBUILDSTRING='"$(Configuration)"' -DREVISION='"?"' -DBASEGAME='"baseq2"' -DDEFGAME='"genx"' -DDATADIR='"."' -DLIBDIR='"."' -DVID_REF='"gl"' -DVID_GEOMETRY='"640x480"' %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DVID_MODELIST='"640x480 800x600 1024x768"' -DVERSION='"1.0"' -DCPUSTRING='"$(PROCESSOR_ARCHITECTURE)"' -DBUILDSTRING='"$(Configuration)"' -DREVISION='"?"' -DBASEGAME='"baseq2"' -DDEFGAME='"genx"' -DDATADIR='"."' -DLIBDIR='"."' -DVID_REF='"gl"' -DVID_GEOMETRY='"640x480"' %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -122,6 +122,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DVID_MODELIST='"640x480 800x600 1024x768"' -DVERSION='"1.0"' -DCPUSTRING='"$(PROCESSOR_ARCHITECTURE)"' -DBUILDSTRING='"$(Configuration)"' -DREVISION='"?"' -DBASEGAME='"baseq2"' -DDEFGAME='"genx"' -DDATADIR='"."' -DLIBDIR='"."' -DVID_REF='"gl"' -DVID_GEOMETRY='"640x480"' %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -140,7 +141,7 @@
       <DisableSpecificWarnings>4018;4996;4244;4305;4838;4706;4100</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -DVID_MODELIST='"640x480 800x600 1024x768"' -DVERSION='"1.0"' -DCPUSTRING='"$(PROCESSOR_ARCHITECTURE)"' -DBUILDSTRING='"$(Configuration)"' -DREVISION='"?"' -DBASEGAME='"baseq2"' -DDEFGAME='"genx"' -DDATADIR='"."' -DLIBDIR='"."' -DVID_REF='"gl"' -DVID_GEOMETRY='"640x480"' %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DVID_MODELIST='"640x480 800x600 1024x768"' -DVERSION='"1.0"' -DCPUSTRING='"$(PROCESSOR_ARCHITECTURE)"' -DBUILDSTRING='"$(Configuration)"' -DREVISION='"?"' -DBASEGAME='"baseq2"' -DDEFGAME='"genx"' -DDATADIR='"."' -DLIBDIR='"."' -DVID_REF='"gl"' -DVID_GEOMETRY='"640x480"' %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -163,6 +164,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DVID_MODELIST='"640x480 800x600 1024x768"' -DVERSION='"1.0"' -DCPUSTRING='"$(PROCESSOR_ARCHITECTURE)"' -DBUILDSTRING='"$(Configuration)"' -DREVISION='"?"' -DBASEGAME='"baseq2"' -DDEFGAME='"genx"' -DDATADIR='"."' -DLIBDIR='"."' -DVID_REF='"gl"' -DVID_GEOMETRY='"640x480"' %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -315,6 +317,7 @@
     <ClInclude Include="..\inc\format\md2.h" />
     <ClInclude Include="..\inc\format\md3.h" />
     <ClInclude Include="..\inc\format\mdl.h" />
+    <ClInclude Include="..\inc\format\mdx.h" />
     <ClInclude Include="..\inc\format\pak.h" />
     <ClInclude Include="..\inc\format\pcx.h" />
     <ClInclude Include="..\inc\format\sp2.h" />

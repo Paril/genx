@@ -145,17 +145,6 @@ static inline void AddNodeToClosedSet(Node n)
 	RECORD_ADD_FLAG(NodeGetRecord(n), isClosed);
 }
 
-static inline ASGoalType GetNodeRank(Node n)
-{
-	NodeRecord *record = NodeGetRecord(n);
-	return record->estimatedCost + record->cost;
-}
-
-static inline ASGoalType GetNodeCost(Node n)
-{
-	return NodeGetRecord(n)->cost;
-}
-
 static inline ASGoalType GetNodeEstimatedCost(Node n)
 {
 	return NodeGetRecord(n)->estimatedCost;
@@ -166,6 +155,17 @@ static inline void SetNodeEstimatedCost(Node n, ASGoalType estimatedCost)
 	NodeRecord *record = NodeGetRecord(n);
 	record->estimatedCost = estimatedCost;
 	RECORD_ADD_FLAG(record, hasEstimatedCost);
+}
+
+static inline ASGoalType GetNodeRank(Node n)
+{
+	NodeRecord *record = NodeGetRecord(n);
+	return GetNodeEstimatedCost(n) + record->cost;
+}
+
+static inline ASGoalType GetNodeCost(Node n)
+{
+	return NodeGetRecord(n)->cost;
 }
 
 static inline int NodeHasEstimatedCost(Node n)

@@ -104,6 +104,9 @@ static cvar_t   *ch_scale;
 static cvar_t   *ch_x;
 static cvar_t   *ch_y;
 
+// Paril
+cvar_t	*scr_gunfov;
+
 vrect_t     scr_vrect;      // position of render window on screen
 
 static const char *const sb_nums[2][STAT_PICS] = {
@@ -899,7 +902,7 @@ static void SCR_DrawTurtle(void)
 
 static void SCR_DrawDebugStats(void)
 {
-	char buffer[MAX_QPATH];
+	/*char buffer[MAX_QPATH];
 	int i, j;
 	int x, y;
 
@@ -920,7 +923,7 @@ static void SCR_DrawDebugStats(void)
 		R_DrawString(x, y, 0, MAX_STRING_CHARS, buffer, scr.font_pic, CL_GetClientGame());
 		R_ClearColor();
 		y += CHAR_HEIGHT;
-	}
+	}*/
 }
 
 static void SCR_DrawDebugPmove(void)
@@ -1156,7 +1159,7 @@ void SCR_SetCrosshairColor(void)
 		return;
 	}
 
-	health = cl.frame.ps.stats[STAT_HEALTH];
+	health = cl.frame.ps.stats.health;
 	if (health <= 0) {
         VectorSet(scr.crosshair_color.u8, 0, 0, 0);
 		return;
@@ -1210,64 +1213,64 @@ void SCR_RegisterMedia(void)
 			scr.sb_pics[i][j] = R_RegisterPic(sb_nums[i][j]);
 
 	// Generations
-	scr.sb_faces[4][0] = R_RegisterPic("q1/face1.q1p");
-	scr.sb_faces[4][1] = R_RegisterPic("q1/face_p1.q1p");
-	scr.sb_faces[3][0] = R_RegisterPic("q1/face2.q1p");
-	scr.sb_faces[3][1] = R_RegisterPic("q1/face_p2.q1p");
-	scr.sb_faces[2][0] = R_RegisterPic("q1/face3.q1p");
-	scr.sb_faces[2][1] = R_RegisterPic("q1/face_p3.q1p");
-	scr.sb_faces[1][0] = R_RegisterPic("q1/face4.q1p");
-	scr.sb_faces[1][1] = R_RegisterPic("q1/face_p4.q1p");
-	scr.sb_faces[0][0] = R_RegisterPic("q1/face5.q1p");
-	scr.sb_faces[0][1] = R_RegisterPic("q1/face_p5.q1p");
+	scr.sb_faces[4][0] = R_RegisterPic("q1/face1");
+	scr.sb_faces[4][1] = R_RegisterPic("q1/face_p1");
+	scr.sb_faces[3][0] = R_RegisterPic("q1/face2");
+	scr.sb_faces[3][1] = R_RegisterPic("q1/face_p2");
+	scr.sb_faces[2][0] = R_RegisterPic("q1/face3");
+	scr.sb_faces[2][1] = R_RegisterPic("q1/face_p3");
+	scr.sb_faces[1][0] = R_RegisterPic("q1/face4");
+	scr.sb_faces[1][1] = R_RegisterPic("q1/face_p4");
+	scr.sb_faces[0][0] = R_RegisterPic("q1/face5");
+	scr.sb_faces[0][1] = R_RegisterPic("q1/face_p5");
 
-	scr.sb_face_invis = R_RegisterPic("q1/face_invis.q1p");
-	scr.sb_face_invuln = R_RegisterPic("q1/face_invul2.q1p");
-	scr.sb_face_invis_invuln = R_RegisterPic("q1/face_inv2.q1p");
-	scr.sb_face_quad = R_RegisterPic("q1/face_quad.q1p");
+	scr.sb_face_invis = R_RegisterPic("q1/face_invis");
+	scr.sb_face_invuln = R_RegisterPic("q1/face_invul2");
+	scr.sb_face_invis_invuln = R_RegisterPic("q1/face_inv2");
+	scr.sb_face_quad = R_RegisterPic("q1/face_quad");
 
-	scr.sb_doom_nums[0] = R_RegisterPic("doom/STYSNUM0.d2p");
-	scr.sb_doom_nums[1] = R_RegisterPic("doom/STYSNUM1.d2p");
-	scr.sb_doom_nums[2] = R_RegisterPic("doom/STYSNUM2.d2p");
-	scr.sb_doom_nums[3] = R_RegisterPic("doom/STYSNUM3.d2p");
-	scr.sb_doom_nums[4] = R_RegisterPic("doom/STYSNUM4.d2p");
-	scr.sb_doom_nums[5] = R_RegisterPic("doom/STYSNUM5.d2p");
-	scr.sb_doom_nums[6] = R_RegisterPic("doom/STYSNUM6.d2p");
-	scr.sb_doom_nums[7] = R_RegisterPic("doom/STYSNUM7.d2p");
-	scr.sb_doom_nums[8] = R_RegisterPic("doom/STYSNUM8.d2p");
-	scr.sb_doom_nums[9] = R_RegisterPic("doom/STYSNUM9.d2p");
+	scr.sb_doom_nums[0] = R_RegisterPic("doom/STYSNUM0");
+	scr.sb_doom_nums[1] = R_RegisterPic("doom/STYSNUM1");
+	scr.sb_doom_nums[2] = R_RegisterPic("doom/STYSNUM2");
+	scr.sb_doom_nums[3] = R_RegisterPic("doom/STYSNUM3");
+	scr.sb_doom_nums[4] = R_RegisterPic("doom/STYSNUM4");
+	scr.sb_doom_nums[5] = R_RegisterPic("doom/STYSNUM5");
+	scr.sb_doom_nums[6] = R_RegisterPic("doom/STYSNUM6");
+	scr.sb_doom_nums[7] = R_RegisterPic("doom/STYSNUM7");
+	scr.sb_doom_nums[8] = R_RegisterPic("doom/STYSNUM8");
+	scr.sb_doom_nums[9] = R_RegisterPic("doom/STYSNUM9");
 
-	scr.sb_doom_gray_nums[0] = R_RegisterPic("doom/STGNUM0.d2p");
-	scr.sb_doom_gray_nums[1] = R_RegisterPic("doom/STGNUM1.d2p");
-	scr.sb_doom_gray_nums[2] = R_RegisterPic("doom/STGNUM2.d2p");
-	scr.sb_doom_gray_nums[3] = R_RegisterPic("doom/STGNUM3.d2p");
-	scr.sb_doom_gray_nums[4] = R_RegisterPic("doom/STGNUM4.d2p");
-	scr.sb_doom_gray_nums[5] = R_RegisterPic("doom/STGNUM5.d2p");
-	scr.sb_doom_gray_nums[6] = R_RegisterPic("doom/STGNUM6.d2p");
-	scr.sb_doom_gray_nums[7] = R_RegisterPic("doom/STGNUM7.d2p");
-	scr.sb_doom_gray_nums[8] = R_RegisterPic("doom/STGNUM8.d2p");
-	scr.sb_doom_gray_nums[9] = R_RegisterPic("doom/STGNUM9.d2p");
+	scr.sb_doom_gray_nums[0] = R_RegisterPic("doom/STGNUM0");
+	scr.sb_doom_gray_nums[1] = R_RegisterPic("doom/STGNUM1");
+	scr.sb_doom_gray_nums[2] = R_RegisterPic("doom/STGNUM2");
+	scr.sb_doom_gray_nums[3] = R_RegisterPic("doom/STGNUM3");
+	scr.sb_doom_gray_nums[4] = R_RegisterPic("doom/STGNUM4");
+	scr.sb_doom_gray_nums[5] = R_RegisterPic("doom/STGNUM5");
+	scr.sb_doom_gray_nums[6] = R_RegisterPic("doom/STGNUM6");
+	scr.sb_doom_gray_nums[7] = R_RegisterPic("doom/STGNUM7");
+	scr.sb_doom_gray_nums[8] = R_RegisterPic("doom/STGNUM8");
+	scr.sb_doom_gray_nums[9] = R_RegisterPic("doom/STGNUM9");
 	
-	scr.sb_duke_nums[0] = R_RegisterPic("duke/35_0.dnp");
-	scr.sb_duke_nums[1] = R_RegisterPic("duke/35_1.dnp");
-	scr.sb_duke_nums[2] = R_RegisterPic("duke/35_2.dnp");
-	scr.sb_duke_nums[3] = R_RegisterPic("duke/35_3.dnp");
-	scr.sb_duke_nums[4] = R_RegisterPic("duke/35_4.dnp");
-	scr.sb_duke_nums[5] = R_RegisterPic("duke/35_5.dnp");
-	scr.sb_duke_nums[6] = R_RegisterPic("duke/35_6.dnp");
-	scr.sb_duke_nums[7] = R_RegisterPic("duke/35_7.dnp");
-	scr.sb_duke_nums[8] = R_RegisterPic("duke/35_8.dnp");
-	scr.sb_duke_nums[9] = R_RegisterPic("duke/35_9.dnp");
-	scr.sb_duke_nums[10] = R_RegisterPic("duke/35_colon.dnp");
-	scr.sb_duke_nums[11] = R_RegisterPic("duke/35_slash.dnp");
+	scr.sb_duke_nums[0] = R_RegisterPic("duke/35_0");
+	scr.sb_duke_nums[1] = R_RegisterPic("duke/35_1");
+	scr.sb_duke_nums[2] = R_RegisterPic("duke/35_2");
+	scr.sb_duke_nums[3] = R_RegisterPic("duke/35_3");
+	scr.sb_duke_nums[4] = R_RegisterPic("duke/35_4");
+	scr.sb_duke_nums[5] = R_RegisterPic("duke/35_5");
+	scr.sb_duke_nums[6] = R_RegisterPic("duke/35_6");
+	scr.sb_duke_nums[7] = R_RegisterPic("duke/35_7");
+	scr.sb_duke_nums[8] = R_RegisterPic("duke/35_8");
+	scr.sb_duke_nums[9] = R_RegisterPic("duke/35_9");
+	scr.sb_duke_nums[10] = R_RegisterPic("duke/35_colon");
+	scr.sb_duke_nums[11] = R_RegisterPic("duke/35_slash");
 
 	scr.inven_pic = R_RegisterPic("inventory");
 	scr.field_pic = R_RegisterPic("field_3");
 
 	scr.backtile_pic = R_RegisterImage("backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
 	// Generations
-	scr.q1_backtile_pic = R_RegisterImage("q1/backtile.q1p", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
-	scr.d_backtile_pic = R_RegisterImage("doom/backtile.d2p", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
+	scr.q1_backtile_pic = R_RegisterImage("q1/backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
+	scr.d_backtile_pic = R_RegisterImage("doom/backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
 
 	scr.pause_pic = R_RegisterPic("pause");
 	R_GetPicSize(&scr.pause_width, &scr.pause_height, scr.pause_pic, CL_GetClientGame());
@@ -1289,22 +1292,22 @@ void SCR_RegisterMedia(void)
 	{
 		for (j=0; j<ST_NUMSTRAIGHTFACES; j++)
 		{
-			Q_snprintf(namebuf, sizeof(namebuf), "doom/STFST%d%d.d2p", i, j);
+			Q_snprintf(namebuf, sizeof(namebuf), "doom/STFST%d%d", i, j);
 			scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
 		}
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTR%d0.d2p", i);	// turn right
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTR%d0", i);	// turn right
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTL%d0.d2p", i);	// turn left
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTL%d0", i);	// turn left
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFOUCH%d.d2p", i);	// ouch!
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFOUCH%d", i);	// ouch!
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFEVL%d.d2p", i);	// evil grin ;)
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFEVL%d", i);	// evil grin ;)
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFKILL%d.d2p", i);	// pissed off
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFKILL%d", i);	// pissed off
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
 	}
-	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFGOD0.d2p");
-	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFDEAD0.d2p");
+	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFGOD0");
+	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFDEAD0");
 
 	SCR_FreeHUDLayouts();
 }
@@ -1385,6 +1388,9 @@ void SCR_Init(void)
 	scr_showstats = Cvar_Get("scr_showstats", "0", 0);
 	scr_showpmove = Cvar_Get("scr_showpmove", "0", 0);
 #endif
+
+	// Paril
+	scr_gunfov = Cvar_Get("scr_gunfov", "75", CVAR_ARCHIVE);
 
 	Cmd_Register(scr_cmds);
 
@@ -1560,7 +1566,7 @@ STAT PROGRAMS
 #define HUD_DrawAltCenterString(x, y, string) \
     SCR_DrawStringMulti(x, y, UI_CENTER | UI_XORCOLOR, MAX_STRING_CHARS, string, scr.font_pic, CL_GetClientGame())
 
-static void HUD_DrawNumber(int x, int y, int color, int width, int value)
+static void HUD_DrawNumber_Signed(int x, int y, int color, int width, int value, bool isSigned)
 {
 	char    num[16], *ptr;
 	int     l;
@@ -1574,7 +1580,7 @@ static void HUD_DrawNumber(int x, int y, int color, int width, int value)
 	if (width > 5)
 		width = 5;
 
-	l = Q_scnprintf(num, sizeof(num), "%i", value);
+	l = Q_scnprintf(num, sizeof(num), isSigned ? "%i" : "%u", value);
 	if (l > width)
 		l = width;
 
@@ -1598,6 +1604,8 @@ static void HUD_DrawNumber(int x, int y, int color, int width, int value)
 		l--;
 	}
 }
+
+#define HUD_DrawNumber(x, y, color, width, value) HUD_DrawNumber_Signed(x, y, color, width, value, true)
 
 static void HUD_DrawNumber_Reverse(int x, int y, int color, int width, int value, bool percent, int digit_spacing)
 {
@@ -1750,10 +1758,10 @@ static void SCR_DrawInventory(void)
 	int     	selected;
 	int     	top;
 
-	if (!(cl.frame.ps.stats[STAT_LAYOUTS] & 2))
+	if (!(cl.frame.ps.stats.layouts & 2))
 		return;
 
-	selected = cl.frame.ps.stats[STAT_SELECTED_ITEM];
+	selected = cl.frame.ps.stats.selected_item;
 
 	num = 0;
 	selected_num = 0;
@@ -1830,6 +1838,7 @@ typedef enum {
 	LAYOUT_STRING,
 	LAYOUT_STRING2,
 	LAYOUT_IF,
+	LAYOUT_IFBIT,
 	LAYOUT_COLOR,
 
 	LAYOUT_Q1_HNUM,
@@ -1895,8 +1904,19 @@ static int SCR_LayoutOffsetY(const layout_position_t *position)
 	}
 }
 
+typedef enum {
+	LAYOUT_TYPE_UINT8,
+	LAYOUT_TYPE_INT8,
+	LAYOUT_TYPE_UINT16,
+	LAYOUT_TYPE_INT16,
+	LAYOUT_TYPE_UINT32,
+	LAYOUT_TYPE_INT32
+} layout_stat_type_t;
+
+typedef struct layout_string_s layout_string_t;
+
 typedef struct {
-	int		stat;
+	uint8_t		offset;
 } layout_string_pic_t;
 
 typedef struct {
@@ -1911,28 +1931,34 @@ typedef struct {
 } layout_string_picn_t;
 
 typedef struct {
-	int			width;
-	int			stat;
+	uint8_t				width;
+	uint8_t				offset;
+	layout_stat_type_t	type;
 } layout_string_num_t;
 
 typedef struct {
 	char		string[MAX_QPATH];
 } layout_string_cstring_t;
 
-typedef struct layout_string_s layout_string_t;
-
 typedef struct {
-	int						stat;
+	uint8_t					offset;
+	layout_stat_type_t		type;
 	layout_string_t			*entries;
 } layout_string_if_t;
+
+typedef struct {
+	uint8_t					offset;
+	uint32_t				bits;
+	layout_stat_type_t		type;
+	layout_string_t			*entries;
+} layout_string_ifbit_t;
 
 typedef struct {
 	color_t		color;
 } layout_string_color_t;
 
 typedef struct {
-	int			stat;
-	int			bit;
+	itemid_e	type;
 } layout_string_q1_ammo_t;
 
 typedef struct {
@@ -1948,21 +1974,12 @@ typedef struct {
 } layout_string_doom_weapon_t;
 
 typedef struct {
-	int			cur_stat, max_stat;
-	int			bit;
+	itemid_e	type;
 } layout_string_doom_ammo_t;
 
 typedef struct {
-	int			face_stat;
-} layout_string_doom_face_t;
-
-typedef struct {
-	int			weapon_index;
-	int			stat_bit;
-	int			max_ammo;
+	int			weapon_index, weapon_bit;
 	int			width;
-	int			ammo_stat;
-	int			ammo_mask;
 } layout_string_duke_weapon_t;
 
 typedef struct layout_string_s {
@@ -1980,11 +1997,11 @@ typedef struct layout_string_s {
 		layout_string_cstring_t		string;
 		layout_string_color_t		color;
 		layout_string_if_t			if_stmt;
+		layout_string_ifbit_t		ifbit_stmt;
 		layout_string_q1_ammo_t		q1_ammo;
 		layout_string_q1_weapon_t	q1_weapon;
 		layout_string_doom_weapon_t	doom_weapon;
 		layout_string_doom_ammo_t	doom_ammo;
-		layout_string_doom_face_t	doom_face;
 		layout_string_duke_weapon_t	duke_weapon;
 	};
 
@@ -1993,14 +2010,62 @@ typedef struct layout_string_s {
 
 #define SCR_LayoutAlloc() (layout_string_t*)Z_TagMallocz(sizeof(layout_string_t), TAG_LAYOUT)
 
-layout_string_t *SCR_ParseLayoutString(const char *s)
+typedef struct {
+	const char *stat;
+	uint8_t offset;
+} stat_offset_t;
+
+uint8_t SCR_ParseLayoutStatOffset(const char *token)
+{
+	if (token[0] != '$')
+		Com_Error(ERR_DROP, "%s: invalid stat offset %s", __func__, token);
+
+#define STAT_OFFSET(name) { #name, offsetof(player_stats_t, name) }
+
+	static stat_offset_t stat_offsets[] = {
+		STAT_OFFSET(ammo_icon),
+		STAT_OFFSET(armor_icon),
+		STAT_OFFSET(health),
+		STAT_OFFSET(ammo),
+		STAT_OFFSET(armor),
+		STAT_OFFSET(frags),
+		STAT_OFFSET(chase),
+		STAT_OFFSET(selected_item),
+		STAT_OFFSET(q2.health_icon),
+		STAT_OFFSET(q2.pickup_icon),
+		STAT_OFFSET(q2.timer_icon),
+		STAT_OFFSET(q2.selected_icon),
+		STAT_OFFSET(q2.help_icon),
+		STAT_OFFSET(q2.timer),
+		STAT_OFFSET(q2.pickup_string),
+		STAT_OFFSET(visual_bits),
+		{ NULL }
+	};
+
+	for (stat_offset_t *o = stat_offsets; o->stat; o++)
+	{
+		if (Q_stricmp(token + 1, o->stat) != 0)
+			continue;
+
+		return o->offset;
+	}
+
+	Com_Error(ERR_DROP, "%s: invalid stat offset %s", __func__, token);
+}
+
+layout_string_t *SCR_ParseLayoutString(const char *filename)
 {
 	layout_position_t x = { LAYOUT_POS_LEFT, 0 }, y = { LAYOUT_POS_TOP, 0 };
 	char    *token;
 	layout_string_t *layout_string, *entry, *mem_entry;
 
-	if (!s || !s[0])
+	char *buf;
+	int len = FS_LoadFile(filename, (void **)&buf);
+
+	if (len < 0)
 		return NULL;
+
+	const char *s = buf;
 
 	layout_string = SCR_LayoutAlloc();
 	entry = mem_entry = layout_string;
@@ -2067,16 +2132,60 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 
 		entry->x = x;
 		entry->y = y;
+		
+		if (!strcmp(token, "ifbit"))
+		{
+			entry->type = LAYOUT_IFBIT;
 
-		if (!strcmp(token, "if"))
+			token = COM_Parse(&s);
+			entry->ifbit_stmt.offset = SCR_ParseLayoutStatOffset(token);
+
+			if (entry->ifbit_stmt.offset < 0 || entry->ifbit_stmt.offset >= sizeof(player_stats_t))
+				Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
+
+			token = COM_Parse(&s);
+			
+			if (Q_stricmp(token, "uint8") == 0 || Q_stricmp(token, "int8") == 0)
+				entry->ifbit_stmt.type = LAYOUT_TYPE_UINT8;
+			else if (Q_stricmp(token, "uint16") == 0 || Q_stricmp(token, "int16") == 0)
+				entry->ifbit_stmt.type = LAYOUT_TYPE_UINT16;
+			else if (Q_stricmp(token, "uint32") == 0 || Q_stricmp(token, "uint32") == 0)
+				entry->ifbit_stmt.type = LAYOUT_TYPE_UINT32;
+			else
+				Com_Error(ERR_DROP, "%s: invalid stat type", __func__);
+
+			token = COM_Parse(&s);
+			entry->ifbit_stmt.bits = atoi(token);
+
+			entry->ifbit_stmt.entries = SCR_LayoutAlloc();
+			entry->ifbit_stmt.entries->parent = entry;
+
+			entry = entry->ifbit_stmt.entries;
+			mem_entry->mem_next = entry;
+
+			mem_entry = entry;
+			continue;
+		}
+		else if (!strcmp(token, "if"))
 		{
 			entry->type = LAYOUT_IF;
 
 			token = COM_Parse(&s);
-			entry->if_stmt.stat = atoi(token);
+			entry->if_stmt.offset = SCR_ParseLayoutStatOffset(token);
 
-			if (entry->if_stmt.stat < 0 || entry->if_stmt.stat >= MAX_STATS)
+			if (entry->if_stmt.offset < 0 || entry->if_stmt.offset >= sizeof(player_stats_t))
 				Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
+
+			token = COM_Parse(&s);
+			
+			if (Q_stricmp(token, "uint8") == 0 || Q_stricmp(token, "int8") == 0)
+				entry->if_stmt.type = LAYOUT_TYPE_UINT8;
+			else if (Q_stricmp(token, "uint16") == 0 || Q_stricmp(token, "int16") == 0)
+				entry->if_stmt.type = LAYOUT_TYPE_UINT16;
+			else if (Q_stricmp(token, "uint32") == 0 || Q_stricmp(token, "uint32") == 0)
+				entry->if_stmt.type = LAYOUT_TYPE_UINT32;
+			else
+				Com_Error(ERR_DROP, "%s: invalid stat type", __func__);
 
 			entry->if_stmt.entries = SCR_LayoutAlloc();
 			entry->if_stmt.entries->parent = entry;
@@ -2085,7 +2194,6 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			mem_entry->mem_next = entry;
 
 			mem_entry = entry;
-
 			continue;
 		}
 		else if (!strcmp(token, "pic"))
@@ -2094,9 +2202,9 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			entry->type = LAYOUT_PIC;
 
 			token = COM_Parse(&s);
-			entry->pic.stat = atoi(token);
+			entry->pic.offset = SCR_ParseLayoutStatOffset(token);
 
-			if (entry->pic.stat < 0 || entry->pic.stat >= MAX_STATS)
+			if (entry->pic.offset < 0 || entry->pic.offset >= sizeof(player_stats_t))
 				Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
 
 			continue;
@@ -2181,10 +2289,27 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			entry->num.width = atoi(token);
 
 			token = COM_Parse(&s);
-			entry->num.stat = atoi(token);
+			entry->num.offset = SCR_ParseLayoutStatOffset(token);
 
-			if (entry->num.stat < 0 || entry->num.stat >= MAX_STATS)
+			if (entry->num.offset < 0 || entry->num.offset >= sizeof(player_stats_t))
 				Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
+
+			token = COM_Parse(&s);
+			
+			if (Q_stricmp(token, "uint8") == 0)
+				entry->num.type = LAYOUT_TYPE_UINT8;
+			else if (Q_stricmp(token, "int8") == 0)
+				entry->num.type = LAYOUT_TYPE_INT8;
+			else if (Q_stricmp(token, "uint16") == 0)
+				entry->num.type = LAYOUT_TYPE_UINT16;
+			else if (Q_stricmp(token, "int16") == 0)
+				entry->num.type = LAYOUT_TYPE_INT16;
+			else if (Q_stricmp(token, "uint32") == 0)
+				entry->num.type = LAYOUT_TYPE_UINT32;
+			else if (Q_stricmp(token, "int32") == 0)
+				entry->num.type = LAYOUT_TYPE_INT32;
+			else
+				Com_Error(ERR_DROP, "%s: invalid stat type", __func__);
 
 			continue;
 		}
@@ -2229,10 +2354,17 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			entry->type = LAYOUT_Q1_AMMO;
 
 			token = COM_Parse(&s);
-			entry->q1_ammo.stat = atoi(token);
 
-			token = COM_Parse(&s);
-			entry->q1_ammo.bit = atoi(token);
+			if (Q_stricmp(token, "shells") == 0)
+				entry->q1_ammo.type = ITI_Q1_SHELLS;
+			else if (Q_stricmp(token, "nails") == 0)
+				entry->q1_ammo.type = ITI_Q1_NAILS;
+			else if (Q_stricmp(token, "rockets") == 0)
+				entry->q1_ammo.type = ITI_Q1_ROCKETS;
+			else if (Q_stricmp(token, "cells") == 0)
+				entry->q1_ammo.type = ITI_Q1_CELLS;
+			else
+				Com_Error(ERR_DROP, "%s: invalid ammo type %s", __func__, token);
 
 			continue;
 		}
@@ -2305,11 +2437,17 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			entry->type = LAYOUT_DOOM_AMMO;
 
 			token = COM_Parse(&s);
-			entry->doom_ammo.cur_stat = atoi(token);
-			token = COM_Parse(&s);
-			entry->doom_ammo.max_stat = atoi(token);
-			token = COM_Parse(&s);
-			entry->doom_ammo.bit = atoi(token);
+			
+			if (Q_stricmp(token, "bullets") == 0)
+				entry->doom_ammo.type = ITI_DOOM_BULLETS;
+			else if (Q_stricmp(token, "shells") == 0)
+				entry->doom_ammo.type = ITI_DOOM_SHELLS;
+			else if (Q_stricmp(token, "rockets") == 0)
+				entry->doom_ammo.type = ITI_DOOM_ROCKETS;
+			else if (Q_stricmp(token, "cells") == 0)
+				entry->doom_ammo.type = ITI_DOOM_CELLS;
+			else
+				Com_Error(ERR_DROP, "%s: invalid ammo type %s", __func__, token);
 
 			continue;
 		}
@@ -2317,13 +2455,6 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 		{
 			// doom ammo
 			entry->type = LAYOUT_DOOM_FACE;
-
-			token = COM_Parse(&s);
-			entry->doom_face.face_stat = atoi(token);
-
-			if (entry->doom_face.face_stat < 0 || entry->doom_face.face_stat >= MAX_STATS)
-				Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
-
 			continue;
 		}
 		else if (!strcmp(token, "duke_hnum"))
@@ -2351,19 +2482,10 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 
 			token = COM_Parse(&s);
 			entry->duke_weapon.weapon_index = atoi(token);
-			entry->duke_weapon.stat_bit = 1 << entry->duke_weapon.weapon_index;
-
-			token = COM_Parse(&s);
-			entry->duke_weapon.max_ammo = atoi(token);
+			entry->duke_weapon.weapon_bit = 1 << entry->duke_weapon.weapon_index;
 
 			token = COM_Parse(&s);
 			entry->duke_weapon.width = atoi(token);
-
-			const int32_t ammo_bit = entry->duke_weapon.weapon_index - 2;
-			int32_t stat_bits[] = { STAT_DUKE_AMMO1, STAT_DUKE_AMMO2, STAT_DUKE_AMMO3 };
-			entry->duke_weapon.ammo_stat = stat_bits[ammo_bit / 4];
-			entry->duke_weapon.ammo_mask = (ammo_bit % 4) * 8;
-
 			continue;
 		}
 		else if (!strcmp(token, "stat_string"))
@@ -2371,9 +2493,9 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			entry->type = LAYOUT_STAT_STRING;
 
 			token = COM_Parse(&s);
-			entry->stat_string.stat = atoi(token);
+			entry->stat_string.offset = SCR_ParseLayoutStatOffset(token);
 
-			if (entry->stat_string.stat < 0 || entry->stat_string.stat >= MAX_STATS)
+			if (entry->stat_string.offset < 0 || entry->stat_string.offset >= sizeof(player_stats_t))
 				Com_Error(ERR_DROP, "%s: invalid stat index", __func__);
 
 			continue;
@@ -2431,6 +2553,8 @@ layout_string_t *SCR_ParseLayoutString(const char *s)
 			Com_Error(ERR_DROP, "%s: invalid layout token %s", __func__, token);
 	}
 
+	FS_FreeFile(buf);
+
 	return layout_string;
 }
 
@@ -2454,7 +2578,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 		{
 		case LAYOUT_PIC:
 			// draw a pic from a stat number
-			value = cl.frame.ps.stats[entry->pic.stat];
+			value = *(uint16_t *) (((void *)&cl.frame.ps.stats) + entry->pic.offset);
 
 			if (value <= 0 || value >= MAX_PRECACHE)
 				Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
@@ -2463,7 +2587,6 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 			if (token[0])
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), cl.precache[value].image, CL_GetClientGame());
-
 			break;
 		case LAYOUT_CLIENT:
 			// draw a deathmatch client block
@@ -2502,13 +2625,27 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			break;
 		case LAYOUT_NUM:
 			// draw a number
-			value = cl.frame.ps.stats[entry->num.stat];
-			HUD_DrawNumber(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), 0, entry->num.width, value);
+			{
+				void *ptr = ((void *) &cl.frame.ps.stats) + entry->num.offset;
+				
+				if (entry->num.type == LAYOUT_TYPE_UINT8)
+					value = *(uint8_t *)ptr;
+				else if (entry->num.type == LAYOUT_TYPE_INT8)
+					value = *(int8_t *)ptr;
+				else if (entry->num.type == LAYOUT_TYPE_UINT16)
+					value = *(uint16_t *)ptr;
+				else if (entry->num.type == LAYOUT_TYPE_INT16)
+					value = *(int16_t *)ptr;
+				else
+					value = *(int32_t *)ptr;
+
+				HUD_DrawNumber_Signed(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), 0, entry->num.width, value, !!(entry->num.type & 1));
+			}
 			break;
 
 		case LAYOUT_HNUM:
 			// health number
-			value = cl.frame.ps.stats[STAT_HEALTH];
+			value = cl.frame.ps.stats.health;
 
 			if (value > 25)
 				color = 0;  // green
@@ -2517,14 +2654,14 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			else
 				color = 1;
 
-			if (cl.frame.ps.stats[STAT_FLASHES] & 1)
+			if (cl.frame.ps.stats.flashes & 1)
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), scr.field_pic, CL_GetClientGame());
 
 			HUD_DrawNumber(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value);
 			break;
 		case LAYOUT_ANUM:
 			// ammo number
-			value = cl.frame.ps.stats[STAT_AMMO];
+			value = cl.frame.ps.stats.ammo;
 
 			if (value > 5)
 				color = 0;  // green
@@ -2533,21 +2670,21 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			else
 				break;   // negative number = don't show
 
-			if (cl.frame.ps.stats[STAT_FLASHES] & 4)
+			if (cl.frame.ps.stats.flashes & 4)
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), scr.field_pic, CL_GetClientGame());
 
 			HUD_DrawNumber(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value);
 			break;
 		case LAYOUT_RNUM:
 			// armor number
-			value = cl.frame.ps.stats[STAT_ARMOR];
+			value = cl.frame.ps.stats.armor;
 
 			if (value < 1)
 				break;
 
 			color = 0;  // green
 
-			if (cl.frame.ps.stats[STAT_FLASHES] & 2)
+			if (cl.frame.ps.stats.flashes & 2)
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), scr.field_pic, CL_GetClientGame());
 
 			HUD_DrawNumber(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value);
@@ -2555,7 +2692,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_Q1_HNUM:
 			// health number
-			value = cl.frame.ps.stats[STAT_HEALTH];
+			value = cl.frame.ps.stats.health;
 			color = 1;
 
 			if (value > 25)
@@ -2566,7 +2703,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_Q1_ANUM:
 			// ammo number
-			value = cl.frame.ps.stats[STAT_AMMO];
+			value = cl.frame.ps.stats.ammo;
 
 			color = 1;
 
@@ -2578,7 +2715,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_Q1_RNUM:
 			// armor number
-			value = cl.frame.ps.stats[STAT_ARMOR];
+			value = cl.frame.ps.stats.armor;
 			color = 0;  // green
 
 			if (value <= 25)
@@ -2588,12 +2725,18 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			break;
 
 		case LAYOUT_Q1_AMMO:
-			value = cl.frame.ps.stats[entry->q1_ammo.stat];
-			value = (value >> entry->q1_ammo.bit) & 0xFF;
-
-			Q_snprintf(buffer, sizeof(buffer), "%3i", value);
-			
 			{
+				value = 0;
+				switch (entry->q1_ammo.type)
+				{
+				case ITI_Q1_SHELLS: value = cl.frame.ps.stats.q1.ammo_shells; break;
+				case ITI_Q1_NAILS: value = cl.frame.ps.stats.q1.ammo_nails; break;
+				case ITI_Q1_ROCKETS: value = cl.frame.ps.stats.q1.ammo_rockets; break;
+				case ITI_Q1_CELLS: value = cl.frame.ps.stats.q1.ammo_cells; break;
+				}
+
+				Q_snprintf(buffer, sizeof(buffer), "%3i", value);
+			
 				color_t old_color = R_GetColor();
 				color_t new_color = { 0xFFFFFFFF };
 
@@ -2608,15 +2751,15 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			break;
 
 		case LAYOUT_Q1_WEAPON:
-			value = cl.frame.ps.stats[STAT_Q1_ITEMS] & entry->q1_weapon.stat_bit;
+			value = cl.frame.ps.stats.q1.items & entry->q1_weapon.stat_bit;
 
 			if (value)
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y),
-				(cl.frame.ps.stats[STAT_Q1_CURWEAP] == entry->q1_weapon.weapon_index) ? entry->q1_weapon.selected_pic : entry->q1_weapon.unselected_pic, CL_GetClientGame());
+				(cl.frame.ps.stats.q1.cur_weap == entry->q1_weapon.weapon_index) ? entry->q1_weapon.selected_pic : entry->q1_weapon.unselected_pic, CL_GetClientGame());
 			break;
 
 		case LAYOUT_Q1_ITEM:
-			value = cl.frame.ps.stats[STAT_Q1_ITEMS] & entry->q1_weapon.stat_bit;
+			value = cl.frame.ps.stats.q1.items & entry->q1_weapon.stat_bit;
 
 			if (value)
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y),
@@ -2628,24 +2771,24 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			{
 				pichandle_t face;
 
-				if ((cl.frame.ps.stats[STAT_Q1_ITEMS] & (IT_Q1_INVIS | IT_Q1_INVUL)) == (IT_Q1_INVIS | IT_Q1_INVUL))
+				if ((cl.frame.ps.stats.q1.items & (IT_Q1_INVIS | IT_Q1_INVUL)) == (IT_Q1_INVIS | IT_Q1_INVUL))
 					face = scr.sb_face_invis_invuln;
-				else if (cl.frame.ps.stats[STAT_Q1_ITEMS] & IT_Q1_QUAD)
+				else if (cl.frame.ps.stats.q1.items & IT_Q1_QUAD)
 					face = scr.sb_face_quad;
-				else if (cl.frame.ps.stats[STAT_Q1_ITEMS] & IT_Q1_INVIS)
+				else if (cl.frame.ps.stats.q1.items & IT_Q1_INVIS)
 					face = scr.sb_face_invis;
-				else if (cl.frame.ps.stats[STAT_Q1_ITEMS] & IT_Q1_INVUL)
+				else if (cl.frame.ps.stats.q1.items & IT_Q1_INVUL)
 					face = scr.sb_face_invuln;
 				else
 				{
 					int f, anim = 0;
 
-					if (cl.frame.ps.stats[STAT_HEALTH] >= 100)
+					if (cl.frame.ps.stats.health >= 100)
 						f = 4;
 					else
-						f = max(0, cl.frame.ps.stats[STAT_HEALTH] / 20);
+						f = max(0, cl.frame.ps.stats.health / 20);
 
-					anim = cl.frame.ps.stats[STAT_Q1_FACEANIM] ? 1 : 0;
+					anim = cl.frame.ps.stats.q1.face_anim ? 1 : 0;
 					face = scr.sb_faces[f][anim];
 				}
 
@@ -2656,7 +2799,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_DOOM_HNUM:
 			// health number
-			value = max(0, (int)cl.frame.ps.stats[STAT_HEALTH]);
+			value = max(0, (int)cl.frame.ps.stats.health);
 			color = 0;
 
 			HUD_DrawNumber_Reverse(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 4, value, true, 0);
@@ -2664,7 +2807,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_DOOM_ANUM:
 			// ammo number
-			value = max(0, (int)cl.frame.ps.stats[STAT_AMMO]);
+			value = max(0, (int)cl.frame.ps.stats.ammo);
 			color = 0;
 
 			HUD_DrawNumber_Reverse(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value, false, 0);
@@ -2672,7 +2815,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_DOOM_RNUM:
 			// health number
-			value = max(0, (int)cl.frame.ps.stats[STAT_ARMOR]);
+			value = max(0, (int)cl.frame.ps.stats.armor);
 			color = 0;
 
 			HUD_DrawNumber_Reverse(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 4, value, true, 0);
@@ -2680,7 +2823,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_DOOM_WEAPON:
 			// weapon number
-			value = cl.frame.ps.stats[STAT_DOOM_WEAPONS] & entry->doom_weapon.stat_bit;
+			value = cl.frame.ps.stats.doom.weapons & entry->doom_weapon.stat_bit;
 
 			R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), value ? scr.sb_doom_nums[entry->doom_weapon.weapon_index] : scr.sb_doom_gray_nums[entry->doom_weapon.weapon_index], CL_GetClientGame());
 			break;
@@ -2688,26 +2831,38 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 		case LAYOUT_DOOM_AMMO:
 			// ammo
 			{
-				value = (cl.frame.ps.stats[entry->doom_ammo.cur_stat] >> entry->doom_ammo.bit) & 0xFFFF;
-				R_DrawDoomNum(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), 3, value);
+				uint16_t current_ammo = 0, max_ammo = 0;
+
+#define SET_AMMO(id, type) case id: current_ammo = cl.frame.ps.stats.doom.type; max_ammo = cl.frame.ps.stats.doom.max_##type; break;
+
+				switch (entry->doom_ammo.type)
+				{
+					SET_AMMO(ITI_DOOM_BULLETS, ammo_bullets)
+					SET_AMMO(ITI_DOOM_SHELLS, ammo_shells)
+					SET_AMMO(ITI_DOOM_ROCKETS, ammo_rockets)
+					SET_AMMO(ITI_DOOM_CELLS, ammo_cells)
+				}
+				
+#undef SET_AMMO
+
+				R_DrawDoomNum(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), 3, current_ammo);
 
 				layout_position_t max_x = entry->x;
 				max_x.offset += 26;
 
-				value = (cl.frame.ps.stats[entry->doom_ammo.max_stat] >> entry->doom_ammo.bit) & 0xFFFF;
-				R_DrawDoomNum(SCR_LayoutOffsetX(&max_x), SCR_LayoutOffsetY(&entry->y), 3, value);
+				R_DrawDoomNum(SCR_LayoutOffsetX(&max_x), SCR_LayoutOffsetY(&entry->y), 3, max_ammo);
 			}
 			break;
 			
 		case LAYOUT_DOOM_FACE:
-			value = cl.frame.ps.stats[entry->doom_face.face_stat];
+			value = cl.frame.ps.stats.doom.face;
 
 			R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), scr.sb_doom_faces[value], CL_GetClientGame());
 			break;
 
 		case LAYOUT_DUKE_HNUM:
 			// health number
-			value = max(0, (int)cl.frame.ps.stats[STAT_HEALTH]);
+			value = max(0, (int)cl.frame.ps.stats.health);
 			color = 0;
 
 			HUD_DrawNumber_Reverse(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value, false, 1);
@@ -2715,7 +2870,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_DUKE_ANUM:
 			// health number
-			value = max(0, (int)cl.frame.ps.stats[STAT_AMMO]);
+			value = max(0, (int)cl.frame.ps.stats.ammo);
 			color = 0;
 
 			HUD_DrawNumber_Reverse(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value, false, 1);
@@ -2723,7 +2878,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 		case LAYOUT_DUKE_RNUM:
 			// health number
-			value = max(0, (int)cl.frame.ps.stats[STAT_ARMOR]);
+			value = max(0, (int)cl.frame.ps.stats.armor);
 			color = 0;
 
 			HUD_DrawNumber_Reverse(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), color, 3, value, false, 1);
@@ -2732,10 +2887,27 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 		case LAYOUT_DUKE_WEAPON:
 			// weapon number
 			{
-				const int16_t available_weapons = cl.frame.ps.stats[STAT_DUKE_WEAPONS] & 0xFFFF;
-				const int16_t current_weapons = (cl.frame.ps.stats[STAT_DUKE_WEAPONS] >> 16) & 0xFFFF;
+				const uint16_t available_weapons = cl.frame.ps.stats.duke.weapons & 0xFFFF;
+				const uint8_t current_weapon = cl.frame.ps.stats.duke.selected_weapon;
 
-				value = available_weapons & entry->duke_weapon.stat_bit;
+				uint16_t current_ammo = 0, max_ammo = 0;
+
+#define SET_AMMO(id, type) case id: current_ammo = cl.frame.ps.stats.duke.type; max_ammo = cl.frame.ps.stats.duke.max_##type; break;
+
+				switch (entry->duke_weapon.weapon_index)
+				{
+					SET_AMMO(IT_DUKE_INDEX_PISTOL, ammo_clip)
+					SET_AMMO(IT_DUKE_INDEX_SHOTGUN, ammo_shells)
+					SET_AMMO(IT_DUKE_INDEX_CANNON, ammo_cannon)
+					SET_AMMO(IT_DUKE_INDEX_RPG, ammo_rpg)
+					SET_AMMO(IT_DUKE_INDEX_PIPE, ammo_pipebombs)
+					SET_AMMO(IT_DUKE_INDEX_SHRINKER, ammo_shrinker)
+					SET_AMMO(IT_DUKE_INDEX_DEVASTATOR, ammo_devastator)
+					SET_AMMO(IT_DUKE_INDEX_TRIPWIRE, ammo_tripwire)
+					SET_AMMO(IT_DUKE_INDEX_FREEZETHROWER, ammo_freezer)
+				}
+
+#undef SET_AMMO
 
 				R_SetColor(ColorFromRGBA(255, 207, 10, 255).u32);
 
@@ -2744,29 +2916,28 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 				R_ClearColor();
 
-				if (current_weapons == entry->duke_weapon.stat_bit)
+				if (current_weapon == entry->duke_weapon.weapon_index)
 					R_ClearColor();
-				else if (available_weapons & entry->duke_weapon.stat_bit)
+				else if (available_weapons & entry->duke_weapon.weapon_bit)
 					R_SetColor(ColorFromRGBA(127, 127, 127, 255).u32);
 				else
 					R_SetColor(ColorFromRGBA(80, 80, 80, 255).u32);
 
 				int ammo_offset = 3 + ((3 + 1) * entry->duke_weapon.width) - 1;
-				const int32_t ammo = (cl.frame.ps.stats[entry->duke_weapon.ammo_stat] >> entry->duke_weapon.ammo_mask) & 0xFF;
 
-				R_DrawDukeNum(SCR_LayoutOffsetX(&entry->x) + ammo_offset, SCR_LayoutOffsetY(&entry->y), entry->duke_weapon.width, ammo, true);
+				R_DrawDukeNum(SCR_LayoutOffsetX(&entry->x) + ammo_offset, SCR_LayoutOffsetY(&entry->y), entry->duke_weapon.width, current_ammo, true);
 				
 				ammo_offset += 1;
 
 				R_DrawPic(SCR_LayoutOffsetX(&entry->x) + ammo_offset, SCR_LayoutOffsetY(&entry->y), scr.sb_duke_nums[11], CL_GetClientGame());
-				R_DrawDukeNum(SCR_LayoutOffsetX(&entry->x) + ammo_offset + 5, SCR_LayoutOffsetY(&entry->y), entry->duke_weapon.width, entry->duke_weapon.max_ammo, false);
+				R_DrawDukeNum(SCR_LayoutOffsetX(&entry->x) + ammo_offset + 5, SCR_LayoutOffsetY(&entry->y), entry->duke_weapon.width, max_ammo, false);
 
 				R_ClearColor();
 			}
 			break;
 
 		case LAYOUT_STAT_STRING:
-			index = cl.frame.ps.stats[entry->stat_string.stat];
+			index = value = *(uint16_t *) (((void *)&cl.frame.ps.stats) + entry->stat_string.offset);
 
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_Error(ERR_DROP, "%s: invalid string index", __func__);
@@ -2789,13 +2960,39 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			R_SetColor(entry->color.color.u32);
 			break;
 		case LAYOUT_IF:
-			value = cl.frame.ps.stats[entry->if_stmt.stat];
+			{
+				void *ptr = ((void *) &cl.frame.ps.stats) + entry->if_stmt.offset;
+				
+				if (entry->if_stmt.type <= LAYOUT_TYPE_INT8)
+					value = *(uint8_t *)ptr;
+				else if (entry->if_stmt.type <= LAYOUT_TYPE_INT16)
+					value = *(uint16_t *)ptr;
+				else
+					value = *(uint32_t *)ptr;
 
-			if (!value)
-				break;
+				if (!value)
+					break;
 
-			entry = entry->if_stmt.entries;
-			continue;
+				entry = entry->if_stmt.entries;
+				continue;
+			}
+		case LAYOUT_IFBIT:
+			{
+				void *ptr = ((void *) &cl.frame.ps.stats) + entry->ifbit_stmt.offset;
+				
+				if (entry->ifbit_stmt.type <= LAYOUT_TYPE_INT8)
+					value = *(uint8_t *)ptr;
+				else if (entry->ifbit_stmt.type <= LAYOUT_TYPE_INT16)
+					value = *(uint16_t *)ptr;
+				else
+					value = *(uint32_t *)ptr;
+
+				if (!(value & entry->ifbit_stmt.bits))
+					break;
+
+				entry = entry->ifbit_stmt.entries;
+				continue;
+			}
 		}
 
 		if (!entry->next)
@@ -2907,333 +3104,6 @@ endif
 
 #endif
 
-static const char single_statusbar[] =
-"yb -24 "
-
-// health
-"xv 0 "
-"hnum "
-"if 0 "
-"	xv 50 "
-"	pic 0 "
-"endif "
-
-// ammo
-"if 2 "
-"   xv  100 "
-"   anum "
-"   xv  150 "
-"   pic 2 "
-"endif "
-
-// armor
-"if 4 "
-"   xv  200 "
-"   rnum "
-"   xv  250 "
-"   pic 4 "
-"endif "
-
-// selected item
-"if 6 "
-"   xv  296 "
-"   pic 6 "
-"endif "
-
-"yb -50 "
-
-// picked up item
-"if 7 "
-"   xv  0 "
-"   pic 7 "
-"   xv  26 "
-"   yb  -42 "
-"   stat_string 8 "
-"   yb  -50 "
-"endif "
-
-// timer
-"if 9 "
-"   xv  262 "
-"   num 2   10 "
-"   xv  296 "
-"   pic 9 "
-"endif "
-
-//  help / weapon icon
-"if 11 "
-"   xv  148 "
-"   pic 11 "
-"endif "
-;
-
-static const char dm_statusbar[] =
-"yb -24 "
-
-// health
-"xv 0 "
-"hnum "
-"if 0 "
-"	xv 50 "
-"	pic 0 "
-"endif "
-
-// ammo
-"if 2 "
-"   xv  100 "
-"   anum "
-"   xv  150 "
-"   pic 2 "
-"endif "
-
-// armor
-"if 4 "
-"   xv  200 "
-"   rnum "
-"   xv  250 "
-"   pic 4 "
-"endif "
-
-// selected item
-"if 6 "
-"   xv  296 "
-"   pic 6 "
-"endif "
-
-"yb -50 "
-
-// picked up item
-"if 7 "
-"   xv  0 "
-"   pic 7 "
-"   xv  26 "
-"   yb  -42 "
-"   stat_string 8 "
-"   yb  -50 "
-"endif "
-
-// timer
-"if 9 "
-"   xv  246 "
-"   num 2   10 "
-"   xv  296 "
-"   pic 9 "
-"endif "
-
-//  help / weapon icon
-"if 11 "
-"   xv  148 "
-"   pic 11 "
-"endif "
-
-//  frags
-"xr -50 "
-"yt 2 "
-"num 3 14 "
-
-// spectator
-"if 17 "
-"xv 0 "
-"yb -58 "
-"string2 \"SPECTATOR MODE\" "
-"endif "
-
-// chase camera
-"if 16 "
-"xv 0 "
-"yb -68 "
-"string \"Chasing\" "
-"xv 64 "
-"stat_string 16 "
-"endif "
-;
-
-static const char q1_statusbar[] =
-"yb -24 "
-"xv 0 "
-"picn \"q1/sbar.q1p\" "
-
-"yb -48 "
-"picn \"q1/ibar.q1p\" "
-
-"yb -24 "
-"xv 24 "
-"q1_rnum "
-
-"xv 136 "
-"q1_hnum "
-
-"xv 112 "
-"q1_face "
-
-"xv 248 "
-"q1_anum "
-
-"if 2 "
-"	xv  224 "
-"	pic 2 "
-"endif "
-
-"if 4 "
-"	xv  0 "
-"	pic 4 "
-"endif "
-
-"yb -48 "
-
-"xv 10 "
-"q1_ammo 7 0 "
-
-"xv 58 "
-"q1_ammo 7 8 "
-
-"xv 106 "
-"q1_ammo 7 16 "
-
-"xv 154 "
-"q1_ammo 7 24 "
-
-"yb -40 "
-"xv 0 "
-"q1_weapon 1 \"q1/inv_shotgun.q1p\" \"q1/inv2_shotgun.q1p\" "
-
-"xv 24 "
-"q1_weapon 2 \"q1/inv_sshotgun.q1p\" \"q1/inv2_sshotgun.q1p\" "
-
-"xv 48 "
-"q1_weapon 3 \"q1/inv_nailgun.q1p\" \"q1/inv2_nailgun.q1p\" "
-
-"xv 72 "
-"q1_weapon 4 \"q1/inv_snailgun.q1p\" \"q1/inv2_snailgun.q1p\" "
-
-"xv 96 "
-"q1_weapon 5 \"q1/inv_rlaunch.q1p\" \"q1/inv2_rlaunch.q1p\" "
-
-"xv 120 "
-"q1_weapon 6 \"q1/inv_srlaunch.q1p\" \"q1/inv2_srlaunch.q1p\" "
-
-"xv 144 "
-"q1_weapon 7 \"q1/inv_lightng.q1p\" \"q1/inv2_lightng.q1p\" "
-
-"xv 192 "
-"q1_item 8 \"q1/sb_quad.q1p\" "
-
-"xv 208 "
-"q1_item 9 \"q1/sb_invuln.q1p\" "
-
-"xv 224 "
-"q1_item 10 \"q1/sb_suit.q1p\" "
-
-"xv 240 "
-"q1_item 11 \"q1/sb_invis.q1p\" "
-;
-
-static const char doom_statusbar[] =
-"yb -32 "
-"xv 0 "
-"picn \"doom/STBAR.d2p\" "
-
-"xv 104 "
-"picn \"doom/STARMS.d2p\" "
-
-"yb -30 "
-"xv 148 "
-"doom_face 6 "
-
-"xv 90 "
-"yb -29 "
-"doom_hnum "
-
-"xv 44 "
-"doom_anum "
-
-"xv 221 "
-"doom_rnum "
-
-"yb -28 "
-
-"xv 111 "
-"doom_weapon 2 "
-
-"xv 123 "
-"doom_weapon 3 "
-
-"xv 135 "
-"doom_weapon 4 "
-
-"yb -18 "
-
-"xv 111 "
-"doom_weapon 5 "
-
-"xv 123 "
-"doom_weapon 6 "
-
-"xv 135 "
-"doom_weapon 7 "
-
-"xv 288 "
-"yb -28 "
-"doom_ammo 8 10 0 "
-
-"yb -22 "
-"doom_ammo 8 10 16 "
-
-"yb -16 "
-"doom_ammo 9 15 0 "
-
-"yb -10 "
-"doom_ammo 9 15 16 "
-;
-
-static const char duke_statusbar[] =
-"yb -32 "
-
-"xv 0 "
-"picn \"duke/hud.dnp\" "
-
-"yb -15 "
-
-"xv 42 "
-"duke_hnum "
-
-"xv 74 "
-"duke_rnum "
-
-"xv 220 "
-"duke_anum "
-
-"xv 92 "
-"yb -20 "
-"duke_weapon 2 200 3 "
-
-"yb -14 "
-"duke_weapon 3 50 3 "
-
-"yb -8 "
-"duke_weapon 4 200 3 "
-
-"xv 131 "
-"yb -20 "
-"duke_weapon 5 50 2 "
-
-"yb -14 "
-"duke_weapon 6 50 2 "
-
-"yb -8 "
-"duke_weapon 7 50 2 "
-
-"xv 162 "
-"yb -20 "
-"duke_weapon 8 99 2 "
-
-"yb -14 "
-"duke_weapon 9 10 2 "
-
-"yb -8 "
-"duke_weapon 10 99 2 "
-;
-
 layout_string_t *layout_singleplayer;
 layout_string_t *layout_deathmatch;
 layout_string_t *layout_q1;
@@ -3242,43 +3112,41 @@ layout_string_t *layout_duke;
 
 void SCR_FreeHUDLayouts()
 {
-	if (layout_singleplayer)
-	{
-		SCR_FreeLayoutString(layout_singleplayer);
-		SCR_FreeLayoutString(layout_deathmatch);
-		SCR_FreeLayoutString(layout_q1);
-		SCR_FreeLayoutString(layout_doom);
-		SCR_FreeLayoutString(layout_duke);
+	if (!layout_singleplayer)
+		return;
 
-		layout_singleplayer = NULL;
-		layout_deathmatch = NULL;
-		layout_q1 = NULL;
-		layout_doom = NULL;
-		layout_duke = NULL;
-	}
+	SCR_FreeLayoutString(layout_singleplayer);
+	SCR_FreeLayoutString(layout_deathmatch);
+	SCR_FreeLayoutString(layout_q1);
+	SCR_FreeLayoutString(layout_doom);
+	SCR_FreeLayoutString(layout_duke);
+
+	layout_singleplayer = NULL;
+	layout_deathmatch = NULL;
+	layout_q1 = NULL;
+	layout_doom = NULL;
+	layout_duke = NULL;
 }
 
 layout_string_t *SCR_GetHUDLayoutStruct()
 {
 	if (!layout_singleplayer)
 	{
-		layout_singleplayer = SCR_ParseLayoutString(single_statusbar);
-		layout_deathmatch = SCR_ParseLayoutString(dm_statusbar);
-		layout_q1 = SCR_ParseLayoutString(q1_statusbar);
-		layout_doom = SCR_ParseLayoutString(doom_statusbar);
-		layout_duke = SCR_ParseLayoutString(duke_statusbar);
+		layout_singleplayer = SCR_ParseLayoutString("hudscripts/q2_single.hsc");
+		layout_deathmatch = SCR_ParseLayoutString("hudscripts/q2_dm.hsc");
+		layout_q1 = SCR_ParseLayoutString("hudscripts/q1.hsc");
+		layout_doom = SCR_ParseLayoutString("hudscripts/doom.hsc");
+		layout_duke = SCR_ParseLayoutString("hudscripts/duke.hsc");
 	}
 
 	switch (cl_entities[cl.clientNum + 1].current.game)
 	{
-	case GAME_Q2:
 	default:
 		switch (cl.gamemode)
 		{
 		case GAMEMODE_COOP:
 		case GAMEMODE_SINGLEPLAYER:
 			return layout_singleplayer;
-		case GAMEMODE_DEATHMATCH:
 		default:
 			return layout_deathmatch;
 		}
@@ -3308,7 +3176,7 @@ static void SCR_DrawLayout(void)
 	if (cls.demo.playback && Key_IsDown(K_F1))
 		goto draw;
 
-	if (!(cl.frame.ps.stats[STAT_LAYOUTS] & 1))
+	if (!(cl.frame.ps.stats.layouts & 1))
 		return;
 
 draw:

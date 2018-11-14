@@ -54,11 +54,6 @@ typedef enum {
     IM_PNG,
 #endif
 
-	// Paril
-	IM_Q1P,
-	IM_D2P,
-	IM_DNP,
-
     IM_MAX
 } imageformat_t;
 

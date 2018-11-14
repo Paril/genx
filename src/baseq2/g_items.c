@@ -1374,7 +1374,7 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 
 		// change selected item
 		if (item->use)
-			other->client->ps.stats[STAT_SELECTED_ITEM] = other->client->pers.selected_item = ITEM_INDEX(item);
+			other->client->ps.stats.selected_item = other->client->pers.selected_item = ITEM_INDEX(item);
 
 		gi.sound(other, CHAN_ITEM, gi.soundindex(item->pickup_sound), 1, ATTN_NORM, 0);
 	}
@@ -2658,23 +2658,6 @@ void CheckWeaponBalanceCvars()
 		}
 }
 
-/*
-===============
-SetItemNames
-===============
-*/
-static void SetItemNames(void)
-{
-	int     i;
-	gitem_t *it;
-
-    for (i = 0 ; i < game.num_items ; i++) {
-		it = &itemlist[i];
-		gi.configstring(CS_ITEMS + i, it->pickup_name);
-	}
-}
-
-
 void InitItems(void)
 {
 	game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
@@ -2682,7 +2665,4 @@ void InitItems(void)
 	InitItemInfo();
 
 	CheckWeaponBalanceCvars();
-
-	// set configstrings for items
-	SetItemNames();
 }

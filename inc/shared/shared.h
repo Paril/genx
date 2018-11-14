@@ -1556,46 +1556,6 @@ typedef enum {
 #define ATTN_IDLE               2
 #define ATTN_STATIC             3   // diminish very rapidly with distance
 
-
-// player_state->stats[] indexes
-#define STAT_HEALTH_ICON        0
-#define STAT_HEALTH             1
-#define STAT_AMMO_ICON          2
-#define STAT_AMMO               3
-#define STAT_ARMOR_ICON         4
-#define STAT_ARMOR              5
-#define STAT_SELECTED_ICON      6
-#define STAT_PICKUP_ICON        7
-#define STAT_PICKUP_STRING      8
-#define STAT_TIMER_ICON         9
-#define STAT_TIMER              10
-#define STAT_HELPICON           11
-#define STAT_SELECTED_ITEM      12
-#define STAT_LAYOUTS            13
-#define STAT_FRAGS              14
-#define STAT_FLASHES            15      // cleared each frame, 1 = health, 2 = armor
-#define STAT_CHASE              16
-#define STAT_SPECTATOR          17
-
-#define MAX_STATS				32
-
-#define STAT_Q1_AMMO			STAT_PICKUP_ICON
-#define STAT_Q1_ITEMS			STAT_PICKUP_STRING
-#define STAT_Q1_CURWEAP			STAT_TIMER_ICON
-#define STAT_Q1_FACEANIM		STAT_TIMER
-
-#define STAT_DOOM_WEAPONS		STAT_PICKUP_ICON
-#define STAT_DOOM_AMMO1			STAT_PICKUP_STRING
-#define STAT_DOOM_AMMO2			STAT_TIMER_ICON
-#define STAT_DOOM_MAXAMMO1		STAT_TIMER
-#define STAT_DOOM_MAXAMMO2		STAT_FLASHES
-#define STAT_DOOM_FACE			STAT_SELECTED_ICON
-
-#define STAT_DUKE_WEAPONS		STAT_PICKUP_ICON
-#define STAT_DUKE_AMMO1			STAT_PICKUP_STRING
-#define STAT_DUKE_AMMO2			STAT_TIMER_ICON
-#define STAT_DUKE_AMMO3			STAT_TIMER
-
 enum
 {
 	IT_Q1_SHOTGUN			= 1<<0,
@@ -1631,20 +1591,17 @@ enum
 	IT_DUKE_SHRINKER		= 1<<7,
 	IT_DUKE_DEVASTATOR		= 1<<8,
 	IT_DUKE_TRIPWIRE		= 1<<9,
-	IT_DUKE_FREEZETHROWER	= 1<<10
-};
+	IT_DUKE_FREEZETHROWER	= 1<<10,
 
-enum
-{
-	IT_DUKE_PISTOL_AMMO			= 0,
-	IT_DUKE_SHOTGUN_AMMO		= 1,
-	IT_DUKE_CANNON_AMMO			= 2,
-	IT_DUKE_RPG_AMMO			= 3,
-	IT_DUKE_PIPE_AMMO			= 0,
-	IT_DUKE_SHRINKER_AMMO		= 1,
-	IT_DUKE_DEVASTATOR_AMMO		= 2,
-	IT_DUKE_TRIPWIRE_AMMO		= 3,
-	IT_DUKE_FREEZETHROWER_AMMO	= 0
+	IT_DUKE_INDEX_PISTOL		= 2,
+	IT_DUKE_INDEX_SHOTGUN		= 3,
+	IT_DUKE_INDEX_CANNON		= 4,
+	IT_DUKE_INDEX_RPG			= 5,
+	IT_DUKE_INDEX_PIPE			= 6,
+	IT_DUKE_INDEX_SHRINKER		= 7,
+	IT_DUKE_INDEX_DEVASTATOR	= 8,
+	IT_DUKE_INDEX_TRIPWIRE		= 9,
+	IT_DUKE_INDEX_FREEZETHROWER	= 10
 };
 
 // Doom face stuff
@@ -1866,6 +1823,92 @@ typedef enum
 	MAX_PLAYER_GUNS
 } gunindex_e;
 
+// player_stats_t is a structure that defines the stats.
+// this is sent delta + run-length encoded.
+// NOTE TO BE SURE IT MATCHES SCR_ParseLayoutStatOffset
+typedef struct {
+	// stats used by every class
+	uint16_t	ammo_icon;
+	uint16_t	armor_icon;
+
+	int16_t		health;
+	uint16_t	ammo;
+	uint16_t	armor;
+	
+	uint16_t	frags;
+	uint16_t	chase;
+	
+	uint8_t		selected_item;
+	union {
+		struct {
+			uint8_t		spectator : 1;
+			uint8_t		layouts : 2;
+			uint8_t		flashes : 2;
+		};
+
+		uint8_t	visual_bits;
+	};
+
+	// class-specific stats
+	union {
+		struct {
+			uint16_t	health_icon;
+			uint16_t	pickup_icon;
+			uint16_t	timer_icon;
+			uint16_t	selected_icon;
+			uint16_t	help_icon;
+			uint16_t	timer;
+			uint16_t	pickup_string;
+		} q2;
+
+		struct {
+			uint16_t items : 10;
+			uint16_t ammo_shells : 9;
+			uint16_t ammo_nails : 9;
+			uint16_t ammo_rockets : 9;
+			uint16_t ammo_cells : 9;
+			uint8_t face_anim : 3;
+			uint8_t	cur_weap;
+		} q1;
+
+		struct {
+			uint16_t ammo_bullets : 9;
+			uint16_t ammo_shells : 9;
+			uint16_t ammo_rockets : 9;
+			uint16_t ammo_cells : 9;
+			uint8_t weapons : 6;
+			uint8_t face : 6;
+			uint16_t max_ammo_bullets : 9;
+			uint16_t max_ammo_shells : 9;
+			uint16_t max_ammo_rockets : 9;
+			uint16_t max_ammo_cells : 9;
+		} doom;
+
+		struct {
+			uint16_t weapons : 10;
+			uint8_t selected_weapon : 4;
+			uint16_t ammo_clip : 9;
+			uint16_t ammo_shells : 9;
+			uint16_t ammo_cannon : 9;
+			uint16_t ammo_rpg : 9;
+			uint16_t ammo_pipebombs : 9;
+			uint16_t ammo_shrinker : 9;
+			uint16_t ammo_devastator : 9;
+			uint16_t ammo_tripwire : 9;
+			uint16_t ammo_freezer : 9;
+			uint16_t max_ammo_clip : 9;
+			uint16_t max_ammo_shells : 9;
+			uint16_t max_ammo_cannon : 9;
+			uint16_t max_ammo_rpg : 9;
+			uint16_t max_ammo_pipebombs : 9;
+			uint16_t max_ammo_shrinker : 9;
+			uint16_t max_ammo_devastator : 9;
+			uint16_t max_ammo_tripwire : 9;
+			uint16_t max_ammo_freezer : 9;
+		} duke;
+	};
+} player_stats_t;
+
 // player_state_t is the information needed in addition to pmove_state_t
 // to rendered a view.  There will only be 10 player_state_t sent each second,
 // but the number of pmove_state_t changes will be reletive to client
@@ -1890,7 +1933,7 @@ typedef struct {
     int         	rdflags;        // refdef flags
 
 	// Generations
-    int				stats[MAX_STATS];       // fast status bar updates
+    player_stats_t	stats;       // fast status bar updates
 
 	player_event_t	view_events;
 } player_state_t;

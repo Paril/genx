@@ -1,14 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
+using System.Threading.Tasks;
 
 namespace asset_transpiler
 {
 	class Program
 	{
-		static string Quake1Path = "";
-		static string DoomPath = "";
-		static string DukePath = "";
+		static void CheckPath(ref string pathIn, string who, string what)
+		{
+			if (string.IsNullOrEmpty(pathIn) || !Directory.Exists(pathIn))
+			{
+				Console.WriteLine("Paste path to " + who + " " + what + " (or containing folder):");
+				pathIn = Console.ReadLine();
+
+				if (pathIn.EndsWith("/" + what))
+					pathIn = Path.GetDirectoryName(pathIn);
+			}
+		}
 
 		static void LoadPaths()
 		{
@@ -18,57 +27,46 @@ namespace asset_transpiler
 
 				if (paths.Length >= 3)
 				{
-					Quake1Path = paths[0];
-					DoomPath = paths[1];
-					DukePath = paths[2];
+					Globals.Quake1Path = paths[0];
+					Globals.DoomPath = paths[1];
+					Globals.DukePath = paths[2];
 				}
 			}
 
 restart:
-
-			if (string.IsNullOrEmpty(Quake1Path) || !Directory.Exists(Quake1Path))
-			{
-				Console.WriteLine("Paste path to Quake 1 pak0.pak (or containing folder):");
-				Quake1Path = Console.ReadLine();
-
-				if (Quake1Path.EndsWith("/pak0.pak"))
-					Quake1Path = Path.GetDirectoryName(Quake1Path);
-			}
-
-			if (string.IsNullOrEmpty(DoomPath) || !Directory.Exists(DoomPath))
-			{
-				Console.WriteLine("Paste path to Doom II doom2.wad (or containing folder):");
-				DoomPath = Console.ReadLine();
-
-				if (DoomPath.EndsWith("/doom2.wad"))
-					DoomPath = Path.GetDirectoryName(DoomPath);
-			}
-
-			if (string.IsNullOrEmpty(DukePath) || !Directory.Exists(DukePath))
-			{
-				Console.WriteLine("Paste path to Duke 3D duke.grp (or containing folder):");
-				DukePath = Console.ReadLine();
-
-				if (DukePath.EndsWith("/duke.grp"))
-					DukePath = Path.GetDirectoryName(DukePath);
-			}
+			CheckPath(ref Globals.Quake1Path, "Quake", "pak0.pak");
+			CheckPath(ref Globals.DoomPath, "Doom II", "doom2.wad");
+			CheckPath(ref Globals.DukePath, "Duke Nukem 3D", "duke.grp");
 
 			Console.WriteLine("Paths loaded:");
-			Console.WriteLine("Quake 1: " + Quake1Path);
-			Console.WriteLine("Doom II: " + DoomPath);
-			Console.WriteLine("Duke 3D: " + DukePath);
+			Console.WriteLine("Quake 1: " + Globals.Quake1Path);
+			Console.WriteLine("Doom II: " + Globals.DoomPath);
+			Console.WriteLine("Duke 3D: " + Globals.DukePath);
 			Console.WriteLine("Are these still all good and valid? y/n");
 
 			var doit = Console.ReadLine();
 
 			if (doit == "y")
 			{
-				File.WriteAllLines("asset_paths.cfg", new string[] { Quake1Path, DoomPath, DukePath });
+				File.WriteAllLines("asset_paths.cfg", new string[] { Globals.Quake1Path, Globals.DoomPath, Globals.DukePath });
 				return;
 			}
 
-			Quake1Path = DoomPath = DukePath = "";
+			Globals.Quake1Path = Globals.DoomPath = Globals.DukePath = "";
 			goto restart;
+		}
+
+		static bool do_zips;
+
+		static void RunParser(string pkzFile, GameParser parser)
+		{
+			if (do_zips)
+				parser.MakeZip(pkzFile);
+
+			parser.Run();
+
+			if (do_zips)
+				parser._writeToZip.Dispose();
 		}
 
 		[STAThread]
@@ -83,103 +81,62 @@ restart:
 
 			if (doit == "y")
 			{
-				Globals.OpenStatus("Deleting old stuff...");
-
-				Globals.Status("ZIPs");
-
+				Console.WriteLine("Deleting old stuff...");
+				
 				if (File.Exists("quake1.pkz"))
 					File.Delete("quake1.pkz");
 				if (File.Exists("doom2.pkz"))
 					File.Delete("doom2.pkz");
 				if (File.Exists("duke.pkz"))
 					File.Delete("duke.pkz");
-
-				Globals.Status("Models");
+				
 				if (Directory.Exists("models"))
 					Directory.Delete("models", true);
-				Globals.Status("Pics");
 				if (Directory.Exists("pics"))
 					Directory.Delete("pics", true);
-				Globals.Status("Sound");
 				if (Directory.Exists("sound"))
 					Directory.Delete("sound", true);
-				Globals.Status("Sprites");
 				if (Directory.Exists("sprites"))
 					Directory.Delete("sprites", true);
-				Globals.Status("Textures");
 				if (Directory.Exists("textures"))
 					Directory.Delete("textures", true);
-
-				Globals.CloseStatus();
 			}
 
 			Console.WriteLine("Write zips? y/n");
-			var do_zips = Console.ReadLine() == "y";
+			do_zips = Console.ReadLine() == "y";
+
+			Console.WriteLine("Add development files (.wals, etc)? y/n");
+			Globals.SaveWals = Console.ReadLine() == "y";
 
 			LoadPaths();
 	
 			Console.WriteLine("Load Quake I data? y/n");
-			var path = Console.ReadLine();
-
-			if (path != "n")
-			{
-				var q1 = new DirectoryInfo(Quake1Path);
-
-				// Copy Q1 files
-				if (do_zips)
-					Globals.MakeZip("quake1.pkz");
-
-				Console.WriteLine("Rifling through pak0...");
-				Quake.Q1CopyStuff(q1.FullName + "\\pak0.pak");
-				Console.WriteLine("Rifling through pak1...");
-				Quake.Q1CopyStuff(q1.FullName + "\\pak1.pak");
-
-				if (do_zips)
-				{
-					Console.WriteLine("Saving quake1.pkz...");
-					Globals._writeToZip.Dispose();
-				}
-			}
+			var runQ1 = Console.ReadLine() == "y";
 
 			Console.WriteLine("Load Doom II data? y/n");
-			path = Console.ReadLine();
-
-			if (path != "n")
-			{
-				var d2 = new DirectoryInfo(DoomPath);
-
-				if (do_zips)
-					Globals.MakeZip("doom2.pkz");
-
-				Console.WriteLine("Rifling through doom2.wad...");
-				Doom.D2CopyStuff(d2.FullName + "\\doom2.wad");
-
-				if (do_zips)
-				{
-					Console.WriteLine("Saving doom2.pkz...");
-					Globals._writeToZip.Dispose();
-				}
-			}
+			var runD2 = Console.ReadLine() == "y";
 
 			Console.WriteLine("Load Duke Nukem 3D data? y/n");
-			path = Console.ReadLine();
+			var runDuke = Console.ReadLine() == "y";
 
-			if (path != "n")
-			{
-				var duke = new DirectoryInfo(DukePath);
+			Console.Clear();
 
-				if (do_zips)
-					Globals.MakeZip("duke.pkz");
+			List<Task> tasks = new List<Task>();
 
-				Console.WriteLine("Rifling through duke3d.grp...");
-				Duke.CopyStuff(duke.FullName + "\\duke3d.grp");
+			var quake = new Quake();
+			var doom = new Doom();
+			var duke = new Duke();
 
-				if (do_zips)
-				{
-					Console.WriteLine("Saving duke.pkz...");
-					Globals._writeToZip.Dispose();
-				}
-			}
+			if (runQ1)
+				tasks.Add(Task.Run(() => RunParser("quake1.pkz", quake)));
+
+			if (runD2)
+				tasks.Add(Task.Run(() => RunParser("doom2.pkz", doom)));
+
+			if (runDuke)
+				tasks.Add(Task.Run(() => RunParser("duke.pkz", duke)));
+
+			Task.WaitAll(tasks.ToArray());
 		}
 	}
 }
