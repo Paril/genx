@@ -565,7 +565,7 @@ static void AI_CreateNodesForEntities ( void )
 			AI_AddNode_Platform( ent );
 		}
 		// teleporters
-		else if( ent->entitytype == ET_Q1_TRIGGER_TELEPORT || ent->entitytype == ET_MISC_TELEPORTER)
+		else if(ent->entitytype == ET_MISC_TELEPORTER)
 		{
 			AI_AddNode_Teleporter( ent );
 		}

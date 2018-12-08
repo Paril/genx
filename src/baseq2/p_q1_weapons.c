@@ -51,7 +51,7 @@ void Weapon_Q1(edict_t *ent, int num_frames, void(*fire) (edict_t *ent, gunindex
 			if ((level.time - ent->client->respawn_time) > 500 &&
 				ent->attack_finished_time < ent->client->player_time)
 			{
-				if ((game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
+				if ((game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
 								(ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon))) {
 					fire(ent, gun);
 
@@ -1136,5 +1136,76 @@ void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	if (tr.fraction < 1.0f) {
 		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
 		bolt->touch(bolt, tr.ent, NULL, NULL);
+	}
+}
+
+static void Weapon_Q1_Axe(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 9, weapon_q1_axe_fire, gun);
+}
+
+static void Weapon_Q1_Shotgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 7, weapon_q1_shotgun_fire, gun);
+}
+
+static void Weapon_Q1_SuperShotgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 7, weapon_q1_sshotgun_fire, gun);
+}
+
+static void Weapon_Q1_Nailgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 9, weapon_q1_nailgun_fire, gun);
+}
+
+static void Weapon_Q1_SuperNailgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 8, weapon_q1_snailgun_fire, gun);
+}
+
+static void Weapon_Q1_GrenadeLauncher(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 7, weapon_q1_gl_fire, gun);
+}
+
+static void Weapon_Q1_RocketLauncher(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 7, weapon_q1_rl_fire, gun);
+}
+
+static void Weapon_Q1_Thunderbolt(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Q1(ent, 4, weapon_q1_lightning_fire, gun);
+}
+
+void Weapon_Q1_Run(edict_t *ent, gunindex_e gun)
+{
+	switch (ITEM_INDEX(ent->client->pers.weapon))
+	{
+	case ITI_Q1_AXE:
+		Weapon_Q1_Axe(ent, gun);
+		break;
+	case ITI_Q1_SHOTGUN:
+		Weapon_Q1_Shotgun(ent, gun);
+		break;
+	case ITI_Q1_SUPER_SHOTGUN:
+		Weapon_Q1_SuperShotgun(ent, gun);
+		break;
+	case ITI_Q1_NAILGUN:
+		Weapon_Q1_Nailgun(ent, gun);
+		break;
+	case ITI_Q1_SUPER_NAILGUN:
+		Weapon_Q1_SuperNailgun(ent, gun);
+		break;
+	case ITI_Q1_GRENADE_LAUNCHER:
+		Weapon_Q1_GrenadeLauncher(ent, gun);
+		break;
+	case ITI_Q1_ROCKET_LAUNCHER:
+		Weapon_Q1_RocketLauncher(ent, gun);
+		break;
+	case ITI_Q1_THUNDERBOLT:
+		Weapon_Q1_Thunderbolt(ent, gun);
+		break;
 	}
 }

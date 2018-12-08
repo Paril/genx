@@ -3,13 +3,13 @@
 typedef struct {
 	char		path[MAX_QPATH];
 
-	bool			loaded;
-	pichandle_t		pic;
+	bool		loaded;
+	qhandle_t	pic;
 } picentry_t;
 
 typedef struct {
-	char			name[MAX_QPATH];
+	char		name[MAX_QPATH];
 	picentry_t	entries[GAME_TOTAL];
 } picscript_t;
 
-picentry_t *PSCR_EntryForHandle(pichandle_t handle, gametype_t game);
+picentry_t *PSCR_EntryForHandle(qhandle_t handle, gametype_t game);

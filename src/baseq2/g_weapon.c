@@ -362,7 +362,7 @@ void fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	if (self->client)
 		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), bolt, DT_DIRECT);
 	else
-		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, (hyper) ? ITI_HYPERBLASTER : ITI_BLASTER, bolt, DT_DIRECT);
+		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, (hyper) ? ITI_Q2_HYPERBLASTER : ITI_Q2_BLASTER, bolt, DT_DIRECT);
 
 	tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
     if (tr.fraction < 1.0f) {
@@ -483,7 +483,7 @@ void fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int sp
 	if (self->client)
 		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
 	else
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_GRENADE_LAUNCHER, grenade, DT_DIRECT);
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_GRENADE_LAUNCHER, grenade, DT_DIRECT);
 
 	gi.linkentity(grenade);
 }
@@ -529,7 +529,7 @@ void fire_grenade2(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int s
 	if (self->client)
 		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
 	else
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_GRENADES, grenade, DT_DIRECT);
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_GRENADES, grenade, DT_DIRECT);
 
 	if (held)
 		grenade->meansOfDeath.damage_means |= MD_HELD;
@@ -624,7 +624,7 @@ void fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
 	if (self->client)
 		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), rocket, DT_DIRECT);
 	else
-		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_ROCKET_LAUNCHER, rocket, DT_DIRECT);
+		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_ROCKET_LAUNCHER, rocket, DT_DIRECT);
 
 	if (self->client)
 		check_dodge(self, rocket->s.origin, dir, speed);
@@ -651,7 +651,7 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 	if (self->client)
 		meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), self, DT_DIRECT);
 	else
-		meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_RAILGUN, self, DT_DIRECT);
+		meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_RAILGUN, self, DT_DIRECT);
 
 	VectorMA(start, 8192, aimdir, end);
 	VectorCopy(start, from);
@@ -823,7 +823,7 @@ void bfg_think(edict_t *self)
 		if (!ent->takedamage)
 			continue;
 
-		if (!(ent->svflags & SVF_MONSTER) && (!ent->client) && ent->entitytype != ET_MISC_EXPLOBOX && ent->entitytype != ET_Q1_MISC_EXPLOBOX2)
+		if (!(ent->svflags & SVF_MONSTER) && (!ent->client) && ent->entitytype != ET_MISC_EXPLOBOX)
 			continue;
 
 		VectorMA(ent->absmin, 0.5f, ent->size, point);
@@ -902,7 +902,7 @@ void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, fl
 	if (self->client)
 		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), bfg, DT_LASER);
 	else
-		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_BFG10K, bfg, DT_LASER);
+		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_BFG10K, bfg, DT_LASER);
 
 	if (self->client)
 		check_dodge(self, bfg->s.origin, dir, speed);

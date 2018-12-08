@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "asset_transpiler": {
+    "transpiler_core": {
       "commandName": "Project",
       "workingDirectory": "E:\\EvenMoreStore\\SteamLibrary\\Common\\Quake 2\\genx"
     }

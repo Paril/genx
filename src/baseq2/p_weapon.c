@@ -146,7 +146,7 @@ extern bool do_propagate;
 
 bool ShouldSwapToPotentiallyBetterWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 {
-	bool weapon_uses_ammo = game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[GetIndexByItem(ent->client->pers.weapon)] > 0;
+	bool weapon_uses_ammo = EntityGame(ent)->ammo_usages[GetIndexByItem(ent->client->pers.weapon)] > 0;
 	bool swap_back_to_pipebombs;
 
 	switch (ent->s.game)
@@ -205,15 +205,15 @@ bool Pickup_Weapon(edict_t *ent, edict_t *other)
 	if (!(ent->spawnflags & DROPPED_ITEM) || ent->count)
 	{
 		// give them some ammo with it
-		if (game_iteminfos[other->s.game].dynamic.item_pickup_counts[index] > 0 &&
-			game_iteminfos[other->s.game].dynamic.weapon_usage_counts[index] > 0)
+		if (EntityGame(other)->ammo_pickups[index] > 0 &&
+			EntityGame(other)->ammo_usages[index] > 0)
 		{
 			float real_num;
 
 			if (ent->count)
 				real_num = ent->count; // TODO: float (use pack_ammo maybe?)
 			else
-				real_num = game_iteminfos[other->s.game].dynamic.item_pickup_counts[index] * game_iteminfos[other->s.game].dynamic.weapon_usage_counts[index];
+				real_num = EntityGame(other)->ammo_pickups[index] * EntityGame(other)->ammo_usages[index];
 
 			if ((int)dmflags->value & DF_INFINITE_AMMO)
 				Add_Ammo(other, 1000, index, false);
@@ -246,8 +246,10 @@ bool Pickup_Weapon(edict_t *ent, edict_t *other)
 	// in invasion, propagate item to other clients
 	if (invasion->value && do_propagate)
 	{
+		int i;
+
 		do_propagate = false;
-		for (int i = 0; i < game.maxclients; ++i)
+		for (i = 0; i < game.maxclients; ++i)
 		{
 			edict_t *cl = &g_edicts[i + 1];
 
@@ -373,7 +375,7 @@ void ChangeWeapon(edict_t *ent, gunindex_e gun)
 	if (ent->s.modelindex == 255)
 	{
 		if (ent->client->pers.weapon)
-			i = ((ent->client->pers.weapon->weapmodel & 0xff) << 8);
+			i = (((ITI_WEAPONS_START - ITEM_INDEX(ent->client->pers.weapon) + 1) & 0xff) << 8);
 		else
 			i = 0;
 		ent->s.skinnum = (ent - g_edicts - 1) | i;
@@ -413,7 +415,7 @@ void ChangeWeapon(edict_t *ent, gunindex_e gun)
 
 			if (GetIndexByItem(ent->client->pers.weapon) == ITI_DUKE_PISTOL &&
 				!ent->client->pers.pistol_clip &&
-				ent->client->pers.inventory[ITI_DUKE_CLIP])
+				HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 			{
 				ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
 				ent->client->ps.guns[gun].frame = 14;
@@ -490,26 +492,26 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 	switch (ent->s.game)
 	{
 	case GAME_Q2:
-		if (HasWeaponQuick(ITI_RAILGUN))
-			return GetItemByIndex(ITI_RAILGUN);
-		else if (HasWeaponQuick(ITI_HYPERBLASTER))
-			return GetItemByIndex(ITI_HYPERBLASTER);
-		else if ((HasAmmoCountQuick(ITI_MACHINEGUN, 25) ||!HasWeaponQuick(ITI_MACHINEGUN)) && HasWeaponQuick(ITI_CHAINGUN))
-			return GetItemByIndex(ITI_CHAINGUN);
-		else if (HasWeaponQuick(ITI_MACHINEGUN))
-			return GetItemByIndex(ITI_MACHINEGUN);
-		else if (HasWeaponQuick(ITI_SUPER_SHOTGUN))
-			return GetItemByIndex(ITI_SUPER_SHOTGUN);
-		else if (HasWeaponQuick(ITI_SHOTGUN))
-			return GetItemByIndex(ITI_SHOTGUN);
-		else if (HasWeaponQuick(ITI_ROCKET_LAUNCHER))
-			return GetItemByIndex(ITI_ROCKET_LAUNCHER);
-		else if (HasWeaponQuick(ITI_GRENADE_LAUNCHER))
-			return GetItemByIndex(ITI_GRENADE_LAUNCHER);
-		else if (HasWeaponQuick(ITI_BFG10K))
-			return GetItemByIndex(ITI_BFG10K);
-		else if (HasWeaponQuick(ITI_GRENADES))
-			return GetItemByIndex(ITI_GRENADES);
+		if (HasWeaponQuick(ITI_Q2_RAILGUN))
+			return GetItemByIndex(ITI_Q2_RAILGUN);
+		else if (HasWeaponQuick(ITI_Q2_HYPERBLASTER))
+			return GetItemByIndex(ITI_Q2_HYPERBLASTER);
+		else if ((HasAmmoCountQuick(ITI_Q2_MACHINEGUN, 25) ||!HasWeaponQuick(ITI_Q2_MACHINEGUN)) && HasWeaponQuick(ITI_Q2_CHAINGUN))
+			return GetItemByIndex(ITI_Q2_CHAINGUN);
+		else if (HasWeaponQuick(ITI_Q2_MACHINEGUN))
+			return GetItemByIndex(ITI_Q2_MACHINEGUN);
+		else if (HasWeaponQuick(ITI_Q2_SUPER_SHOTGUN))
+			return GetItemByIndex(ITI_Q2_SUPER_SHOTGUN);
+		else if (HasWeaponQuick(ITI_Q2_SHOTGUN))
+			return GetItemByIndex(ITI_Q2_SHOTGUN);
+		else if (HasWeaponQuick(ITI_Q2_ROCKET_LAUNCHER))
+			return GetItemByIndex(ITI_Q2_ROCKET_LAUNCHER);
+		else if (HasWeaponQuick(ITI_Q2_GRENADE_LAUNCHER))
+			return GetItemByIndex(ITI_Q2_GRENADE_LAUNCHER);
+		else if (HasWeaponQuick(ITI_Q2_BFG10K))
+			return GetItemByIndex(ITI_Q2_BFG10K);
+		else if (HasWeaponQuick(ITI_Q2_GRENADES))
+			return GetItemByIndex(ITI_Q2_GRENADES);
 		break;
 
 	case GAME_Q1:
@@ -559,7 +561,7 @@ gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new)
 		return GetItemByIndex(weap);
 	}
 
-	return GetItemByIndex(ITI_BLASTER);
+	return GetItemByIndex(ITI_Q2_BLASTER);
 }
 
 void AttemptBetterWeaponSwap(edict_t *ent)
@@ -584,44 +586,6 @@ void NoAmmoWeaponChange(edict_t *ent, gunindex_e gun)
 }
 
 /*
-=================
-Think_Weapon
-
-Called by ClientBeginServerFrame and ClientThink
-=================
-*/
-
-void Think_Weapon(edict_t *ent)
-{
-	// if just died, put the weapon away
-	if (ent->health < 1)
-	{
-		for (int i = 0; i < MAX_PLAYER_GUNS; ++i)
-		{
-			ent->client->gunstates[i].newweapon = NULL;
-			ChangeWeapon(ent, i);
-		}
-	}
-
-	// call active weapon think routine
-	if (ent->client->pers.weapon && ent->client->pers.weapon->weaponthink)
-	{
-		is_quad = (ent->client->quad_time > level.time);
-
-		if (ent->client->silencer_shots)
-			is_silenced = MZ_SILENCED;
-		else
-			is_silenced = 0;
-
-		ent->client->pers.weapon->weaponthink(ent, GUN_MAIN);
-
-		if (ent->s.game == GAME_DUKE)
-			Weapon_Duke_Offhand_Foot(ent);
-	}
-}
-
-
-/*
 ================
 Use_Weapon
 
@@ -635,7 +599,7 @@ void Use_Weapon(edict_t *ent, gitem_t *item)
 	if (item == ent->client->pers.weapon && !(ent->s.game == GAME_DUKE && GetIndexByItem(item) == ITI_DUKE_PIPEBOMBS))
 		return;
 
-	if (!g_select_empty->value && !(item->flags & IT_AMMO) && game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(item)] > 0)
+	if (!g_select_empty->value && !(item->flags & IT_AMMO) && EntityGame(ent)->ammo_usages[ITEM_INDEX(item)] > 0)
 	{
 		if (!ent->client->pers.ammo) {
 			gi.cprintf(ent, PRINT_HIGH, "No ammo for %s.\n", item->pickup_name);
@@ -755,7 +719,7 @@ void Weapon_Generic(edict_t *ent, int FRAME_ACTIVATE_LAST, int FRAME_FIRE_LAST, 
 	if (ent->client->gunstates[gun].weaponstate == WEAPON_READY) {
 		if (((ent->client->latched_buttons | ent->client->buttons) & BUTTON_ATTACK)) {
 			ent->client->latched_buttons &= ~BUTTON_ATTACK;
-			if ((game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
+			if ((EntityGame(ent)->ammo_usages[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
 				(ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon))) {
 				ent->client->ps.guns[gun].frame = FRAME_FIRE_FIRST;
 				ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
@@ -828,16 +792,6 @@ GRENADE
 
 void Weapon_Grenade(edict_t *ent, gunindex_e gun)
 {
-	if (ent->s.game == GAME_DUKE)
-	{
-		if (ent->client->pers.alt_weapon)
-			Weapon_Doom(ent, 3, weapon_duke_detonator_fire, gun);
-		else
-			Weapon_Doom(ent, 9, weapon_duke_pipebomb_fire, gun);
-
-		return;
-	}
-
 	if ((ent->client->gunstates[gun].newweapon) && (ent->client->gunstates[gun].weaponstate == WEAPON_READY))
 	{
 		ChangeWeapon(ent, gun);
@@ -981,23 +935,10 @@ void weapon_grenadelauncher_fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_GrenadeLauncher(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 34, 51, 59, 0 };
-		static int  fire_frames[] = { 6, 0 };
+	static int  pause_frames[] = { 34, 51, 59, 0 };
+	static int  fire_frames[] = { 6, 0 };
 
-		Weapon_Generic(ent, 5, 16, 59, 64, pause_frames, fire_frames, weapon_grenadelauncher_fire, gun);
-	}
-	break;
-	case GAME_Q1:
-		Weapon_Q1(ent, 7, weapon_q1_gl_fire, gun);
-		break;
-	case GAME_DUKE:
-		Weapon_Doom(ent, 5, weapon_duke_devastate_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 5, 16, 59, 64, pause_frames, fire_frames, weapon_grenadelauncher_fire, gun);
 }
 
 /*
@@ -1050,26 +991,10 @@ void Weapon_RocketLauncher_Fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_RocketLauncher(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 25, 33, 42, 50, 0 };
-		static int  fire_frames[] = { 5, 0 };
+	static int  pause_frames[] = { 25, 33, 42, 50, 0 };
+	static int  fire_frames[] = { 5, 0 };
 
-		Weapon_Generic(ent, 4, 12, 50, 54, pause_frames, fire_frames, Weapon_RocketLauncher_Fire, gun);
-	}
-	break;
-	case GAME_Q1:
-		Weapon_Q1(ent, 7, weapon_q1_rl_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 8, weapon_doom_rocket_fire, gun);
-		break;
-	case GAME_DUKE:
-		Weapon_Doom(ent, 8, weapon_duke_rocket_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 4, 12, 50, 54, pause_frames, fire_frames, Weapon_RocketLauncher_Fire, gun);
 }
 
 
@@ -1127,26 +1052,10 @@ void Weapon_Blaster_Fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_Blaster(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 19, 32, 0 };
-		static int  fire_frames[] = { 5, 0 };
+	static int  pause_frames[] = { 19, 32, 0 };
+	static int  fire_frames[] = { 5, 0 };
 
-		Weapon_Generic(ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire, gun);
-		break;
-	}
-	case GAME_Q1:
-		Weapon_Q1(ent, 9, weapon_q1_axe_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 6, weapon_doom_punch_fire, gun);
-		break;
-	case GAME_DUKE:
-		Weapon_Doom(ent, 7, weapon_duke_foot_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 4, 8, 52, 55, pause_frames, fire_frames, Weapon_Blaster_Fire, gun);
 }
 
 void Weapon_HyperBlaster_Fire(edict_t *ent, gunindex_e gun)
@@ -1214,26 +1123,10 @@ void Weapon_HyperBlaster_Fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_HyperBlaster(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 0 };
-		static int  fire_frames[] = { 6, 7, 8, 9, 10, 11, 0 };
+	static int  pause_frames[] = { 0 };
+	static int  fire_frames[] = { 6, 7, 8, 9, 10, 11, 0 };
 
-		Weapon_Generic(ent, 5, 20, 49, 53, pause_frames, fire_frames, Weapon_HyperBlaster_Fire, gun);
-		break;
-	}
-	case GAME_Q1:
-		Weapon_Q1(ent, 4, weapon_q1_lightning_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 4, weapon_doom_hyperblaster_fire, gun);
-		break;
-	case GAME_DUKE:
-		Weapon_Doom(ent, 4, weapon_duke_freezer_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 5, 20, 49, 53, pause_frames, fire_frames, Weapon_HyperBlaster_Fire, gun);
 }
 
 /*
@@ -1325,37 +1218,10 @@ void Machinegun_Fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_Machinegun(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 23, 45, 0 };
-		static int  fire_frames[] = { 4, 5, 0 };
+	static int  pause_frames[] = { 23, 45, 0 };
+	static int  fire_frames[] = { 4, 5, 0 };
 
-		Weapon_Generic(ent, 3, 5, 45, 49, pause_frames, fire_frames, Machinegun_Fire, gun);
-		break;
-	}
-	case GAME_Q1:
-		Weapon_Q1(ent, 9, weapon_q1_nailgun_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 6, weapon_doom_pistol_fire, gun);
-		break;
-	case GAME_DUKE:
-		if (ent->client->gunstates[gun].weaponstate == WEAPON_READY && !ent->client->pers.pistol_clip &&
-			HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && ent->client->ps.guns[gun].frame < 3)
-		{
-			ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
-			ent->client->ps.guns[gun].frame = 3;
-		}
-
-		Weapon_Doom(ent, 21, weapon_duke_pistol_fire, gun);
-
-		if (ent->client->ps.guns[gun].frame > 3)
-			ent->client->ps.guns[gun].offset[1] = 0;
-
-		break;
-	}
+	Weapon_Generic(ent, 3, 5, 45, 49, pause_frames, fire_frames, Machinegun_Fire, gun);
 }
 
 void Chaingun_Fire(edict_t *ent, gunindex_e gun)
@@ -1467,26 +1333,10 @@ void Chaingun_Fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_Chaingun(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 38, 43, 51, 61, 0 };
-		static int  fire_frames[] = { 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 0 };
+	static int  pause_frames[] = { 38, 43, 51, 61, 0 };
+	static int  fire_frames[] = { 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 0 };
 
-		Weapon_Generic(ent, 4, 31, 61, 64, pause_frames, fire_frames, Chaingun_Fire, gun);
-		break;
-	}
-	case GAME_Q1:
-		Weapon_Q1(ent, 8, weapon_q1_snailgun_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 3, weapon_doom_chaingun_fire, gun);
-		break;
-	case GAME_DUKE:
-		Weapon_Doom(ent, 5, weapon_duke_chaingun_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 4, 31, 61, 64, pause_frames, fire_frames, Chaingun_Fire, gun);
 }
 
 
@@ -1545,26 +1395,10 @@ void weapon_shotgun_fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_Shotgun(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 22, 28, 34, 0 };
-		static int  fire_frames[] = { 8, 9, 0 };
+	static int  pause_frames[] = { 22, 28, 34, 0 };
+	static int  fire_frames[] = { 8, 9, 0 };
 
-		Weapon_Generic(ent, 7, 18, 36, 39, pause_frames, fire_frames, weapon_shotgun_fire, gun);
-		break;
-	}
-	case GAME_Q1:
-		Weapon_Q1(ent, 7, weapon_q1_shotgun_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 10, weapon_doom_shotgun_fire, gun);
-		break;
-	case GAME_DUKE:
-		Weapon_Doom(ent, 10, weapon_duke_shotgun_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 7, 18, 36, 39, pause_frames, fire_frames, weapon_shotgun_fire, gun);
 }
 
 void weapon_supershotgun_fire(edict_t *ent, gunindex_e gun)
@@ -1614,23 +1448,10 @@ void weapon_supershotgun_fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_SuperShotgun(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 29, 42, 57, 0 };
-		static int  fire_frames[] = { 7, 0 };
+	static int  pause_frames[] = { 29, 42, 57, 0 };
+	static int  fire_frames[] = { 7, 0 };
 
-		Weapon_Generic(ent, 6, 17, 57, 61, pause_frames, fire_frames, weapon_supershotgun_fire, gun);
-		break;
-	}
-	case GAME_Q1:
-		Weapon_Q1(ent, 7, weapon_q1_sshotgun_fire, gun);
-		break;
-	case GAME_DOOM:
-		Weapon_Doom(ent, 17, weapon_doom_sshotgun_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 6, 17, 57, 61, pause_frames, fire_frames, weapon_supershotgun_fire, gun);
 }
 
 
@@ -1691,41 +1512,10 @@ void weapon_railgun_fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_Railgun(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 56, 0 };
-		static int  fire_frames[] = { 4, 0 };
+	static int  pause_frames[] = { 56, 0 };
+	static int  fire_frames[] = { 4, 0 };
 
-		Weapon_Generic(ent, 3, 18, 56, 61, pause_frames, fire_frames, weapon_railgun_fire, gun);
-	}
-	break;
-	case GAME_DOOM:
-		if (ent->client->gunstates[gun].weaponstate == WEAPON_ACTIVATING && ent->client->silencer_shots == 0)
-		{
-			gi.sound(ent, CHAN_WEAPON, gi.soundindex("doom/SAWUP.wav"), 1, ATTN_NORM, 0);
-			ent->client->silencer_shots = 1;
-		}
-		else if (ent->client->gunstates[gun].weaponstate == WEAPON_READY)
-		{
-			if (--ent->client->silencer_shots <= 0 && !(ent->client->buttons & BUTTON_ATTACK))
-			{
-				gi.sound(ent, CHAN_WEAPON, gi.soundindex("doom/SAWIDL.wav"), 1, ATTN_NORM, 0);
-				ent->client->silencer_shots = 2;
-			}
-
-			ent->client->ps.guns[gun].frame ^= 1;
-
-			if (ent->client->ps.guns[gun].frame >= 2)
-				ent->client->ps.guns[gun].frame = 0;
-		}
-		else if (ent->client->gunstates[gun].weaponstate == WEAPON_DROPPING)
-			ent->client->silencer_shots = 0;
-
-		Weapon_Doom(ent, 4, weapon_doom_chainsaw_fire, gun);
-		break;
-	}
+	Weapon_Generic(ent, 3, 18, 56, 61, pause_frames, fire_frames, weapon_railgun_fire, gun);
 }
 
 
@@ -1796,24 +1586,108 @@ void weapon_bfg_fire(edict_t *ent, gunindex_e gun)
 
 void Weapon_BFG(edict_t *ent, gunindex_e gun)
 {
-	switch (ent->s.game)
-	{
-	case GAME_Q2:
-	{
-		static int  pause_frames[] = { 39, 45, 50, 55, 0 };
-		static int  fire_frames[] = { 9, 17, 0 };
+	static int  pause_frames[] = { 39, 45, 50, 55, 0 };
+	static int  fire_frames[] = { 9, 17, 0 };
 
-		Weapon_Generic(ent, 8, 32, 55, 58, pause_frames, fire_frames, weapon_bfg_fire, gun);
-	}
-	break;
-	case GAME_DOOM:
-		if (ent->client->gunstates[gun].weaponstate != WEAPON_FIRING)
-			ent->yaw_speed = 0;
+	Weapon_Generic(ent, 8, 32, 55, 58, pause_frames, fire_frames, weapon_bfg_fire, gun);
+}
 
-		Weapon_Doom(ent, 5, weapon_doom_bfg_fire, gun);
+static void Weapon_Q2_Run(edict_t *ent, gunindex_e gun)
+{
+	switch (ITEM_INDEX(ent->client->pers.weapon))
+	{
+	case ITI_Q2_BLASTER:
+		Weapon_Blaster(ent, gun);
+		break;
+	case ITI_Q2_SHOTGUN:
+		Weapon_Shotgun(ent, gun);
+		break;
+	case ITI_Q2_SUPER_SHOTGUN:
+		Weapon_SuperShotgun(ent, gun);
+		break;
+	case ITI_Q2_MACHINEGUN:
+		Weapon_Machinegun(ent, gun);
+		break;
+	case ITI_Q2_CHAINGUN:
+		Weapon_Chaingun(ent, gun);
+		break;
+	case ITI_Q2_GRENADE_LAUNCHER:
+		Weapon_GrenadeLauncher(ent, gun);
+		break;
+	case ITI_Q2_ROCKET_LAUNCHER:
+		Weapon_RocketLauncher(ent, gun);
+		break;
+	case ITI_Q2_HYPERBLASTER:
+		Weapon_HyperBlaster(ent, gun);
+		break;
+	case ITI_Q2_RAILGUN:
+		Weapon_Railgun(ent, gun);
+		break;
+	case ITI_Q2_BFG10K:
+		Weapon_BFG(ent, gun);
+		break;
+	case ITI_Q2_GRENADES:
+		Weapon_Grenade(ent, gun);
 		break;
 	}
 }
 
 
 //======================================================================
+
+static void Weapon_Run(edict_t *ent, gunindex_e gun)
+{
+	switch (ent->s.game)
+	{
+	case GAME_Q2:
+		Weapon_Q2_Run(ent, gun);
+		return;
+	case GAME_Q1:
+		Weapon_Q1_Run(ent, gun);
+		return;
+	case GAME_DOOM:
+		Weapon_Doom_Run(ent, gun);
+		return;
+	case GAME_DUKE:
+		Weapon_Duke_Run(ent, gun);
+		return;
+	}
+}
+
+/*
+=================
+Think_Weapon
+
+Called by ClientBeginServerFrame and ClientThink
+=================
+*/
+
+void Think_Weapon(edict_t *ent)
+{
+	// if just died, put the weapon away
+	if (ent->health < 1)
+	{
+		int i;
+		for (i = 0; i < MAX_PLAYER_GUNS; ++i)
+		{
+			ent->client->gunstates[i].newweapon = NULL;
+			ChangeWeapon(ent, i);
+		}
+	}
+
+	// call active weapon think routine
+	if (ent->client->pers.weapon)
+	{
+		is_quad = (ent->client->quad_time > level.time);
+
+		if (ent->client->silencer_shots)
+			is_silenced = MZ_SILENCED;
+		else
+			is_silenced = 0;
+
+		Weapon_Run(ent, GUN_MAIN);
+
+		if (ent->s.game == GAME_DUKE)
+			Weapon_Duke_Offhand_Foot(ent);
+	}
+}

@@ -1,6 +1,5 @@
 ﻿namespace asset_transpiler
 {
-
 	static class ByteBuffer
 	{
 		public static void BoxCopy(byte[] src, int src_x, int src_y, int src_w, int src_h, byte[] dst, int dst_x, int dst_y, int dst_w, int dst_h, int write_w, int write_h, bool skip_trans = false)
@@ -26,5 +25,4 @@
 			}
 		}
 	}
-
 }

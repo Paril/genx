@@ -40,40 +40,26 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 #include <setjmp.h>
+
+enum {
+	PICHANDLE_EMPTY,
+
+	PICHANDLE_RAW,
+	PICHANDLE_GAMED
+};
+
+typedef struct {
+	uint32_t		type : 3;
+	uint32_t		id : 29;
+} pichandle_t;
+
+#define PIC_HANDLE_TYPE(x)		(((pichandle_t *)&(x))->type)
+#define PIC_HANDLE_ID(x)		(((pichandle_t *)&(x))->id)
+
 #include "common/picscript.h"
 
 static picscript_t	r_picscripts[MAX_PIC_SCRIPTS];
 static int			r_numPicScripts;
-
-static void PSCR_Untouch()
-{
-	for (int i = 0; i < r_numPicScripts; ++i)
-	{
-		for (int g = 1; g < GAME_TOTAL; ++g)
-		{
-			if (r_picscripts[i].entries[g].path[0])
-			{
-				r_picscripts[i].entries[g].loaded = false;
-				r_picscripts[i].entries[g].pic = (pichandle_t) { 0 };
-			}
-		}
-	}
-}
-
-static void PSCR_Touch()
-{
-	for (int i = 0; i < r_numPicScripts; ++i)
-	{
-		for (int g = 1; g < GAME_TOTAL; ++g)
-		{
-			if (r_picscripts[i].entries[g].path[0])
-			{
-				r_picscripts[i].entries[g].loaded = true;
-				r_picscripts[i].entries[g].pic = R_RegisterPic2(r_picscripts[i].entries[g].path);
-			}
-		}
-	}
-}
 
 static picscript_t *PSCR_Alloc()
 {
@@ -113,7 +99,7 @@ static picscript_t *PSCR_Find(const char *name)
 	return NULL;
 }
 
-static picscript_t *PSCR_Register(const char *name)
+static picscript_t *PSCR_Register(const char *name, imagetype_t type, imageflags_t flags)
 {
 	char path[MAX_QPATH];
 	char *rawdata;
@@ -179,7 +165,7 @@ static picscript_t *PSCR_Register(const char *name)
 		if (game == GAME_NONE || game == GAME_TOTAL || !entry.path[0])
 			goto fail2;
 
-		entry.pic = R_RegisterPic2(entry.path);
+		entry.pic = R_RegisterImage(entry.path, type, flags, NULL);
 		entry.loaded = true;
 
 		memcpy(&script->entries[game], &entry, sizeof(entry));
@@ -196,9 +182,9 @@ fail1:
 	return 0;
 }
 
-picentry_t *PSCR_EntryForHandle(pichandle_t handle, gametype_t game)
+picentry_t *PSCR_EntryForHandle(qhandle_t handle, gametype_t game)
 {
-	picscript_t *script = &r_picscripts[handle.pic.id - 1];
+	picscript_t *script = &r_picscripts[PIC_HANDLE_ID(handle) - 1];
 
 	if (!script->name[0])
 		return NULL;
@@ -1778,6 +1764,38 @@ static void r_texture_formats_changed(cvar_t *self)
 
 #endif // USE_PNG || USE_JPG || USE_TGA
 
+static void IMG_LoadFont(image_t *image)
+{
+	char fontFile[MAX_QPATH];
+
+	Q_strlcpy(fontFile, image->name, image->baselen + 1);
+	Q_strlcat(fontFile, ".font", MAX_QPATH);
+
+	// Load file
+	byte *data;
+	int ret;
+
+    int len = FS_LoadFile(fontFile, (void **)&data);
+    if (!data) {
+        ret = len;
+        goto fail;
+    }
+
+	image->font_widths = Z_Malloc(256);
+	memcpy(image->font_widths, data, 256);
+	FS_FreeFile(data);
+
+	image->font_x = Z_Malloc(sizeof(uint32_t) * 256);
+	uint32_t x;
+	int i ;
+	for (x = 0, i = 0; i < 256; x += image->font_widths[i], i++) {
+		image->font_x[i] = x;
+	}
+	
+fail:
+	return;
+}
+
 // finds or loads the given image, adding it to the hash table.
 static int find_or_load_image(const char *name, size_t len,
                               imagetype_t type, imageflags_t flags,
@@ -1810,6 +1828,9 @@ static int find_or_load_image(const char *name, size_t len,
 		return Q_ERR_INVALID_PATH;
 
 	ext++;
+
+	if (!Q_stricmp(ext, "dnp") || !Q_stricmp(ext, "d2p") || !Q_stricmp(ext, "q1p"))
+		flags |= IF_OLDSCHOOL;
 
     hash = FS_HashPathLen(name, len, RIMAGES_HASH);
 
@@ -1890,6 +1911,10 @@ static int find_or_load_image(const char *name, size_t len,
 
 		// upload the image
 		IMG_Load(image, pic);
+
+		if (type == IT_FONT) {
+			IMG_LoadFont(image);
+		}
 	}
 
     List_Append(&r_imageHash[hash], &image->entry);
@@ -1932,26 +1957,26 @@ image_t *IMG_Find(const char *name, imagetype_t type, imageflags_t flags)
 IMG_ForHandle
 ===============
 */
-image_t *IMG_ForHandle(pichandle_t h, gametype_t game)
+image_t *IMG_ForHandle(qhandle_t h, gametype_t game)
 {
 	picentry_t *entry;
 
-	switch (h.pic.type)
+	switch (PIC_HANDLE_TYPE(h))
 	{
 	case PICHANDLE_RAW:
-		if (h.pic.id < 0 || h.pic.id >= r_numImages) {
-			Com_Error(ERR_FATAL, "%s: %d out of range", __func__, h.pic.id);
+		if (PIC_HANDLE_ID(h) < 0 || PIC_HANDLE_ID(h) >= r_numImages) {
+			Com_Error(ERR_FATAL, "%s: %d out of range", __func__, PIC_HANDLE_ID(h));
 		}
 
-		return &r_images[h.pic.id];
+		return &r_images[PIC_HANDLE_ID(h)];
 	case PICHANDLE_GAMED:
-		if (h.pic.id < 0 || h.pic.id > r_numPicScripts) {
-			Com_Error(ERR_DROP, "%s: %d out of range", __func__, h.pic.id);
+		if (PIC_HANDLE_ID(h) < 0 || PIC_HANDLE_ID(h) > r_numPicScripts) {
+			Com_Error(ERR_DROP, "%s: %d out of range", __func__, PIC_HANDLE_ID(h));
 		}
 
 		entry = PSCR_EntryForHandle(h, game);
 
-		if (!entry->loaded)
+		if (!entry || !entry->loaded)
 			return NULL;
 
 		return IMG_ForHandle(entry->pic, game);
@@ -1965,20 +1990,25 @@ image_t *IMG_ForHandle(pichandle_t h, gametype_t game)
 R_RegisterImage
 ===============
 */
-pichandle_t R_RegisterImage(const char *name, imagetype_t type,
+qhandle_t R_RegisterImage(const char *name, imagetype_t type,
                             imageflags_t flags, int *err_p)
 {
     image_t     *image;
     char        fullname[MAX_QPATH];
     size_t      len;
     int         err;
-	pichandle_t	index = { 0 };
+	union {
+		qhandle_t	handle;
+		pichandle_t	pic;
+	} index;
+
+	index.handle = 0;
 
     // empty names are legal, silently ignore them
     if (!*name) {
         if (err_p)
             *err_p = Q_ERR_NAMETOOSHORT;
-		return (pichandle_t) { 0 };
+		return 0;
     } else if (*name == '%') {
 		// model script
 		index.pic.type = PICHANDLE_GAMED;
@@ -1988,12 +2018,13 @@ pichandle_t R_RegisterImage(const char *name, imagetype_t type,
 		if (script)
 		{
 		loadedscript:
-			index.pic.id = (script - r_picscripts) + 1;
-			return index;
+			if (script != NULL)
+				index.pic.id = (script - r_picscripts) + 1;
+			return index.handle;
 		}
 
 		// gotta load it
-		script = PSCR_Register(name + 1);
+		script = PSCR_Register(name + 1, type, flags);
 		goto loadedscript;
 	}
 
@@ -2001,7 +2032,7 @@ pichandle_t R_RegisterImage(const char *name, imagetype_t type,
     if (!r_numImages) {
         if (err_p)
             *err_p = Q_ERR_AGAIN;
-		return (pichandle_t) { 0 };
+		return 0;
     }
 
     if (type == IT_SKIN) {
@@ -2031,7 +2062,7 @@ pichandle_t R_RegisterImage(const char *name, imagetype_t type,
 		index.pic.type = PICHANDLE_RAW;
 		index.pic.id = image - r_images;
 
-        return index;
+        return index.handle;
     }
 
 fail:
@@ -2041,7 +2072,7 @@ fail:
     else if (err != Q_ERR_NOENT)
         Com_EPrintf("Couldn't load %s: %s\n", fullname, Q_ErrorString(err));
 
-	return (pichandle_t) { 0 };
+	return 0;
 }
 
 /*
@@ -2049,9 +2080,13 @@ fail:
 R_GetPicSize
 =============
 */
-bool R_GetPicSize(int *w, int *h, pichandle_t pic, gametype_t game)
+bool R_GetPicSize(int *w, int *h, qhandle_t pic, gametype_t game)
 {
     image_t *image = IMG_ForHandle(pic, game);
+
+	if (!image) {
+		return false;
+	}
 
     if (w) {
         *w = image->width;
@@ -2060,6 +2095,46 @@ bool R_GetPicSize(int *w, int *h, pichandle_t pic, gametype_t game)
         *h = image->height;
     }
     return !!(image->flags & IF_TRANSPARENT);
+}
+
+/*
+=============
+R_GetFontCharWidth
+=============
+*/
+byte R_GetFontCharWidth(byte c, qhandle_t pic, gametype_t game)
+{
+    image_t *image = IMG_ForHandle(pic, game);
+
+	if (!image) {
+		return 8;
+	}
+
+	if (image->type != IT_FONT || !image->font_widths) {
+		return 8;
+	}
+
+	return image->font_widths[c];
+}
+
+/*
+=============
+R_GetFontCharWidth
+=============
+*/
+byte R_GetFontCharX(byte c, qhandle_t pic, gametype_t game)
+{
+    image_t *image = IMG_ForHandle(pic, game);
+
+	if (!image) {
+		return 0;
+	}
+
+	if (image->type != IT_FONT || !image->font_x) {
+		return 0;
+	}
+
+	return image->font_x[c];
 }
 
 /*
@@ -2073,7 +2148,7 @@ will be freed.
 void IMG_FreeUnused(void)
 {
     image_t *image;
-    int i, count = 0;
+    int i, count = 0, p, g;
 
     for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
         if (image->registration_sequence == registration_sequence) {
@@ -2090,6 +2165,20 @@ void IMG_FreeUnused(void)
         // free it
         IMG_Unload(image);
 
+		// FIXME: do this more efficiently
+		for (p = 0; p < r_numPicScripts; ++p)
+		{
+			for (g = 1; g < GAME_TOTAL; ++g)
+			{
+				if (!r_picscripts[p].entries[g].loaded ||
+					PIC_HANDLE_TYPE(r_picscripts[p].entries[g].pic) != PICHANDLE_RAW)
+					continue;
+
+				if (i == PIC_HANDLE_ID(r_picscripts[p].entries[g].pic))
+					memset(&r_picscripts[p].entries[g], 0, sizeof(r_picscripts[p].entries[g]));
+			}
+		}
+
         memset(image, 0, sizeof(*image));
         count++;
     }
@@ -2097,9 +2186,6 @@ void IMG_FreeUnused(void)
     if (count) {
         Com_DPrintf("%s: %i images freed\n", __func__, count);
     }
-
-	PSCR_Untouch();
-	PSCR_Touch();
 }
 
 void IMG_FreeAll(void)

@@ -508,7 +508,7 @@ static void Parse_Background(menuFrameWork_t *menu)
     char *s = Cmd_Argv(1);
 
     if (SCR_ParseColor(s, &menu->color)) {
-		menu->image = (pichandle_t) { 0 };
+		menu->image = 0;
         menu->transparent = menu->color.u8[3] != 255;
     } else {
         menu->image = R_RegisterPic(s);
@@ -580,14 +580,14 @@ static void Parse_Plaque(menuFrameWork_t *menu)
     }
 
     menu->plaque = R_RegisterPic(Cmd_Argv(1));
-    if (menu->plaque.handle) {
+    if (menu->plaque) {
         R_GetPicSize(&menu->plaque_rc.width,
                      &menu->plaque_rc.height, menu->plaque, CL_GetClientGame());
     }
 
     if (Cmd_Argc() > 2) {
         menu->logo = R_RegisterPic(Cmd_Argv(2));
-        if (menu->logo.handle) {
+        if (menu->logo) {
             R_GetPicSize(&menu->logo_rc.width,
                          &menu->logo_rc.height, menu->logo, CL_GetClientGame());
         }
@@ -602,7 +602,7 @@ static void Parse_Banner(menuFrameWork_t *menu)
     }
 
     menu->banner = R_RegisterPic(Cmd_Argv(1));
-    if (menu->banner.handle) {
+    if (menu->banner) {
         R_GetPicSize(&menu->banner_rc.width,
                      &menu->banner_rc.height, menu->banner, CL_GetClientGame());
     }
@@ -726,7 +726,7 @@ static bool Parse_File(const char *path, int depth)
                     char *s = Cmd_Argv(1);
 
                     if (SCR_ParseColor(s, &uis.color.background)) {
-						uis.backgroundHandle = (pichandle_t) { 0 };
+						uis.backgroundHandle = 0;
                         uis.transparent = uis.color.background.u8[3] != 255;
                     } else {
                         uis.backgroundHandle = R_RegisterPic(s);

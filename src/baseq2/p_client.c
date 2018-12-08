@@ -275,7 +275,6 @@ const char *EntityIDToName(edict_t *ent, entitytype_e type)
 	case ET_TARGET_LASER:
 		return "laser";
 	case ET_MISC_EXPLOBOX:
-	case ET_Q1_MISC_EXPLOBOX2:
 		return "explosive barrel";
 
 	case ET_MONSTER_BERSERK:
@@ -324,9 +323,6 @@ const char *EntityIDToName(edict_t *ent, entitytype_e type)
 	case ET_TURRET_BASE:
 	case ET_TURRET_DRIVER:
 		return "turret";
-	case ET_Q1_TRAP_SHOOTER:
-	case ET_Q1_TRAP_SPIKESHOOTER:
-		return "stray nail";
 	case ET_Q1_MONSTER_ARMY:
 		return "Grunt";
 	case ET_Q1_MONSTER_DOG:
@@ -354,10 +350,6 @@ const char *EntityIDToName(edict_t *ent, entitytype_e type)
 		return "Spawn";
 	case ET_Q1_MONSTER_FISH:
 		return "Rotfish";
-	case ET_Q1_MONSTER_BOSS:
-		return "Chthon";
-	case ET_Q1_MISC_FIREBALL:
-		return "stray fireball";
 	case ET_DOOM_MONSTER_POSS:
 		return "Zombieman";
 	case ET_DOOM_MONSTER_SPOS:
@@ -386,6 +378,8 @@ const char *EntityIDToName(edict_t *ent, entitytype_e type)
 		return "Doom Hell Knight";
 	case ET_DOOM_MONSTER_SPID:
 		return "Spider Mastermind";
+	case ET_DOOM_MONSTER_CYBR:
+		return "Cyberdemon";
 	case ET_MONSTER_MAKRON:
 		return "Makron";
 	case ET_WORLDSPAWN:
@@ -430,22 +424,22 @@ bool ObituaryFigureAttackMessage(edict_t *target, meansOfDeath_t *mod, const cha
 		case GAME_Q2:
 			switch (mod->weapon_id)
 			{
-			case ITI_BLASTER:
+			case ITI_Q2_BLASTER:
 				ATK_MSG("was blasted by %s");
 				break;
-			case ITI_SHOTGUN:
+			case ITI_Q2_SHOTGUN:
 				ATK_MSG("was gunned down by %s");
 				break;
-			case ITI_SUPER_SHOTGUN:
+			case ITI_Q2_SUPER_SHOTGUN:
 				ATK_MSG("was blown away by %s's super shotgun");
 				break;
-			case ITI_MACHINEGUN:
+			case ITI_Q2_MACHINEGUN:
 				ATK_MSG("was machinegunned by %s");
 				break;
-			case ITI_CHAINGUN:
+			case ITI_Q2_CHAINGUN:
 				ATK_MSG("was cut in half by %s's chaingun");
 				break;
-			case ITI_GRENADE_LAUNCHER:
+			case ITI_Q2_GRENADE_LAUNCHER:
 				if (target == mod->attacker)
 					ATK_MSG_FULL("tripped on %s own grenade", GetGender(target, ITS));
 				else if (mod->damage_type == DT_DIRECT)
@@ -453,7 +447,7 @@ bool ObituaryFigureAttackMessage(edict_t *target, meansOfDeath_t *mod, const cha
 				else
 					ATK_MSG("was shredded by %s's shrapnel");
 				break;
-			case ITI_GRENADES:
+			case ITI_Q2_GRENADES:
 				if (mod->damage_means & MD_HELD)
 				{
 					if (target == mod->attacker)
@@ -471,7 +465,7 @@ bool ObituaryFigureAttackMessage(edict_t *target, meansOfDeath_t *mod, const cha
 						ATK_MSG("didn't see %s's handgrenade");
 				}
 				break;
-			case ITI_ROCKET_LAUNCHER:
+			case ITI_Q2_ROCKET_LAUNCHER:
 				if (target == mod->attacker)
 					ATK_MSG_FULL("blew %s up", GetGender(target, ITSELF));
 				else if (mod->damage_type == DT_DIRECT)
@@ -479,16 +473,16 @@ bool ObituaryFigureAttackMessage(edict_t *target, meansOfDeath_t *mod, const cha
 				else
 					ATK_MSG("couldn't dodge %s's rocket");
 				break;
-			case ITI_HYPERBLASTER:
+			case ITI_Q2_HYPERBLASTER:
 				ATK_MSG("was melted by %s's hyperblaster");
 				break;
-			case ITI_RAILGUN:
+			case ITI_Q2_RAILGUN:
 				if (mod->damage_type == DT_DIRECT)
 					ATK_MSG("was railed %s");
 				else
 					ATK_MSG("was in the path of %s's rail slug");
 				break;
-			case ITI_BFG10K:
+			case ITI_Q2_BFG10K:
 				if (target == mod->attacker)
 					ATK_MSG_FULL("should have used a smaller gun");
 				else if (mod->damage_type == DT_DIRECT || mod->damage_type == DT_INDIRECT)
@@ -967,7 +961,7 @@ void TossClientWeapon(edict_t *self)
 	{
 	case GAME_Q2:
 		item = self->client->pers.weapon;
-		if (game_iteminfos[self->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(item)] <= 0)
+		if (EntityGame(self)->ammo_usages[ITEM_INDEX(item)] <= 0)
 			item = NULL;
 		if (item && !item->world_model)
 			item = NULL;
@@ -1263,29 +1257,24 @@ static void InitClientPersistant(edict_t *ent)
 
 static void InitClientItems(edict_t *ent)
 {
-	for (int i = 0; i < ITI_TOTAL; ++i)
+	itemid_e i;
+
+	for (i = ITI_FIRST; i < ITI_TOTAL; ++i)
 	{
-		int itemIndex = game_iteminfos[ent->client->pers.game].item_starts[i].item;
+		int num = GameTypeGame(ent->client->pers.game)->item_starts[i];
 
-		if (!itemIndex)
-			break;
+		if (!num)
+			continue;
 		
-		int num = game_iteminfos[ent->client->pers.game].item_starts[i].num;
-		ent->client->pers.inventory[itemIndex] = num;
-
-		if (itemIndex == game_iteminfos[ent->client->pers.game].default_item)
-		{
-			ent->client->pers.selected_item = itemIndex;
-			ent->client->pers.weapon = GetItemByIndex(itemIndex);
-		}
+		ent->client->pers.inventory[i] = num;
 	}
 
-	for (int i = ITI_FIRST; i < ITI_TOTAL; ++i)
-	{
-		gitem_t *item = GetItemByIndex(i);
+	i = GameTypeGame(ent->client->pers.game)->default_item;
 
-		if ((item->flags & (IT_AMMO | IT_WEAPON)) == (IT_AMMO | IT_WEAPON))
-			ent->client->pers.inventory[i] = 1;
+	if (i)
+	{
+		ent->client->pers.selected_item = i;
+		ent->client->pers.weapon = GetItemByIndex(i);
 	}
 
 	ent->client->pers.ammo = DEFAULT_MAX_AMMO / 4;
@@ -1605,7 +1594,7 @@ void body_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 			ThrowGib(self, "%e_duke_gibleg", 0, GIB_DUKE_LG);
 			ThrowGib(self, "%e_duke_gibtorso", 0, GIB_DUKE_LG);
 
-			for (int i = 0; i < 10; ++i)
+			for (n = 0; n < 10; ++n)
 				ThrowGib(self, "%e_duke_gib6", 0, GIB_DUKE_SM);
 			break;
 		}

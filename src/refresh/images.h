@@ -39,7 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define U32_RGB     MakeColor(255, 255, 255,   0)
 
 // absolute limit for OpenGL renderer
-#define MAX_TEXTURE_SIZE            2048
+#define MAX_TEXTURE_SIZE            4096
 
 typedef enum {
     IM_PCX,
@@ -71,6 +71,8 @@ typedef struct image_s {
 
 	// Generations
 	imageformat_t	original_format;
+	byte			*font_widths;
+	uint32_t		*font_x;
 } image_t;
 
 #define MAX_RIMAGES     2048
@@ -91,7 +93,7 @@ void IMG_Init(void);
 void IMG_Shutdown(void);
 void IMG_GetPalette(void);
 
-image_t *IMG_ForHandle(pichandle_t h, gametype_t game);
+image_t *IMG_ForHandle(qhandle_t h, gametype_t game);
 
 void IMG_Unload(image_t *image);
 void IMG_Load(image_t *image, byte *pic);

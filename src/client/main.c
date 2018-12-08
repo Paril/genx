@@ -2798,7 +2798,7 @@ static void CL_InitLocal(void)
 	info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
 
 	// Generations
-	info_game = Cvar_Get("gameclass", "", CVAR_USERINFO | CVAR_ARCHIVE);
+	info_game = Cvar_Get("gameclass", "random", CVAR_USERINFO | CVAR_ARCHIVE);
 
 
 	//

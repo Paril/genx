@@ -189,65 +189,6 @@ typedef enum
 	ET_TURRET_DRIVER,
 
 	// Quake 1
-	ET_Q1_ITEM_SHELLS,
-	ET_Q1_ITEM_SPIKES,
-	ET_Q1_ITEM_ROCKETS,
-	ET_Q1_ITEM_CELLS,
-	ET_Q1_ITEM_WEAPON,
-	ET_Q1_ITEM_HEALTH,
-	ET_Q1_ITEM_ARMOR1,
-	ET_Q1_ITEM_ARMOR2,
-	ET_Q1_ITEM_ARMORINV,
-	ET_Q1_ITEM_SIGIL,
-	ET_Q1_ITEM_KEY1,
-	ET_Q1_ITEM_KEY2,
-	ET_Q1_ITEM_ARTIFACT_ENVIROSUIT,
-	ET_Q1_ITEM_ARTIFACT_INVISIBILITY,
-	ET_Q1_ITEM_ARTIFACT_INVULNERABILITY,
-	ET_Q1_ITEM_ARTIFACT_SUPER_DAMAGE,
-	ET_Q1_WEAPON_SUPERSHOTGUN,
-	ET_Q1_WEAPON_NAILGUN,
-	ET_Q1_WEAPON_SUPERNAILGUN,
-	ET_Q1_WEAPON_GRENADELAUNCHER,
-	ET_Q1_WEAPON_ROCKETLAUNCHER,
-	ET_Q1_WEAPON_LIGHTNING,
-
-	ET_Q1_LIGHT_TORCH_SMALL_WALLTORCH,
-	ET_Q1_LIGHT_FLAME_LARGE_YELLOW,
-	ET_Q1_LIGHT_FLAME_SMALL_YELLOW,
-	ET_Q1_LIGHT_FLAME_SMALL_WHITE,
-
-	ET_Q1_LIGHT_FLUORO,
-	ET_Q1_LIGHT_FLUOROSPARK,
-
-	ET_Q1_AMBIENT_SUCK_WIND,
-	ET_Q1_AMBIENT_DRONE,
-	ET_Q1_AMBIENT_FLUORO_BUZZ,
-	ET_Q1_AMBIENT_DRIP,
-	ET_Q1_AMBIENT_COMP_HUM,
-	ET_Q1_AMBIENT_THUNDER,
-	ET_Q1_AMBIENT_LIGHT_BUZZ,
-	ET_Q1_AMBIENT_SWAMP1,
-	ET_Q1_AMBIENT_SWAMP2,
-
-	ET_Q1_TRIGGER_TELEPORT,
-	ET_Q1_TRIGGER_CHANGELEVEL,
-
-	ET_Q1_EVENT_LIGHTNING,
-
-	ET_Q1_FUNC_ILLUSIONARY,
-	ET_Q1_FUNC_EPISODEGATE,
-	ET_Q1_FUNC_BOSSGATE,
-
-	ET_Q1_TRIGGER_SECRET,
-	ET_Q1_TRIGGER_SETSKILL,
-	ET_Q1_TRIGGER_ONLYREGISTERED,
-
-	ET_Q1_MISC_TELEPORTTRAIN,
-
-	ET_Q1_TRAP_SHOOTER,
-	ET_Q1_TRAP_SPIKESHOOTER,
-
 	ET_MARKER_Q1_MONSTERS_START,
 	ET_Q1_MONSTER_ARMY = ET_MARKER_Q1_MONSTERS_START,
 	ET_Q1_MONSTER_DOG,
@@ -263,13 +204,7 @@ typedef enum
 	ET_Q1_MONSTER_SHALRATH,
 	ET_Q1_MONSTER_TARBABY,
 	ET_Q1_MONSTER_FISH,
-	ET_Q1_MONSTER_BOSS,
-	ET_MARKER_Q1_MONSTERS_END = ET_Q1_MONSTER_BOSS,
-
-	ET_Q1_MISC_FIREBALL,
-	ET_Q1_MISC_EXPLOBOX2,
-
-	ET_Q1_INFO_TELEPORT_DESTINATION,
+	ET_MARKER_Q1_MONSTERS_END = ET_Q1_MONSTER_FISH,
 
 	// Doom
 	ET_MARKER_DOOM_MONSTERS_START,
@@ -287,6 +222,7 @@ typedef enum
 	ET_DOOM_MONSTER_BOSS,
 	ET_DOOM_MONSTER_BOS2,
 	ET_DOOM_MONSTER_SPID,
+	ET_DOOM_MONSTER_CYBR,
 	ET_MARKER_DOOM_MONSTERS_END = ET_DOOM_MONSTER_SPID,
 
 	ET_LAST_SPAWNABLE,
@@ -299,6 +235,8 @@ typedef enum
 	ET_HAND_GRENADE,
 	ET_BOTROAM,
 	ET_PLAYER_NOISE,
+	ET_WEAPON,
+	ET_AMMO,
 
 	ET_Q1_VORE_BALL,
 	ET_Q1_ZOMBIE_GIB,
@@ -477,24 +415,6 @@ typedef struct {
 #define IT_POWERUP      32
 #define IT_HEALTH		64		// Generations
 
-// gitem_t->weapmodel for weapons indicates model index
-typedef enum {
-	WEAP_NONE,
-	WEAP_BLASTER,
-	WEAP_SHOTGUN,
-	WEAP_SUPERSHOTGUN,
-	WEAP_MACHINEGUN,
-	WEAP_CHAINGUN,
-	WEAP_GRENADES,
-	WEAP_GRENADELAUNCHER,
-	WEAP_ROCKETLAUNCHER,
-	WEAP_HYPERBLASTER,
-	WEAP_RAILGUN,
-	WEAP_BFG,
-
-	WEAP_TOTAL
-} weapmodel_e;
-
 // total default ammo
 #define DEFAULT_MAX_AMMO				100.0f
 
@@ -506,36 +426,47 @@ typedef enum {
 #define SHOTS_FOR_COUNT(ammo, max_ammo, per_shot)	(ammo / max_ammo) * ((DEFAULT_MAX_AMMO / per_shot) * (max_ammo / DEFAULT_MAX_AMMO))
 
 // get # of shots we can fire for current weapon with current ammo
-#define PLAYER_SHOTS_FOR_WEAPON(ent, weapon)			SHOTS_FOR_COUNT(ent->client->pers.ammo, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)])
+#define PLAYER_SHOTS_FOR_WEAPON(ent, weapon)			SHOTS_FOR_COUNT(ent->client->pers.ammo, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)])
 
 // get # of shots we can fire total for current weapon
-#define PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, weapon)		SHOTS_FOR_COUNT(GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)])
+#define PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, weapon)		SHOTS_FOR_COUNT(GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)])
+
+// specific to Q2
+#define AMMO_PER_POWER_ARMOR_ABSORB	0.5f
+
+typedef struct gitem_s gitem_t;
+
+typedef bool (*item_pickup_func)(edict_t *ent, edict_t *other);
+typedef void (*item_use_func)(edict_t *ent, gitem_t *item);
+typedef void (*item_drop_func)(edict_t *ent, gitem_t *item);
+typedef void (*weapon_think_func)(edict_t *ent, gunindex_e gun);
 
 typedef struct gitem_s {
-	char        *classname; // spawning name
-	bool		(*pickup)(edict_t *ent, edict_t *other);
-	void		(*use)(edict_t *ent, struct gitem_s *item);
-	void		(*drop)(edict_t *ent, struct gitem_s *item);
-	void		(*weaponthink)(edict_t *ent, gunindex_e gun);
-	char        *pickup_sound;
-	char        *world_model;
-	int         world_model_flags;
-	char        *view_model;
+	const char        *classname; // spawning name
+	item_pickup_func  pickup;
+	item_use_func     use;
+	item_drop_func    drop;
+	const char        *pickup_sound;
+	const char        *world_model;
+	int               world_model_flags;
+	const char        *view_model;
 
 	// client side info
-	char        *icon;
-	char        *pickup_name;   // for printing on pickup
+	const char        *icon;
+	const char        *pickup_name;   // for printing on pickup
 
-	int			flags;          // IT_* flags
+	int			      flags;          // IT_* flags
 
-	weapmodel_e weapmodel;      // weapon model index (for weapons)
+	const char	      *weapmodel;      // weapon model index (for weapons)
 
-	char        *precaches;     // string of all models, sounds, and images this item will use
+	const char        *precaches;     // string of all models, sounds, and images this item will use
 
-	int			respawn_time;
+	int			      respawn_time;
+	const char		  *ammo_model;
+	const char		  *ammo_icon;
 
 	// private
-	list_t		hashEntry;
+	list_t		      hashEntry;
 } gitem_t;
 
 typedef struct {
@@ -549,50 +480,33 @@ typedef struct {
 } pickup_armor_t;
 
 typedef struct {
-	struct
-	{
-		itemid_e	from;
-		itemid_e	to;
-	}			item_redirects[ITI_TOTAL];
+	itemid_e	item_redirects[ITI_TOTAL];
 
-	struct
-	{
-		itemid_e	item;
-		int			num;
-	}			item_starts[ITI_TOTAL];
+	int			item_starts[ITI_TOTAL];
 
 	itemid_e	default_item;
 
-	struct
-	{
-		itemid_e	item;
-		float		num;
-	}			ammo_pickups[ITI_TOTAL];
+	float		ammo_pickups[ITI_TOTAL];
 
 	gitem_armor_t armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR + 1];
 
-	struct
-	{
-		itemid_e	item;
-		float		ammo_usage;
-	}			ammo_usages[ITI_TOTAL];
-
-	struct
-	{
-		itemid_e	weapon;
-		itemid_e	ammo;
-	}			weapon_ammo_bindings[ITI_TOTAL];
-
-	struct
-	{
-		itemid_e		item_redirects[ITI_TOTAL];
-		float			weapon_usage_counts[ITI_TOTAL];
-		float			default_weapon_usage_counts[ITI_TOTAL];
-		float			item_pickup_counts[ITI_TOTAL];
-	}			dynamic;
+	float		ammo_usages[ITI_TOTAL], default_ammo_usages[ITI_TOTAL];
 } game_iteminfo_t;
 
 extern game_iteminfo_t game_iteminfos[GAME_TOTAL];
+
+#define GameTypeGame(e)	(&game_iteminfos[e])
+#define EntityGame(e)	GameTypeGame(e->s.game)
+
+typedef struct {
+	itemid_e	weapons[ITI_WEAPONS_END - ITI_WEAPONS_START + 1];
+} game_weaponmap_list_t;
+
+typedef struct {
+	game_weaponmap_list_t	to[GAME_TOTAL];
+} game_weaponmap_t;
+
+extern game_weaponmap_t game_weaponmap[GAME_TOTAL];
 
 float GetWeaponUsageCount(edict_t *ent, gitem_t *weapon);
 #define CHECK_INVENTORY -1
@@ -687,9 +601,9 @@ typedef struct  {
 	int         body_que;           // dead bodies
 
 	int         power_cubes;        // ugly necessity for coop
-	gametype_t	level_type;
-	int			world_type;
 	time_t		spawn_rand;
+	int			weapon_spawn_id;
+	int			ammo_spawn_id;
 } level_locals_t;
 
 
@@ -1199,6 +1113,13 @@ void AttemptBetterWeaponSwap(edict_t *ent);
 // p_q1_weapons.c
 void ApplyMultiDamage(edict_t *self, int dflags, meansOfDeath_t multi_mod);
 void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all);
+void Weapon_Q1_Run(edict_t *ent, gunindex_e gun);
+
+// p_doom_weapons.c
+void Weapon_Doom_Run(edict_t *ent, gunindex_e gun);
+
+// p_duke_weapons.c
+void Weapon_Duke_Run(edict_t *ent, gunindex_e gun);
 
 
 //============================================================================
@@ -1471,7 +1392,10 @@ struct edict_s {
 	char        *map;           // target_changelevel
 
 	int         radius_dmg;
-	int         dmg;
+	union {
+		int         dmg;
+		itemid_e	weapon_id;
+	};
 
 	float		pack_ammo;
 	int			pack_weapons;
@@ -1492,8 +1416,17 @@ struct edict_s {
 	edict_t     *teamchain;
 	edict_t     *teammaster;
 
-	edict_t     *mynoise;       // can go in client only
-	edict_t     *mynoise2;
+	union {
+		struct {
+			edict_t     *mynoise;       // can go in client only
+			edict_t     *mynoise2;
+		};
+
+		struct {
+			edict_t *entity_next;
+			edict_t *entity_prev;
+		};
+	};
 
 	int         noise_index;
 	int         noise_index2;

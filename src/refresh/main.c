@@ -367,10 +367,17 @@ static void GL_DrawSpriteModel(entity_t *ent, model_t *model)
 
 	GL_Color(color[0], color[1], color[2], alpha);
 
-    VectorScale(glr.viewaxis[1], frame->origin_x, left);
-    VectorScale(glr.viewaxis[1], frame->origin_x - frame->width, right);
-    VectorScale(glr.viewaxis[2], -frame->origin_y, down);
-    VectorScale(glr.viewaxis[2], frame->height - frame->origin_y, up);
+	if (ent->flags & RF_NO_BILLBOARD) {
+		VectorScale(glr.entaxis[1], frame->origin_x, left);
+		VectorScale(glr.entaxis[1], frame->origin_x - frame->width, right);
+		VectorScale(glr.entaxis[2], -frame->origin_y, down);
+		VectorScale(glr.entaxis[2], frame->height - frame->origin_y, up);
+	} else {
+		VectorScale(glr.viewaxis[1], frame->origin_x, left);
+		VectorScale(glr.viewaxis[1], frame->origin_x - frame->width, right);
+		VectorScale(glr.viewaxis[2], -frame->origin_y, down);
+		VectorScale(glr.viewaxis[2], frame->height - frame->origin_y, up);
+	}
 
     VectorAdd3(e->origin, down, left, points[0]);
     VectorAdd3(e->origin, up, left, points[1]);
@@ -520,16 +527,24 @@ static void GL_DrawDirSpriteModel(entity_t *ent, model_t *model)
 
 	GL_Color(color[0], color[1], color[2], alpha);
 
-	if (frame->invert_x)
-		VectorScale(glr.viewaxis_nopitch[1], -frame->origin_x, left);
-	else
-		VectorScale(glr.viewaxis_nopitch[1], frame->origin_x, left);
-	VectorScale(glr.viewaxis_nopitch[2], frame->origin_y, up);
-	if (frame->invert_x)
-		VectorScale(glr.viewaxis_nopitch[1], -(frame->origin_x - frame->width), right);
-	else
-		VectorScale(glr.viewaxis_nopitch[1], frame->origin_x - frame->width, right);
-	VectorScale(glr.viewaxis_nopitch[2], frame->origin_y - frame->height, down);
+
+	if (ent->flags & RF_NO_BILLBOARD) {
+		VectorScale(glr.entaxis[1], frame->origin_x, left);
+		VectorScale(glr.entaxis[1], frame->origin_x - frame->width, right);
+		VectorScale(glr.entaxis[2], -frame->origin_y, down);
+		VectorScale(glr.entaxis[2], frame->height - frame->origin_y, up);
+	} else {
+		if (frame->invert_x)
+			VectorScale(glr.viewaxis_nopitch[1], -frame->origin_x, left);
+		else
+			VectorScale(glr.viewaxis_nopitch[1], frame->origin_x, left);
+		VectorScale(glr.viewaxis_nopitch[2], frame->origin_y, up);
+		if (frame->invert_x)
+			VectorScale(glr.viewaxis_nopitch[1], -(frame->origin_x - frame->width), right);
+		else
+			VectorScale(glr.viewaxis_nopitch[1], frame->origin_x - frame->width, right);
+		VectorScale(glr.viewaxis_nopitch[2], frame->origin_y - frame->height, down);
+	}
 
 	VectorScale(left, ent->scale, left);
 	VectorScale(right, ent->scale, right);
@@ -582,7 +597,7 @@ static void GL_DrawEntities(int mask)
         }
 
         // inline BSP model
-        if (ent->model.model.type == MODELHANDLE_BSP) {
+        if (MODEL_HANDLE_TYPE(ent->model) == MODELHANDLE_BSP) {
             bsp_t *bsp = gl_static.world.cache;
 
             if (glr.fd.rdflags & RDF_NOWORLDMODEL) {
@@ -590,12 +605,12 @@ static void GL_DrawEntities(int mask)
                           __func__);
             }
 
-            if (ent->model.model.id < 1 || ent->model.model.id >= bsp->nummodels) {
+            if (MODEL_HANDLE_ID(ent->model) < 1 || MODEL_HANDLE_ID(ent->model) >= bsp->nummodels) {
                 Com_Error(ERR_DROP, "%s: inline model %d out of range",
-                          __func__, ent->model.model.id);
+                          __func__, MODEL_HANDLE_ID(ent->model));
             }
 
-            GL_DrawBspModel(&bsp->models[ent->model.model.id]);
+            GL_DrawBspModel(&bsp->models[MODEL_HANDLE_ID(ent->model)]);
             continue;
         }
 

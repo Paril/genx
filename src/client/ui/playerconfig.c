@@ -65,7 +65,7 @@ static void ReloadMedia(void)
 
     Q_concat(scratch, sizeof(scratch), "players/", model, "/tris.md2", NULL);
     m_player.entities[0].model = R_RegisterModel(scratch);
-    if (!m_player.entities[0].model.handle)
+    if (!m_player.entities[0].model)
         return;
 
     m_player.refdef.num_entities++;
@@ -78,7 +78,7 @@ static void ReloadMedia(void)
 
     Q_concat(scratch, sizeof(scratch), "players/", model, "/", uis.weaponModel, NULL);
     m_player.entities[1].model = R_RegisterModel(scratch);
-    if (!m_player.entities[1].model.handle)
+    if (!m_player.entities[1].model)
         return;
 
     m_player.refdef.num_entities++;
@@ -153,7 +153,7 @@ static void Size(menuFrameWork_t *self)
         x -= CHAR_WIDTH * 10;
     }
 
-    if (m_player.menu.banner.handle) {
+    if (m_player.menu.banner) {
         h = GENERIC_SPACING(m_player.menu.banner_rc.height);
         m_player.menu.banner_rc.x = x - m_player.menu.banner_rc.width / 2;
         m_player.menu.banner_rc.y = y - h / 2;
@@ -271,7 +271,7 @@ static bool Push(menuFrameWork_t *self)
     clamp(m_player.hand.curvalue, 0, 2);
 
     m_player.menu.banner = R_RegisterPic("m_banner_plauer_setup");
-    if (m_player.menu.banner.handle) {
+    if (m_player.menu.banner) {
         R_GetPicSize(&m_player.menu.banner_rc.width,
                      &m_player.menu.banner_rc.height, m_player.menu.banner, CL_GetClientGame());
         m_player.menu.title = NULL;

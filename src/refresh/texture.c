@@ -759,6 +759,13 @@ void IMG_Unload(image_t *image)
         qglDeleteTextures(1, &image->texnum);
         image->texnum = 0;
     }
+
+	if (image->type == IT_FONT && image->font_widths) {
+		Z_Free(image->font_widths);
+		image->font_widths = NULL;
+		Z_Free(image->font_x);
+		image->font_x = NULL;
+	}
 }
 
 // for screenshots

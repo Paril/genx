@@ -428,7 +428,7 @@ static bool BOT_DMClass_ChangeWeapon (edict_t *ent, gitem_t *item)
 		return false;
 
 	// Do we have ammo for it?
-	float ammo = game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(item)];
+	float ammo = game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(item)];
 
 	if (ammo > 0)
 	{
@@ -481,7 +481,7 @@ static void BOT_DMclass_ChooseWeapon(edict_t *self)
 		weapon_range = AIWEAP_LONG_RANGE;
 
 
-	for(i=0; i<WEAP_TOTAL; i++)
+	for(i=0; i<q_countof(AIWeapons); i++)
 	{
 		if (!AIWeapons[i].weaponItem)
 			continue;
@@ -533,7 +533,7 @@ static void BOT_DMclass_FireWeapon (edict_t *self, usercmd_t *ucmd)
 
 	//weapon = self->s.skinnum & 0xff;
 	if (self->client->pers.weapon)
-			weapon = (self->client->pers.weapon->weapmodel & 0xff);
+		weapon = ITEM_INDEX(self->client->pers.weapon) - ITI_WEAPONS_START;
 	else
 		weapon = 0;
 
@@ -770,7 +770,7 @@ static void BOT_DMclass_WeightInventory(edict_t *self)
 	//-----------------------------------------------------
 
 	//weight weapon down if bot already has it
-	for (i=0; i<WEAP_TOTAL; i++) {
+	for (i=0; i<q_countof(AIWeapons); i++) {
 		if ( AIWeapons[i].weaponItem && client->pers.inventory[ITEM_INDEX(AIWeapons[i].weaponItem)])
 			self->ai->status.inventoryWeights[ITEM_INDEX(AIWeapons[i].weaponItem)] *= LowNeedFactor;
 	}
@@ -975,15 +975,7 @@ void BOT_DMclass_InitPersistant(edict_t *self)
 	self->ai->pers.inventoryWeights[ITEM_INDEX(AIWeapons[WEAP_BFG].weaponItem)] = 0.5f;
 
 	//ammo
-	self->ai->pers.inventoryWeights[ITI_SHELLS] = 0.5f;
-	self->ai->pers.inventoryWeights[ITI_BULLETS] = 0.5f;
-	self->ai->pers.inventoryWeights[ITI_CELLS] = 0.5f;
-	self->ai->pers.inventoryWeights[ITI_ROCKETS] = 0.5f;
-	self->ai->pers.inventoryWeights[ITI_SLUGS] = 0.5f;
-	self->ai->pers.inventoryWeights[ITI_GRENADES] = 0.5f;
-
-	self->ai->pers.inventoryWeights[ITI_SHELLS_LARGE] = 0.5f;
-	self->ai->pers.inventoryWeights[ITI_BULLETS_LARGE] = 0.5f;
+	self->ai->pers.inventoryWeights[ITI_AMMO] = 0.5f;
 	
 	//armor
 	self->ai->pers.inventoryWeights[ITI_BODY_ARMOR] = 0.9f;

@@ -167,6 +167,7 @@
     <ClCompile Include="..\src\baseq2\g_doom_boss.c" />
     <ClCompile Include="..\src\baseq2\g_doom_bspi.c" />
     <ClCompile Include="..\src\baseq2\g_doom_cpos.c" />
+    <ClCompile Include="..\src\baseq2\g_doom_cybr.c" />
     <ClCompile Include="..\src\baseq2\g_doom_head.c" />
     <ClCompile Include="..\src\baseq2\g_doom_pain.c" />
     <ClCompile Include="..\src\baseq2\g_doom_poss.c" />
@@ -181,8 +182,6 @@
     <ClCompile Include="..\src\baseq2\g_misc.c" />
     <ClCompile Include="..\src\baseq2\g_monster.c" />
     <ClCompile Include="..\src\baseq2\g_phys.c" />
-    <ClCompile Include="..\src\baseq2\g_q1.c" />
-    <ClCompile Include="..\src\baseq2\g_q1_boss.c" />
     <ClCompile Include="..\src\baseq2\g_q1_demon.c" />
     <ClCompile Include="..\src\baseq2\g_q1_dog.c" />
     <ClCompile Include="..\src\baseq2\g_q1_enforcer.c" />

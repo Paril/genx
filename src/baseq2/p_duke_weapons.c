@@ -31,9 +31,102 @@ extern byte     is_silenced;
 const gtime_t DUKE_ANIM_TIME = 400;
 const gtime_t DUKE_ANIM_FRAC = DUKE_ANIM_TIME;
 
-int pipe_detonator_index, pipe_bomb_index, foot_index;
+int pipe_detonator_index, foot_index;
 
 extern bool do_propagate;
+
+#define DUKE_DISTANCE_SCALE		4.5
+
+#define DukeDistanceSquared(v1,v2) \
+        (((v1)[0]-(v2)[0])*((v1)[0]-(v2)[0])+ \
+        ((v1)[1]-(v2)[1])*((v1)[1]-(v2)[1])+ \
+        (((v1)[2]-(v2)[2])*((v1)[2]-(v2)[2]))*2.0)
+#define DukeDistance(v1,v2) (sqrtf(DukeDistanceSquared(v1,v2)))
+
+/*
+=================
+findradius
+
+Returns entities that have origins within a spherical area
+
+findradius (origin, radius)
+=================
+*/
+static edict_t *duke_findradius(edict_t *from, vec3_t org, float rad, float *found_rad)
+{
+    if (!from)
+        from = g_edicts;
+    else
+        from++;
+    for (; from < &g_edicts[globals.num_edicts]; from++) {
+        if (!from->inuse)
+            continue;
+        if (from->solid == SOLID_NOT)
+            continue;
+        if ((*found_rad = DukeDistance(from->s.origin, org)) > rad)
+            continue;
+        return from;
+    }
+
+    return NULL;
+}
+
+void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, float radius, long hp1, long hp2, long hp3, long hp4, int dflags, meansOfDeath_t mod)
+{
+	radius = sqrtf(radius) * DUKE_DISTANCE_SCALE;
+
+	long   points;
+	edict_t *ent = NULL;
+	vec3_t  v;
+	vec3_t  dir;
+	float	d;
+
+	if (dflags & DAMAGE_Q1)
+		radius += 40;
+
+	mod.damage_type = DT_INDIRECT;
+
+	while ((ent = duke_findradius(ent, inflictor->s.origin, radius, &d)) != NULL)
+	{
+		if (ent == ignore)
+			continue;
+		if (!ent->takedamage)
+			continue;
+
+        if ( d < radius/3 )
+        {
+            if(hp4 == hp3) hp4++;
+            points = hp3 + (Q_rand()%(hp4-hp3));
+        }
+        else if ( d < radius/1.5 )
+        {
+            if(hp3 == hp2) hp3++;
+            points = hp2 + (Q_rand()%(hp3-hp2));
+        }
+        else// if ( d < radius )
+        {
+            if(hp2 == hp1) hp2++;
+            points = hp1 + (Q_rand()%(hp2-hp1));
+        }
+
+		if (points > 0)
+		{
+			if (CanDamage(ent, inflictor))
+			{
+				VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
+
+				// shambler takes half damage
+				if (ent->entitytype == ET_Q1_MONSTER_SHAMBLER)
+					T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)(points * 0.5f), (int)(points * 0.5f), dflags | DAMAGE_RADIUS, mod);
+				else
+					T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
+			}
+		}
+	}
+}
+
+#define PIPE_RADIUS 2500
+#define PIPE_STRENGTH 140
 
 void Pipe_Explode(edict_t *ent)
 {
@@ -45,7 +138,7 @@ void Pipe_Explode(edict_t *ent)
 		PlayerNoise(ent->activator, ent->s.origin, PNOISE_IMPACT);
 
 	ent->owner = ent->activator;
-	T_RadiusDamage(ent, ent->activator, ent->dmg, ent, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->dmg_radius, ent->meansOfDeath);
+	T_DukeRadiusDamage(ent, ent->activator, ent, PIPE_RADIUS, PIPE_STRENGTH>>2, PIPE_STRENGTH-(PIPE_STRENGTH>>1),PIPE_STRENGTH-(PIPE_STRENGTH>>2), PIPE_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
 
 	VectorMA(ent->s.origin, -0.02, ent->velocity, origin);
 
@@ -161,7 +254,7 @@ void fire_pipe(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed
 	if (self->client)
 		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
 	else
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_GRENADE_LAUNCHER, grenade, DT_DIRECT);
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_GRENADE_LAUNCHER, grenade, DT_DIRECT);
 
 	gi.linkentity(grenade);
 
@@ -256,7 +349,13 @@ void duke_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
 
 	// calculate position for the explosion entity
-	T_RadiusDamage(ent, ent->owner, ent->radius_dmg, ent, DAMAGE_NO_PARTICLES, ent->dmg_radius, ent->meansOfDeath);
+#define RPG_RADIUS 1780
+#define RPG_STRENGTH 140
+#define DEVASTATOR_STRENGTH 20
+	if (ent->spawnflags == 0)
+		T_DukeRadiusDamage(ent, ent->owner, ent, RPG_RADIUS, RPG_STRENGTH>>2,RPG_STRENGTH>>1,RPG_STRENGTH-(RPG_STRENGTH>>2),RPG_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
+	else
+		T_DukeRadiusDamage(ent, ent->owner, ent, (RPG_RADIUS>>1),DEVASTATOR_STRENGTH>>2,DEVASTATOR_STRENGTH>>1,DEVASTATOR_STRENGTH-(DEVASTATOR_STRENGTH>>2),DEVASTATOR_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
@@ -670,15 +769,15 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame == 4)
 	{
-		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPOUT.wav"), 1, ATTN_IDLE, 0);
-		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPIN.wav"), 1, ATTN_IDLE, 0);
+		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPOUT.wav"), 1, ATTN_NORM, 0);
+		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPIN.wav"), 1, ATTN_NORM, 0);
 	}
 	else if (ent->client->ps.guns[gun].frame == 7)
 		ent->client->pers.pistol_clip = 12;
 	else if (ent->client->ps.guns[gun].frame == 13)
 		ent->client->ps.guns[gun].frame = 21;
 	else if (ent->client->ps.guns[gun].frame == 15)
-		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/KNUCKLE.wav"), 1, ATTN_IDLE, 0);
+		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/KNUCKLE.wav"), 1, ATTN_NORM, 0);
 	else if (ent->client->ps.guns[gun].frame == 1)
 	{
 		gi.WriteByte(svc_muzzleflash);
@@ -740,7 +839,7 @@ void weapon_duke_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 	ent->client->ps.guns[gun].frame++;
 
 	if (ent->client->ps.guns[gun].frame == 5)
-		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/SHOTGNCK.wav"), 1, ATTN_IDLE, 0);
+		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/SHOTGNCK.wav"), 1, ATTN_NORM, 0);
 	else if (ent->client->ps.guns[gun].frame == 7)
 	{
 		gi.WriteByte(svc_muzzleflash);
@@ -772,10 +871,224 @@ void weapon_duke_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 	}
 }
 
+#define TRIP_RADIUS 3880
+#define TRIP_STRENGTH 100
+
+void tripwire_laser_explode(edict_t *laser)
+{
+	laser->deadflag = laser->goalentity->deadflag = DEAD_DEAD;
+	T_DukeRadiusDamage(laser, laser->activator, laser, TRIP_RADIUS, TRIP_STRENGTH >> 2, TRIP_STRENGTH >> 1, TRIP_STRENGTH - (TRIP_STRENGTH >> 2), TRIP_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, laser->goalentity->meansOfDeath);
+
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_DUKE_EXPLODE_PIPE);
+	gi.WritePosition(laser->s.origin);
+	gi.multicast(laser->s.origin, MULTICAST_PHS);
+
+	G_FreeEdict(laser->goalentity);
+	G_FreeEdict(laser);
+}
+
+void tripwire_laser_think(edict_t *laser)
+{
+	trace_t tr;
+	tr = gi.trace(laser->s.origin, NULL, NULL, laser->s.old_origin, NULL, CONTENTS_MONSTER);
+
+	if (tr.fraction < 1.0 || tr.startsolid)
+	{
+		laser->activator = tr.ent;
+		gi.sound(laser, CHAN_AUTO, gi.soundindex("duke/LSRBMBWN.wav"), 1, ATTN_NORM, 0);
+
+		laser->think = tripwire_laser_explode;
+		laser->nextthink = level.time + 400;
+		return;
+	}
+
+	laser->nextthink = level.time + 1;
+}
+
+void tripwire_activate(edict_t *ent)
+{
+	edict_t *laser = G_Spawn();
+	VectorCopy(ent->s.origin, laser->s.origin);
+	vec3_t up;
+	AngleVectors(ent->s.angles, NULL, NULL, up);
+	VectorMA(laser->s.origin, 1.25f, up, laser->s.origin);
+
+	VectorMA(ent->s.origin, 8192, ent->movedir, laser->s.old_origin);
+
+	trace_t tr;
+	tr = gi.trace(ent->s.origin, NULL, NULL, laser->s.old_origin, NULL, CONTENTS_SOLID);
+
+	laser->s.game = GAME_DUKE;
+    laser->s.modelindex = 1;         // must be non-zero
+	laser->s.renderfx |= RF_BEAM;
+	laser->s.skinnum = 0xF0F0F0F0;
+    laser->s.frame = 2;
+	gi.linkentity(laser);
+
+	VectorCopy(tr.endpos, laser->s.old_origin);
+	gi.linkentity(laser);
+
+	ent->goalentity = laser;
+	laser->goalentity = ent;
+
+	laser->think = tripwire_laser_think;
+	laser->nextthink = level.time + 1;
+}
+
+void tripwire_die(edict_t *ent, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+{
+	if (ent->deadflag)
+		return;
+
+	if (!ent->goalentity)
+		tripwire_activate(ent);
+
+	ent->goalentity->activator = attacker;
+	tripwire_laser_explode(ent->goalentity);
+}
+
+void weapon_duke_tripwire_fire(edict_t *ent, gunindex_e gun, bool first)
+{
+	if (ent->client->ps.guns[gun].frame == 0)
+	{
+		trace_t tr;
+		vec3_t start, forward, right, offset;
+
+		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+		VectorSet(offset, 0, 0, ent->viewheight - 2);
+		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+
+		VectorMA(start, 48, forward, offset);
+		tr = gi.trace(start, NULL, NULL, offset, NULL, CONTENTS_SOLID);
+
+		if (tr.fraction == 1.0)
+		{
+			ent->client->gunstates[gun].weaponstate = WEAPON_READY;
+			ent->client->ps.guns[gun].frame = 0;
+			return;
+		}
+
+		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/LSRBMBPT.wav"), 1, ATTN_IDLE, 0);
+
+		if (!((int)dmflags->value & DF_INFINITE_AMMO))
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+
+		edict_t *trip = G_Spawn();
+		vectoangles2(tr.plane.normal, trip->s.angles);
+		VectorCopy(tr.endpos, trip->s.origin);
+		VectorMA(trip->s.origin, 0.5, tr.plane.normal, trip->s.origin);
+		VectorCopy(tr.plane.normal, trip->movedir);
+		trip->s.modelindex = gi.modelindex("%e_tripwire");
+		trip->think = tripwire_activate;
+		trip->nextthink = level.time + 1500;
+		trip->owner = ent;
+		trip->meansOfDeath = MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), trip, DT_DIRECT);
+		trip->health = 1;
+		trip->solid = SOLID_BBOX;
+		trip->takedamage = DAMAGE_YES;
+		trip->die = tripwire_die;
+		gi.linkentity(trip);
+	}
+
+	ent->client->ps.guns[gun].frame++;
+}
+
 // only Duke uses this atm
 void Weapons_Init()
 {
 	pipe_detonator_index = gi.modelindex("%wv_detonator");
-	pipe_bomb_index = gi.modelindex("%wv_grenades");
 	foot_index = gi.modelindex("weaponscripts/duke/v_off_foot.wsc");
+}
+
+static void Weapon_Duke_Foot(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 7, weapon_duke_foot_fire, gun);
+}
+
+static void Weapon_Duke_Pistol(edict_t *ent, gunindex_e gun)
+{
+	if (ent->client->gunstates[gun].weaponstate == WEAPON_READY && !ent->client->pers.pistol_clip &&
+		HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && ent->client->ps.guns[gun].frame < 3)
+	{
+		ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
+		ent->client->ps.guns[gun].frame = 3;
+	}
+
+	Weapon_Doom(ent, 21, weapon_duke_pistol_fire, gun);
+
+	if (ent->client->ps.guns[gun].frame > 3)
+		ent->client->ps.guns[gun].offset[1] = 0;
+}
+
+static void Weapon_Duke_Shotgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 10, weapon_duke_shotgun_fire, gun);
+}
+
+static void Weapon_Duke_Cannon(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 5, weapon_duke_chaingun_fire, gun);
+}
+
+static void Weapon_Duke_RPG(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 8, weapon_duke_rocket_fire, gun);
+}
+
+static void Weapon_Duke_Pipebombs(edict_t *ent, gunindex_e gun)
+{
+	if (ent->client->pers.alt_weapon)
+		Weapon_Doom(ent, 3, weapon_duke_detonator_fire, gun);
+	else
+		Weapon_Doom(ent, 9, weapon_duke_pipebomb_fire, gun);
+}
+
+static void Weapon_Duke_Devastator(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 5, weapon_duke_devastate_fire, gun);
+}
+
+static void Weapon_Duke_Freezer(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 4, weapon_duke_freezer_fire, gun);
+}
+
+static void Weapon_Duke_Tripwire(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 7, weapon_duke_tripwire_fire, gun);
+}
+
+void Weapon_Duke_Run(edict_t *ent, gunindex_e gun)
+{
+	switch (ITEM_INDEX(ent->client->pers.weapon))
+	{
+	case ITI_DUKE_FOOT:
+		Weapon_Duke_Foot(ent, gun);
+		break;
+	case ITI_DUKE_PISTOL:
+		Weapon_Duke_Pistol(ent, gun);
+		break;
+	case ITI_DUKE_SHOTGUN:
+		Weapon_Duke_Shotgun(ent, gun);
+		break;
+	case ITI_DUKE_CANNON:
+		Weapon_Duke_Cannon(ent, gun);
+		break;
+	case ITI_DUKE_RPG:
+		Weapon_Duke_RPG(ent, gun);
+		break;
+	case ITI_DUKE_PIPEBOMBS:
+		Weapon_Duke_Pipebombs(ent, gun);
+		break;
+	case ITI_DUKE_DEVASTATOR:
+		Weapon_Duke_Devastator(ent, gun);
+		break;
+	case ITI_DUKE_TRIPWIRES:
+		Weapon_Duke_Tripwire(ent, gun);
+		break;
+	case ITI_DUKE_FREEZER:
+		Weapon_Duke_Freezer(ent, gun);
+		break;
+	}
 }

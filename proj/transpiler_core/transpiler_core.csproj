@@ -3,22 +3,25 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <AssemblyName>asset_transpiler</AssemblyName>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>portable</DebugType>
+    <DebugSymbols>true</DebugSymbols>
     <OutputPath>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx</OutputPath>
-    <DebugType>none</DebugType>
-    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <OutputPath>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx</OutputPath>
-    <DebugType>embedded</DebugType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <OutputPath>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DotNet.Glob" Version="3.0.0-alpha0041" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
   </ItemGroup>
 

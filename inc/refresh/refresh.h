@@ -56,27 +56,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define DLIGHT_CUTOFF       64
 
-enum
-{
-	MODELHANDLE_EMPTY,
-
-	MODELHANDLE_BSP,
-	MODELHANDLE_RAW,
-	MODELHANDLE_GAMED
-};
-
-typedef union {
-	qhandle_t	handle;
-
-	struct
-	{
-		uint16_t		type;
-		uint16_t		id;
-	} model;
-} modelhandle_t;
-
 typedef struct entity_s {
-	modelhandle_t   model;          // opaque type outside refresh
+	qhandle_t	   model;          // opaque type outside refresh
 	vec3_t          angles;
 
 	/*
@@ -101,7 +82,7 @@ typedef struct entity_s {
 	float			alpha;                  // ignore if RF_TRANSLUCENT isn't set
 	color_t			rgba;
 
-	pichandle_t		skin;           // NULL for inline skin
+	qhandle_t		skin;           // NULL for inline skin
 	int				flags;
 
 	// Generations
@@ -224,9 +205,9 @@ void    R_Shutdown(bool total);
 // an implicit "pics/" prepended to the name. (a pic name that starts with a
 // slash will not use the "pics/" prefix or the ".pcx" postfix)
 void    R_BeginRegistration(const char *map);
-modelhandle_t R_RegisterModel(const char *name);
-pichandle_t   R_RegisterImage(const char *name, imagetype_t type,
-							  imageflags_t flags, int *err_p);
+qhandle_t R_RegisterModel(const char *name);
+qhandle_t R_RegisterImage(const char *name, imagetype_t type,
+						  imageflags_t flags, int *err_p);
 void    R_SetSky(const char *name, float rotate, vec3_t axis);
 void    R_EndRegistration(void);
 
@@ -243,16 +224,18 @@ void    R_SetAlpha(float clpha);
 void    R_SetColor(uint32_t color);
 // Generations
 color_t	R_GetColor();
+byte	R_GetFontCharWidth(byte c, qhandle_t pic, gametype_t game);
 void    R_SetClipRect(const clipRect_t *clip);
 float   R_ClampScale(cvar_t *var);
 void    R_SetScale(float scale);
-void    R_DrawChar(int x, int y, int flags, int ch, pichandle_t font, gametype_t game);
+void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font, gametype_t game);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
-					 const char *string, pichandle_t font, gametype_t game);  // returns advanced x coord
-bool	R_GetPicSize(int *w, int *h, pichandle_t pic, gametype_t game);   // returns transparency bit
-void    R_DrawPic(int x, int y, pichandle_t pic, gametype_t game);
-void    R_DrawStretchPic(int x, int y, int w, int h, pichandle_t pic, gametype_t game);
-void    R_TileClear(int x, int y, int w, int h, pichandle_t pic, gametype_t game);
+					 const char *string, qhandle_t font, gametype_t game);  // returns advanced x coord
+int		R_StringWidth(size_t maxlen, const char *s, qhandle_t font, gametype_t game);
+bool	R_GetPicSize(int *w, int *h, qhandle_t pic, gametype_t game);   // returns transparency bit
+void    R_DrawPic(int x, int y, qhandle_t pic, gametype_t game);
+void    R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic, gametype_t game);
+void    R_TileClear(int x, int y, int w, int h, qhandle_t pic, gametype_t game);
 void    R_DrawFill8(int x, int y, int w, int h, int c);
 void    R_DrawFill32(int x, int y, int w, int h, uint32_t color);
 

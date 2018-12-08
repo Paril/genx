@@ -192,22 +192,4 @@ extern time_t       com_startTime;
 void Qcommon_Init(int argc, char **argv);
 void Qcommon_Frame(void);
 
-enum
-{
-	PICHANDLE_EMPTY,
-
-	PICHANDLE_RAW,
-	PICHANDLE_GAMED
-};
-
-typedef union {
-	qhandle_t	handle;
-
-	struct
-	{
-		uint16_t		type;
-		uint16_t		id;
-	} pic;
-} pichandle_t;
-
 #endif // COMMON_H

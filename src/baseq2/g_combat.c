@@ -201,12 +201,12 @@ dflags      these flags are used to control how T_Damage works
 static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int dflags)
 {
 	gclient_t   *client;
-	int         save;
+	float		save;
 	power_armor_type_e         power_armor_type;
-	int         damagePerCell;
+	float       damagePerCell;
 	int         pa_te_type;
-	int         power = 0;
-	int         power_used;
+	float       power = 0;
+	float       power_used;
 
 	if (!damage)
 		return 0;
@@ -219,7 +219,7 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 	if (client) {
 		power_armor_type = PowerArmorType(ent);
 		if (power_armor_type != POWER_ARMOR_NONE) {
-			power = client->pers.inventory[ITI_CELLS];
+			power = floorf(AMMO_PER_POWER_ARMOR_ABSORB * client->pers.ammo);
 		}
 	}
 	else if (ent->svflags & SVF_MONSTER) {
@@ -269,7 +269,7 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 	power_used = save / damagePerCell;
 
 	if (client)
-		client->pers.inventory[ITI_CELLS] -= power_used;
+		client->pers.ammo = max(0, client->pers.ammo - (power_used * AMMO_PER_POWER_ARMOR_ABSORB));
 	else
 		ent->monsterinfo.power_armor_power -= power_used;
 	return save;

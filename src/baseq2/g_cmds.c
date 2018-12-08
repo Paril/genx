@@ -436,7 +436,7 @@ static void Cmd_Use_f(edict_t *ent)
     }
 
     index = ITEM_INDEX(it);
-    if (!ent->client->pers.inventory[index] && game_iteminfos[GAME_DUKE].dynamic.weapon_usage_counts[index] != 0)
+    if (!ent->client->pers.inventory[index] && game_iteminfos[GAME_DUKE].ammo_usages[index] != 0)
 	{
         gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
         return;
@@ -487,6 +487,7 @@ Cmd_Inven_f
 static void Cmd_Inven_f(edict_t *ent)
 {
     gclient_t   *cl;
+	itemid_e	i;
 
     cl = ent->client;
 
@@ -502,8 +503,8 @@ static void Cmd_Inven_f(edict_t *ent)
 
     gi.WriteByte(svc_inventory);
 
-    for (itemid_e i = ITI_NULL; i < ITI_TOTAL; i++)
-	        gi.WriteShort(cl->pers.inventory[i]);
+    for (i = ITI_NULL; i < ITI_TOTAL; i++)
+		gi.WriteShort(cl->pers.inventory[i]);
 
     gi.unicast(ent, true);
 }
@@ -919,7 +920,9 @@ static edict_t *line_ent = NULL;
 
 static void line_think(edict_t *ent)
 {
-	for (int i = 0; i < line_nums - 1; ++i)
+	int i;
+	
+	for (i = 0; i < line_nums - 1; ++i)
 	{
 		vec3_t from, to;
 		VectorCopy(line_pos[i], from);

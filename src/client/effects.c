@@ -248,39 +248,39 @@ void CL_AddDLights(void)
 
 // ==============================================================
 
-soundhandle_t sfx_q2_blaster;
-soundhandle_t sfx_q2_hyperblaster_fire;
-soundhandle_t sfx_q2_machinegun_fire[5];
-soundhandle_t sfx_q2_shotgun_fire;
-soundhandle_t sfx_q2_shotgun_reload;
-soundhandle_t sfx_q2_sshotgun_fire;
-soundhandle_t sfx_q2_railgun_fire;
-soundhandle_t sfx_q2_rocketlauncher_fire;
-soundhandle_t sfx_q2_rocketlauncher_reload;
-soundhandle_t sfx_q2_grenadelauncher_fire;
-soundhandle_t sfx_q2_grenadelauncher_reload;
-soundhandle_t sfx_q2_bfg_fire;
+qhandle_t sfx_q2_blaster;
+qhandle_t sfx_q2_hyperblaster_fire;
+qhandle_t sfx_q2_machinegun_fire[5];
+qhandle_t sfx_q2_shotgun_fire;
+qhandle_t sfx_q2_shotgun_reload;
+qhandle_t sfx_q2_sshotgun_fire;
+qhandle_t sfx_q2_railgun_fire;
+qhandle_t sfx_q2_rocketlauncher_fire;
+qhandle_t sfx_q2_rocketlauncher_reload;
+qhandle_t sfx_q2_grenadelauncher_fire;
+qhandle_t sfx_q2_grenadelauncher_reload;
+qhandle_t sfx_q2_bfg_fire;
 
-soundhandle_t sfx_q1_lightning_start;
-soundhandle_t sfx_q1_nailgun_fire;
-soundhandle_t sfx_q1_shotgun_fire;
-soundhandle_t sfx_q1_sshotgun_fire;
-soundhandle_t sfx_q1_snailgun_fire;
-soundhandle_t sfx_q1_rocketlauncher_fire;
-soundhandle_t sfx_q1_grenadelauncher_fire;
+qhandle_t sfx_q1_lightning_start;
+qhandle_t sfx_q1_nailgun_fire;
+qhandle_t sfx_q1_shotgun_fire;
+qhandle_t sfx_q1_sshotgun_fire;
+qhandle_t sfx_q1_snailgun_fire;
+qhandle_t sfx_q1_rocketlauncher_fire;
+qhandle_t sfx_q1_grenadelauncher_fire;
 
-soundhandle_t sfx_doom_pistol;
-soundhandle_t sfx_doom_shotgun_fire;
-soundhandle_t sfx_doom_sshotgun_fire;
-soundhandle_t sfx_doom_rocketlauncher_fire;
-soundhandle_t sfx_doom_plasma;
-soundhandle_t sfx_doom_bfg_fire;
+qhandle_t sfx_doom_pistol;
+qhandle_t sfx_doom_shotgun_fire;
+qhandle_t sfx_doom_sshotgun_fire;
+qhandle_t sfx_doom_rocketlauncher_fire;
+qhandle_t sfx_doom_plasma;
+qhandle_t sfx_doom_bfg_fire;
 
-soundhandle_t sfx_duke_pistol;
-soundhandle_t sfx_duke_shotgun_fire;
-soundhandle_t sfx_duke_cannon_fire;
-soundhandle_t sfx_duke_rpg_fire;
-soundhandle_t sfx_duke_dev_fire;
+qhandle_t sfx_duke_pistol;
+qhandle_t sfx_duke_shotgun_fire;
+qhandle_t sfx_duke_cannon_fire;
+qhandle_t sfx_duke_rpg_fire;
+qhandle_t sfx_duke_dev_fire;
 
 void CL_RegisterEffectSounds()
 {

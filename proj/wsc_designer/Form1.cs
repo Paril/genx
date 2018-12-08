@@ -16,7 +16,12 @@ namespace wsc_designer
 {
 	public partial class Form1 : Form
 	{
-		void SkipWhitespace(StreamReader reader)
+		static float Lerp(float a, float b, float frac)
+		{
+			return a + (b - a) * frac;
+		}
+
+		static void SkipWhitespace(StreamReader reader)
 		{
 			while (!reader.EndOfStream)
 			{
@@ -40,35 +45,36 @@ namespace wsc_designer
 			Center
 		}
 
+		enum SpriteFlip
+		{
+			X = 1,
+			Y = 2
+		}
+
+		enum SpriteLerp
+		{
+			Draws = 1,
+			Translate = 2
+		}
+
 		class WeaponScript
 		{
 			public class Frame
 			{
 				public class DrawOp
 				{
-					[DefaultValue(0)]
 					public int SpriteIndex { get; set; }
-
-					[DefaultValue(0)]
 					public int FrameIndex { get; set; }
-
-					[DefaultValue(typeof(Point), "0, 0")]
-					public Point Offset { get; set; } = new Point(0, 0);
-
-					[DefaultValue(typeof(SpriteAnchor), "BottomCenter")]
+					public Point Offset { get; set; } = Point.Empty;
 					public SpriteAnchor MyAnchor { get; set; } = SpriteAnchor.BottomCenter;
-
-					[DefaultValue(typeof(SpriteAnchor), "BottomCenter")]
 					public SpriteAnchor ScreenAnchor { get; set; } = SpriteAnchor.BottomCenter;
-
-					[DefaultValue(false)]
 					public bool FullScreen { get; set; } = false;
+					public SpriteFlip Flip { get; set; } = 0;
 				}
 
-				[DefaultValue(false)]
-				public bool Lerp { get; set; } = false;
-
-				public List<DrawOp> Draws { get; set; } = new List<DrawOp>();
+				public Point Translate { get; set; } = Point.Empty;
+				public SpriteLerp Lerp { get; set; } = 0;
+				public Dictionary<int, DrawOp> Draws { get; set; } = new Dictionary<int, DrawOp>();
 			}
 
 			public class Sprite
@@ -83,47 +89,96 @@ namespace wsc_designer
 
 			public List<Frame> Frames = new List<Frame>();
 			public List<Sprite> Sprites = new List<Sprite>();
-
-			[DefaultValue(typeof(Size), "320, 240")]
-			[ReadOnly(true)]
-			public Size VirtualSize { get; set; } = new Size(320, 240);
-
-			[DefaultValue(typeof(Size), "1280, 720")]
-			public Size ScreenSize { get; set; } = new Size(1280, 720);
+			public Size VirtualSize { get; set; } = new Size(320, 200);
+			public Size ScreenSize { get; set; } = new Size(1408, 720);
+			public int SelectedFrame { get; set; }
+			public int LastFrame { get; set; }
+			public int[] Animations { get; set; } = new int[0];
 		}
 
-		string[] SplitTokens(string line)
+		static string ParseToken(StreamReader reader)
 		{
-			var tokens = new List<string>();
-			var token = "";
-			var tokenizing = false;
+			int c;
+			string s = "";
 
-			for (var i = 0; i < line.Length; i++)
+			if (reader.EndOfStream)
+				return null;
+
+			// skip whitespace
+			skipwhite:
+			while ((c = reader.Peek()) <= ' ')
 			{
-				char c = line[i];
+				if (c == -1)
+					return s;
 
-				if (c == '"')
-				{
-					if (tokenizing)
-						tokens.Add(token);
-
-					tokenizing = !tokenizing;
-					token = "";
-					continue;
-				}
-				else if (c == '\\')
-				{
-					i++;
-					c = line[i];
-				}
-
-				token += c;
+				reader.Read();
 			}
 
-			if (tokenizing)
-				throw new Exception("bad line");
+			if (c == '/')
+			{
+				reader.Read();
 
-			return tokens.ToArray();
+				// skip // comments
+				if (reader.Peek() == '/')
+				{
+					reader.Read();
+
+					while (reader.Peek() != -1 && reader.Peek() != '\n')
+						reader.Read();
+
+					goto skipwhite;
+				}
+				// skip /* */ comments
+				else if (reader.Peek() == '*')
+				{
+					reader.Read();
+
+					while (reader.Peek() != -1)
+					{
+						if (reader.Peek() == '*')
+						{
+							reader.Read();
+
+							if (reader.Peek() == '/')
+							{
+								reader.Read();
+								break;
+							}
+						}
+						else
+							reader.Read();
+					}
+					goto skipwhite;
+				}
+				else
+					reader.BaseStream.Position--;
+			}
+
+			// handle quoted strings specially
+			if (c == '\"')
+			{
+				reader.Read();
+				while (true)
+				{
+					c = reader.Read();
+					if (c == '\"' || c <= 0)
+						goto finish;
+					
+					s += (char)c;
+				}
+			}
+
+			// parse a regular word
+			do
+			{
+				s += (char) c;
+
+				reader.Read();
+				c = reader.Peek();
+			} while (c > 32);
+
+			finish:
+			return s;
 		}
 
 		static SpriteAnchor AnchorFromString(string s)
@@ -153,40 +208,60 @@ namespace wsc_designer
 			throw new Exception();
 		}
 
-		void ParseFrame(WeaponScript.Frame frame, StreamReader reader)
+		static void ParseFrame(WeaponScript.Frame frame, StreamReader reader)
 		{
-			reader.Read();
-
 			while (true)
 			{
-				SkipWhitespace(reader);
+				var token = ParseToken(reader);
 
-				if (reader.EndOfStream)
+				if (token == null || token == "}")
 					break;
 
-				if (reader.Peek() == '}')
+				switch (token)
 				{
-					reader.Read();
-					break;
-				}
-
-				var tokens = SplitTokens(reader.ReadLine());
-
-				switch (tokens[0])
-				{
+					case "translate":
+						{
+							var ofs = ParseToken(reader).Split(' ');
+							frame.Translate = new Point(int.Parse(ofs[0]), int.Parse(ofs[1]));
+						}
+						break;
 					case "lerp":
-						frame.Lerp = tokens[1] == "true";
+						{
+							var ofs = ParseToken(reader).Split(' ');
+
+							if (ofs.Contains("draws"))
+								frame.Lerp |= SpriteLerp.Draws;
+							if (ofs.Contains("translates"))
+								frame.Lerp |= SpriteLerp.Translate;
+						}
 						break;
 					case "draw_sprite":
+					case "draw_sprite_flip_x":
+					case "draw_sprite_flip_y":
+					case "draw_sprite_flip_xy":
 						{
 							var op = new WeaponScript.Frame.DrawOp();
-							op.SpriteIndex = int.Parse(tokens[1]);
-							op.FrameIndex = int.Parse(tokens[2]);
-							op.ScreenAnchor = AnchorFromString(tokens[3]);
-							op.MyAnchor = AnchorFromString(tokens[4]);
-							var ofs = tokens[5].Split(' ');
+							op.SpriteIndex = int.Parse(ParseToken(reader));
+							op.FrameIndex = int.Parse(ParseToken(reader));
+							op.ScreenAnchor = AnchorFromString(ParseToken(reader));
+							op.MyAnchor = AnchorFromString(ParseToken(reader));
+							var ofs = ParseToken(reader).Split(' ');
 							op.Offset = new Point(int.Parse(ofs[0]), int.Parse(ofs[1]));
-							frame.Draws.Add(op);
+							op.FullScreen = ParseToken(reader) == "full";
+
+							if (token.StartsWith("draw_sprite_flip_"))
+							{
+								var flips = token.Substring("draw_sprite_flip_".Length);
+
+								if (flips.Length == 2)
+									op.Flip = SpriteFlip.X | SpriteFlip.Y;
+								else if (flips[0] == 'y')
+									op.Flip = SpriteFlip.Y;
+								else
+									op.Flip = SpriteFlip.X;
+							}
+
+							frame.Draws.Add(op.SpriteIndex, op);
 						}
 						break;
 					default:
@@ -207,7 +282,13 @@ namespace wsc_designer
 				for (var i = 0; i < numPics; i++)
 				{
 					var frame = new WeaponScript.Sprite.Frame();
-					frame.Image = LoadTGA(GetFile(basePath + "_" + i + ".tga"));
+					Stream stream;
+
+					if ((stream = GetFile(basePath + "_" + i + ".tga")) != null)
+						frame.Image = LoadTGA(stream);
+					else if ((stream = GetFile(basePath + "_" + i + ".png")) != null)
+						frame.Image = Image.FromStream(stream);
+
 					br.ReadBytes(4);
 					sprite.Frames.Add(frame);
 				}
@@ -222,72 +303,33 @@ namespace wsc_designer
 
 			using (var reader = new StreamReader(filename, Encoding.ASCII))
 			{
-				SkipWhitespace(reader);
-
-				if (reader.Read() != '{')
+				if (ParseToken(reader) != "{")
 					throw new Exception("invalid format");
 
 				while (true)
 				{
-					SkipWhitespace(reader);
+					var token = ParseToken(reader);
 
-					if (reader.EndOfStream)
-						break;
-
-					if (reader.Peek() == '{')
+					if (token == "{")
 					{
 						var frame = new WeaponScript.Frame();
 						ParseFrame(frame, reader);
 						script.Frames.Add(frame);
 						continue;
 					}
-					else if (reader.Peek() == '}')
+					else if (token == "}")
 						break;
-					else if (reader.Peek() == '/')
-					{
-						reader.Read();
-
-						// line comment
-						if (reader.Peek() == '/')
-						{
-							reader.ReadLine();
-							continue;
-						}
-						// block comment
-						else if (reader.Peek() == '*')
-						{
-							reader.Read();
-
-							while (true)
-							{
-								if (reader.EndOfStream)
-									break;
-
-								char c = (char) reader.Read();
-
-								if (c == '*' && reader.Peek() == '/')
-								{
-									reader.Read();
-									break;
-								}
-							}
-
-							continue;
-						}
-					}
-
-					var tokens = SplitTokens(reader.ReadLine());
-
-					switch (tokens[0])
+					
+					switch (token)
 					{
 						// skip these
-						case "num_frames":
 						case "num_sprites":
+							ParseToken(reader);
 							break;
 						// virtual size
 						case "view":
 							{
-								var view = tokens[1].Split(' ');
+								var view = ParseToken(reader).Split(' ');
 								script.VirtualSize = new Size(int.Parse(view[0]), int.Parse(view[1]));
 							}
 							break;
@@ -295,9 +337,13 @@ namespace wsc_designer
 						case "load_sprite":
 							{
 								var sprite = new WeaponScript.Sprite();
-								LoadSprite(sprite, tokens[1]);
+								LoadSprite(sprite, ParseToken(reader));
 								script.Sprites.Add(sprite);
 							}
+							break;
+						// animations
+						case "animations":
+							script.Animations = ParseToken(reader).Split(new[] { ' ', '\t', '\r', '\n', }, StringSplitOptions.RemoveEmptyEntries).Select(a => int.Parse(a)).ToArray();
 							break;
 						default:
 							throw new Exception("bad type/func");
@@ -315,25 +361,31 @@ namespace wsc_designer
 			public delegate void MemCpyFunction(void* des, void* src, uint bytes);
 			public static readonly MemCpyFunction Cpy;
 
-			static Memory()
+			public delegate void MemSetFunction(void* des, byte value, uint bytes);
+			public static readonly MemSetFunction Set;
+
+			static T GenerateMethod<T>(params OpCode[] opCodes) where T : Delegate
 			{
+				var method = typeof(T).GetMethod("Invoke");
 				var dynamicMethod = new DynamicMethod(
 					"Cpy",
-					typeof(void),
-					new[] { typeof(void*), typeof(void*), typeof(uint) },
+					method.ReturnType,
+					method.GetParameters().Select(t => t.ParameterType).ToArray(),
 					typeof(Memory)
 				);
 
 				var ilGenerator = dynamicMethod.GetILGenerator();
 
-				ilGenerator.Emit(OpCodes.Ldarg_0);
-				ilGenerator.Emit(OpCodes.Ldarg_1);
-				ilGenerator.Emit(OpCodes.Ldarg_2);
+				foreach (var code in opCodes)
+					ilGenerator.Emit(code);
 
-				ilGenerator.Emit(OpCodes.Cpblk);
-				ilGenerator.Emit(OpCodes.Ret);
+				return (T)dynamicMethod.CreateDelegate(typeof(T));
+			}
 
-				Cpy = (MemCpyFunction)dynamicMethod.CreateDelegate(typeof(MemCpyFunction));
+			static Memory()
+			{
+				Cpy = GenerateMethod<MemCpyFunction>(OpCodes.Ldarg_0, OpCodes.Ldarg_1, OpCodes.Ldarg_2, OpCodes.Cpblk, OpCodes.Ret);
+				Set = GenerateMethod<MemSetFunction>(OpCodes.Ldarg_0, OpCodes.Ldarg_1, OpCodes.Ldarg_2, OpCodes.Initblk, OpCodes.Ret);
 			}
 		}
 
@@ -390,11 +442,14 @@ namespace wsc_designer
 			{
 				var entry = z.GetEntry(path);
 
+				if (entry == null)
+					entry = z.GetEntry(winPath);
+
 				if (entry != null)
 					return entry.Open();
 			}
 
-			throw new Exception("not found");
+			return null;
 		}
 
 		void LoadPaths()
@@ -406,15 +461,54 @@ namespace wsc_designer
 					_zips.Add(new ZipArchive(zip.OpenRead()));
 		}
 
+		Timer _timer;
+		long _nowFrame, _nextFrame;
+		float _frameFrac;
+		FileSystemWatcher _watcher;
+
 		public Form1()
 		{
 			InitializeComponent();
 			LoadPaths();
+
+			_timer = new Timer();
+			_timer.Interval = 13;
+			_timer.Tick += _timer_Tick;
+
+			_watcher = new FileSystemWatcher();
+			_watcher.SynchronizingObject = this;
+			_watcher.Changed += _watcher_Changed;
+			_watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size;
 		}
 
-		private Point PointFromSizeAnchor(Point pos, Size size, SpriteAnchor anchor)
+		private void _watcher_Changed(object sender, FileSystemEventArgs e)
 		{
-			var p = new Point();
+			reloadToolStripMenuItem_Click(sender, EventArgs.Empty);
+		}
+
+		private void _timer_Tick(object sender, EventArgs e)
+		{
+			var now = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+
+			if (now > _nextFrame)
+			{
+				_nowFrame = now;
+				_nextFrame = _nowFrame + 100;
+				_root.LastFrame = _root.SelectedFrame;
+
+				_programmaticallyChanged = true;
+				button2_Click(sender, e);
+				_programmaticallyChanged = false;
+			}
+
+			_frameFrac = (float)(now - _nowFrame) / (_nextFrame - _nowFrame);
+
+			pictureBox1.Invalidate();
+		}
+
+		private PointF PointFromSizeAnchor(PointF pos, SizeF size, SpriteAnchor anchor)
+		{
+			var p = new PointF();
 
 			if (anchor == SpriteAnchor.BottomLeft ||
 				anchor == SpriteAnchor.CenterLeft ||
@@ -441,6 +535,69 @@ namespace wsc_designer
 			return p;
 		}
 
+		private void DrawFlippedImage(Graphics g, Image image, float x, float y, float w, float h)
+		{
+			if (w < 0)
+				x -= w;
+
+			if (h < 0)
+				y -= h;
+
+			g.DrawImage(image, x, y, w, h);
+		}
+
+		// draw the frame within the virtual screen.
+		// ortho should be set up as such
+		private void paintFrame(Graphics g, int oldframe, int frame, PointF realScreenPosition, SizeF realScreenSize, float sidePadding)
+		{
+			var weaponFrame = _root.Frames[_root.Animations[frame]];
+			var virtualPosition = new PointF(0, 0);
+			var virtualSize = new SizeF(_root.VirtualSize.Width, _root.VirtualSize.Height);
+
+			for (var i = _root.Sprites.Count - 1; i >= 0; i--)
+			{
+				if (!weaponFrame.Draws.TryGetValue(i, out var draw))
+					continue;
+
+				var sprite = _root.Sprites[draw.SpriteIndex];
+				var spriteFrame = sprite.Frames[draw.FrameIndex];
+				var objectSize = spriteFrame.Image.Size;
+				var scr = PointFromSizeAnchor(draw.FullScreen ? realScreenPosition : virtualPosition, draw.FullScreen ? realScreenSize : virtualSize, draw.ScreenAnchor);
+				var pos = PointFromSizeAnchor(PointF.Empty, objectSize, draw.MyAnchor);
+				var flippedSize = new SizeF((draw.Flip & SpriteFlip.X) != 0 ? -objectSize.Width : objectSize.Width, (draw.Flip & SpriteFlip.Y) != 0 ? -objectSize.Height : objectSize.Height);
+
+				var curX = sidePadding + (scr.X - pos.X + draw.Offset.X);
+				var curY = scr.Y - pos.Y + draw.Offset.Y;
+				PointF translate = weaponFrame.Translate;
+
+				if (weaponFrame.Lerp != 0)
+				{
+					var prevWeaponFrame = _root.Frames[_root.Animations[oldframe]];
+					var prevTranslate = prevWeaponFrame.Translate;
+
+					if ((weaponFrame.Lerp & SpriteLerp.Draws) != 0 && prevWeaponFrame.Draws.TryGetValue(i, out var prevDraw))
+					{
+						var prevSprite = _root.Sprites[prevDraw.SpriteIndex];
+						var prevSpriteFrame = prevSprite.Frames[prevDraw.FrameIndex];
+						var prevObjectSize = prevSpriteFrame.Image.Size;
+						var prevScr = PointFromSizeAnchor(prevDraw.FullScreen ? realScreenPosition : virtualPosition, prevDraw.FullScreen ? realScreenSize : virtualSize, prevDraw.ScreenAnchor);
+						var prevPos = PointFromSizeAnchor(PointF.Empty, prevObjectSize, prevDraw.MyAnchor);
+
+						var prevX = sidePadding + (prevScr.X - prevPos.X + prevDraw.Offset.X);
+						var prevY = prevScr.Y - prevPos.Y + prevDraw.Offset.Y;
+
+						curX = Lerp(prevX, curX, _frameFrac);
+						curY = Lerp(prevY, curY, _frameFrac);
+					}
+
+					if ((weaponFrame.Lerp & SpriteLerp.Translate) != 0)
+						translate = new PointF(Lerp(prevTranslate.X, translate.X, _frameFrac), Lerp(prevTranslate.Y, translate.Y, _frameFrac));
+				}
+
+				DrawFlippedImage(g, spriteFrame.Image, curX + translate.X, curY + translate.Y, flippedSize.Width, flippedSize.Height);
+			}
+		}
+
 		private void pictureBox1_Paint(object sender, PaintEventArgs e)
 		{
 			e.Graphics.SmoothingMode = SmoothingMode.None;
@@ -448,63 +605,25 @@ namespace wsc_designer
 			e.Graphics.InterpolationMode = InterpolationMode.NearestNeighbor;
 			e.Graphics.Clear(pictureBox1.BackColor);
 
-			// fit screen size inside of box
-			float outerAspectH = (float)pictureBox1.Height / _root.ScreenSize.Height;
-			float outerAspect = outerAspectH;
+			_root.ScreenSize = new Size(pictureBox1.Width, pictureBox1.Height);
 
-			float screenWidth = _root.ScreenSize.Width * outerAspect;
-			float screenHeight = _root.ScreenSize.Height * outerAspect;
+			//e.Graphics.ScaleTransform(2, 2);
 
-			// this isn't necessary in Q2 code
-			e.Graphics.TranslateTransform((pictureBox1.Width / 2.0f) - (screenWidth / 2.0f), 0);
+			var heightAspect = (float)_root.VirtualSize.Height / _root.ScreenSize.Height;
+			var realWidth = _root.ScreenSize.Width * heightAspect;
+			var sidePadding = (realWidth - _root.VirtualSize.Width) / 2.0f;
 
-			var realScreenPosition = new Point(0, 0);
-			var realScreenSize = new Size((int)screenWidth, (int)screenHeight);
+			var realScreenSize = new SizeF(realWidth, _root.VirtualSize.Height);
+			var realScreenPosition = new PointF(-sidePadding, 0);
 
-			e.Graphics.DrawRectangle(Pens.Red, 0, 0, screenWidth - 1, screenHeight - 1);
+			e.Graphics.DrawRectangle(Pens.Red, 0, 0, realWidth - 1, _root.VirtualSize.Height - 1);
 
-			// fit 800x600 virtual screen inside real screen
-			float innerAspectW = screenWidth / _root.VirtualSize.Width;
-			float innerAspectH = screenHeight / _root.VirtualSize.Height;
-			float innerAspect = Math.Min(innerAspectW, innerAspectH);
+			e.Graphics.DrawRectangle(Pens.Blue, sidePadding, 0, _root.VirtualSize.Width - 1, _root.VirtualSize.Height - 1);
 
-			float innerWidth = _root.VirtualSize.Width * innerAspect;
-			float innerHeight = _root.VirtualSize.Height * innerAspect;
-			
-			var virtualPosition = new Point((int)((screenWidth / 2.0f) - (innerWidth / 2.0f)), (int)((screenHeight / 2.0f) - (innerHeight / 2.0f)));
+			e.Graphics.DrawLine(Pens.Cyan, sidePadding + (_root.VirtualSize.Width / 2), 0, sidePadding + (_root.VirtualSize.Width / 2), _root.VirtualSize.Height - 1);
 
-			e.Graphics.DrawRectangle(Pens.Blue, virtualPosition.X, virtualPosition.Y, innerWidth - 1, innerHeight - 1);
-
-			float objectScale = innerWidth / _root.VirtualSize.Width;
-
-			var virtualSize = new Size((int)(_root.VirtualSize.Width * objectScale), (int)(_root.VirtualSize.Height * objectScale));
-
-			var halfW = (_root.VirtualSize.Width / 2) * objectScale;
-			var halfH = (_root.VirtualSize.Height / 2) * objectScale;
-
-			e.Graphics.DrawLine(Pens.Cyan, virtualPosition.X + halfW, virtualPosition.Y, virtualPosition.X + halfW, virtualPosition.Y + virtualSize.Height - 2);
-			e.Graphics.DrawLine(Pens.Cyan, virtualPosition.X, virtualPosition.Y + halfH, virtualPosition.X + virtualSize.Width - 2, virtualPosition.Y + halfH);
-
-			if (_root.Frames.Count != 0)
-			{
-				var frame = _root.Frames[0];
-
-				for (var i = frame.Draws.Count - 1; i >= 0; i--)
-				{
-					var draw = frame.Draws[i];
-					var sprite = _root.Sprites[draw.SpriteIndex];
-					var spriteFrame = sprite.Frames[draw.FrameIndex];
-
-					var objectSize = new Size((int)(spriteFrame.Image.Height * objectScale), (int)(spriteFrame.Image.Height * objectScale));
-
-					var scr = PointFromSizeAnchor(draw.FullScreen ? realScreenPosition : virtualPosition, draw.FullScreen ? realScreenSize : virtualSize, draw.ScreenAnchor);
-					var pos = PointFromSizeAnchor(new Point(0, 0), objectSize, draw.MyAnchor);
-
-					e.Graphics.DrawImage(spriteFrame.Image, scr.X - pos.X + (int)(draw.Offset.X * objectScale), scr.Y - pos.Y + (int)(draw.Offset.Y * objectScale), objectSize.Width, objectSize.Height);
-
-					//e.Graphics.DrawImageUnscaled(spriteFrame.Image, (_root.Translate.X + frame.Translate.X + draw.Offset.X) + -spriteFrame.Offset.X, (_root.Translate.Y + frame.Translate.Y + draw.Offset.Y) + -spriteFrame.Offset.Y);
-				}
-			}
+			if (_root.Animations.Length != 0)
+				paintFrame(e.Graphics, _root.LastFrame, _root.SelectedFrame, realScreenPosition, realScreenSize, sidePadding);
 		}
 
 		private void propertyGrid1_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
@@ -523,20 +642,71 @@ namespace wsc_designer
 		{
 			using (var ofd = new OpenFileDialog())
 			{
-				ofd.Filter = "Weapon Script|*.wsc2";
+				ofd.Filter = "Weapon Script|*.wsc";
 
 				if (ofd.ShowDialog() == DialogResult.OK)
 				{
 					reloadToolStripMenuItem.Enabled = true;
-					_root = ParseScript(_lastFile = ofd.FileName);
-					pictureBox1.Invalidate();
+					_lastFile = ofd.FileName;
+
+					reloadToolStripMenuItem_Click(sender, e);
 				}
 			}
 		}
 
 		private void reloadToolStripMenuItem_Click(object sender, EventArgs e)
 		{
+			var oldFrame = _root.SelectedFrame;
 			_root = ParseScript(_lastFile);
+
+			trackBar1.Minimum = 0;
+			trackBar1.Maximum = _root.Animations.Length - 1;
+			_root.SelectedFrame = _root.LastFrame = trackBar1.Value = Math.Min(trackBar1.Maximum, oldFrame);
+			pictureBox1.Invalidate();
+
+			if (_watcher.Path != Path.GetDirectoryName(_lastFile) ||
+				_watcher.Filter != Path.GetFileName(_lastFile))
+			{
+				_watcher.Path = Path.GetDirectoryName(_lastFile);
+				_watcher.Filter = Path.GetFileName(_lastFile);
+				_watcher.EnableRaisingEvents = true;
+			}
+		}
+
+		private void button1_Click(object sender, EventArgs e)
+		{
+			if (trackBar1.Value > 0)
+				trackBar1.Value--;
+			else
+				trackBar1.Value = trackBar1.Maximum;
+		}
+
+		private void button2_Click(object sender, EventArgs e)
+		{
+			if (trackBar1.Value < trackBar1.Maximum)
+				trackBar1.Value++;
+			else
+				trackBar1.Value = 0;
+		}
+
+		private void checkBox1_CheckedChanged(object sender, EventArgs e)
+		{
+			if (checkBox1.Checked)
+				_timer.Start();
+			else
+				_timer.Stop();
+
+			_nowFrame = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
+			_nextFrame = _nowFrame + 100;
+		}
+
+		bool _programmaticallyChanged = false;
+
+		private void trackBar1_Scroll(object sender, EventArgs e)
+		{
+			if (!_programmaticallyChanged)
+				_root.LastFrame = trackBar1.Value;
+			_root.SelectedFrame = trackBar1.Value;
 			pictureBox1.Invalidate();
 		}
 	}

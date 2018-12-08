@@ -538,7 +538,7 @@ void G_RunFrame(void)
 
         level.current_entity = ent;
 
-		if (!(ent->s.renderfx & RF_PROJECTILE))
+		if (!(ent->s.renderfx & (RF_PROJECTILE | RF_BEAM)))
 			VectorCopy(ent->s.origin, ent->s.old_origin);
 
         // if the ground entity moved, make sure we are still on it

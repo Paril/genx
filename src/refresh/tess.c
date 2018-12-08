@@ -196,7 +196,6 @@ void GL_DrawBeams(void)
 	}
 
 	GL_LoadMatrix(glr.viewmatrix);
-	GL_BindTexture(0, TEXNUM_BEAM);
 	GL_StateBits(GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE);
 	GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
 
@@ -210,13 +209,19 @@ void GL_DrawBeams(void)
 			continue;
 		}
 
+		if (ent->game == GAME_Q2) {
+			GL_BindTexture(0, TEXNUM_BEAM);
+		} else {
+			GL_BindTexture(0, TEXNUM_WHITE);
+		}
+
 		start = ent->origin;
 		end = ent->oldorigin;
 		VectorSubtract(end, start, d1);
 		VectorSubtract(glr.fd.vieworg, start, d2);
 		CrossProduct(d1, d2, d3);
         VectorNormalize(d3);
-        length = ent->frame * 1.2f;
+        length = ent->frame * (ent->game == GAME_Q2 ? 1.2f : 0.25f);
 		VectorScale(d3, length, d3);
 
 		length = VectorLength(d1);

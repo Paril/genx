@@ -21,22 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "..\g_local.h"
 #include "ai_local.h"
 
-ai_weapon_t		AIWeapons[WEAP_TOTAL];
-
-
-//WEAP_NONE,
-//WEAP_BLASTER
-//WEAP_SHOTGUN
-//WEAP_SUPERSHOTGUN
-//WEAP_MACHINEGUN
-//WEAP_CHAINGUN
-//WEAP_GRENADES
-//WEAP_GRENADELAUNCHER
-//WEAP_ROCKETLAUNCHER
-//WEAP_HYPERBLASTER
-//WEAP_RAILGUN
-//WEAP_BFG
-//WEAP_GRAPPLE
+ai_weapon_t		AIWeapons[ITI_WEAPONS_END - ITI_WEAPONS_START + 2];
 
 
 //==========================================
@@ -48,7 +33,7 @@ ai_weapon_t		AIWeapons[WEAP_TOTAL];
 void AI_InitAIWeapons (void)
 {
 	//clear all
-	memset( &AIWeapons, 0, sizeof(ai_weapon_t)*WEAP_TOTAL);
+	memset(&AIWeapons, 0, sizeof(AIWeapons));
 
 	//BLASTER
 	AIWeapons[WEAP_BLASTER].aimType = AI_AIMSTYLE_PREDICTION;
@@ -56,7 +41,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_BLASTER].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.05f;
 	AIWeapons[WEAP_BLASTER].RangeWeight[AIWEAP_SHORT_RANGE] = 0.1f;
 	AIWeapons[WEAP_BLASTER].RangeWeight[AIWEAP_MELEE_RANGE] = 0.2f;
-	AIWeapons[WEAP_BLASTER].weaponItem = GetItemByIndex(ITI_BLASTER);
+	AIWeapons[WEAP_BLASTER].weaponItem = GetItemByIndex(ITI_Q2_BLASTER);
 	AIWeapons[WEAP_BLASTER].ammoItem = NULL;		//doesn't use ammo
 
 	//SHOTGUN
@@ -65,8 +50,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_SHOTGUN].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.1f;
 	AIWeapons[WEAP_SHOTGUN].RangeWeight[AIWEAP_SHORT_RANGE] = 0.2f;
 	AIWeapons[WEAP_SHOTGUN].RangeWeight[AIWEAP_MELEE_RANGE] = 0.3f;
-	AIWeapons[WEAP_SHOTGUN].weaponItem = GetItemByIndex(ITI_SHOTGUN);
-	AIWeapons[WEAP_SHOTGUN].ammoItem = GetItemByIndex(ITI_SHELLS);
+	AIWeapons[WEAP_SHOTGUN].weaponItem = GetItemByIndex(ITI_Q2_SHOTGUN);
 	
 	//SUPERSHOTGUN
 	AIWeapons[WEAP_SUPERSHOTGUN].aimType = AI_AIMSTYLE_INSTANTHIT;
@@ -74,8 +58,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_SUPERSHOTGUN].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.2f;
 	AIWeapons[WEAP_SUPERSHOTGUN].RangeWeight[AIWEAP_SHORT_RANGE] = 0.6f;
 	AIWeapons[WEAP_SUPERSHOTGUN].RangeWeight[AIWEAP_MELEE_RANGE] = 0.7f;
-	AIWeapons[WEAP_SUPERSHOTGUN].weaponItem = GetItemByIndex(ITI_SUPER_SHOTGUN);
-	AIWeapons[WEAP_SUPERSHOTGUN].ammoItem = GetItemByIndex(ITI_SHELLS);
+	AIWeapons[WEAP_SUPERSHOTGUN].weaponItem = GetItemByIndex(ITI_Q2_SUPER_SHOTGUN);
 
 	//MACHINEGUN
 	AIWeapons[WEAP_MACHINEGUN].aimType = AI_AIMSTYLE_INSTANTHIT;
@@ -83,8 +66,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_MACHINEGUN].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.3f;
 	AIWeapons[WEAP_MACHINEGUN].RangeWeight[AIWEAP_SHORT_RANGE] = 0.3f;
 	AIWeapons[WEAP_MACHINEGUN].RangeWeight[AIWEAP_MELEE_RANGE] = 0.4f;
-	AIWeapons[WEAP_MACHINEGUN].weaponItem = GetItemByIndex(ITI_MACHINEGUN);
-	AIWeapons[WEAP_MACHINEGUN].ammoItem = GetItemByIndex(ITI_BULLETS);
+	AIWeapons[WEAP_MACHINEGUN].weaponItem = GetItemByIndex(ITI_Q2_MACHINEGUN);
 
 	//CHAINGUN
 	AIWeapons[WEAP_CHAINGUN].aimType = AI_AIMSTYLE_INSTANTHIT;
@@ -92,8 +74,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_CHAINGUN].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.6f;
 	AIWeapons[WEAP_CHAINGUN].RangeWeight[AIWEAP_SHORT_RANGE] = 0.7f;
 	AIWeapons[WEAP_CHAINGUN].RangeWeight[AIWEAP_MELEE_RANGE] = 0.7f;
-	AIWeapons[WEAP_CHAINGUN].weaponItem = GetItemByIndex(ITI_CHAINGUN);
-	AIWeapons[WEAP_CHAINGUN].ammoItem = GetItemByIndex(ITI_BULLETS);
+	AIWeapons[WEAP_CHAINGUN].weaponItem = GetItemByIndex(ITI_Q2_CHAINGUN);
 
 	//GRENADES
 	AIWeapons[WEAP_GRENADES].aimType = AI_AIMSTYLE_DROP;
@@ -101,8 +82,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_GRENADES].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.0f;
 	AIWeapons[WEAP_GRENADES].RangeWeight[AIWEAP_SHORT_RANGE] = 0.2f;
 	AIWeapons[WEAP_GRENADES].RangeWeight[AIWEAP_MELEE_RANGE] = 0.2f;
-	AIWeapons[WEAP_GRENADES].weaponItem = GetItemByIndex(ITI_GRENADES);
-	AIWeapons[WEAP_GRENADES].ammoItem = GetItemByIndex(ITI_GRENADES);
+	AIWeapons[WEAP_GRENADES].weaponItem = GetItemByIndex(ITI_Q2_GRENADES);
 
 	//GRENADELAUNCHER
 	AIWeapons[WEAP_GRENADELAUNCHER].aimType = AI_AIMSTYLE_DROP;
@@ -110,8 +90,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_GRENADELAUNCHER].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.0f;
 	AIWeapons[WEAP_GRENADELAUNCHER].RangeWeight[AIWEAP_SHORT_RANGE] = 0.3f;
 	AIWeapons[WEAP_GRENADELAUNCHER].RangeWeight[AIWEAP_MELEE_RANGE] = 0.5f;
-	AIWeapons[WEAP_GRENADELAUNCHER].weaponItem = GetItemByIndex(ITI_GRENADE_LAUNCHER);
-	AIWeapons[WEAP_GRENADELAUNCHER].ammoItem = GetItemByIndex(ITI_GRENADES);
+	AIWeapons[WEAP_GRENADELAUNCHER].weaponItem = GetItemByIndex(ITI_Q2_GRENADE_LAUNCHER);
 
 	//ROCKETLAUNCHER
 	AIWeapons[WEAP_ROCKETLAUNCHER].aimType = AI_AIMSTYLE_PREDICTION_EXPLOSIVE;
@@ -119,8 +98,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_ROCKETLAUNCHER].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.7f;
 	AIWeapons[WEAP_ROCKETLAUNCHER].RangeWeight[AIWEAP_SHORT_RANGE] = 0.9f;
 	AIWeapons[WEAP_ROCKETLAUNCHER].RangeWeight[AIWEAP_MELEE_RANGE] = 0.6f;
-	AIWeapons[WEAP_ROCKETLAUNCHER].weaponItem = GetItemByIndex(ITI_ROCKET_LAUNCHER);
-	AIWeapons[WEAP_ROCKETLAUNCHER].ammoItem = GetItemByIndex(ITI_ROCKETS);
+	AIWeapons[WEAP_ROCKETLAUNCHER].weaponItem = GetItemByIndex(ITI_Q2_ROCKET_LAUNCHER);
 
 	//WEAP_HYPERBLASTER
 	AIWeapons[WEAP_HYPERBLASTER].aimType = AI_AIMSTYLE_PREDICTION;
@@ -128,8 +106,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_HYPERBLASTER].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.1f;
 	AIWeapons[WEAP_HYPERBLASTER].RangeWeight[AIWEAP_SHORT_RANGE] = 0.2f;
 	AIWeapons[WEAP_HYPERBLASTER].RangeWeight[AIWEAP_MELEE_RANGE] = 0.3f;
-	AIWeapons[WEAP_HYPERBLASTER].weaponItem = GetItemByIndex(ITI_HYPERBLASTER);
-	AIWeapons[WEAP_HYPERBLASTER].ammoItem = GetItemByIndex(ITI_CELLS);
+	AIWeapons[WEAP_HYPERBLASTER].weaponItem = GetItemByIndex(ITI_Q2_HYPERBLASTER);
 
 	//WEAP_RAILGUN
 	AIWeapons[WEAP_RAILGUN].aimType = AI_AIMSTYLE_INSTANTHIT;
@@ -137,8 +114,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_RAILGUN].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.6f;
 	AIWeapons[WEAP_RAILGUN].RangeWeight[AIWEAP_SHORT_RANGE] = 0.4f;
 	AIWeapons[WEAP_RAILGUN].RangeWeight[AIWEAP_MELEE_RANGE] = 0.3f;
-	AIWeapons[WEAP_RAILGUN].weaponItem = GetItemByIndex(ITI_RAILGUN);
-	AIWeapons[WEAP_RAILGUN].ammoItem = GetItemByIndex(ITI_SLUGS);
+	AIWeapons[WEAP_RAILGUN].weaponItem = GetItemByIndex(ITI_Q2_RAILGUN);
 
 	//WEAP_BFG
 	AIWeapons[WEAP_BFG].aimType = AI_AIMSTYLE_PREDICTION_EXPLOSIVE;
@@ -146,8 +122,7 @@ void AI_InitAIWeapons (void)
 	AIWeapons[WEAP_BFG].RangeWeight[AIWEAP_MEDIUM_RANGE] = 0.6f;
 	AIWeapons[WEAP_BFG].RangeWeight[AIWEAP_SHORT_RANGE] = 0.7f;
 	AIWeapons[WEAP_BFG].RangeWeight[AIWEAP_MELEE_RANGE] = 0.0f;
-	AIWeapons[WEAP_BFG].weaponItem = GetItemByIndex(ITI_BFG10K);
-	AIWeapons[WEAP_BFG].ammoItem = GetItemByIndex(ITI_CELLS);
+	AIWeapons[WEAP_BFG].weaponItem = GetItemByIndex(ITI_Q2_BFG10K);
 
 #if CTF
 	//WEAP_GRAPPLE

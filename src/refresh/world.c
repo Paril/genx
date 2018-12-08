@@ -77,7 +77,7 @@ static bool _GL_LightPoint(vec3_t start, vec3_t color)
     bsp_t           *bsp;
 	// Generations
     int             i;
-	modelhandle_t	index;
+	qhandle_t		index;
     lightpoint_t    pt;
     vec3_t          end, mins, maxs;
     entity_t        *ent;
@@ -100,15 +100,15 @@ static bool _GL_LightPoint(vec3_t start, vec3_t color)
         ent = &glr.fd.entities[i];
         index = ent->model;
 		// Generations
-        if (index.model.type != MODELHANDLE_BSP)
+        if (MODEL_HANDLE_TYPE(index) != MODELHANDLE_BSP)
             break;  // BSP models are at the start of entity array
 
 		// Generations
-        if (index.model.id < 1 || index.model.id >= bsp->nummodels)
+        if (MODEL_HANDLE_ID(index) < 1 || MODEL_HANDLE_ID(index) >= bsp->nummodels)
             continue;
 
 		// Generations
-        model = &bsp->models[index.model.id];
+        model = &bsp->models[MODEL_HANDLE_ID(index)];
         if (!model->numfaces)
             continue;
 

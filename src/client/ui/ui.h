@@ -101,24 +101,20 @@ typedef struct menuFrameWork_s {
     bool transparent;
     bool keywait;
 
-	// Generations
-    pichandle_t image;
+    qhandle_t image;
     color_t color;
     int y1, y2;
 
     int mins[2];
     int maxs[2];
 
-	// Generations
-    pichandle_t banner;
+    qhandle_t banner;
     vrect_t banner_rc;
 
-	// Generations
-    pichandle_t plaque;
+    qhandle_t plaque;
     vrect_t plaque_rc;
 
-	// Generations
-    pichandle_t logo;
+    qhandle_t logo;
     vrect_t logo_rc;
 
     bool (*push)(struct menuFrameWork_s *);
@@ -244,8 +240,7 @@ typedef struct menuStatic_s {
 
 typedef struct menuBitmap_s {
     menuCommon_t generic;
-	// Generations
-    pichandle_t pics[2];
+    qhandle_t pics[2];
     char *cmd;
 } menuBitmap_t;
 
@@ -293,14 +288,12 @@ typedef struct uiStatic_s {
     playerModelInfo_t pmi[MAX_PLAYERMODELS];
     char weaponModel[32];
 
-	// Generations
-    pichandle_t backgroundHandle;
-    pichandle_t fontHandle;
-    pichandle_t cursorHandle;
+    qhandle_t backgroundHandle;
+    qhandle_t fontHandle;
+    qhandle_t cursorHandle;
     int cursorWidth, cursorHeight;
 
-	// Generations
-    pichandle_t bitmapCursors[NUM_CURSOR_FRAMES];
+    qhandle_t bitmapCursors[NUM_CURSOR_FRAMES];
 
     struct {
         color_t background;

@@ -820,9 +820,7 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 
 void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to)
 {
-    int     i;
     int     pflags;
-    int     statbits;
 
     if (!to)
         Com_Error(ERR_DROP, "%s: NULL", __func__);
@@ -979,6 +977,128 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
             MSG_WriteShort(to->stats[i]);*/
 }
 
+#define SPAN_CONTENT		(1 << 7)
+
+static bool PackRLDE(const void *from, const void *to, const size_t len, void *out, int *numSpans, size_t *totalBytes)
+{
+	byte *end = out + len;
+	size_t i;
+	const byte *fromByte = from;
+	const byte *toByte = to;
+	byte *outByte = out;
+	bool currentZero = true;
+	bool nonzeroPacked = false;
+
+	*numSpans = -1;
+	*totalBytes = 0;
+
+	for (i = 0; i <= len; i++)
+	{
+		bool isFirst = *numSpans == -1;
+		bool isLast = i == len;
+		bool isZero = isLast ? true : !(*toByte - *fromByte);
+
+		if (isFirst || i == len ||
+			*outByte == (SPAN_CONTENT - 1) || currentZero != isZero)
+		{
+			// mark as having content and not zeros
+			if (!isFirst && !currentZero)
+			{
+				*totalBytes += *outByte;
+
+				*outByte |= SPAN_CONTENT;
+				nonzeroPacked = true;
+			}
+
+			if (isLast)
+				break;
+
+			(*numSpans)++;
+			(*totalBytes)++;
+
+			if (!isFirst)
+				outByte++;
+
+			if (outByte >= end)
+				Com_Error(ERR_DROP, "RLZE overrun");
+
+			currentZero = isZero;
+		}
+		
+		(*outByte)++;
+		toByte++;
+		fromByte++;
+	}
+
+	return nonzeroPacked;
+}
+
+static void WriteRLDE(const void *from, const void *to, const void *spans, const int numSpans)
+{
+	size_t i;
+	const byte *span = spans;
+	const byte *fromByte = from;
+	const byte *toByte = to;
+
+	// write spans
+	MSG_WriteData(spans, numSpans);
+	MSG_WriteByte(0); // 0 ends span list
+
+	for (i = 0; i < numSpans; i++, span++)
+	{
+		if (!*span)
+			break;
+		else if ((*span) & SPAN_CONTENT)
+		{
+			int x;
+			// content span from span to span + *span
+			for (x = 0; x < (*span & ~SPAN_CONTENT); x++, toByte++, fromByte++)
+				MSG_WriteByte(*toByte - *fromByte);
+		}
+		else
+		{
+			// skip zeroes
+			toByte += *span;
+			fromByte += *span;
+		}
+	}
+}
+
+static void ReadRLDE(const void *from, void *to, const size_t len)
+{
+	byte spans[len];
+	byte span;
+	size_t numSpans = 0;
+
+	// read spans
+	while ((span = MSG_ReadByte()))
+		spans[numSpans++] = span;
+	
+	const byte *spanPtr = spans;
+	const byte *fromByte = from;
+	byte *toByte = to;
+
+	size_t i;
+	for (i = 0; i < numSpans; i++, spanPtr++)
+	{
+		if (*spanPtr & SPAN_CONTENT)
+		{
+			// contents
+			size_t x;
+
+			for (x = 0; x < (*spanPtr & ~SPAN_CONTENT); x++, toByte++, fromByte ? fromByte++ : (void)0)
+				*toByte = (fromByte ? *fromByte : 0) + MSG_ReadByte();
+		}
+		else
+		{
+			toByte += *spanPtr;
+
+			if (fromByte)
+				fromByte += *spanPtr;
+		}
+	}
+}
+
 int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 	player_packed_t    *to,
 	msgPsFlags_t       flags)
@@ -1084,59 +1204,13 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 	if (to->view_events != from->view_events)
 		pflags |= PS_VIEWEVENTS;
 
-	/*int statbits[3] = { 0, 0, 0 };
-	byte whiches = 0;
-
-	for (int i = 0; i < MAX_STATS; i++)
-	{
-		if (to->stats[i] != from->stats[i])
-		{
-			byte which = 0;
-
-			if (to->stats[i] > SHRT_MAX || to->stats[i] < SHRT_MIN)
-				which = 2;
-			else if (to->stats[i] > CHAR_MAX || to->stats[i] < CHAR_MIN)
-				which = 1;
-
-			whiches = max(whiches, (byte)(which + 1));
-
-			statbits[which] |= 1 << i;
-		}
-	}
-
-	if (whiches)*/
-	int16_t numSpans = -1;
 	uint8_t spans[sizeof(player_stats_t)] = { 0 };
-	uint8_t *toStatPtr = (uint8_t *) &to->stats;
-	uint8_t *fromStatPtr = (uint8_t *) &from->stats;
-	bool currentZero = true;
+	int numSpans;
+	size_t spanSize;
 
-	for (size_t i = 0; i <= sizeof(player_stats_t); i++)
-	{
-		bool isFirst = numSpans == -1;
-		bool isLast = i == sizeof(player_stats_t);
-		bool isZero = isLast ? true : !(*toStatPtr - *fromStatPtr);
+	bool nonzeroPacked = PackRLDE(&from->stats, &to->stats, sizeof(to->stats), spans, &numSpans, &spanSize);
 
-		if (isFirst || i == sizeof(player_stats_t) ||
-			spans[numSpans] == 127 || currentZero != isZero)
-		{
-			// mark as having content and not zeros
-			if (!isFirst && !currentZero)
-				spans[numSpans] |= 1 << 7;
-
-			if (isLast)
-				break;
-
-			numSpans++;
-			currentZero = isZero;
-		}
-		
-		spans[numSpans]++;
-		toStatPtr++;
-		fromStatPtr++;
-	}
-
-	if (numSpans)
+	if (nonzeroPacked)
 		eflags |= EPS_STATS;
 
 	//
@@ -1208,7 +1282,8 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 
 	if (pflags & PS_GUNS)
 	{
-		for (int i = 0; i < MAX_PLAYER_GUNS; ++i)
+		int i, x;
+		for (i = 0; i < MAX_PLAYER_GUNS; ++i)
 		{
 			if (memcmp(&to->guns[i], &from->guns[i], sizeof(from->guns[i])) == 0)
 				continue;
@@ -1240,7 +1315,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 			{
 				to->guns[i].frame = from->guns[i].frame;
 
-				for (int x = 0; x < 3; ++x)
+				for (x = 0; x < 3; ++x)
 				{
 					to->guns[i].offset[x] = from->guns[i].offset[x];
 					to->guns[i].angles[x] = from->guns[i].angles[x];
@@ -1254,10 +1329,10 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 			if (changed_bits & PS_GUN_FRAME)
 				MSG_WriteByte(to->guns[i].frame);
 			if (changed_bits & PS_GUN_OFFSET)
-				for (int x = 0; x < 3; ++x)
+				for (x = 0; x < 3; ++x)
 					MSG_WriteChar(to->guns[i].offset[x]);
 			if (changed_bits & PS_GUN_ANGLE)
-				for (int x = 0; x < 3; ++x)
+				for (x = 0; x < 3; ++x)
 					MSG_WriteChar(to->guns[i].angles[x]);
 		}
 
@@ -1279,30 +1354,14 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 
 	// send stats
 	if (eflags & EPS_STATS) {
-		/*MSG_WriteByte(whiches);
+		bool fullRefresh = spanSize > sizeof(from->stats);
 
-		for (byte b = 0; b < whiches; ++b) {
-			MSG_WriteLong(statbits[b]);
+		MSG_WriteByte(fullRefresh);
 
-			for (int i = 0; i < MAX_STATS; i++)
-			{
-				if (statbits[b] & (1 << i)) {
-					switch (b)
-					{
-					case 0:
-						MSG_WriteChar(to->stats[i]);
-						break;
-					case 1:
-						MSG_WriteShort(to->stats[i]);
-						break;
-					case 2:
-						MSG_WriteLong(to->stats[i]);
-						break;
-					}
-				}
-			}
-		}*/
-		MSG_WriteData(&to->stats, sizeof(to->stats));
+		if (fullRefresh)
+			MSG_WriteData(&to->stats, sizeof(to->stats));
+		else
+			WriteRLDE(&from->stats, &to->stats, spans, numSpans);
 	}
 
 	if (pflags & PS_VIEWEVENTS)
@@ -2090,9 +2149,6 @@ void MSG_ParseDeltaPlayerstate_Default(const player_state_t *from,
                                        player_state_t *to,
                                        int            flags)
 {
-    int         i;
-    int         statbits;
-
     if (!to) {
         Com_Error(ERR_DROP, "%s: NULL", __func__);
     }
@@ -2203,8 +2259,6 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 	int               flags,
 	int               extraflags)
 {
-    int         i;
-	int         statbits;
 
 	if (!to) {
 		Com_Error(ERR_DROP, "%s: NULL", __func__);
@@ -2324,30 +2378,12 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 	// parse stats
 	if (extraflags & EPS_STATS) {
 		// parse stats
-		/*byte whiches = MSG_ReadByte();
+		bool fullRefresh = MSG_ReadByte();
 
-		for (byte b = 0; b < whiches; ++b)
-		{
-			statbits = MSG_ReadLong();
-
-			for (i = 0; i < MAX_STATS; i++) {
-				if (statbits & (1U << i)) {
-					switch (b)
-					{
-					case 0:
-						to->stats[i] = MSG_ReadChar();
-						break;
-					case 1:
-						to->stats[i] = MSG_ReadShort();
-						break;
-					case 2:
-						to->stats[i] = MSG_ReadLong();
-						break;
-					}
-				}
-			}
-		}*/
-		memcpy(&to->stats, MSG_ReadData(sizeof(to->stats)), sizeof(to->stats));
+		if (fullRefresh)
+			memcpy(&to->stats, MSG_ReadData(sizeof(to->stats)), sizeof(to->stats));
+		else
+			ReadRLDE(from ? &from->stats : NULL, &to->stats, sizeof(to->stats));
 	}
 
 	if (flags & PS_VIEWEVENTS)

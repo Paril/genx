@@ -263,16 +263,16 @@ typedef struct maliasmesh_s {
 typedef struct image_s image_t;
 
 typedef struct {
-    int             width, height;
-    int             origin_x, origin_y;
-    image_t			*image;
+    int     width, height;
+    int     origin_x, origin_y;
+    image_t	*image;
 } mspriteframe_t;
 
 typedef struct {
-	int			width, height;
-	int			origin_x, origin_y;
-	bool		invert_x;
-	image_t		*image;
+	int		width, height;
+	int		origin_x, origin_y;
+	bool	invert_x;
+	image_t	*image;
 } mspritedirframe_t;
 
 typedef struct {
@@ -282,32 +282,57 @@ typedef struct {
 typedef int modeltype_t;
 
 typedef struct {
-	modelhandle_t		model;
+	qhandle_t	model;
 } mweaponscript_sprite_t;
 
+typedef enum {
+	anchor_top_left,
+	anchor_top_center,
+	anchor_top_right,
+	anchor_center_right,
+	anchor_bottom_right,
+	anchor_bottom_center,
+	anchor_bottom_left,
+	anchor_center_left,
+	anchor_center
+} mweaponscript_draw_anchor_t;
+
+typedef enum {
+	flip_x = 1,
+	flip_y = 2
+} mweaponscript_draw_flip_t;
+
+typedef enum {
+	lerp_draws = 1,
+	lerp_translates = 2
+} mweaponscript_frame_lerp_t;
+
 typedef struct {
-	bool				draw;
-	int					sprite_frame;
-	vec2_t				translate;
+	int								sprite_frame;
+	mweaponscript_draw_flip_t		flip;
+	vec2_t							offset;
+	mweaponscript_draw_anchor_t		my;
+	mweaponscript_draw_anchor_t		at;
+	bool							of_fullscreen;
+	bool							draw;
 } mweaponscript_frame_draw_t;
 
 typedef struct {
 	mweaponscript_frame_draw_t	*draws; // count = num_sprites
+	mweaponscript_frame_lerp_t	lerp;
 	vec2_t						translate;
-	bool						lerp;
 } mweaponscript_frame_t;
 
-// total = sizeof(mweaponscript_t) + (sizeof(mweaponscript_sprite_t) * num_sprites) + ((sizeof(mweaponscript_frame_t) + sizeof(mweaponscript_frame_draw_t) * num_sprites) * num_frames)
 typedef struct {
 	vec2_t					view;
 
 	int						num_sprites;
 	int						num_frames;
-
-	vec2_t					translate;
+	int						num_anim_frames;
 
 	mweaponscript_sprite_t	*sprites; // count = num_sprites
 	mweaponscript_frame_t	*frames; // count = num_frames
+	int						*anim_frames; // count = num_anim_frames
 } mweaponscript_t;
 
 typedef struct model_s {
@@ -354,8 +379,8 @@ void MOD_FreeAll(void);
 void MOD_Init(void);
 void MOD_Shutdown(void);
 
-model_t *MOD_ForHandle(modelhandle_t h, gametype_t game);
-modelhandle_t R_RegisterModel(const char *name);
+model_t *MOD_ForHandle(qhandle_t h, gametype_t game);
+qhandle_t R_RegisterModel(const char *name);
 
 /*
  * gl_surf.c

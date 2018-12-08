@@ -518,7 +518,6 @@ void G_SetStats(edict_t *ent)
 {
     gitem_t     *item;
 	itemid_e    index;
-	int         cells = 0;
     int         power_armor_type = 0;
 
     //
@@ -531,13 +530,13 @@ void G_SetStats(edict_t *ent)
     //
     // ammo
     //
-    if (game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) {
+    if (game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(ent->client->pers.weapon)] <= 0) {
         ent->client->ps.stats.ammo_icon = 0;
         ent->client->ps.stats.ammo = 0;
     } else {
         //item = &itemlist[ent->client->gunstates[GUN_MAIN].ammo_index];
         //ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
-		ent->client->ps.stats.ammo_icon = gi.imageindex("a_shells");
+		ent->client->ps.stats.ammo_icon = gi.imageindex(ent->client->pers.weapon->ammo_icon);
         ent->client->ps.stats.ammo = (int) floorf(PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon));
     }
 
@@ -548,12 +547,11 @@ void G_SetStats(edict_t *ent)
 	{
 		power_armor_type = PowerArmorType(ent);
 		if (power_armor_type) {
-			cells = ent->client->pers.inventory[ITI_CELLS];
-			if (cells == 0) {
+			if (ent->client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB) {
 				// ran out of cells for power armor
 				ent->flags &= ~FL_POWER_ARMOR;
 				gi.sound(ent, CHAN_ITEM, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
-				power_armor_type = 0;;
+				power_armor_type = 0;
 			}
 		}
 	}
@@ -562,7 +560,7 @@ void G_SetStats(edict_t *ent)
     if (power_armor_type && (!index || (level.framenum & (8 * game.framediv)))) {
         // flash between power armor and other armor icon
         ent->client->ps.stats.armor_icon = gi.imageindex("i_powershield");
-        ent->client->ps.stats.armor = cells;
+        ent->client->ps.stats.armor = (int)(ent->client->pers.ammo * AMMO_PER_POWER_ARMOR_ABSORB);
     } else if (index) {
         item = GetItemByIndex(index);
         ent->client->ps.stats.armor_icon = gi.imageindex(item->icon);
@@ -697,7 +695,7 @@ void G_SetStats(edict_t *ent)
 			--ent->client->ps.stats.q1.face_anim;
 
 		if (ent->client->pers.weapon)
-			ent->client->ps.stats.q1.cur_weap = ITEM_INDEX(ent->client->pers.weapon) - ITI_BLASTER;
+			ent->client->ps.stats.q1.cur_weap = ITEM_INDEX(ent->client->pers.weapon) - ITI_WEAPON_1;
 		else
 			ent->client->ps.stats.q1.cur_weap = 0;
 	}
@@ -736,7 +734,8 @@ void G_SetStats(edict_t *ent)
 	// Duke stuff
 	else if (ent->s.game == GAME_DUKE)
 	{
-		ent->client->ps.stats.duke.weapons = 0;
+		size_t i;
+		ent->client->ps.stats.duke.weapons = ent->client->ps.stats.duke.selected_weapon = 0;
 
 		struct {
 			itemid_e	item;
@@ -750,11 +749,11 @@ void G_SetStats(edict_t *ent)
 			{ ITI_DUKE_PIPEBOMBS, IT_DUKE_PIPE, IT_DUKE_INDEX_PIPE },
 			//{ ITI_DUKE_SHRINKER, IT_DUKE_SHRINKER, IT_DUKE_INDEX_SHRINKER },
 			{ ITI_DUKE_DEVASTATOR, IT_DUKE_DEVASTATOR, IT_DUKE_INDEX_DEVASTATOR },
-			//{ ITI_DUKE_TRIPWIRE, IT_DUKE_TRIPWIRE, IT_DUKE_INDEX_TRIPWIRE },
+			{ ITI_DUKE_TRIPWIRES, IT_DUKE_TRIPWIRE, IT_DUKE_INDEX_TRIPWIRE },
 			{ ITI_DUKE_FREEZER, IT_DUKE_FREEZETHROWER, IT_DUKE_INDEX_FREEZETHROWER }
 		};
 
-		for (size_t i = 0; i < q_countof(weapon_hud_mapping); i++)
+		for (i = 0; i < q_countof(weapon_hud_mapping); i++)
 		{
 			if (ent->client->pers.inventory[weapon_hud_mapping[i].item])
 				ent->client->ps.stats.duke.weapons |= weapon_hud_mapping[i].flag;
@@ -770,7 +769,7 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats.duke.ammo_pipebombs = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
 		//ent->client->ps.stats.duke.ammo_shrinker = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
 		ent->client->ps.stats.duke.ammo_devastator = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
-//		ent->client->ps.stats.duke.ammo_tripwire = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRE));
+		ent->client->ps.stats.duke.ammo_tripwire = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRES));
 		ent->client->ps.stats.duke.ammo_freezer = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
 		
 		ent->client->ps.stats.duke.max_ammo_clip = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
@@ -780,7 +779,7 @@ void G_SetStats(edict_t *ent)
 		ent->client->ps.stats.duke.max_ammo_pipebombs = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
 		//ent->client->ps.stats.duke.max_ammo_shrinker = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
 		ent->client->ps.stats.duke.max_ammo_devastator = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
-//		ent->client->ps.stats.duke.max_ammo_tripwire = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRE));
+		ent->client->ps.stats.duke.max_ammo_tripwire = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRES));
 		ent->client->ps.stats.duke.max_ammo_freezer = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
 	}
 }

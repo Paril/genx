@@ -93,7 +93,7 @@ void Weapon_Doom(edict_t *ent, int num_frames, void(*fire) (edict_t *ent, gunind
 			if ((level.time - ent->client->respawn_time) > 500 &&
 				ent->attack_finished_time < level.time)
 			{
-				if ((game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
+				if ((game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
 						((ent->s.game == GAME_DUKE && ITEM_INDEX(ent->client->pers.weapon) == ITI_DUKE_PIPEBOMBS && ent->client->pers.alt_weapon) || (ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon)))) {
 					fire(ent, gun, true);
 
@@ -507,7 +507,8 @@ void fire_doom_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 
 void fire_doom_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int count, int hspread, int vspread, meansOfDeath_t mod)
 {
-	for (int i = 0; i < count; ++i)
+	int i;
+	for (i = 0; i < count; ++i)
 		fire_doom_lead(self, start, aimdir, damage, kick, te_impact, hspread, vspread, mod);
 
 	ApplyMultiDamage(self, DAMAGE_NO_PARTICLES, mod);
@@ -883,5 +884,108 @@ void weapon_doom_bfg_fire(edict_t *ent, gunindex_e gun, bool first)
 		}
 
 		ent->client->ps.guns[gun].frame++;
+	}
+}
+
+static void Weapon_Doom_Fist(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 6, weapon_doom_punch_fire, gun);
+}
+
+static void Weapon_Doom_Pistol(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 6, weapon_doom_pistol_fire, gun);
+}
+
+static void Weapon_Doom_Shotgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 10, weapon_doom_shotgun_fire, gun);
+}
+
+static void Weapon_Doom_SuperShotgun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 17, weapon_doom_sshotgun_fire, gun);
+}
+
+static void Weapon_Doom_Chaingun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 3, weapon_doom_chaingun_fire, gun);
+}
+
+static void Weapon_Doom_RocketLauncher(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 8, weapon_doom_rocket_fire, gun);
+}
+
+static void Weapon_Doom_PlasmaGun(edict_t *ent, gunindex_e gun)
+{
+	Weapon_Doom(ent, 4, weapon_doom_hyperblaster_fire, gun);
+}
+
+static void Weapon_Doom_BFG(edict_t *ent, gunindex_e gun)
+{
+	if (ent->client->gunstates[gun].weaponstate != WEAPON_FIRING)
+		ent->yaw_speed = 0;
+
+	Weapon_Doom(ent, 5, weapon_doom_bfg_fire, gun);
+}
+
+static void Weapon_Doom_Chainsaw(edict_t *ent, gunindex_e gun)
+{
+	if (ent->client->gunstates[gun].weaponstate == WEAPON_ACTIVATING && ent->client->silencer_shots == 0)
+	{
+		gi.sound(ent, CHAN_WEAPON, gi.soundindex("doom/SAWUP.wav"), 1, ATTN_NORM, 0);
+		ent->client->silencer_shots = 1;
+	}
+	else if (ent->client->gunstates[gun].weaponstate == WEAPON_READY)
+	{
+		if (--ent->client->silencer_shots <= 0 && !(ent->client->buttons & BUTTON_ATTACK))
+		{
+			gi.sound(ent, CHAN_WEAPON, gi.soundindex("doom/SAWIDL.wav"), 1, ATTN_NORM, 0);
+			ent->client->silencer_shots = 2;
+		}
+
+		ent->client->ps.guns[gun].frame ^= 1;
+
+		if (ent->client->ps.guns[gun].frame >= 2)
+			ent->client->ps.guns[gun].frame = 0;
+	}
+	else if (ent->client->gunstates[gun].weaponstate == WEAPON_DROPPING)
+		ent->client->silencer_shots = 0;
+
+	Weapon_Doom(ent, 4, weapon_doom_chainsaw_fire, gun);
+}
+
+void Weapon_Doom_Run(edict_t *ent, gunindex_e gun)
+{
+	switch (ITEM_INDEX(ent->client->pers.weapon))
+	{
+	case ITI_DOOM_FIST:
+		Weapon_Doom_Fist(ent, gun);
+		break;
+	case ITI_DOOM_PISTOL:
+		Weapon_Doom_Pistol(ent, gun);
+		break;
+	case ITI_DOOM_SHOTGUN:
+		Weapon_Doom_Shotgun(ent, gun);
+		break;
+	case ITI_DOOM_SUPER_SHOTGUN:
+		Weapon_Doom_SuperShotgun(ent, gun);
+		break;
+	case ITI_DOOM_CHAINGUN:
+		Weapon_Doom_Chaingun(ent, gun);
+		break;
+	case ITI_DOOM_ROCKET_LAUNCHER:
+		Weapon_Doom_RocketLauncher(ent, gun);
+		break;
+	case ITI_DOOM_PLASMA_GUN:
+		Weapon_Doom_PlasmaGun(ent, gun);
+		break;
+	case ITI_DOOM_BFG:
+		Weapon_Doom_BFG(ent, gun);
+		break;
+	case ITI_DOOM_CHAINSAW:
+		Weapon_Doom_Chainsaw(ent, gun);
+		break;
 	}
 }

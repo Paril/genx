@@ -125,7 +125,7 @@ void P_DamageFeedback(edict_t *player)
 			}
 			break;
 		case GAME_Q1:
-			if (client->pers.weapon && client->pers.weapon->weapmodel == WEAP_BLASTER)
+			if (client->pers.weapon && ITEM_INDEX(client->pers.weapon) == ITI_Q1_AXE)
 			{
 				player->s.frame = 29 - 1;
 				client->anim_end = 34;
@@ -1177,8 +1177,6 @@ G_SetClientSound
 */
 void G_SetClientSound(edict_t *ent)
 {
-	int weap;
-
 	if (ent->client->pers.game_helpchanged != game.helpchanged) {
 		ent->client->pers.game_helpchanged = game.helpchanged;
 		ent->client->pers.helpchanged = 1;
@@ -1190,17 +1188,11 @@ void G_SetClientSound(edict_t *ent)
 		gi.sound(ent, CHAN_VOICE, gi.soundindex("misc/pc_up.wav"), 1, ATTN_STATIC, 0);
 	}
 
-
-	if (ent->client->pers.weapon)
-		weap = ent->client->pers.weapon->weapmodel;
-	else
-		weap = WEAP_NONE;
-
 	if (ent->waterlevel && (ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME)))
 		ent->s.sound = snd_fry;
-	else if (ent->s.game == GAME_Q2 && weap == WEAP_RAILGUN)
+	else if (ent->s.game == GAME_Q2 && ITEM_INDEX(ent->client->pers.weapon) == ITI_Q2_RAILGUN)
 		ent->s.sound = gi.soundindex("weapons/rg_hum.wav");
-	else if (ent->s.game == GAME_Q2 && weap == WEAP_BFG)
+	else if (ent->s.game == GAME_Q2 && ITEM_INDEX(ent->client->pers.weapon) == ITI_Q2_BFG10K)
 		ent->s.sound = gi.soundindex("weapons/bfg_hum.wav");
 	else if (ent->s.game == GAME_Q1 && ent->client->breather_time > level.time)
 		ent->s.sound = gi.soundindex("q1/items/inv3.wav");
@@ -1319,7 +1311,7 @@ newanim:
 			}
 			break;
 		case GAME_Q1:
-			if (ent->client->pers.weapon && ent->client->pers.weapon->weapmodel == WEAP_BLASTER)
+			if (ent->client->pers.weapon && ITEM_INDEX(ent->client->pers.weapon) == ITI_Q1_AXE)
 			{
 				ent->s.frame = 0;
 				client->anim_end = 5;
@@ -1368,7 +1360,7 @@ newanim:
 			}
 			break;
 		case GAME_Q1:
-			if (ent->client->pers.weapon && ent->client->pers.weapon->weapmodel == WEAP_BLASTER)
+			if (ent->client->pers.weapon && ITEM_INDEX(ent->client->pers.weapon) == ITI_Q1_AXE)
 			{
 				ent->s.frame = 17;
 				client->anim_end = 28;

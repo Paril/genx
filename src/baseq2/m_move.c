@@ -540,7 +540,6 @@ void M_StopBotheringWithPaths(edict_t *self)
 }
 
 void plat_go_up(edict_t *self);
-void q1_plat_go_up(edict_t *self);
 
 void M_NavigatorNodeReached(edict_t *self)
 {
@@ -587,12 +586,7 @@ void M_NavigatorNodeReached(edict_t *self)
 		{
 			// platform valid to use for us
 			if (tr.ent->moveinfo.state == STATE_BOTTOM)
-			{
-				if (tr.ent->s.game == GAME_Q1 || level.level_type == GAME_Q1)
-					q1_plat_go_up(tr.ent);
-				else
-					plat_go_up(tr.ent);
-			}
+				plat_go_up(tr.ent);
 			else
 			{
 				// plat is already moving, we got here too late, find another way

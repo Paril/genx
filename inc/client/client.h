@@ -127,6 +127,22 @@ bool SCR_ParseColor(const char *s, color_t *color);
 
 float V_CalcFov(float fov_x, float width, float height);
 
+enum {
+	MODELHANDLE_EMPTY,
+
+	MODELHANDLE_BSP,
+	MODELHANDLE_RAW,
+	MODELHANDLE_GAMED
+};
+
+typedef struct {
+	uint32_t	type : 3;
+	uint32_t	id : 29;
+} modelhandle_t;
+
+#define MODEL_HANDLE_TYPE(x)	(((modelhandle_t *)&(x))->type)
+#define MODEL_HANDLE_ID(x)		(((modelhandle_t *)&(x))->id)
+
 #else // USE_CLIENT
 
 #define CL_Init()                       (void)0

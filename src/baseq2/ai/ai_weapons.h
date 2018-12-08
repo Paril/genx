@@ -54,4 +54,4 @@ typedef struct
 
 } ai_weapon_t;
 
-extern ai_weapon_t		AIWeapons[WEAP_TOTAL];
+extern ai_weapon_t		AIWeapons[ITI_WEAPONS_END - ITI_WEAPONS_START + 2];

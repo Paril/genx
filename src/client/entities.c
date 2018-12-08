@@ -20,12 +20,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client.h"
 #include "common/modelscript.h"
 
-extern modelhandle_t cl_mod_powerscreen;
-extern modelhandle_t cl_mod_laser;
-extern modelhandle_t cl_mod_dmspot;
-extern soundhandle_t cl_sfx_footsteps[4];
+extern qhandle_t cl_mod_powerscreen;
+extern qhandle_t cl_mod_laser;
+extern qhandle_t cl_mod_dmspot;
+extern qhandle_t cl_sfx_footsteps[4];
 
-extern modelhandle_t cl_mod_player;
+extern qhandle_t cl_mod_player;
 
 /*
 =========================================================================
@@ -532,9 +532,9 @@ static void CL_AddPacketEntities(void)
 		// tweak the color of beams
 		if (renderfx & RF_BEAM) {
 			// the four beam colors are encoded in 32 bits of skinnum (hack)
-			ent.alpha = 0.30f;
+			ent.alpha = (s1->game == GAME_Q2) ? 0.30f : 1.0f;
 			ent.skinnum = (s1->skinnum >> ((Q_rand() % 4) * 8)) & 0xff;
-			ent.model.handle = 0;
+			ent.model = 0;
 		} else {
 			// set skin
 			if (s1->modelindex == 255) {
@@ -545,7 +545,7 @@ static void CL_AddPacketEntities(void)
 					ci = &cl.clientinfo[s1->skinnum & 0xff];
 					ent.skin = ci->skin;
 					ent.model = ci->model;
-					if (!ent.skin.handle || !ent.model.handle) {
+					if (!ent.skin || !ent.model) {
 						ent.skin = cl.baseclientinfo.skin;
 						ent.model = cl.baseclientinfo.model;
 						ci = &cl.baseclientinfo;
@@ -558,13 +558,13 @@ static void CL_AddPacketEntities(void)
 					}
 				} else {
 					ent.model = cl_mod_player;
-					ent.skin = (pichandle_t) { 0 };
+					ent.skin = 0;
 				}
 			} else {
 				ent.skinnum = s1->skinnum;
-				ent.skin = (pichandle_t) { 0 };
+				ent.skin = 0;
 				ent.model = cl.precache[s1->modelindex].model.handle;
-				if (ent.model.handle == cl_mod_laser.handle || ent.model.handle == cl_mod_dmspot.handle)
+				if (ent.model == cl_mod_laser || ent.model == cl_mod_dmspot)
 					renderfx |= RF_NOSHADOW;
 			}
 		}
@@ -577,7 +577,9 @@ static void CL_AddPacketEntities(void)
 		else
 			ent.game = cl_entities[cl.frame.clientNum + 1].current.game;
 
-		if (ent.model.model.type == MODELHANDLE_GAMED) {
+		ent.frame = -1;
+
+		if (MODEL_HANDLE_TYPE(ent.model) == MODELHANDLE_GAMED) {
 			entry = MSCR_EntryForHandle(ent.model, ent.game);
 
 			// don't render if we don't have an entry for us here
@@ -590,27 +592,31 @@ static void CL_AddPacketEntities(void)
 				renderfx |= entry->add_renderfx;
 			if (entry->skin)
 				ent.skinnum = entry->skin - 1;
+			if (entry->frame != -1)
+				ent.frame = ent.oldframe = entry->frame;
 		}
 
-		// set frame
-		if (effects & EF_ANIM01)
-			ent.frame = autoanim & 1;
-		else if (effects & EF_ANIM23)
-			ent.frame = 2 + (autoanim & 1);
-		else if (effects & EF_ANIM_ALL)
-			ent.frame = autoanim;
-		else if (effects & EF_ANIM_ALLFAST)
-		{
-			if (effects & EF_PENT)
+		if (ent.frame == -1) {
+			// set frame
+			if (effects & EF_ANIM01)
+				ent.frame = autoanim & 1;
+			else if (effects & EF_ANIM23)
+				ent.frame = 2 + (autoanim & 1);
+			else if (effects & EF_ANIM_ALL)
+				ent.frame = autoanim;
+			else if (effects & EF_ANIM_ALLFAST)
 			{
-				effects &= ~EF_PENT;
-				ent.frame = (cl.time / 170) + s1->number;
+				if (effects & EF_PENT)
+				{
+					effects &= ~EF_PENT;
+					ent.frame = (cl.time / 170) + s1->number;
+				}
+				else
+					ent.frame = cl.time / 100;
 			}
 			else
-				ent.frame = cl.time / 100;
+				ent.frame = s1->frame;
 		}
-		else
-			ent.frame = s1->frame;
 
 		// quad and pent can do different things on client
 		if (effects & EF_PENT) {
@@ -837,7 +843,7 @@ static void CL_AddPacketEntities(void)
 			V_AddEntity(&ent);
 		}
 
-		ent.skin = (pichandle_t) { 0 };       // never use a custom skin on others
+		ent.skin = 0;       // never use a custom skin on others
 		ent.skinnum = 0;
         ent.flags = 0;
 		ent.alpha = 0;
@@ -851,10 +857,10 @@ static void CL_AddPacketEntities(void)
 				if (i < 0 || i > cl.numWeaponModels - 1)
 					i = 0;
 				ent.model = ci->weaponmodel[i];
-				if (!ent.model.handle) {
+				if (!ent.model) {
 					if (i != 0)
 						ent.model = ci->weaponmodel[0];
-					if (!ent.model.handle)
+					if (!ent.model)
 						ent.model = cl.baseclientinfo.weaponmodel[0];
 				}
 			} else
@@ -1116,13 +1122,13 @@ static void CL_AddViewWeapon(void)
 	for (int index = GUN_MAIN; index < MAX_PLAYER_GUNS; ++index) {
 		memset(&gun, 0, sizeof(gun));
 
-		if (gun_model.handle) {
+		if (gun_model) {
 			gun.model = gun_model;  // development tool
 		} else {
 			gun.model = cl.precache[ps->guns[index].index].model.handle;
 		}
 
-		if (!gun.model.handle) {
+		if (!gun.model) {
 			return;
 		}
 
@@ -1175,7 +1181,7 @@ static void CL_AddViewWeapon(void)
 
 		gun.flags = 0;
 
-		if (gun.model.model.type == MODELHANDLE_GAMED) {
+		if (MODEL_HANDLE_TYPE(gun.model) == MODELHANDLE_GAMED) {
 			modelentry_t *entry = MSCR_EntryForHandle(gun.model, gun.game);
 
 			if (entry->add_renderfx)

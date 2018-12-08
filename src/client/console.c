@@ -65,8 +65,8 @@ typedef struct console_s {
                                     // for transparent notify lines
     bool    skipNotify;
 
-    pichandle_t   backImage;
-    pichandle_t   charsetImage;
+    qhandle_t   backImage;
+    qhandle_t   charsetImage;
 
     float   currentHeight;  // aproaches scr_conlines at scr_conspeed
     float   destHeight;     // 0.0 to 1.0 lines of console to display
@@ -676,28 +676,28 @@ void Con_RegisterMedia(void)
 	Q_snprintf(font, MAX_QPATH, "%%%s", con_font->string);
 
     con.charsetImage = R_RegisterImage(font, IT_FONT, IF_PERMANENT, &err);
-    if (!con.charsetImage.handle) {
+    if (!con.charsetImage) {
 		con.charsetImage = R_RegisterImage(con_font->string, IT_FONT, IF_PERMANENT, &err);
-		if (!con.charsetImage.handle) {
+		if (!con.charsetImage) {
 			if (strcmp(con_font->string, "conchars")) {
 				Com_WPrintf("Couldn't load %s: %s\n", con_font->string, Q_ErrorString(err));
 				Cvar_Reset(con_font);
 				con.charsetImage = R_RegisterImage("%conchars", IT_FONT, IF_PERMANENT, &err);
 			}
-			if (!con.charsetImage.handle) {
+			if (!con.charsetImage) {
 				Com_Error(ERR_FATAL, "Couldn't load pics/conchars.pcx: %s", Q_ErrorString(err));
 			}
 		}
     }
 
     con.backImage = R_RegisterImage(con_background->string, IT_PIC, IF_PERMANENT, &err);
-    if (!con.backImage.handle) {
+    if (!con.backImage) {
         if (strcmp(con_background->string, "conback")) {
             Com_WPrintf("Couldn't load %s: %s\n", con_background->string, Q_ErrorString(err));
             Cvar_Reset(con_background);
             con.backImage = R_RegisterImage("conback", IT_PIC, IF_PERMANENT, &err);
         }
-        if (!con.backImage.handle) {
+        if (!con.backImage) {
             Com_EPrintf("Couldn't load pics/conback.pcx: %s\n", Q_ErrorString(err));
         }
     }
@@ -808,10 +808,10 @@ static void Con_DrawNotify(void)
             skip = 5;
         }
 
-        R_DrawString(CHAR_WIDTH, v, 0, MAX_STRING_CHARS, text,
+        int startCursor = R_DrawString(CHAR_WIDTH, v, 0, MAX_STRING_CHARS, text,
                      con.charsetImage, CL_GetClientGame());
         con.chatPrompt.inputLine.visibleChars = con.linewidth - skip + 1;
-        IF_Draw(&con.chatPrompt.inputLine, skip * CHAR_WIDTH, v,
+        IF_Draw(&con.chatPrompt.inputLine, startCursor + CHAR_WIDTH, v,
                 UI_DRAWCURSOR, con.charsetImage, CL_GetClientGame());
     }
 }

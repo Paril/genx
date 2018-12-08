@@ -33,8 +33,7 @@ void Weapon_GrenadeLauncher(edict_t *ent, gunindex_e gun);
 void Weapon_Railgun(edict_t *ent, gunindex_e gun);
 void Weapon_BFG(edict_t *ent, gunindex_e gun);
 
-typedef enum
-{
+typedef enum {
 	HEALTH_NONE			= 0,
 	HEALTH_IGNORE_MAX   = 1,
 	HEALTH_TIMED        = 2
@@ -43,334 +42,287 @@ typedef enum
 void Use_Quad(edict_t *ent, gitem_t *item);
 static gtime_t  quad_drop_timeout_hack;
 
-game_iteminfo_t game_iteminfos[GAME_TOTAL] = {
-	{}, // None
-	// Q2
+#define GameInfoReplaceItem(old, new) info->item_redirects[old] = new
+#define GameInfoDummyItem(item) GameInfoReplaceItem(item, ITI_NULL)
+#define GameInfoStartsWith(item, count) info->item_starts[item] = count
+#define GameInfoDefaultItem(item) info->default_item = item
+#define GameInfoAmmoPickup(item, count) info->ammo_pickups[item] = count
+#define GameInfoHealthPickup GameInfoAmmoPickup
+#define GameInfoArmorStats(item, base_count, max_count, normal_protection, energy_protection) \
+	info->armors[item - ITI_JACKET_ARMOR] = (gitem_armor_t) { base_count, max_count, normal_protection, energy_protection }
+#define GameInfoWeaponAmmo(item, shots) info->ammo_usages[item] = info->default_ammo_usages[item] = COUNT_FOR_SHOTS(shots)
+
+static void InitGameInfoBase(game_iteminfo_t *info)
+{
+	itemid_e i;
+
+	for (i = 0; i < ITI_TOTAL; i++)
+		info->item_redirects[i] = info->ammo_usages[i] = info->default_ammo_usages[i] = -1;
+}
+
+static void InitQ2GameInfo(game_iteminfo_t *info)
+{
+	// no replacements
+	
+	GameInfoStartsWith(ITI_Q2_BLASTER, 1);
+	GameInfoStartsWith(ITI_Q2_SHOTGUN, 1);
+	
+	GameInfoDefaultItem(ITI_Q2_SHOTGUN);
+	
+	GameInfoAmmoPickup(ITI_Q2_SHOTGUN, 10);
+	GameInfoAmmoPickup(ITI_Q2_SUPER_SHOTGUN, 10);
+	GameInfoAmmoPickup(ITI_Q2_MACHINEGUN, 10);
+	GameInfoAmmoPickup(ITI_Q2_CHAINGUN, 10);
+	GameInfoAmmoPickup(ITI_Q2_GRENADE_LAUNCHER, 10);
+	GameInfoAmmoPickup(ITI_Q2_ROCKET_LAUNCHER, 10);
+	GameInfoAmmoPickup(ITI_Q2_HYPERBLASTER, 10);
+	GameInfoAmmoPickup(ITI_Q2_RAILGUN, 10);
+	GameInfoAmmoPickup(ITI_Q2_BFG10K, 10);
+	GameInfoAmmoPickup(ITI_Q2_GRENADES, 10);
+	
+	GameInfoHealthPickup(ITI_STIMPACK, 2);
+	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
+	GameInfoHealthPickup(ITI_LARGE_HEALTH, 25);
+	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);
+	
+	GameInfoArmorStats(ITI_JACKET_ARMOR, 25, 50, .30f, 0);
+	GameInfoArmorStats(ITI_COMBAT_ARMOR, 50, 100, .60f, .30f);
+	GameInfoArmorStats(ITI_BODY_ARMOR, 100, 200, .80f, .60f);
+	
+	GameInfoWeaponAmmo(ITI_Q2_SHOTGUN, 40);
+	GameInfoWeaponAmmo(ITI_Q2_SUPER_SHOTGUN, 20);
+	GameInfoWeaponAmmo(ITI_Q2_MACHINEGUN, 200);
+	GameInfoWeaponAmmo(ITI_Q2_CHAINGUN, 200);
+	GameInfoWeaponAmmo(ITI_Q2_GRENADE_LAUNCHER, 25);
+	GameInfoWeaponAmmo(ITI_Q2_ROCKET_LAUNCHER, 25);
+	GameInfoWeaponAmmo(ITI_Q2_HYPERBLASTER, 80);
+	GameInfoWeaponAmmo(ITI_Q2_RAILGUN, 15);
+	GameInfoWeaponAmmo(ITI_Q2_BFG10K, 4);
+	GameInfoWeaponAmmo(ITI_Q2_GRENADES, 25);
+}
+
+static void InitQ1GameInfo(game_iteminfo_t *info)
+{
+	// replace power screen/shield with invis
+	GameInfoReplaceItem(ITI_POWER_SCREEN, ITI_Q1_INVISIBILITY);
+	GameInfoReplaceItem(ITI_POWER_SHIELD, ITI_Q1_INVISIBILITY);
+
+	// dummy these
+	GameInfoDummyItem(ITI_ARMOR_SHARD);
+	GameInfoDummyItem(ITI_STIMPACK);
+	GameInfoDummyItem(ITI_SILENCER);
+	GameInfoDummyItem(ITI_ANCIENT_HEAD);
+	GameInfoDummyItem(ITI_ADRENALINE);
+	GameInfoDummyItem(ITI_BANDOLIER);
+	GameInfoDummyItem(ITI_AMMO_PACK);
+	
+	GameInfoStartsWith(ITI_Q1_AXE, 1);
+	GameInfoStartsWith(ITI_Q1_SHOTGUN, 1);
+
+	GameInfoDefaultItem(ITI_Q1_SHOTGUN);
+	
+	GameInfoAmmoPickup(ITI_Q1_SHOTGUN, 20);
+	GameInfoAmmoPickup(ITI_Q1_SUPER_SHOTGUN, 10);
+	GameInfoAmmoPickup(ITI_Q1_NAILGUN, 50);
+	GameInfoAmmoPickup(ITI_Q1_SUPER_NAILGUN, 25);
+	GameInfoAmmoPickup(ITI_Q1_GRENADE_LAUNCHER, 5);
+	GameInfoAmmoPickup(ITI_Q1_ROCKET_LAUNCHER, 5);
+	GameInfoAmmoPickup(ITI_Q1_THUNDERBOLT, 25);
+	
+	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
+	GameInfoHealthPickup(ITI_LARGE_HEALTH, 25);
+	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);		
+	
+	GameInfoArmorStats(ITI_JACKET_ARMOR, 100, 100, .30f, .30f);
+	GameInfoArmorStats(ITI_COMBAT_ARMOR, 150, 150, .60f, .60f);
+	GameInfoArmorStats(ITI_BODY_ARMOR, 200, 200, .80f, .80f);
+	
+	GameInfoWeaponAmmo(ITI_Q1_SHOTGUN, 40);
+	GameInfoWeaponAmmo(ITI_Q1_SUPER_SHOTGUN, 20);
+	GameInfoWeaponAmmo(ITI_Q1_NAILGUN, 200);
+	GameInfoWeaponAmmo(ITI_Q1_SUPER_NAILGUN, 100);
+	GameInfoWeaponAmmo(ITI_Q1_GRENADE_LAUNCHER, 25);
+	GameInfoWeaponAmmo(ITI_Q1_ROCKET_LAUNCHER, 25);
+	GameInfoWeaponAmmo(ITI_Q1_THUNDERBOLT, 60);
+}
+
+static void InitDoomGameInfo(game_iteminfo_t *info)
+{
+	// replace combat with jacket
+	GameInfoReplaceItem(ITI_COMBAT_ARMOR, ITI_DOOM_ARMOR);
+	
+	// replace power screen/shield with invis
+	GameInfoReplaceItem(ITI_POWER_SCREEN, ITI_DOOM_INVISIBILITY);
+	GameInfoReplaceItem(ITI_POWER_SHIELD, ITI_DOOM_INVISIBILITY);
+
+	// dummied items
+	GameInfoDummyItem(ITI_SILENCER);
+	GameInfoDummyItem(ITI_ANCIENT_HEAD);
+	GameInfoDummyItem(ITI_BANDOLIER);
+	
+	GameInfoStartsWith(ITI_DOOM_FIST, 1);
+	GameInfoStartsWith(ITI_DOOM_PISTOL, 1);
+
+	GameInfoDefaultItem(ITI_DOOM_PISTOL);
+
+	// weapon pickups
+	GameInfoAmmoPickup(ITI_DOOM_SHOTGUN, 15);
+	GameInfoAmmoPickup(ITI_DOOM_SUPER_SHOTGUN, 5);
+	GameInfoAmmoPickup(ITI_DOOM_CHAINGUN, 50);
+	GameInfoAmmoPickup(ITI_DOOM_PISTOL, 50);
+	GameInfoAmmoPickup(ITI_DOOM_ROCKET_LAUNCHER, 5);
+	GameInfoAmmoPickup(ITI_DOOM_PLASMA_GUN, 50);
+	GameInfoAmmoPickup(ITI_DOOM_BFG, 1);
+
+	// health
+	GameInfoHealthPickup(ITI_STIMPACK, 2);
+	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
+	GameInfoHealthPickup(ITI_LARGE_HEALTH, 25);
+	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);
+	
+	GameInfoArmorStats(ITI_JACKET_ARMOR, 100,  100, .33f, .33f);
+	GameInfoArmorStats(ITI_BODY_ARMOR, 200, 200, .50f, .50f);
+
+	GameInfoWeaponAmmo(ITI_DOOM_SHOTGUN, 40);
+	GameInfoWeaponAmmo(ITI_DOOM_SUPER_SHOTGUN, 20);
+	GameInfoWeaponAmmo(ITI_DOOM_CHAINGUN, 150);
+	GameInfoWeaponAmmo(ITI_DOOM_PISTOL, 150);
+	GameInfoWeaponAmmo(ITI_DOOM_ROCKET_LAUNCHER, 25);
+	GameInfoWeaponAmmo(ITI_DOOM_PLASMA_GUN, 60);
+	GameInfoWeaponAmmo(ITI_DOOM_BFG, 4);
+}
+
+static void InitDukeGameInfo(game_iteminfo_t *info)
+{
+	// replace all armors
+	GameInfoReplaceItem(ITI_BODY_ARMOR, ITI_DUKE_ARMOR);
+	GameInfoReplaceItem(ITI_COMBAT_ARMOR, ITI_DUKE_ARMOR);
+
+	// nulled items
+	GameInfoDummyItem(ITI_ARMOR_SHARD);
+	GameInfoDummyItem(ITI_STIMPACK);
+	
+	GameInfoStartsWith(ITI_DUKE_FOOT, 1);
+	GameInfoStartsWith(ITI_DUKE_PISTOL, 1);
+
+	GameInfoDefaultItem(ITI_DUKE_PISTOL);
+
+	// weapon pickups
+	GameInfoAmmoPickup(ITI_DUKE_PISTOL, 35);
+	GameInfoAmmoPickup(ITI_DUKE_CANNON, 50);
+	GameInfoAmmoPickup(ITI_DUKE_SHOTGUN, 10);
+	GameInfoAmmoPickup(ITI_DUKE_RPG, 4);
+	GameInfoAmmoPickup(ITI_DUKE_DEVASTATOR, 15);
+	GameInfoAmmoPickup(ITI_DUKE_PIPEBOMBS, 5);
+	GameInfoAmmoPickup(ITI_DUKE_TRIPWIRES, 5);
+	GameInfoAmmoPickup(ITI_DUKE_FREEZER, 5);
+	
+	// health
+	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
+	GameInfoHealthPickup(ITI_LARGE_HEALTH, 30);
+	GameInfoHealthPickup(ITI_MEGA_HEALTH, 50);
+
+	GameInfoArmorStats(ITI_JACKET_ARMOR, 100, 100, .50f, .50f);
+
+	GameInfoWeaponAmmo(ITI_DUKE_PISTOL, 150);
+	GameInfoWeaponAmmo(ITI_DUKE_CANNON, 150);
+	GameInfoWeaponAmmo(ITI_DUKE_SHOTGUN, 45);
+	GameInfoWeaponAmmo(ITI_DUKE_RPG, 20);
+	GameInfoWeaponAmmo(ITI_DUKE_DEVASTATOR, 75);
+	GameInfoWeaponAmmo(ITI_DUKE_PIPEBOMBS, 15);
+	GameInfoWeaponAmmo(ITI_DUKE_TRIPWIRES, 15);
+	GameInfoWeaponAmmo(ITI_DUKE_FREEZER, 75);
+}
+
+game_weaponmap_t game_weaponmap[GAME_TOTAL];
+
+#define GetMappedGameWeapon(game_from, game_to, item_id) \
+	game_weaponmap[game_from].to[game_to].weapons[item_id - ITI_WEAPONS_START]
+#define MapGameWeapon(game_from, game_to, item_id, new_item_id) \
+	GetMappedGameWeapon(game_from, game_to, item_id) = new_item_id
+
+static void _MapWeapons(gametype_t gametype, const itemid_e *weapons)
+{
+	memcpy(game_weaponmap[GAME_Q2].to[gametype].weapons, weapons, sizeof(game_weaponmap[GAME_Q2].to[gametype].weapons));
+}
+
+#define MapWeapons(game_id, ...) \
+	_MapWeapons(game_id, (const itemid_e []) { __VA_ARGS__ })
+
+static void InitWeaponMap()
+{
+	memset(game_weaponmap, 0, sizeof(game_weaponmap));
+	// start by mapping all Q2 weapons to game weapons
+
+	// map Q2 -> Q1
+	MapWeapons(GAME_Q1, ITI_Q1_AXE, ITI_Q1_SHOTGUN, ITI_Q1_SUPER_SHOTGUN, ITI_Q1_NAILGUN, ITI_Q1_SUPER_NAILGUN, ITI_Q1_GRENADE_LAUNCHER, ITI_Q1_ROCKET_LAUNCHER, ITI_Q1_THUNDERBOLT, ITI_UNUSED, ITI_UNUSED, ITI_UNUSED);
+	// map Q2 -> Doom
+	MapWeapons(GAME_DOOM, ITI_DOOM_FIST, ITI_DOOM_SHOTGUN, ITI_DOOM_SUPER_SHOTGUN, ITI_DOOM_PISTOL, ITI_DOOM_CHAINGUN, ITI_UNUSED, ITI_DOOM_ROCKET_LAUNCHER, ITI_DOOM_PLASMA_GUN, ITI_DOOM_CHAINSAW, ITI_DOOM_BFG, ITI_UNUSED);
+	// map Q2 -> Duke
+	MapWeapons(GAME_DUKE, ITI_DUKE_FOOT, ITI_DUKE_SHOTGUN, ITI_UNUSED, ITI_DUKE_PISTOL, ITI_DUKE_CANNON, ITI_DUKE_DEVASTATOR, ITI_DUKE_RPG, ITI_DUKE_FREEZER, ITI_DUKE_TRIPWIRES, ITI_UNUSED, ITI_DUKE_PIPEBOMBS);
+
+	gametype_t game;
+	itemid_e this_weapon;
+
+	// from here, we can work backwards and figure out where the weapons map to each other between games.
+	// start by completing the <game> -> Q2 round trip
+	for (game = GAME_Q1; game < GAME_TOTAL; game++)
 	{
+		for (this_weapon = ITI_WEAPONS_START; this_weapon <= ITI_WEAPONS_END; this_weapon++)
 		{
-			{ ITI_SHELLS_LARGE, ITI_SHELLS },
-			{ ITI_BULLETS_LARGE, ITI_BULLETS }
-		},
+			// get weapon mapped from Q2 -> <game> from this slot
+			itemid_e q2_to_this = GetMappedGameWeapon(GAME_Q2, game, this_weapon);
 
-		{
-			{ ITI_BLASTER, 1 }
-		},
-
-		ITI_BLASTER,
-
-		{
-			// weapon pickups
-			{ ITI_SHOTGUN, 10 },
-			{ ITI_SUPER_SHOTGUN, 10 },
-			{ ITI_MACHINEGUN, 50 },
-			{ ITI_CHAINGUN, 50 },
-			{ ITI_GRENADE_LAUNCHER, 5 },
-			{ ITI_ROCKET_LAUNCHER, 5 },
-			{ ITI_HYPERBLASTER, 50 },
-			{ ITI_RAILGUN, 5 },
-			{ ITI_BFG10K, 1 },
-
-			// health pickups
-			{ ITI_STIMPACK, 2 },
-			{ ITI_MEDIUM_HEALTH, 10 },
-			{ ITI_LARGE_HEALTH, 25 },
-			{ ITI_MEGA_HEALTH, 100 }
-		},
-
-		{
-			{ 25,  50, .30f, .00f },
-			{ 50, 100, .60f, .30f },
-			{ 100, 200, .80f, .60f }
-		},
-
-		{
-			{ ITI_SHOTGUN, COUNT_FOR_SHOTS(40) },
-			{ ITI_SUPER_SHOTGUN, COUNT_FOR_SHOTS(20) },
-			{ ITI_MACHINEGUN, COUNT_FOR_SHOTS(200) },
-			{ ITI_CHAINGUN, COUNT_FOR_SHOTS(200) },
-			{ ITI_GRENADES, COUNT_FOR_SHOTS(25) },
-			{ ITI_GRENADE_LAUNCHER, COUNT_FOR_SHOTS(25) },
-			{ ITI_ROCKET_LAUNCHER, COUNT_FOR_SHOTS(25) },
-			{ ITI_HYPERBLASTER, COUNT_FOR_SHOTS(80) },
-			{ ITI_RAILGUN, COUNT_FOR_SHOTS(15) },
-			{ ITI_BFG10K, COUNT_FOR_SHOTS(4) },
-		},
-
-		{
-			{ ITI_SHOTGUN, ITI_SHELLS },
-			{ ITI_SUPER_SHOTGUN, ITI_SHELLS },
-			{ ITI_MACHINEGUN, ITI_BULLETS },
-			{ ITI_CHAINGUN, ITI_BULLETS },
-			{ ITI_GRENADE_LAUNCHER, ITI_GRENADES },
-			{ ITI_GRENADES, ITI_GRENADES },
-			{ ITI_ROCKET_LAUNCHER, ITI_ROCKETS },
-			{ ITI_HYPERBLASTER, ITI_CELLS },
-			{ ITI_RAILGUN, ITI_SLUGS },
-			{ ITI_BFG10K, ITI_CELLS }
-		}
-	},
-	// Q1
-	{
-		{
-			// replace ammos
-			{ ITI_GRENADES, ITI_Q1_ROCKETS },
-			{ ITI_SLUGS, ITI_Q1_CELLS },
-			{ ITI_BULLETS_LARGE, ITI_Q1_NAILS },
-			{ ITI_SHELLS_LARGE, ITI_Q1_SHELLS },
-
-			// replace weapons
-			{ ITI_SHOTGUN, ITI_Q1_SUPER_SHOTGUN },
-			{ ITI_RAILGUN, ITI_Q1_THUNDERBOLT },
-			{ ITI_BFG10K, ITI_Q1_THUNDERBOLT },
-
-			// replace power screen/shield with invis
-			{ ITI_POWER_SCREEN, ITI_Q1_INVISIBILITY },
-			{ ITI_POWER_SHIELD, ITI_Q1_INVISIBILITY },
-
-			// dummy these
-			{ ITI_ARMOR_SHARD, ITI_NULL },
-			{ ITI_STIMPACK, ITI_NULL },
-			{ ITI_SILENCER, ITI_NULL },
-			{ ITI_ANCIENT_HEAD, ITI_NULL },
-			{ ITI_ADRENALINE, ITI_NULL },
-			{ ITI_BANDOLIER, ITI_NULL },
-			{ ITI_AMMO_PACK, ITI_NULL }
-		},
-
-		{
-			{ ITI_Q1_AXE, 1 },
-			{ ITI_Q1_SHOTGUN, 1 }
-		},
-
-		ITI_Q1_SHOTGUN,
-
-		{
-			// weapon pickups
-			{ ITI_Q1_SHOTGUN, 20 },
-			{ ITI_Q1_SUPER_SHOTGUN, 10 },
-			{ ITI_Q1_NAILGUN, 50 },
-			{ ITI_Q1_SUPER_NAILGUN, 25 },
-			{ ITI_Q1_GRENADE_LAUNCHER, 5 },
-			{ ITI_Q1_ROCKET_LAUNCHER, 5 },
-			{ ITI_Q1_THUNDERBOLT, 25 },
-			{ ITI_RAILGUN, 25 }, // tbolt
-			{ ITI_BFG10K, 25 }, // tbolt
-
-			// health
-			{ ITI_MEDIUM_HEALTH, 10 },
-			{ ITI_LARGE_HEALTH, 25 },
-			{ ITI_MEGA_HEALTH, 100 }
-		},
-
-		{
-			{ 100, 100, .30f, .30f },
-			{ 150, 150, .60f, .60f },
-			{ 200, 200, .80f, .80f }
-		},
-
-		{
-			{ ITI_Q1_SHOTGUN, COUNT_FOR_SHOTS(40) },
-			{ ITI_Q1_SUPER_SHOTGUN, COUNT_FOR_SHOTS(20) },
-			{ ITI_Q1_NAILGUN, COUNT_FOR_SHOTS(200) },
-			{ ITI_Q1_SUPER_NAILGUN, COUNT_FOR_SHOTS(100) },
-			{ ITI_Q1_GRENADE_LAUNCHER, COUNT_FOR_SHOTS(25) },
-			{ ITI_Q1_ROCKET_LAUNCHER, COUNT_FOR_SHOTS(25) },
-			{ ITI_Q1_THUNDERBOLT, COUNT_FOR_SHOTS(60) }
-		},
-
-		{
-			{ ITI_Q1_SHOTGUN, ITI_Q1_SHELLS },
-			{ ITI_Q1_SUPER_SHOTGUN, ITI_Q1_SHELLS },
-			{ ITI_Q1_NAILGUN, ITI_Q1_NAILS },
-			{ ITI_Q1_SUPER_NAILGUN, ITI_Q1_NAILS },
-			{ ITI_Q1_GRENADE_LAUNCHER, ITI_Q1_ROCKETS },
-			{ ITI_Q1_ROCKET_LAUNCHER, ITI_Q1_ROCKETS },
-			{ ITI_Q1_THUNDERBOLT, ITI_Q1_CELLS }
-		}
-	},
-	// Doom
-	{
-		{
-			// replace combat with jacket
-			{ ITI_COMBAT_ARMOR, ITI_DOOM_ARMOR },
-
-			// dummied ammos
-			{ ITI_GRENADES, ITI_DOOM_ROCKETS },
-			{ ITI_SLUGS, ITI_DOOM_CELLS },
-			{ ITI_BULLETS_LARGE, ITI_DOOM_BULLETS },
-			{ ITI_SHELLS_LARGE, ITI_DOOM_SHELLS },
-
-			// replace weapons
-			{ ITI_MACHINEGUN, ITI_DOOM_CHAINGUN },
-			{ ITI_GRENADE_LAUNCHER, ITI_DOOM_ROCKET_LAUNCHER },
-
-			// replace power screen/shield with invis
-			{ ITI_POWER_SCREEN, ITI_DOOM_INVISIBILITY },
-			{ ITI_POWER_SHIELD, ITI_DOOM_INVISIBILITY },
-
-			// dummied items
-			{ ITI_SILENCER, ITI_NULL },
-			{ ITI_ANCIENT_HEAD, ITI_NULL },
-			{ ITI_BANDOLIER, ITI_NULL }
-		},
-
-		{
-			{ ITI_DOOM_FIST, 1 },
-			{ ITI_DOOM_PISTOL, 1 }
-		},
-
-		ITI_DOOM_PISTOL,
-
-		{
-			// weapon pickups
-			{ ITI_DOOM_SHOTGUN, 15 },
-			{ ITI_DOOM_SUPER_SHOTGUN, 5 },
-			{ ITI_DOOM_CHAINGUN, 50 },
-			{ ITI_DOOM_PISTOL, 50 },
-			{ ITI_DOOM_ROCKET_LAUNCHER, 5 },
-			{ ITI_DOOM_PLASMA_GUN, 50 },
-			{ ITI_DOOM_BFG, 1 },
-			{ ITI_MACHINEGUN, 50 }, // is a chaingun
-			{ ITI_GRENADE_LAUNCHER, 5 }, // is a RL
-
-			// health
-			{ ITI_STIMPACK, 2 },
-			{ ITI_MEDIUM_HEALTH, 10 },
-			{ ITI_LARGE_HEALTH, 25 },
-			{ ITI_MEGA_HEALTH, 100 }
-		},
-		
-		{
-			{ 100,  100, .33f, .33f },
-			{ 0, 0, 0, 0 },
-			{ 200, 200, .50f, .50f }
-		},
-
-		{
-			{ ITI_DOOM_SHOTGUN, COUNT_FOR_SHOTS(40) },
-			{ ITI_DOOM_SUPER_SHOTGUN, COUNT_FOR_SHOTS(20) },
-			{ ITI_DOOM_CHAINGUN, COUNT_FOR_SHOTS(150) },
-			{ ITI_DOOM_PISTOL, COUNT_FOR_SHOTS(150) },
-			{ ITI_DOOM_ROCKET_LAUNCHER, COUNT_FOR_SHOTS(25) },
-			{ ITI_DOOM_PLASMA_GUN, COUNT_FOR_SHOTS(60) },
-			{ ITI_DOOM_BFG, COUNT_FOR_SHOTS(4) }
-		},
-
-		{
-			{ ITI_DOOM_SHOTGUN, ITI_DOOM_SHELLS },
-			{ ITI_DOOM_SUPER_SHOTGUN, ITI_DOOM_SHELLS },
-			{ ITI_DOOM_PISTOL, ITI_DOOM_BULLETS },
-			{ ITI_DOOM_CHAINGUN, ITI_DOOM_BULLETS },
-			{ ITI_DOOM_ROCKET_LAUNCHER, ITI_DOOM_ROCKETS },
-			{ ITI_DOOM_PLASMA_GUN, ITI_DOOM_CELLS },
-			{ ITI_DOOM_BFG, ITI_DOOM_CELLS }
-		}
-	},
-	// Duke
-	{
-		{
-			// nulled shells
-			{ ITI_SHELLS_LARGE, ITI_DUKE_SHELLS },
-
-			// replace all armors
-			{ ITI_BODY_ARMOR, ITI_DUKE_ARMOR },
-			{ ITI_COMBAT_ARMOR, ITI_DUKE_ARMOR },
-
-			// nulled items
-			{ ITI_ARMOR_SHARD, ITI_NULL },
-			{ ITI_STIMPACK, ITI_NULL },
-			{ ITI_SUPER_SHOTGUN, ITI_NULL }
-		},
-
-		{
-			{ ITI_DUKE_FOOT, 1 },
-			{ ITI_DUKE_PISTOL, 1 }
-		},
-
-		ITI_DUKE_PISTOL,
-
-		{
-			{ ITI_DUKE_PISTOL, 35 },
-			{ ITI_DUKE_CANNON, 50 },
-			{ ITI_DUKE_SHOTGUN, 10 },
-			{ ITI_DUKE_RPG, 4 },
-			{ ITI_DUKE_DEVASTATOR, 15 },
-			{ ITI_DUKE_PIPEBOMBS, 5 },
-			{ ITI_DUKE_FREEZER, 25 },
-
-			// health
-			{ ITI_MEDIUM_HEALTH, 10 },
-			{ ITI_LARGE_HEALTH, 30 },
-			{ ITI_MEGA_HEALTH, 50 }
-		},
-		
-		{
-			{ 100,  100, .50, .50 },
-			{ 0, 0, 0, 0 },
-			{ 0, 0, 0, 0 }
-		},
-
-		{
-			{ ITI_DUKE_PISTOL, COUNT_FOR_SHOTS(150) },
-			{ ITI_DUKE_CANNON, COUNT_FOR_SHOTS(150) },
-			{ ITI_DUKE_SHOTGUN, COUNT_FOR_SHOTS(45) },
-			{ ITI_DUKE_RPG, COUNT_FOR_SHOTS(20) },
-			{ ITI_DUKE_DEVASTATOR, COUNT_FOR_SHOTS(75) },
-			{ ITI_DUKE_PIPEBOMBS, COUNT_FOR_SHOTS(15) },
-			{ ITI_DUKE_FREEZER, COUNT_FOR_SHOTS(75) }
-		},
-
-		{
-			{ ITI_DUKE_PISTOL, ITI_DUKE_CLIP },
-			{ ITI_DUKE_CANNON, ITI_DUKE_CANNON_AMMO },
-			{ ITI_DUKE_SHOTGUN, ITI_DUKE_SHELLS },
-			{ ITI_DUKE_RPG, ITI_DUKE_RPG_ROCKETS },
-			{ ITI_DUKE_DEVASTATOR, ITI_DUKE_DEVASTATOR_ROCKETS },
-			{ ITI_DUKE_PIPEBOMBS, ITI_DUKE_PIPEBOMBS },
-			{ ITI_DUKE_FREEZER, ITI_DUKE_FREEZER_AMMO }
+			if (q2_to_this != ITI_UNUSED)
+				MapGameWeapon(game, GAME_Q2, q2_to_this, this_weapon);
 		}
 	}
-};
 
-static void InitItemInfo()
-{
-	for (int i = 1; i < GAME_TOTAL; ++i)
+	// now, we can map the rest of them by converting <game> -> Q2 then Q2 -> <new_game>
+	for (game = GAME_Q1; game < GAME_TOTAL; game++)
 	{
-		// setup defaults
-		for (itemid_e x = ITI_NULL; x < ITI_TOTAL; x++)
+		gametype_t other_game;
+
+		for (other_game = GAME_Q1; other_game < GAME_TOTAL; other_game++)
 		{
-			game_iteminfos[i].dynamic.item_redirects[x] = x;
-			game_iteminfos[i].dynamic.weapon_usage_counts[x] = -1;
-			game_iteminfos[i].dynamic.default_weapon_usage_counts[x] = -1;
-			game_iteminfos[i].dynamic.item_pickup_counts[x] = 0;
-		}
+			// don't assign to our own game
+			if (game == other_game)
+				continue;
 
-		for (int x = 0; x < ITI_TOTAL; ++x)
-		{
-			if (game_iteminfos[i].item_redirects[x].from)
+			for (this_weapon = ITI_WEAPONS_START; this_weapon <= ITI_WEAPONS_END; this_weapon++)
 			{
-				itemid_e from = game_iteminfos[i].item_redirects[x].from;
+				itemid_e game_to_q2 = GetMappedGameWeapon(game, GAME_Q2, this_weapon);
 
-				if (game_iteminfos[i].item_redirects[x].to)
-					game_iteminfos[i].dynamic.item_redirects[from] = game_iteminfos[i].item_redirects[x].to;
-				else
-					game_iteminfos[i].dynamic.item_redirects[from] = ITI_NULL;
-			}
+				if (game_to_q2 == ITI_UNUSED)
+					continue;
 
-			if (game_iteminfos[i].ammo_usages[x].item)
-			{
-				itemid_e from = game_iteminfos[i].ammo_usages[x].item;
-				game_iteminfos[i].dynamic.weapon_usage_counts[from] = game_iteminfos[i].dynamic.default_weapon_usage_counts[from] = game_iteminfos[i].ammo_usages[x].ammo_usage;
-			}
+				itemid_e q2_to_other_game = GetMappedGameWeapon(GAME_Q2, other_game, game_to_q2);
 
-			if (game_iteminfos[i].ammo_pickups[x].item)
-			{
-				itemid_e from = game_iteminfos[i].ammo_pickups[x].item;
-				game_iteminfos[i].dynamic.item_pickup_counts[from] = game_iteminfos[i].ammo_pickups[x].num;
+				if (q2_to_other_game == ITI_UNUSED)
+					continue;
+
+				MapGameWeapon(game, other_game, this_weapon, q2_to_other_game);
 			}
 		}
 	}
 }
+
+static void InitGameInfos()
+{
+	gametype_t game;
+
+	for (game = GAME_Q2; game < GAME_TOTAL; game++)
+		InitGameInfoBase(&game_iteminfos[game]);
+
+	InitQ2GameInfo(&game_iteminfos[GAME_Q2]);
+	InitQ1GameInfo(&game_iteminfos[GAME_Q1]);
+	InitDoomGameInfo(&game_iteminfos[GAME_DOOM]);
+	InitDukeGameInfo(&game_iteminfos[GAME_DUKE]);
+
+	InitWeaponMap();
+}
+
+game_iteminfo_t game_iteminfos[GAME_TOTAL];
 
 gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 {
@@ -385,54 +337,14 @@ gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 	case GAME_DOOM:
 		switch (itemid)
 		{
-		case ITI_BLASTER:
+		case ITI_WEAPON_1:
 			if (currentWeapon == ITI_DOOM_CHAINSAW)
 				return GetItemByIndex(ITI_DOOM_FIST);
 			return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_CHAINSAW] > 0 ? ITI_DOOM_CHAINSAW : ITI_DOOM_FIST);
-		case ITI_SHOTGUN:
-			return GetItemByIndex(ITI_DOOM_PISTOL);
-		case ITI_SUPER_SHOTGUN:
+		case ITI_WEAPON_3:
 			if (currentWeapon == ITI_DOOM_SUPER_SHOTGUN)
 				return GetItemByIndex(ITI_DOOM_SHOTGUN);
 			return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN] > 0 ? ITI_DOOM_SUPER_SHOTGUN : ITI_DOOM_SHOTGUN);
-		case ITI_MACHINEGUN:
-			return GetItemByIndex(ITI_DOOM_CHAINGUN);
-		case ITI_CHAINGUN:
-			return GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER);
-		case ITI_GRENADE_LAUNCHER:
-			return GetItemByIndex(ITI_DOOM_PLASMA_GUN);
-		case ITI_ROCKET_LAUNCHER:
-			return GetItemByIndex(ITI_DOOM_BFG);
-		default:
-			return NULL;
-		}
-	case GAME_DUKE:
-		switch (itemid)
-		{
-		case ITI_BLASTER:
-			return GetItemByIndex(ITI_DUKE_FOOT);
-		case ITI_SHOTGUN:
-			return GetItemByIndex(ITI_DUKE_PISTOL);
-		case ITI_SUPER_SHOTGUN:
-			return GetItemByIndex(ITI_DUKE_SHOTGUN);
-		case ITI_MACHINEGUN:
-			return GetItemByIndex(ITI_DUKE_CANNON);
-		case ITI_CHAINGUN:
-			return GetItemByIndex(ITI_DUKE_RPG);
-		case ITI_GRENADE_LAUNCHER:
-			return GetItemByIndex(ITI_DUKE_PIPEBOMBS);
-		case ITI_ROCKET_LAUNCHER:
-			//return GetItemByIndex(ITI_DUKE_SHRINKER);
-			return NULL;
-		case ITI_HYPERBLASTER:
-			return GetItemByIndex(ITI_DUKE_DEVASTATOR);
-		case ITI_RAILGUN:
-			//return GetItemByIndex(ITI_DUKE_TRIPBOMBS);
-			return NULL;
-		case ITI_BFG10K:
-			return GetItemByIndex(ITI_DUKE_FREEZER);
-		default:
-			return NULL;
 		}
 	}
 
@@ -441,13 +353,15 @@ gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 
 gitem_t *ResolveItemRedirect(edict_t *ent, gitem_t *item)
 {
-	gametype_t gametype = ent->s.game;
 	itemid_e redirect = ITI_NULL;
 
 	while (true)
 	{
 		int index = ITEM_INDEX(item);
-		redirect = game_iteminfos[gametype].dynamic.item_redirects[index];
+		redirect = EntityGame(ent)->item_redirects[index];
+
+		if (redirect == ITI_UNUSED)
+			return item;
 
 		item = GetItemByIndex(redirect);
 
@@ -464,13 +378,13 @@ gitem_t *ResolveItemRedirect(edict_t *ent, gitem_t *item)
 
 float GetWeaponUsageCount(edict_t *ent, gitem_t *weapon)
 {
-	if (game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)] == -1)
+	if (EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)] == -1)
 	{
 		assert(false);
 		return 1; // assume it uses 1 ammo. this is temporary only; all weapons need a defined value.
 	}
 
-	return game_iteminfos[ent->s.game].dynamic.weapon_usage_counts[ITEM_INDEX(weapon)];
+	return EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)];
 }
 
 // Ammo routines
@@ -558,9 +472,16 @@ FindItem
 
 ===============
 */
+static const char *q2_weapons[] = { "blaster", "shotgun", "super shotgun", "machinegun", "chaingun", "grenade launcher", "rocket launcher", "hyperblaster", "railgun", "bfg10k", "grenades" };
+
 gitem_t *FindItem(const char *pickup_name)
 {
 	int     i;
+
+	for (i = 0; i < q_countof(q2_weapons); i++)
+		if (!Q_stricmp(pickup_name, q2_weapons[i]))
+			return GetItemByIndex(ITI_WEAPONS_START + i);
+
 	gitem_t *it;
 
 	it = itemlist;
@@ -908,9 +829,10 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 		{
 			if (do_propagate)
 			{
+				int i;
 				// in invasion, propagate item to other clients
 				do_propagate = false;
-				for (int i = 0; i < game.maxclients; ++i)
+				for (i = 0; i < game.maxclients; ++i)
 				{
 					edict_t *cl = &g_edicts[i + 1];
 
@@ -1004,7 +926,7 @@ bool Pickup_Health(edict_t *ent, edict_t *other)
 	}
 	else
 	{
-		other->health += (ent->count) ? ent->count : (int) game_iteminfos[other->s.game].dynamic.item_pickup_counts[GetIndexByItem(ent->item)];
+		other->health += (ent->count) ? ent->count : (int) EntityGame(other)->ammo_pickups[GetIndexByItem(ent->item)];
 
 		if (!(flags & HEALTH_IGNORE_MAX))
 		{
@@ -1042,7 +964,8 @@ itemid_e ArmorIndex(edict_t *ent)
 {
 	if (ent->client)
 	{
-		for (itemid_e i = ITI_JACKET_ARMOR; i <= ITI_BODY_ARMOR; i++)
+		itemid_e i;
+		for (i = ITI_JACKET_ARMOR; i <= ITI_BODY_ARMOR; i++)
 		{
 			if (ent->client->pers.inventory[i] > 0)
 				return i;
@@ -1290,14 +1213,11 @@ power_armor_type_e PowerArmorType(edict_t *ent)
 
 void Use_PowerArmor(edict_t *ent, gitem_t *item)
 {
-	int     index;
-
 	if (ent->flags & FL_POWER_ARMOR) {
 		ent->flags &= ~FL_POWER_ARMOR;
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
 	} else {
-		index = ITI_CELLS;
-		if (!ent->client->pers.inventory[index]) {
+		if (ent->client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB) {
 			gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
 			return;
 		}
@@ -1501,7 +1421,9 @@ void droptofloor(edict_t *ent)
 		VectorSet(ent->mins, -15, -15, -15);
 		VectorSet(ent->maxs, 15, 15, 15);
 
-		if (ent->model)
+		if (ent->weapon_id)
+			gi.setmodel(ent, GetItemByIndex(ent->weapon_id)->ammo_model);
+		else if (ent->model)
 			gi.setmodel(ent, ent->model);
 		else
 			gi.setmodel(ent, ent->item->world_model);
@@ -1568,7 +1490,7 @@ and for each item in each client's inventory.
 */
 void PrecacheItem(gitem_t *it)
 {
-	char    *s, *start;
+	const char    *s, *start;
 	char    data[MAX_QPATH];
 	int     len;
 
@@ -1583,6 +1505,10 @@ void PrecacheItem(gitem_t *it)
 		gi.modelindex(it->view_model);
 	if (it->icon)
 		gi.imageindex(it->icon);
+	if (it->ammo_model)
+		gi.modelindex(it->ammo_model);
+	if (it->ammo_icon)
+		gi.modelindex(it->ammo_icon);
 
 	// parse the space seperated precache string for other items
 	s = it->precaches;
@@ -1657,7 +1583,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 			}
 		}
 		if ((int)dmflags->value & DF_INFINITE_AMMO) {
-			if ((item->flags == IT_AMMO) || GetIndexByItem(item) == ITI_BFG10K) {
+			if (item->flags == IT_AMMO) {
 				G_FreeEdict(ent);
 				return;
 			}
@@ -1686,875 +1612,115 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 
 //======================================================================
 
-gitem_t itemlist[] = {
-	{
-		NULL
-	},  // leave index 0 alone
+gitem_t itemlist[ITI_TOTAL];
 
-	//
-	// ARMOR
-	//
+static inline void InitItem(itemid_e id, const char *classname, item_pickup_func pickup, item_use_func use, item_drop_func drop,
+							const char *pickup_sound, const char *world_model, int world_model_flags, const char *view_model, const char *icon,
+							const char *pickup_name, int flags, const char *weapmodel, const char *precaches, int respawn_time, const char *ammo_model,
+							const char *ammo_icon)
+{
+	itemlist[id] = (gitem_t) {
+		.classname = classname,
+		.pickup = pickup,
+		.use = use,
+		.drop = drop,
+		.pickup_sound = pickup_sound,
+		.world_model = world_model,
+		.world_model_flags = world_model_flags,
+		.view_model = view_model,
+		.icon = icon,
+		.pickup_name = pickup_name,
+		.flags = flags,
+		.weapmodel = weapmodel,
+		.precaches = precaches,
+		.respawn_time = respawn_time,
+		.ammo_model = ammo_model,
+		.ammo_icon = ammo_icon
+	};
+}
 
-	/*QUAKED item_armor_jacket (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_armor_jacket",
-		Pickup_Armor,
-		NULL,
-		NULL,
-		NULL,
-		"%i_armor",
-		"%i_jacket_armor", 0,
-		NULL,
-		/* icon */      "%i_jacketarmor",
-		/* pickup */    "Jacket Armor",
-		IT_ARMOR,
-		WEAP_NONE,
-		/* precache */ ""
-	},
+static inline void InitArmor(itemid_e id, const char *classname, const char *pickup_sound, const char *world_model, const char *icon, const char *pickup_name)
+{
+	InitItem(id, classname, Pickup_Armor, NULL, NULL, pickup_sound, world_model, 0, NULL, icon, pickup_name, IT_ARMOR, NULL, NULL, 0, NULL, NULL);
+}
 
-	/*QUAKED item_armor_combat (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_armor_combat",
-		Pickup_Armor,
-		NULL,
-		NULL,
-		NULL,
-		"%i_armor",
-		"%i_combat_armor", 0,
-		NULL,
-		/* icon */      "%i_combatarmor",
-		/* pickup */    "Combat Armor",
-		IT_ARMOR,
-		WEAP_NONE,
-		/* precache */ ""
-	},
+static inline void InitPowerup(itemid_e id, const char *classname, item_pickup_func pickup, item_use_func use, item_drop_func drop, const char *pickup_sound,
+							   const char *world_model, const char *icon, const char *pickup_name, int flags, const char *precaches, int respawn_time)
+{
+	InitItem(id, classname, pickup, use, drop, pickup_sound, world_model, 0, NULL, icon, pickup_name, flags, NULL, precaches, respawn_time, NULL, NULL);
+}
 
-	/*QUAKED item_armor_body (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_armor_body",
-		Pickup_Armor,
-		NULL,
-		NULL,
-		NULL,
-		"%i_armor",
-		"%i_body_armor", 0,
-		NULL,
-		/* icon */      "%i_bodyarmor",
-		/* pickup */    "Body Armor",
-		IT_ARMOR,
-		WEAP_NONE,
-		/* precache */ ""
-	},
+static inline void InitWeapon(itemid_e id, const char *classname, const char *world_model, const char *view_model, const char *icon, const char *pickup_name,
+							  const char *weapmodel, const char *precaches, const char *ammo_model, const char *ammo_icon)
+{
+	InitItem(id, classname, world_model ? Pickup_Weapon : NULL, Use_Weapon, world_model ? Drop_Weapon : NULL, world_model ? "%s_weappickup" : NULL, world_model, 0, view_model, icon, pickup_name, IT_WEAPON | IT_STAY_COOP, weapmodel, precaches, 0, ammo_model, ammo_icon);
+}
 
-	/*QUAKED item_armor_shard (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_armor_shard",
-		Pickup_Armor,
-		NULL,
-		NULL,
-		NULL,
-		"%i_armorshard",
-		"%i_armorshard", 0,
-		NULL,
-		/* icon */      "i_jacketarmor",
-		/* pickup */    "Armor Shard",
-		IT_ARMOR,
-		WEAP_NONE,
-		/* precache */ ""
-	},
+static inline void InitHealth(itemid_e id, const char *classname, const char *pickup_sound, const char *world_model)
+{
+	InitItem(id, classname, Pickup_Health, NULL, NULL, pickup_sound, world_model, 0, NULL, "i_health", "Health", IT_HEALTH, NULL, NULL, 0, NULL, NULL);
+}
 
+static inline void InitKey(itemid_e id, const char *classname, const char *world_model, const char *icon, const char *pickup_name)
+{
+	InitItem(id, classname, Pickup_Key, NULL, Drop_General, "items/pkup.wav", world_model, EF_ROTATE, NULL, icon, pickup_name, IT_STAY_COOP | IT_KEY, NULL, NULL, 0, NULL, NULL);
+}
 
-	/*QUAKED item_power_screen (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_power_screen",
-		Pickup_PowerArmor,
-		Use_PowerArmor,
-		Drop_PowerArmor,
-		NULL,
-		"misc/ar3_pkup.wav",
-		"%i_powerscreen", 0,
-		NULL,
-		/* icon */      "i_powerscreen",
-		/* pickup */    "Power Screen",
-		IT_ARMOR,
-		WEAP_NONE,
-		/* precache */ "misc/power2.wav misc/power1.wav",
-		60
-	},
+#define InitWeaponQuick(index, weapmodel, precaches) \
+	InitWeapon(ITI_WEAPON_ ## index, "weapon_" #index, "%wg_weapon_" #index, "%wv_weapon_" #index, "%w_weapon_" #index, "Weapon " #index, weapmodel, precaches, "%wa_weapon_" #index, "%wa_weapon_" #index)
 
-	/*QUAKED item_power_shield (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_power_shield",
-		Pickup_PowerArmor,
-		Use_PowerArmor,
-		Drop_PowerArmor,
-		NULL,
-		"misc/ar3_pkup.wav",
-		"%i_powershield", 0,
-		NULL,
-		/* icon */      "i_powershield",
-		/* pickup */    "Power Shield",
-		IT_ARMOR,
-		WEAP_NONE,
-		/* precache */ "misc/power2.wav misc/power1.wav",
-		60
-	},
+#define InitWeaponInitialQuick(index, weapmodel, precaches) \
+	InitWeapon(ITI_WEAPON_ ## index, "weapon_" #index, NULL, "%wv_weapon_" #index, "%w_weapon_" #index, "Weapon " #index, weapmodel, precaches, NULL, NULL)
 
+static void InitItemList()
+{
+	InitArmor(ITI_JACKET_ARMOR, "item_armor_jacket", "%i_armor", "%i_jacket_armor", "%i_jacketarmor", "Jacket Armor");
+	InitArmor(ITI_COMBAT_ARMOR, "item_armor_combat", "%i_armor", "%i_combat_armor", "%i_combatarmor", "Combat Armor");
+	InitArmor(ITI_BODY_ARMOR, "item_armor_body", "%i_armor", "%i_body_armor", "%i_bodyarmor", "Body Armor");
+	InitArmor(ITI_ARMOR_SHARD, "item_armor_shard", "%i_armorshard", "%i_armorshard", "%i_jacketarmor", "Armor Shard");
 
-	//
-	// WEAPONS
-	//
+	InitPowerup(ITI_POWER_SCREEN, "item_power_screen", Pickup_PowerArmor, Use_PowerArmor, Drop_PowerArmor, "misc/ar3_pkup.wav", "%i_powerscreen", "i_powerscreen", "Power Screen", IT_ARMOR, "misc/power2.wav misc/power1.wav", 60);
+	InitPowerup(ITI_POWER_SHIELD, "item_power_shield", Pickup_PowerArmor, Use_PowerArmor, Drop_PowerArmor, "misc/ar3_pkup.wav", "%i_powershield", "i_powershield", "Power Shield", IT_ARMOR, "misc/power2.wav misc/power1.wav", 60);
+	
+	InitWeaponInitialQuick(1, "#w_blaster.md2", "misc/lasfly.wav");
+	InitWeaponQuick(2, "#w_shotgun.md2", "");
+	InitWeaponQuick(3, "#w_sshotgun.md2", "");
+	InitWeaponQuick(4, "#w_machinegun.md2", "");
+	InitWeaponQuick(5, "#w_machinegun.md2", "weapons/chngnu1a.wav weapons/chngnd1a.wav weapons/chngnl1a.wav");
+	InitWeaponQuick(6, "#w_glauncher.md2", "models/objects/grenade/tris.md2 weapons/grenlb1b.wav");
+	InitWeaponQuick(7, "#w_rlauncher.md2", "%e_rocket weapons/rockfly.wav");
+	InitWeaponQuick(8, "#w_hyperblaster.md2", "weapons/hyprbl1a.wav weapons/hyprbd1a.wav");
+	InitWeaponQuick(9, "#w_railgun.md2", "weapons/rg_hum.wav");
+	InitWeaponQuick(0, "#w_bfg.md2", "sprites/s_bfg1.sp2 sprites/s_bfg2.sp2 sprites/s_bfg3.sp2 weapons/bfg__l1a.wav weapons/bfg__x1b.wav weapons/bfg_hum.wav");
+	InitWeaponQuick(G, "#a_grenades.md2", "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav");
 
-	/* weapon_blaster (.3 .3 1) (-16 -16 -16) (16 16 16)
-	always owned, never in the world
-	*/
-	{
-		"weapon_blaster",
-		NULL,
-		Use_Weapon,
-		NULL,
-		Weapon_Blaster,
-		"%s_weappickup",
-		NULL, 0,
-		"%wv_blaster",
-		/* icon */      "w_blaster",
-		/* pickup */    "Blaster",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_BLASTER,
-		/* precache */ "misc/lasfly.wav"
-	},
-
-	/*QUAKED weapon_shotgun (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_shotgun",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_Shotgun,
-		"%s_weappickup",
-		"%wg_shotgun", 0,
-		"%wv_shotgun",
-		/* icon */      "w_shotgun",
-		/* pickup */    "Shotgun",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_SHOTGUN,
-		/* precache */ ""
-	},
-
-	/*QUAKED weapon_supershotgun (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_supershotgun",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_SuperShotgun,
-		"%s_weappickup",
-		"%wg_sshotgun", 0,
-		"%wv_sshotgun",
-		/* icon */      "w_sshotgun",
-		/* pickup */    "Super Shotgun",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_SUPERSHOTGUN,
-		/* precache */ ""
-	},
-
-	/*QUAKED weapon_machinegun (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_machinegun",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_Machinegun,
-		"%s_weappickup",
-		"%wg_machinegun", 0,
-		"%wv_machinegun",
-		/* icon */      "w_machinegun",
-		/* pickup */    "Machinegun",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_MACHINEGUN,
-		/* precache */ ""
-	},
-
-	/*QUAKED weapon_chaingun (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_chaingun",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_Chaingun,
-		"%s_weappickup",
-		"%wg_chaingun", 0,
-		"%wv_chaingun",
-		/* icon */      "w_chaingun",
-		/* pickup */    "Chaingun",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_CHAINGUN,
-		/* precache */ "weapons/chngnu1a.wav weapons/chngnd1a.wav weapons/chngnl1a.wav"
-	},
-			
-	/*QUAKED ammo_grenades (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_grenades",
-		Pickup_Ammo,
-		Use_Weapon,
-		Drop_Ammo,
-		Weapon_Grenade,
-		"%s_ammopickup",
-		"%wa_grenades", 0,
-		"%wv_grenades",
-		/* icon */      "a_grenades",
-		/* pickup */    "Grenades",
-		IT_AMMO | IT_WEAPON,
-		WEAP_GRENADES,
-		/* precache */ "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav"
-	},
-
-	/*QUAKED weapon_grenadelauncher (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_grenadelauncher",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_GrenadeLauncher,
-		"%s_weappickup",
-		"%wg_glauncher", 0,
-		"%wv_glauncher",
-		/* icon */      "w_glauncher",
-		/* pickup */    "Grenade Launcher",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_GRENADELAUNCHER,
-		/* precache */ "models/objects/grenade/tris.md2 weapons/grenlb1b.wav"
-	},
-
-	/*QUAKED weapon_rocketlauncher (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_rocketlauncher",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_RocketLauncher,
-		"%s_weappickup",
-		"%wg_rlauncher", 0,
-		"%wv_rlauncher",
-		/* icon */      "w_rlauncher",
-		/* pickup */    "Rocket Launcher",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_ROCKETLAUNCHER,
-		/* precache */ "%e_rocket weapons/rockfly.wav"
-	},
-
-	/*QUAKED weapon_hyperblaster (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_hyperblaster",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_HyperBlaster,
-		"%s_weappickup",
-		"%wg_hyperblaster", 0,
-		"%wv_hyperblaster",
-		/* icon */      "w_hyperblaster",
-		/* pickup */    "HyperBlaster",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_HYPERBLASTER,
-		/* precache */ "weapons/hyprbl1a.wav weapons/hyprbd1a.wav misc/lasfly.wav"
-	},
-
-	/*QUAKED weapon_railgun (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_railgun",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_Railgun,
-		"%s_weappickup",
-		"%wg_railgun", 0,
-		"%wv_railgun",
-		/* icon */      "w_railgun",
-		/* pickup */    "Railgun",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_RAILGUN,
-		/* precache */ "weapons/rg_hum.wav"
-	},
-
-	/*QUAKED weapon_bfg (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"weapon_bfg",
-		Pickup_Weapon,
-		Use_Weapon,
-		Drop_Weapon,
-		Weapon_BFG,
-		"%s_weappickup",
-		"%wg_bfg", 0,
-		"%wv_bfg",
-		/* icon */      "w_bfg",
-		/* pickup */    "BFG10K",
-		IT_WEAPON | IT_STAY_COOP,
-		WEAP_BFG,
-		/* precache */ "sprites/s_bfg1.sp2 sprites/s_bfg2.sp2 sprites/s_bfg3.sp2 weapons/bfg__l1a.wav weapons/bfg__x1b.wav weapons/bfg_hum.wav"
-	},
-
-	//
-	// AMMO ITEMS
-	//
-
-	/*QUAKED ammo_bullets (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_bullets",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_bullets", 0,
-		NULL,
-		/* icon */      "%a_bullets",
-		/* pickup */    "Bullets",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED ammo_shells (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_shells",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_shells", 0,
-		NULL,
-		/* icon */      "%a_shells",
-		/* pickup */    "Shells",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED ammo_rockets (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_rockets",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_rockets", 0,
-		NULL,
-		/* icon */      "%a_rockets",
-		/* pickup */    "Rockets",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED ammo_cells (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_cells",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_cells", 0,
-		NULL,
-		/* icon */      "%a_cells",
-		/* pickup */    "Cells",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED ammo_slugs (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_slugs",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_slugs", 0,
-		NULL,
-		/* icon */      "a_slugs",
-		/* pickup */    "Slugs",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED ammo_shells_large (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_shells_large",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_shells_large", 0,
-		NULL,
-		/* icon */      "a_shells",
-		/* pickup */    "Shells (Large)",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED ammo_bullets_large (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"ammo_bullets_large",
-		Pickup_Ammo,
-		NULL,
-		Drop_Ammo,
-		NULL,
-		"%s_ammopickup",
-		"%wa_bullets_large", 0,
-		NULL,
-		/* icon */      "a_bullets",
-		/* pickup */    "Bullets (Large)",
-		IT_AMMO,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-
-	{
-		"item_health_small",
-		Pickup_Health,
-		NULL,
-		NULL,
-		NULL,
-		"%i_stimpack",
-		"%i_stimpack", 0,
-		NULL,
-		/* icon */      "i_health",
-		/* pickup */    "Health",
-		IT_HEALTH,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	{
-		"item_health",
-		Pickup_Health,
-		NULL,
-		NULL,
-		NULL,
-		"%i_smhealth",
-		"%i_smhealth", 0,
-		NULL,
-		/* icon */      "i_health",
-		/* pickup */    "Health",
-		IT_HEALTH,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	{
-		"item_health_large",
-		Pickup_Health,
-		NULL,
-		NULL,
-		NULL,
-		"%i_lghealth",
-		"%i_lghealth", 0,
-		NULL,
-		/* icon */      "i_health",
-		/* pickup */    "Health",
-		IT_HEALTH,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	{
-		"item_health_mega",
-		Pickup_Health,
-		NULL,
-		NULL,
-		NULL,
-		"%i_megahealth",
-		"%i_megahealth", 0,
-		NULL,
-		/* icon */      "i_health",
-		/* pickup */    "Health",
-		IT_HEALTH,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	//
-	// POWERUP ITEMS
-	//
-	/*QUAKED item_quad (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_quad",
-		Pickup_Powerup,
-		Use_Quad,
-		Drop_General,
-		NULL,
-		"%s_powerup",
-		"%i_quaddamage", 0,
-		NULL,
-		/* icon */      "p_quad",
-		/* pickup */    "Quad Damage",
-		IT_POWERUP,
-		WEAP_NONE,
-		/* precache */ "items/damage.wav items/damage2.wav items/damage3.wav",
-		60
-	},
-
-	/*QUAKED item_invulnerability (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_invulnerability",
-		Pickup_Powerup,
-		Use_Invulnerability,
-		Drop_General,
-		NULL,
-		"%s_powerup",
-		"%i_invulnerability", 0,
-		NULL,
-		/* icon */      "p_invulnerability",
-		/* pickup */    "Invulnerability",
-		IT_POWERUP,
-		WEAP_NONE,
-		/* precache */ "items/protect.wav items/protect2.wav items/protect4.wav",
-		300
-	},
-
-	/*QUAKED item_enviro (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_enviro",
-		Pickup_Powerup,
-		Use_Envirosuit,
-		Drop_General,
-		NULL,
-		"%s_powerup",
-		"%i_environmentsuit", 0,
-		NULL,
-		/* icon */      "p_envirosuit",
-		/* pickup */    "Environment Suit",
-		IT_STAY_COOP | IT_POWERUP,
-		WEAP_NONE,
-		/* precache */ "",
-		60
-	},
-
-	/*QUAKED item_silencer (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_silencer",
-		Pickup_Powerup,
-		Use_Silencer,
-		Drop_General,
-		NULL,
-		"%s_powerup",
-		"%i_silencer", 0,
-		NULL,
-		/* icon */      "p_silencer",
-		/* pickup */    "Silencer",
-		IT_POWERUP,
-		WEAP_NONE,
-		/* precache */ "",
-		60
-	},
-
-	/*QUAKED item_breather (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_breather",
-		Pickup_Powerup,
-		Use_Breather,
-		Drop_General,
-		NULL,
-		"%s_powerup",
-		"%i_rebreather", 0,
-		NULL,
-		/* icon */      "p_rebreather",
-		/* pickup */    "Rebreather",
-		IT_STAY_COOP | IT_POWERUP,
-		WEAP_NONE,
-		/* precache */ "items/airout.wav",
-		60
-	},
-
-	/*QUAKED item_ancient_head (.3 .3 1) (-16 -16 -16) (16 16 16)
-	Special item that gives +2 to maximum health
-	*/
-	{
-		"item_ancient_head",
-		Pickup_AncientHead,
-		NULL,
-		NULL,
-		NULL,
-		"%s_powerup",
-		"%i_ancienthead", 0,
-		NULL,
-		/* icon */      "i_fixme",
-		/* pickup */    "Ancient Head",
-		IT_NONE,
-		WEAP_NONE,
-		/* precache */ "",
-		60
-	},
-
-	/*QUAKED item_adrenaline (.3 .3 1) (-16 -16 -16) (16 16 16)
-	gives +1 to maximum health
-	*/
-	{
-		"item_adrenaline",
-		Pickup_Adrenaline,
-		NULL,
-		NULL,
-		NULL,
-		"%s_powerup",
-		"%i_adrenaline", 0,
-		NULL,
-		/* icon */      "p_adrenaline",
-		/* pickup */    "Adrenaline",
-		IT_NONE,
-		WEAP_NONE,
-		/* precache */ "",
-		60
-	},
-
-	/*QUAKED item_bandolier (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_bandolier",
-		Pickup_Bandolier,
-		NULL,
-		NULL,
-		NULL,
-		"%s_powerup",
-		"%i_bandolier", 0,
-		NULL,
-		/* icon */      "p_bandolier",
-		/* pickup */    "Bandolier",
-		IT_NONE,
-		WEAP_NONE,
-		/* precache */ "",
-		60
-	},
-
-	/*QUAKED item_pack (.3 .3 1) (-16 -16 -16) (16 16 16)
-	*/
-	{
-		"item_pack",
-		Pickup_Pack,
-		NULL,
-		NULL,
-		NULL,
-		"%s_powerup",
-		"%i_backpack", 0,
-		NULL,
-		/* icon */      "i_pack",
-		/* pickup */    "Ammo Pack",
-		IT_NONE,
-		WEAP_NONE,
-		/* precache */ "",
-		180
-	},
-
-	//
-	// KEYS
-	//
-	/*QUAKED key_data_cd (0 .5 .8) (-16 -16 -16) (16 16 16)
-	key for computer centers
-	*/
-	{
-		"key_data_cd",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/data_cd/tris.md2", EF_ROTATE,
-		NULL,
-		"k_datacd",
-		"Data CD",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_power_cube (0 .5 .8) (-16 -16 -16) (16 16 16) TRIGGER_SPAWN NO_TOUCH
-	warehouse circuits
-	*/
-	{
-		"key_power_cube",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/power/tris.md2", EF_ROTATE,
-		NULL,
-		"k_powercube",
-		"Power Cube",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_pyramid (0 .5 .8) (-16 -16 -16) (16 16 16)
-	key for the entrance of jail3
-	*/
-	{
-		"key_pyramid",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/pyramid/tris.md2", EF_ROTATE,
-		NULL,
-		"k_pyramid",
-		"Pyramid Key",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_data_spinner (0 .5 .8) (-16 -16 -16) (16 16 16)
-	key for the city computer
-	*/
-	{
-		"key_data_spinner",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/spinner/tris.md2", EF_ROTATE,
-		NULL,
-		"k_dataspin",
-		"Data Spinner",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_pass (0 .5 .8) (-16 -16 -16) (16 16 16)
-	security pass for the security level
-	*/
-	{
-		"key_pass",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/pass/tris.md2", EF_ROTATE,
-		NULL,
-		"k_security",
-		"Security Pass",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_blue_key (0 .5 .8) (-16 -16 -16) (16 16 16)
-	normal door key - blue
-	*/
-	{
-		"key_blue_key",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/key/tris.md2", EF_ROTATE,
-		NULL,
-		"k_bluekey",
-		"Blue Key",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_red_key (0 .5 .8) (-16 -16 -16) (16 16 16)
-	normal door key - red
-	*/
-	{
-		"key_red_key",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/red_key/tris.md2", EF_ROTATE,
-		NULL,
-		"k_redkey",
-		"Red Key",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_commander_head (0 .5 .8) (-16 -16 -16) (16 16 16)
-	tank commander's head
-	*/
-	{
-		"key_commander_head",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/monsters/commandr/head/tris.md2", EF_GIB,
-		NULL,
-		/* icon */      "k_comhead",
-		/* pickup */    "Commander's Head",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	},
-
-	/*QUAKED key_airstrike_target (0 .5 .8) (-16 -16 -16) (16 16 16)
-	tank commander's head
-	*/
-	{
-		"key_airstrike_target",
-		Pickup_Key,
-		NULL,
-		Drop_General,
-		NULL,
-		"items/pkup.wav",
-		"models/items/keys/target/tris.md2", EF_ROTATE,
-		NULL,
-		/* icon */      "i_airstrike",
-		/* pickup */    "Airstrike Marker",
-		IT_STAY_COOP | IT_KEY,
-		WEAP_NONE,
-		/* precache */ ""
-	}
-};
+	InitItem(ITI_AMMO, "ammo", Pickup_Ammo, NULL, Drop_Ammo, "%s_ammopickup", NULL, 0, NULL, NULL, "Ammo", IT_AMMO, NULL, NULL, 0, NULL, NULL);
+	
+	InitHealth(ITI_STIMPACK, "item_health_small", "%i_stimpack", "%i_stimpack");
+	InitHealth(ITI_MEDIUM_HEALTH, "item_health", "%i_smhealth", "%i_smhealth");
+	InitHealth(ITI_LARGE_HEALTH, "item_health_large", "%i_lghealth", "%i_lghealth");
+	InitHealth(ITI_MEGA_HEALTH, "item_health_mega", "%i_megahealth", "%i_megahealth");
+	
+	InitPowerup(ITI_QUAD_DAMAGE, "item_quad", Pickup_Powerup, Use_Quad, Drop_General, "%s_powerup", "%i_quaddamage", "p_quad", "Quad Damage", IT_POWERUP, "items/damage.wav items/damage2.wav items/damage3.wav", 60);
+	InitPowerup(ITI_INVULNERABILITY, "item_invulnerability", Pickup_Powerup, Use_Invulnerability, Drop_General, "%s_powerup", "%i_invulnerability", "p_invulnerability", "Invulnerability", IT_POWERUP, "items/protect.wav items/protect2.wav items/protect4.wav", 300);
+	InitPowerup(ITI_ENVIRONMENT_SUIT, "item_enviro", Pickup_Powerup, Use_Envirosuit, Drop_General, "%s_powerup", "%i_environmentsuit", "p_envirosuit", "Environment Suit", IT_STAY_COOP | IT_POWERUP, "", 60);
+	InitPowerup(ITI_SILENCER, "item_silencer", Pickup_Powerup, Use_Silencer, Drop_General, "%s_powerup", "%i_silencer", "p_silencer", "Silencer", IT_POWERUP, "", 60);
+	InitPowerup(ITI_REBREATHER, "item_breather", Pickup_Powerup, Use_Breather, Drop_General, "%s_powerup", "%i_rebreather", "p_rebreather", "Rebreather", IT_STAY_COOP | IT_POWERUP, "items/airout.wav", 60);
+	InitPowerup(ITI_ANCIENT_HEAD, "item_ancient_head", Pickup_AncientHead, NULL, NULL, "%s_powerup", "%i_ancienthead", "i_fixme", "Ancient Head", IT_NONE, NULL, 60);
+	InitPowerup(ITI_ADRENALINE, "item_adrenaline", Pickup_Adrenaline, NULL, NULL, "%s_powerup", "%i_adrenaline", "p_adrenaline", "Adrenaline", IT_NONE, NULL, 60);
+	InitPowerup(ITI_BANDOLIER, "item_bandolier", Pickup_Bandolier, NULL, NULL, "%s_powerup", "%i_bandolier", "p_bandolier", "Bandolier", IT_NONE, NULL, 60);
+	InitPowerup(ITI_AMMO_PACK, "item_pack", Pickup_Bandolier, NULL, NULL, "%s_powerup", "%i_backpack", "i_pack", "Ammo Pack", IT_NONE, NULL, 180);
+	
+	InitKey(ITI_DATA_CD, "key_data_cd", "models/items/keys/data_cd/tris.md2", "k_datacd", "Data CD");
+	InitKey(ITI_POWER_CUBE, "key_power_cube", "models/items/keys/power/tris.md2", "k_powercube", "Power Cube");
+	InitKey(ITI_PYRAMID_KEY, "key_pyramid", "models/items/keys/pyramid/tris.md2", "k_pyramid", "Pyramid Key");
+	InitKey(ITI_DATA_SPINNER, "key_data_spinner", "models/items/keys/spinner/tris.md2", "k_dataspin", "Data Spinner");
+	InitKey(ITI_SECURITY_PASS, "key_pass", "models/items/keys/pass/tris.md2", "k_security", "Security Pass");
+	InitKey(ITI_BLUE_KEY, "key_blue_key", "models/items/keys/key/tris.md2", "k_bluekey", "Blue Key");
+	InitKey(ITI_RED_KEY, "key_red_key", "models/items/keys/red_key/tris.md2", "k_redkey", "Red Key");
+	InitKey(ITI_COMMANDERS_HEAD, "key_commander_head", "models/monsters/commandr/head/tris.md2", "k_comhead", "Commander's Head");
+	InitKey(ITI_AIRSTRIKE_MARKER, "key_airstrike_target", "models/items/keys/target/tris.md2", "i_airstrike", "Airstrike Marker");
+}
 
 void Weapons_Init();
 
@@ -2567,12 +1733,12 @@ const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] = 
 		"super_shotgun",
 		"machinegun",
 		"chaingun",
-		"grenades",
 		"grenade_launcher",
 		"rocket_launcher",
 		"hyperblaster",
 		"railgun",
-		"bfg10k"
+		"bfg10k",
+		"grenades"
 	},
 	// Q1
 	{
@@ -2581,39 +1747,39 @@ const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] = 
 		"super_shotgun",
 		"nailgun",
 		"super_nailgun",
-		NULL,
 		"grenade_launcher",
 		"rocket_launcher",
 		"thunderbolt",
+		NULL,
 		NULL,
 		NULL
 	},
 	// Doom
 	{
 		"fist",
-		"shotgun",
-		"super_shotgun",
 		"pistol",
+		"shotgun",
 		"chaingun",
-		NULL,
-		NULL,
 		"rocket_launcher",
 		"plasma_gun",
-		"chaingun",
-		"bfg9000"
+		"bfg9000",
+		"super_shotgun",
+		NULL,
+		"chainsaw",
+		NULL
 	},
 	// Duke
 	{
 		"foot",
-		"shotgun",
-		NULL,
 		"pistol",
+		"shotgun",
 		"cannon",
+		"rpg",
+		"pipebombs",
 		NULL,
 		"devastator",
-		"rpg",
+		"tripwires",
 		"freezer",
-		NULL,
 		NULL
 	}
 };
@@ -2634,7 +1800,7 @@ void CheckWeaponBalanceCvars()
 	for (game = GAME_Q2; game < GAME_TOTAL; game++)
 		for (i = ITI_WEAPONS_START; i <= ITI_WEAPONS_END; i++)
 		{
-			if (game_iteminfos[game].dynamic.weapon_usage_counts[i] <= 0)
+			if (game_iteminfos[game].default_ammo_usages[i] <= 0)
 				continue;
 
 			const char *weapon_name = weapon_names[game][i - ITI_WEAPONS_START];
@@ -2650,11 +1816,11 @@ void CheckWeaponBalanceCvars()
 
 			if (!cvar->value)
 			{
-				game_iteminfos[game].dynamic.weapon_usage_counts[i] = game_iteminfos[game].dynamic.default_weapon_usage_counts[i];
+				game_iteminfos[game].ammo_usages[i] = game_iteminfos[game].default_ammo_usages[i];
 				continue;
 			}
 
-			game_iteminfos[game].dynamic.weapon_usage_counts[i] = COUNT_FOR_SHOTS(cvar->value);
+			game_iteminfos[game].ammo_usages[i] = COUNT_FOR_SHOTS(cvar->value);
 		}
 }
 
@@ -2662,7 +1828,95 @@ void InitItems(void)
 {
 	game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
 	
-	InitItemInfo();
+	InitItemList();
+
+	InitGameInfos();
 
 	CheckWeaponBalanceCvars();
+}
+
+#define AMMO_LINK_RADIUS	128
+
+static void RecursiveLinkAmmo(edict_t *from, edict_t *weapon)
+{
+	edict_t *ammo = NULL;
+
+	while ((ammo = G_FindByType(ammo, ET_AMMO)))
+	{
+		if (ammo == from)
+			continue;
+		if (ammo->entitytype != ET_AMMO)
+			continue;
+		if (ammo->entity_prev)
+			continue;
+		if (DistanceSquared(weapon->s.origin, ammo->s.origin) > AMMO_LINK_RADIUS * AMMO_LINK_RADIUS)
+			continue;
+
+		// linked list
+		// weapon <-> old_next
+		// weapon <-> [ammo <->] old_next
+		edict_t *old_next = weapon->entity_next;
+		if (old_next)
+			old_next->entity_prev = ammo;
+		ammo->entity_next = old_next;
+		ammo->entity_prev = weapon;
+		weapon->entity_next = ammo;
+
+		RecursiveLinkAmmo(ammo, weapon);
+	}
+}
+
+static void Set_Ammo_Model(edict_t *ammo, gitem_t *weapon)
+{
+	ammo->weapon_id = ITEM_INDEX(weapon);
+}
+
+static void Set_Weapons_Ammo(edict_t *weapon)
+{
+	edict_t *ammo;
+	for (ammo = weapon->entity_next; ammo; ammo = ammo->entity_next)
+	{
+		SpawnItem(ammo, GetItemByIndex(ITI_AMMO));
+		Set_Ammo_Model(ammo, weapon->item);
+	}
+}
+
+void Spawn_Weapons()
+{
+	level.weapon_spawn_id = Q_rand_uniform(ITI_WEAPONS_END - ITI_WEAPONS_START);
+	level.ammo_spawn_id = Q_rand_uniform(ITI_WEAPONS_END - ITI_WEAPONS_START);
+
+	// link up ammo
+	edict_t *weapon = NULL;
+	while ((weapon = G_FindByType(weapon, ET_WEAPON)))
+	{
+		RecursiveLinkAmmo(weapon, weapon);
+		SpawnItem(weapon, GetItemByIndex(ITI_WEAPON_2 + level.weapon_spawn_id));
+		Set_Weapons_Ammo(weapon);
+		level.weapon_spawn_id = (level.weapon_spawn_id + 1) % (ITI_WEAPONS_END - ITI_WEAPONS_START);
+	}
+
+	// link up ammo
+	edict_t *ammo = NULL;
+	while ((ammo = G_FindByType(ammo, ET_AMMO)))
+	{
+		if (ammo->entity_next)
+			continue;
+		
+		SpawnItem(ammo, GetItemByIndex(ITI_AMMO));
+		Set_Ammo_Model(ammo, GetItemByIndex(ITI_WEAPON_2 + level.ammo_spawn_id));
+		level.ammo_spawn_id = (level.ammo_spawn_id + 1) % (ITI_WEAPONS_END - ITI_WEAPONS_START);
+	}
+}
+
+void SP_weapon(edict_t *ent)
+{
+	ent->entitytype = ET_WEAPON;
+	gi.linkentity(ent);
+}
+
+void SP_ammo(edict_t *ent)
+{
+	ent->entitytype = ET_AMMO;
+	gi.linkentity(ent);
 }

@@ -1899,9 +1899,6 @@ Point teleporters at these.
 */
 void SP_misc_teleporter_dest(edict_t *ent)
 {
-	if (level.level_type != GAME_Q2)
-		return;
-
 	gi.setmodel(ent, "models/objects/dmspot/tris.md2");
 	ent->s.skinnum = 0;
 	ent->solid = SOLID_BBOX;

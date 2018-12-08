@@ -83,12 +83,12 @@ extern centity_t    cl_entities[MAX_EDICTS];
 
 typedef struct clientinfo_s {
     char name[MAX_QPATH];
-    pichandle_t skin;
-    pichandle_t icon;
+    qhandle_t skin;
+    qhandle_t icon;
     char model_name[MAX_QPATH];
     char skin_name[MAX_QPATH];
-	modelhandle_t model;
-    modelhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
+	qhandle_t model;
+    qhandle_t weaponmodel[MAX_CLIENTWEAPONMODELS];
 } clientinfo_t;
 
 typedef struct {
@@ -148,12 +148,12 @@ typedef struct {
 	{
 		struct
 		{
-			modelhandle_t	handle;
-			mmodel_t		*clip;
+			qhandle_t	handle;
+			mmodel_t	*clip;
 		} model;
 
-		soundhandle_t sound;
-		pichandle_t image;
+		qhandle_t sound;
+		qhandle_t image;
 	};
 } precache_entry_t;
 
@@ -699,7 +699,7 @@ void CL_GetEntitySoundOrigin(int ent, vec3_t org);
 // view.c
 //
 extern    int       	gun_frame;
-extern    modelhandle_t gun_model;
+extern    qhandle_t		gun_model;
 
 void V_Init(void);
 void V_Shutdown(void);
@@ -950,8 +950,8 @@ void    SCR_LagClear(void);
 void    SCR_SetCrosshairColor(void);
 
 float   SCR_FadeAlpha(unsigned startTime, unsigned visTime, unsigned fadeTime);
-int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, pichandle_t font, gametype_t game);
-void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, pichandle_t font, gametype_t game);
+int     SCR_DrawStringEx(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font, gametype_t game);
+void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font, gametype_t game);
 
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);

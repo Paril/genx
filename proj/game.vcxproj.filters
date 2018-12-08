@@ -228,9 +228,6 @@
     <ClCompile Include="..\src\baseq2\g_q1_wizard.c">
       <Filter>Source Files\q1</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_q1_boss.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\baseq2\g_q1_zombie.c">
       <Filter>Source Files\q1</Filter>
     </ClCompile>
@@ -243,9 +240,6 @@
     <ClCompile Include="..\src\baseq2\g_q1_shalrath.c">
       <Filter>Source Files\q1</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_poss.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\baseq2\g_q1_knight.c">
       <Filter>Source Files\q1</Filter>
     </ClCompile>
@@ -255,40 +249,7 @@
     <ClCompile Include="..\src\baseq2\g_q1_shambler.c">
       <Filter>Source Files\q1</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_q1.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\baseq2\g_q1_hknight.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_troo.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_sarg.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_cpos.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_head.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_skul.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_pain.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_bspi.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_skel.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_boss.c">
-      <Filter>Source Files\q1</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\baseq2\g_doom_spid.c">
       <Filter>Source Files\q1</Filter>
     </ClCompile>
     <ClCompile Include="..\src\baseq2\g_wave.c">
@@ -302,6 +263,42 @@
     </ClCompile>
     <ClCompile Include="..\src\baseq2\p_duke_weapons.c">
       <Filter>Source Files\duke</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_boss.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_bspi.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_cpos.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_head.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_pain.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_poss.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_sarg.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_skel.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_skul.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_spid.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_troo.c">
+      <Filter>Source Files\doom</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_doom_cybr.c">
+      <Filter>Source Files\doom</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

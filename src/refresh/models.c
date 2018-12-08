@@ -64,7 +64,7 @@ static void MSCR_Untouch()
 			if (r_modelscripts[i].entries[g].path[0])
 			{
 				r_modelscripts[i].entries[g].loaded = false;
-				r_modelscripts[i].entries[g].model = (modelhandle_t) { 0 };
+				r_modelscripts[i].entries[g].model = 0;
 			}
 		}
 	}
@@ -167,6 +167,7 @@ static modelscript_t *MSCR_Register(const char *name)
 
 		memset(&entry, 0, sizeof(entry));
 		entry.scale = 1;
+		entry.frame = -1;
 
 		while (*(tok = COM_Parse((const char**)&rawdata)) != '}')
 		{
@@ -191,6 +192,8 @@ static modelscript_t *MSCR_Register(const char *name)
 				entry.add_effects = (uint32_t)atoi(value);
 			else if (!Q_stricmp(tok, "renderfx"))
 				entry.add_renderfx = (int)atoi(value);
+			else if (!Q_stricmp(tok, "frame"))
+				entry.frame = (int)atoi(value);
 			else if (!Q_stricmp(tok, "translate"))
 				sscanf(value, "%f %f %f", &entry.translate[0], &entry.translate[1], &entry.translate[2]);
 			else if (!Q_stricmp(tok, "scale"))
@@ -223,9 +226,9 @@ fail1:
 	return 0;
 }
 
-modelentry_t *MSCR_EntryForHandle(modelhandle_t handle, gametype_t game)
+modelentry_t *MSCR_EntryForHandle(qhandle_t handle, gametype_t game)
 {
-	modelscript_t *script = &r_modelscripts[handle.model.id - 1];
+	modelscript_t *script = &r_modelscripts[MODEL_HANDLE_ID(handle) - 1];
 
 	if (!script->name[0])
 		return NULL;
@@ -1481,7 +1484,7 @@ void MOD_Reference(model_t *model)
 	case MOD_WEAPONSCRIPT:
 		for (i = 0; i < model->weaponscript->num_sprites; i++)
 			for (gametype_t g = GAME_Q2; g < GAME_TOTAL; ++g)
-				if (model->weaponscript->sprites[i].model.handle)
+				if (model->weaponscript->sprites[i].model)
 					MOD_Reference(MOD_ForHandle(model->weaponscript->sprites[i].model, g));
 		break;
     default:
@@ -1495,10 +1498,13 @@ int MOD_LoadQ1M(model_t *model, const void *rawdata, size_t length);
 int MOD_LoadMDL(model_t *model, const void *rawdata, size_t length);
 static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length);
 
-modelhandle_t R_RegisterModel(const char *name)
+qhandle_t R_RegisterModel(const char *name)
 {
     char normalized[MAX_QPATH];
-	modelhandle_t index;
+	union {
+		qhandle_t handle;
+		modelhandle_t model;
+	} index;
     size_t namelen;
     int filelen;
     model_t *model;
@@ -1508,13 +1514,13 @@ modelhandle_t R_RegisterModel(const char *name)
 
     // empty names are legal, silently ignore them
     if (!*name)
-		return (modelhandle_t) { 0 };
+		return 0;
 
     if (*name == '*') {
         // inline bsp model
 		index.model.type = MODELHANDLE_BSP;
 		index.model.id = atoi(name + 1);
-        return index;
+        return index.handle;
     } else if (*name == '%') { // model script
 		index.model.type = MODELHANDLE_GAMED;
 
@@ -1523,7 +1529,7 @@ modelhandle_t R_RegisterModel(const char *name)
 		if (script)
 		{
 			index.model.id = (script - r_modelscripts) + 1;
-			return index;
+			return index.handle;
 		}
 
 		// gotta load it
@@ -1532,11 +1538,11 @@ modelhandle_t R_RegisterModel(const char *name)
 		if (script)
 		{
 			index.model.id = (script - r_modelscripts) + 1;
-			return index;
+			return index.handle;
 		}
 
 		Com_EPrintf("Couldn't load modelscript %s\n", name + 1);
-		return (modelhandle_t) { 0 };
+		return 0;
 	}
 
     // normalize the path
@@ -1549,7 +1555,7 @@ modelhandle_t R_RegisterModel(const char *name)
     // normalized to empty name?
     if (namelen == 0) {
         Com_DPrintf("%s: empty name\n", __func__);
-		return (modelhandle_t) { 0 };
+		return 0;
     }
 
     // see if it's already loaded
@@ -1563,7 +1569,7 @@ modelhandle_t R_RegisterModel(const char *name)
     if (!rawdata) {
         // don't spam about missing models
         if (filelen == Q_ERR_NOENT) {
-			return (modelhandle_t) { 0 };
+			return 0;
         }
 
         ret = filelen;
@@ -1626,41 +1632,41 @@ modelhandle_t R_RegisterModel(const char *name)
 done:
 	index.model.type = MODELHANDLE_RAW;
     index.model.id = (model - r_models) + 1;
-    return index;
+    return index.handle;
 
 fail2:
     FS_FreeFile(rawdata);
 fail1:
     Com_EPrintf("Couldn't load %s: %s\n", normalized, Q_ErrorString(ret));
-	return (modelhandle_t) { 0 };
+	return 0;
 }
 
-model_t *MOD_ForHandle(modelhandle_t index, gametype_t game)
+model_t *MOD_ForHandle(qhandle_t index, gametype_t game)
 {
     model_t *model;
 
-    if (!index.model.type) {
+    if (!MODEL_HANDLE_TYPE(index)) {
         return NULL;
     }
 
-	switch (index.model.type)
+	switch (MODEL_HANDLE_TYPE(index))
 	{
 	case MODELHANDLE_BSP:
 	default:
 		Com_Error(ERR_DROP, "%s: should never happen", __func__);
 	case MODELHANDLE_RAW:
-		if (index.model.id < 0 || index.model.id > r_numModels) {
-			Com_Error(ERR_DROP, "%s: %d out of range", __func__, index.model.id);
+		if (MODEL_HANDLE_ID(index) < 0 || MODEL_HANDLE_ID(index) > r_numModels) {
+			Com_Error(ERR_DROP, "%s: %d out of range", __func__, MODEL_HANDLE_ID(index));
 		}
 
-		model = &r_models[index.model.id - 1];
+		model = &r_models[MODEL_HANDLE_ID(index) - 1];
 		if (!model->type) {
 			return NULL;
 		}
 		break;
 	case MODELHANDLE_GAMED:
-		if (index.model.id < 0 || index.model.id > r_numModelScripts) {
-			Com_Error(ERR_DROP, "%s: %d out of range", __func__, index.model.id);
+		if (MODEL_HANDLE_ID(index) < 0 || MODEL_HANDLE_ID(index) > r_numModelScripts) {
+			Com_Error(ERR_DROP, "%s: %d out of range", __func__, MODEL_HANDLE_ID(index));
 		}
 
 		modelentry_t *entry = MSCR_EntryForHandle(index, game);
@@ -1705,16 +1711,6 @@ int MOD_LoadQ1M(model_t *model, const void *rawdata, size_t length)
 	int			texture_frames = *ptr++;
 
 	char		skinname[MAX_QPATH];
-
-	/*
-
-	model->size = sizeof(maliasmesh_t) +
-		sizeof(maliasframe_t) +
-		(num_verts * sizeof(maliasvert_t)) +
-		(num_verts * sizeof(maliastc_t)) +
-		(num_indices * sizeof(QGL_INDEX_TYPE));
-	model->buffer = MOD_Malloc(model->size);
-*/
 
 	Hunk_Begin(&model->hunk, 0x10000);
 	model->type = MOD_ALIAS;
@@ -2125,7 +2121,50 @@ void GL_StretchPic(
 	float s1, float t1, float s2, float t2,
 	uint32_t color, image_t *image);
 
-void R_DrawWeaponSprite(modelhandle_t handle, gunindex_e index, float velocity, int time, float frametime, int oldframe, int frame, float frac, int hud_width, int hud_height, bool firing, float yofs, float scale, color_t color, bool invul, float height_diff)
+#define GL_WeaponPic(frame, drawFrame, x, y) \
+			GL_StretchPic(	(x) * heightAspectInverted, (y) * heightAspectInverted, frame->width * heightAspectInverted, frame->height * heightAspectInverted, \
+							(drawFrame->flip & flip_x) ? frame->image->sh : frame->image->sl, (drawFrame->flip & flip_y) ? frame->image->th : frame->image->tl, \
+							(drawFrame->flip & flip_x) ? frame->image->sl : frame->image->sh, (drawFrame->flip & flip_y) ? frame->image->tl : frame->image->th, \
+							draw.colors[0].u32, frame->image)
+		
+
+static void PointFromSizeAnchor(vec2_t out, const vec2_t pos, const vec2_t size, mweaponscript_draw_anchor_t anchor)
+{
+	if (anchor == anchor_bottom_left ||
+		anchor == anchor_center_left ||
+		anchor == anchor_top_left)
+		out[0] = pos[0];
+	else if (anchor == anchor_bottom_right ||
+		anchor == anchor_center_right ||
+		anchor == anchor_top_right)
+		out[0] = pos[0] + size[0];
+	else
+		out[0] = pos[0] + size[0] / 2;
+
+	if (anchor == anchor_top_right ||
+		anchor == anchor_top_center ||
+		anchor == anchor_top_left)
+		out[1] = pos[1];
+	else if (anchor == anchor_bottom_right ||
+		anchor == anchor_bottom_center ||
+		anchor == anchor_bottom_left)
+		out[1] = pos[1] + size[1];
+	else
+		out[1] = pos[1] + size[1] / 2;
+}
+
+static void R_SetWeaponSpriteScale(float scale, float width, float height)
+{
+	GL_Flush2D();
+
+	GL_Ortho(0, width, height, 0, -1, 1);
+
+	draw.scale = scale;
+}
+
+extern vrect_t     scr_vrect;
+
+void R_DrawWeaponSprite(qhandle_t handle, gunindex_e index, float velocity, int time, float frametime, int oldframe, int frame, float frac, int hud_width, int hud_height, bool firing, float yofs, float scale, color_t color, bool invul, float height_diff)
 {
 	model_t *model = MOD_ForHandle(handle, CL_GetClientGame());
 
@@ -2137,32 +2176,11 @@ void R_DrawWeaponSprite(modelhandle_t handle, gunindex_e index, float velocity, 
 
 	mweaponscript_t *script = model->weaponscript;
 
-	float scr_width = hud_width;
-	float scr_height = hud_height;
-
-	float w_diff = (float)scr_width / script->view[0];
-	float h_diff = (float)scr_height / script->view[1];
-	float view_scale;
-
-	float fit_w, fit_h;
-
-	if (w_diff < h_diff)
-		view_scale = w_diff;
-	else
-		view_scale = h_diff;
-
-	fit_w = script->view[0] * view_scale;
-	fit_h = script->view[1] * view_scale;
-
-	float view_x = (scr_width / 2) - (fit_w / 2);
-	float view_y = (scr_height - fit_h) + 25.5f * view_scale;
-
-#define WEAPONTOP		64
-
+#define WEAPONTOP (script->view[1] / 2.0)
+	
 	// bob the weapon based on movement speed
 	static float bob[MAX_PLAYER_GUNS] = { 0 };
 	float wanted_bob;
-	float sx = 0, sy = 0;
 
 	if (!firing)
 		wanted_bob = min(6.4f, velocity * 0.02f);
@@ -2173,71 +2191,90 @@ void R_DrawWeaponSprite(modelhandle_t handle, gunindex_e index, float velocity, 
 		bob[index] = min(wanted_bob, bob[index] + frametime * 15);
 	else if (wanted_bob < bob[index])
 		bob[index] = max(wanted_bob, bob[index] - frametime * 15);
+	
+	const float bob_x_scale = (CL_GetClientGame() == GAME_DUKE ? 1 : 2);
+	const float bob_y_scale = (CL_GetClientGame() == GAME_DUKE ? 1.5 : 2.5);
 
-	float angle = (0.0028f * time);
-	sx = ((bob[index] * sin(angle)) * (CL_GetClientGame() == GAME_DUKE ? 5 : 15)) * scale;
-	angle *= 2;
-	sy = (WEAPONTOP + bob[index] * view_scale + (bob[index] * cos(angle)) * (CL_GetClientGame() == GAME_DUKE ? 4 : 6)) * scale;
+    float angle = ((128.0f / 40000) * time);
+    float bob_x = (bob[index] * sin(angle)) * bob_x_scale;
+    angle *= 2;
+    float bob_y = (bob[index] * fabs(cos(angle / 2.0))) * bob_y_scale;
 
-	if (yofs)
-		sy += (yofs * 80 / scale * view_scale);
-
-	if (frame >= script->num_frames)
+	if (frame >= script->num_anim_frames)
 		return;
 
-	mweaponscript_frame_t *of = &script->frames[oldframe];
-	mweaponscript_frame_t *f = &script->frames[frame];
+	float oldScale = draw.scale;
+	R_SetWeaponSpriteScale(1.0, r_config.width, r_config.height);
+
+	float heightAspect = script->view[1] / (r_config.height - height_diff);
+	float realWidth = r_config.width * heightAspect;
+	float sidePadding = (realWidth - script->view[0]) / 2.0f;
+
+	float heightAspectInverted = 1.0 / heightAspect;
+
+	const vec2_t realScreenSize = { realWidth, script->view[1] };
+	const vec2_t realScreenPosition = { -sidePadding, 0 };
+
+	mweaponscript_frame_t *of = &script->frames[script->anim_frames[oldframe]];
+	mweaponscript_frame_t *f = &script->frames[script->anim_frames[frame]];
 
 	R_SetColor(color.u32);
 
-	if (invul)
-		GL_Flush2D();
+	GL_Flush2D();
 
-	vec3_t base_translate, base_old_translate;
+	static const vec2_t virtualPosition = { 0, 0 };
+	const vec_t *virtualSize = &script->view[0];
+	int i;
 
-	for (int x = 0; x < 2; ++x)
-		base_translate[x] = script->translate[x] + f->translate[x];
+	yofs = WEAPONTOP * yofs;
 
-	if (f->lerp)
-	{
-		for (int x = 0; x < 2; ++x)
-			base_old_translate[x] = script->translate[x] + of->translate[x];
-	}
-
-	for (int i = 0; i < script->num_sprites; ++i)
+	for (i = script->num_sprites - 1; i >= 0; i--)
 	{
 		if (!f->draws[i].draw)
 			continue;
 
-		int drawframe = f->draws[i].sprite_frame;
-		model_t *sprite = MOD_ForHandle(script->sprites[i].model, CL_GetClientGame());
-		mspritedirframe_t *spriteframe = &sprite->spritedirframes[drawframe % sprite->numframes].directions[0];
+		const model_t *sprite = MOD_ForHandle(script->sprites[i].model, CL_GetClientGame());
 
-		if (invul)
-			tess.flags |= 4;
-
-		vec3_t translate, old_translate;
-
-		/*if (!of->draws[i].draw)
-		{*/
-			for (int x = 0; x < 2; ++x)
-				translate[x] = base_translate[x] + f->draws[i].translate[x];
-
-			if (f->lerp)
-			{
-				for (int x = 0; x < 2; ++x)
-					old_translate[x] = base_old_translate[x] + of->draws[i].translate[x];
-
-				LerpVector(old_translate, translate, frac, translate);
-			}
-		/*}
-		else
-		{
-			for (int x = 0; x < 2; ++x)
-				translate[x] = LerpFloat(of->draws[i].translate[x], f->draws[i].translate[x], frac);
-		}*/
+		const mweaponscript_frame_draw_t *drawFrame = &f->draws[i];
+		const mspritedirframe_t *spriteFrame = &sprite->spritedirframes[drawFrame->sprite_frame].directions[0];
+		const vec2_t objectSize = { spriteFrame->image->width, spriteFrame->image->height };
 		
-		GL_StretchPic(sx + (translate[0] + -spriteframe->origin_x) * view_scale + view_x, sy + (translate[1] + -spriteframe->origin_y) * view_scale + view_y - (height_diff * scale), spriteframe->width * view_scale, spriteframe->height * view_scale, spriteframe->image->sl, spriteframe->image->tl, spriteframe->image->sh, spriteframe->image->th, draw.colors[0].u32, spriteframe->image);
+		vec2_t scr, pos;
+		PointFromSizeAnchor(scr, drawFrame->of_fullscreen ? realScreenPosition : virtualPosition, drawFrame->of_fullscreen ? realScreenSize : virtualSize, drawFrame->at);
+		PointFromSizeAnchor(pos, virtualPosition, objectSize, drawFrame->my);
+
+		float curX = sidePadding + (scr[0] - pos[0] + drawFrame->offset[0]);
+		float curY = scr[1] - pos[1] + drawFrame->offset[1];
+
+		vec2_t translate = { f->translate[0], f->translate[1] };
+
+		if (f->lerp)
+		{
+			if ((f->lerp & lerp_draws) && of->draws[i].draw)
+			{
+				const mweaponscript_frame_draw_t *prevDrawFrame = &of->draws[i];
+				const mspritedirframe_t *prevSpriteFrame = &sprite->spritedirframes[prevDrawFrame->sprite_frame].directions[0];
+				const vec2_t prevObjectSize = { prevSpriteFrame->image->width, prevSpriteFrame->image->height };
+		
+				vec2_t prevScr, prevPos;
+				PointFromSizeAnchor(prevScr, prevDrawFrame->of_fullscreen ? realScreenPosition : virtualPosition, prevDrawFrame->of_fullscreen ? realScreenSize : virtualSize, prevDrawFrame->at);
+				PointFromSizeAnchor(prevPos, virtualPosition, prevObjectSize, prevDrawFrame->my);
+
+				const float prevX = sidePadding + (prevScr[0] - prevPos[0] + prevDrawFrame->offset[0]);
+				const float prevY = prevScr[1] - prevPos[1] + prevDrawFrame->offset[1];
+				
+				curX = LerpFloat(prevX, curX, frac);
+				curY = LerpFloat(prevY, curY, frac);
+			}
+
+			if (f->lerp & lerp_translates)
+			{
+				translate[0] = LerpFloat(of->translate[0], translate[0], frac);
+				translate[1] = LerpFloat(of->translate[1], translate[1], frac);
+			}
+		}
+
+		GL_WeaponPic(spriteFrame, drawFrame, curX + translate[0] + bob_x, curY + translate[1] + yofs + bob_y);
 	}
 
 	if (invul)
@@ -2246,6 +2283,30 @@ void R_DrawWeaponSprite(modelhandle_t handle, gunindex_e index, float velocity, 
 	GL_Flush2D();
 
 	R_SetColor(colorTable[COLOR_WHITE]);
+
+	R_SetScale(oldScale);
+}
+
+static mweaponscript_draw_anchor_t ParseAnchor(const char *token)
+{
+	if (Q_stricmp(token, "top left") == 0)
+		return anchor_top_left;
+	else if (Q_stricmp(token, "top center") == 0)
+		return anchor_top_center;
+	else if (Q_stricmp(token, "top right") == 0)
+		return anchor_top_right;
+	else if (Q_stricmp(token, "center right") == 0)
+		return anchor_center_right;
+	else if (Q_stricmp(token, "bottom right") == 0)
+		return anchor_bottom_right;
+	else if (Q_stricmp(token, "bottom center") == 0)
+		return anchor_bottom_center;
+	else if (Q_stricmp(token, "bottom left") == 0)
+		return anchor_bottom_left;
+	else if (Q_stricmp(token, "center left") == 0)
+		return anchor_center_left;
+
+	return anchor_center;
 }
 
 static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
@@ -2258,15 +2319,55 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 	if ((token = COM_Parse(&file))[0] != '{')
 		return Q_ERR_INVALID_FORMAT;
 
-	// this holds the temporary script that we set up while
-	// we're building it. swap it for real script
-	// once we allocate it.
-	static mweaponscript_t temp_script;
-	memset(&temp_script, 0, sizeof(temp_script));
-	mweaponscript_t *script_ptr = &temp_script;
+	const char *num_searcher = file;
+
+	Hunk_Begin(&model->hunk, 0x1000);
+
+	model->weaponscript = MOD_Malloc(sizeof(mweaponscript_t));
+
+	mweaponscript_t *script_ptr = model->weaponscript;
+	script_ptr->num_frames = script_ptr->num_sprites = script_ptr->num_anim_frames = 0;
+
+	while (true)
+	{
+		token = COM_Parse(&num_searcher);
+
+		if (!token || !num_searcher)
+			break;
+
+		if (Q_stricmp(token, "{") == 0)
+			script_ptr->num_frames++;
+		else if (Q_stricmp(token, "load_sprite") == 0)
+			script_ptr->num_sprites++;
+		else if (Q_stricmp(token, "animations") == 0)
+		{
+			token = COM_Parse(&num_searcher);
+			const char *anim_searcher = token;
+
+			while (true)
+			{
+				token = COM_Parse(&anim_searcher);
+
+				if (!token || !anim_searcher)
+					break;
+
+				script_ptr->num_anim_frames++;
+			}
+		}
+	}
+
+	script_ptr->sprites = MOD_Malloc(sizeof(mweaponscript_sprite_t) * script_ptr->num_sprites);
+	script_ptr->frames = MOD_Malloc(sizeof(mweaponscript_frame_t) * script_ptr->num_frames);
+	script_ptr->anim_frames = MOD_Malloc(sizeof(int) * script_ptr->num_anim_frames);
+
+	for (int i = 0; i < script_ptr->num_frames; ++i)
+		script_ptr->frames[i].draws = MOD_Malloc(sizeof(mweaponscript_frame_draw_t) * script_ptr->num_sprites);
+
+	Hunk_End(&model->hunk);
 
 	int cur_sprite = 0;
 	int cur_frame = 0;
+	int cur_anim = 0;
 
 	while ((token = COM_Parse(&file))[0] != '}')
 	{
@@ -2275,20 +2376,25 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 			token = COM_Parse(&file);
 			sscanf(token, "%f %f", &script_ptr->view[0], &script_ptr->view[1]);
 		}
-		else if (!Q_stricmp(token, "num_frames"))
-		{
-			token = COM_Parse(&file);
-			script_ptr->num_frames = atoi(token);
-		}
-		else if (!Q_stricmp(token, "num_sprites"))
-		{
-			token = COM_Parse(&file);
-			script_ptr->num_sprites = atoi(token);
-		}
 		else if (!Q_stricmp(token, "load_sprite"))
 		{
 			token = COM_Parse(&file);
 			script_ptr->sprites[cur_sprite++].model = R_RegisterModel(token);
+		}
+		else if (!Q_stricmp(token, "animations"))
+		{
+			token = COM_Parse(&file);
+			const char *anim_searcher = token;
+
+			while (true)
+			{
+				token = COM_Parse(&anim_searcher);
+
+				if (!token || !anim_searcher)
+					break;
+
+				script_ptr->anim_frames[cur_anim++] = atoi(token);
+			}
 		}
 		else if (!Q_stricmp(token, "{"))
 		{
@@ -2298,68 +2404,61 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 
 			while ((token = COM_Parse(&file))[0] != '}')
 			{
-				if (!Q_stricmp(token, "translate"))
+				if (!Q_strncasecmp(token, "draw_sprite", 11))
 				{
-					token = COM_Parse(&file);
-					sscanf(token, "%f %f", &frame->translate[0], &frame->translate[1]);
-				}
-				else if (!Q_stricmp(token, "draw_sprite"))
-				{
-					token = COM_Parse(&file);
-					int sprite_id = atoi(token);
+					int sprite_id = atoi(COM_Parse(&file));
 
-					token = COM_Parse(&file);
-					int sprite_frame_id = atoi(token);
+					if (!Q_strncasecmp(token, "draw_sprite_flip_", 17))
+					{
+						const char *whom = token + 17;
+
+						while (*whom)
+						{
+							if (*whom == 'x')
+								frame->draws[sprite_id].flip |= flip_x;
+							if (*whom == 'y')
+								frame->draws[sprite_id].flip |= flip_y;
+							whom++;
+						}
+					}
+
+					int sprite_frame_id = atoi(COM_Parse(&file));
 
 					frame->draws[sprite_id].draw = true;
 					frame->draws[sprite_id].sprite_frame = sprite_frame_id;
-				}
-				else if (!Q_stricmp(token, "draw_sprite_ofs"))
-				{
-					token = COM_Parse(&file);
-					int sprite_id = atoi(token);
+					frame->draws[sprite_id].at = ParseAnchor(COM_Parse(&file));
+					frame->draws[sprite_id].my = ParseAnchor(COM_Parse(&file));
 
 					token = COM_Parse(&file);
-					int sprite_frame_id = atoi(token);
-
-					frame->draws[sprite_id].draw = true;
-					frame->draws[sprite_id].sprite_frame = sprite_frame_id;
-
+					sscanf(token, "%f %f", &frame->draws[sprite_id].offset[0], &frame->draws[sprite_id].offset[1]);
+					
 					token = COM_Parse(&file);
-					sscanf(token, "%f %f", &frame->draws[sprite_id].translate[0], &frame->draws[sprite_id].translate[1]);
+					frame->draws[sprite_id].of_fullscreen = (Q_stricmp(token, "full") == 0);
 				}
 				else if (!Q_stricmp(token, "lerp"))
 				{
 					token = COM_Parse(&file);
+					const char *lerp_searcher = token;
 
-					if (token[0] == '1' || Q_stricmp(token, "true") == 0)
-						frame->lerp = true;
+					while (true)
+					{
+						token = COM_Parse(&lerp_searcher);
+
+						if (!token || !lerp_searcher)
+							break;
+						
+						if (!Q_stricmp(token, "draws"))
+							frame->lerp |= lerp_draws;
+						else if (!Q_stricmp(token, "translates"))
+							frame->lerp |= lerp_translates;
+					}
+				}
+				else if (!Q_stricmp(token, "translate"))
+				{
+					token = COM_Parse(&file);
+					sscanf(token, "%f %f", &frame->translate[0], &frame->translate[1]);
 				}
 			}
-		}
-		else if (!Q_stricmp(token, "translate"))
-		{
-			token = COM_Parse(&file);
-			sscanf(token, "%f %f", &script_ptr->translate[0], &script_ptr->translate[1]);
-		}
-
-		if (script_ptr->num_frames && script_ptr->num_sprites && !model->weaponscript)
-		{
-			Hunk_Begin(&model->hunk, 0x10000);
-			//model->size = sizeof(mweaponscript_t) + (sizeof(mweaponscript_sprite_t) * script_ptr->num_sprites) + (sizeof(mweaponscript_frame_t) * script_ptr->num_frames) + (sizeof(mweaponscript_frame_draw_t) * (script_ptr->num_frames * script_ptr->num_sprites));
-
-			model->weaponscript = MOD_Malloc(sizeof(mweaponscript_t));
-			memcpy(model->weaponscript, &temp_script, sizeof(mweaponscript_t));
-
-			script_ptr = model->weaponscript;
-
-			script_ptr->sprites = MOD_Malloc(sizeof(mweaponscript_sprite_t) * script_ptr->num_sprites);
-			script_ptr->frames = MOD_Malloc(sizeof(mweaponscript_frame_t) * script_ptr->num_frames);
-
-			for (int i = 0; i < script_ptr->num_frames; ++i)
-				script_ptr->frames[i].draws = MOD_Malloc(sizeof(mweaponscript_frame_draw_t) * script_ptr->num_sprites);
-
-			Hunk_End(&model->hunk);
 		}
 	}
 

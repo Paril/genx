@@ -1910,7 +1910,7 @@ void Menu_Size(menuFrameWork_t *menu)
     }
 
     // account for banner
-    if (menu->banner.handle) {
+    if (menu->banner) {
         h += GENERIC_SPACING(menu->banner_rc.height);
     }
 
@@ -1943,7 +1943,7 @@ void Menu_Size(menuFrameWork_t *menu)
 
     // banner is horizontally centered and
     // positioned on top of all menu items
-    if (menu->banner.handle) {
+    if (menu->banner) {
         menu->banner_rc.x = (uis.width - menu->banner_rc.width) / 2;
         menu->banner_rc.y = y;
         y += GENERIC_SPACING(menu->banner_rc.height);
@@ -1952,19 +1952,19 @@ void Menu_Size(menuFrameWork_t *menu)
     // plaque and logo are vertically centered and
     // positioned to the left of bitmaps and cursor
     h = 0;
-    if (menu->plaque.handle) {
+    if (menu->plaque) {
         h += menu->plaque_rc.height;
     }
-    if (menu->logo.handle) {
+    if (menu->logo) {
         h += menu->logo_rc.height + 5;
     }
 
-    if (menu->plaque.handle) {
+    if (menu->plaque) {
         menu->plaque_rc.x = x - CURSOR_WIDTH - menu->plaque_rc.width;
         menu->plaque_rc.y = (uis.height - h) / 2;
     }
 
-    if (menu->logo.handle) {
+    if (menu->logo) {
         menu->logo_rc.x = x - CURSOR_WIDTH - menu->logo_rc.width;
         menu->logo_rc.y = (uis.height + h) / 2 - menu->logo_rc.height;
     }
@@ -2154,7 +2154,7 @@ void Menu_Draw(menuFrameWork_t *menu)
 //
 // draw background
 //
-    if (menu->image.handle) {
+    if (menu->image) {
         R_DrawStretchPic(0, menu->y1, uis.width,
                          menu->y2 - menu->y1, menu->image, CL_GetClientGame());
     } else {
@@ -2173,13 +2173,13 @@ void Menu_Draw(menuFrameWork_t *menu)
 //
 // draw banner, plaque and logo
 //
-    if (menu->banner.handle) {
+    if (menu->banner) {
         R_DrawPic(menu->banner_rc.x, menu->banner_rc.y, menu->banner, CL_GetClientGame());
     }
-    if (menu->plaque.handle) {
+    if (menu->plaque) {
         R_DrawPic(menu->plaque_rc.x, menu->plaque_rc.y, menu->plaque, CL_GetClientGame());
     }
-    if (menu->logo.handle) {
+    if (menu->logo) {
         R_DrawPic(menu->logo_rc.x, menu->logo_rc.y, menu->logo, CL_GetClientGame());
     }
 

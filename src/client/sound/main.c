@@ -20,6 +20,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "sound.h"
 #include "common/soundscript.h"
 
+enum {
+	SOUNDHANDLE_EMPTY,
+
+	SOUNDHANDLE_RAW,
+	SOUNDHANDLE_GAMED
+};
+
+typedef struct {
+	uint32_t	type : 3;
+	uint32_t	id : 29;
+} soundhandle_t;
+
+#define SOUND_HANDLE_TYPE(x)	(((soundhandle_t *)&(x))->type)
+#define SOUND_HANDLE_ID(x)		(((soundhandle_t *)&(x))->id)
+
 static soundscript_t	r_soundscripts[MAX_SOUND_SCRIPTS];
 static int				r_numSoundScripts;
 
@@ -34,7 +49,7 @@ static void SSCR_Untouch()
 			if (r_soundscripts[i].entries[g].path[0])
 			{
 				r_soundscripts[i].entries[g].loaded = false;
-				r_soundscripts[i].entries[g].sound = (soundhandle_t) { 0 };
+				r_soundscripts[i].entries[g].sound = 0;
 			}
 		}
 	}
@@ -191,9 +206,9 @@ fail1:
 	return 0;
 }
 
-soundentry_t *SSCR_EntryForHandle(soundhandle_t handle, gametype_t game)
+soundentry_t *SSCR_EntryForHandle(qhandle_t handle, gametype_t game)
 {
-	soundscript_t *script = &r_soundscripts[handle.sound.id - 1];
+	soundscript_t *script = &r_soundscripts[SOUND_HANDLE_ID(handle) - 1];
 
 	if (!script->name[0])
 		return NULL;
@@ -487,24 +502,24 @@ void S_Activate(void)
 S_SfxForHandle
 ==================
 */
-sfx_t *S_SfxForHandle(soundhandle_t hSfx, gametype_t game)
+sfx_t *S_SfxForHandle(qhandle_t hSfx, gametype_t game)
 {
-    if (!hSfx.handle) {
+    if (!hSfx) {
         return NULL;
     }
 
-	switch (hSfx.sound.type)
+	switch (SOUND_HANDLE_TYPE(hSfx))
 	{
 	case SOUNDHANDLE_RAW:
 	default:
-		if (hSfx.sound.id < 1 || hSfx.sound.id > num_sfx) {
-			Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", hSfx.sound.id);
+		if (SOUND_HANDLE_ID(hSfx) < 1 || SOUND_HANDLE_ID(hSfx) > num_sfx) {
+			Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", SOUND_HANDLE_ID(hSfx));
 		}
 
-		return &known_sfx[hSfx.sound.id - 1];
+		return &known_sfx[SOUND_HANDLE_ID(hSfx) - 1];
 	case SOUNDHANDLE_GAMED:
-		if (hSfx.sound.id < 0 || hSfx.sound.id > r_numSoundScripts) {
-			Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", hSfx.sound.id);
+		if (SOUND_HANDLE_ID(hSfx) < 0 || SOUND_HANDLE_ID(hSfx) > r_numSoundScripts) {
+			Com_Error(ERR_DROP, "S_SfxForHandle: %d out of range", SOUND_HANDLE_ID(hSfx));
 		}
 
 		soundentry_t *entry = SSCR_EntryForHandle(hSfx, game);
@@ -582,18 +597,22 @@ S_RegisterSound
 
 ==================
 */
-soundhandle_t S_RegisterSound(const char *name)
+qhandle_t S_RegisterSound(const char *name)
 {
     char    buffer[MAX_QPATH];
     sfx_t   *sfx;
     size_t  len;
+	union {
+		qhandle_t		handle;
+		soundhandle_t	sound;
+	} index;
 
     if (!s_started)
-		return (soundhandle_t) { 0 };
+		return 0;
 
     // empty names are legal, silently ignore them
     if (!*name)
-		return (soundhandle_t) { 0 };
+		return 0;
 
     if (*name == '*') {
         len = Q_strlcpy(buffer, name, MAX_QPATH);
@@ -608,16 +627,14 @@ soundhandle_t S_RegisterSound(const char *name)
     // this MAY happen after prepending "sound/"
     if (len >= MAX_QPATH) {
         Com_DPrintf("%s: oversize name\n", __func__);
-		return (soundhandle_t) { 0 };
+		return 0;
     }
 
     // normalized to empty name?
     if (len == 0) {
         Com_DPrintf("%s: empty name\n", __func__);
-		return (soundhandle_t) { 0 };
+		return 0;
     }
-
-	soundhandle_t index;
 
 	if (*name == '%') {
 		index.sound.type = SOUNDHANDLE_GAMED;
@@ -626,7 +643,7 @@ soundhandle_t S_RegisterSound(const char *name)
 
 		if (script) {
 			index.sound.id = (script - r_soundscripts) + 1;
-			return index;
+			return index.handle;
 		}
 
 		// gotta load it
@@ -634,16 +651,16 @@ soundhandle_t S_RegisterSound(const char *name)
 
 		if (script) {
 			index.sound.id = (script - r_soundscripts) + 1;
-			return index;
+			return index.handle;
 		}
 
-		return (soundhandle_t) { 0 };
+		return 0;
 	}
 
     sfx = S_FindName(buffer, len);
     if (!sfx) {
         Com_DPrintf("%s: out of slots\n", __func__);
-		return (soundhandle_t) { 0 };
+		return 0;
     }
 
     if (!s_registering) {
@@ -653,7 +670,7 @@ soundhandle_t S_RegisterSound(const char *name)
 	index.sound.type = SOUNDHANDLE_RAW;
 	index.sound.id = (sfx - known_sfx) + 1;
 
-    return index;
+    return index.handle;
 }
 
 /*
@@ -1045,7 +1062,7 @@ if pos is NULL, the sound will be dynamically sourced from the entity
 Entchannel 0 will never override a playing sound
 ====================
 */
-void S_StartSound(const vec3_t origin, int entnum, int entchannel, soundhandle_t hSfx, float vol, float attenuation, float timeofs)
+void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
 {
     sfxcache_t  *sc;
     playsound_t *ps, *sort;
@@ -1089,7 +1106,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, soundhandle_t
     ps->volume = vol;
     ps->sfx = sfx;
 
-	if (hSfx.sound.type == SOUNDHANDLE_GAMED) {
+	if (SOUND_HANDLE_TYPE(hSfx) == SOUNDHANDLE_GAMED) {
 		soundentry_t *entry = SSCR_EntryForHandle(hSfx, cl_entities[entnum].current.game);
 
 		if (entry->pitch_min == entry->pitch_max)
@@ -1126,7 +1143,7 @@ void S_ParseStartSound(void)
 {
     precache_entry_t entry = cl.precache[snd.index];
 
-    if (entry.type != PRECACHE_SOUND || !entry.sound.handle)
+    if (entry.type != PRECACHE_SOUND || !entry.sound)
         return;
 
 #ifdef _DEBUG
@@ -1147,7 +1164,7 @@ S_StartLocalSound
 void S_StartLocalSound(const char *sound)
 {
     if (s_started) {
-        soundhandle_t sfx = S_RegisterSound(sound);
+        qhandle_t sfx = S_RegisterSound(sound);
         S_StartSound(NULL, listener_entnum, 0, sfx, 1, ATTN_NONE, 0);
     }
 }
@@ -1155,7 +1172,7 @@ void S_StartLocalSound(const char *sound)
 void S_StartLocalSound_(const char *sound)
 {
     if (s_started) {
-		soundhandle_t sfx = S_RegisterSound(sound);
+		qhandle_t sfx = S_RegisterSound(sound);
         S_StartSound(NULL, listener_entnum, 256, sfx, 1, ATTN_NONE, 0);
     }
 }

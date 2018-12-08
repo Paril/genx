@@ -172,7 +172,7 @@ extern cvar_t   *s_show;
 #define S_Malloc(x)     Z_TagMalloc(x, TAG_SOUND)
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
-sfx_t *S_SfxForHandle(soundhandle_t hSfx, gametype_t game);
+sfx_t *S_SfxForHandle(qhandle_t hSfx, gametype_t game);
 sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);

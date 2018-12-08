@@ -1,9 +1,9 @@
-﻿using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+﻿using SixLabors.ImageSharp.Advanced;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using ImageType = SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Bgra32>;
 
 namespace asset_transpiler
 {
@@ -14,18 +14,31 @@ namespace asset_transpiler
 		uint Length { get; }
 	}
 
-	class ArchiveBase : IDisposable
+	abstract class ArchiveBase : IDisposable
 	{
-		public IList<IArchiveFile> Files { get; private set; }
-		public BinaryReader Reader { get; private set; }
-		GameParser Parser;
+		IList<IArchiveFile> _files;
 
-		public ArchiveBase(GameParser parser, Stream stream)
+		public IList<IArchiveFile> Files
 		{
-			Parser = parser;
-			Reader = new BinaryReader(stream);
-			Files = new List<IArchiveFile>();
+			get
+			{
+				if (_files != null)
+					return _files;
+
+				_files = new List<IArchiveFile>();
+				ParseArchive();
+				return _files;
+			}
 		}
+
+		public BinaryReader Reader { get; private set; }
+
+		public ArchiveBase(Stream stream)
+		{
+			Reader = new BinaryReader(stream);
+		}
+
+		protected abstract void ParseArchive();
 
 		public IArchiveFile Get(string name)
 		{
@@ -49,12 +62,10 @@ namespace asset_transpiler
 		
 		public void WriteFileTo(IArchiveFile file, string output, Action<BinaryWriter> writeHeader = null, Action<BinaryWriter, byte[]> writeData = null)
 		{
-			Parser.CreateDirectory(Path.GetDirectoryName(output));
-
-			using (var bw = new BinaryWriter(Parser.OpenFileStream(output)))
+			using (var bw = new BinaryWriter(GameParser.OpenFileStream(output)))
 			{
 				writeHeader?.Invoke(bw);
-
+				
 				if (writeData != null)
 					writeData(bw, GetBytes(file));
 				else
@@ -62,22 +73,50 @@ namespace asset_transpiler
 			}
 		}
 
-		public void WriteImageTo(byte[] colors, PaletteID pal, string output, int width, int height, Func<byte, byte> changeColor = null)
+		private static void WriteImageTo(ImageType img, Stream stream, int width, int height)
+		{
+			img.SaveAsImage(stream);
+		}
+
+		private static void WriteImageTo(byte[] colors, PaletteID pal, Stream stream, int width, int height, Func<byte, byte> changeColor = null)
 		{
 			if (changeColor == null)
 				changeColor = b => b;
 
-			Parser.CreateDirectory(Path.GetDirectoryName(output));
-
-			using (var img = new Image<Rgba32>(width, height))
+			using (var img = new ImageType(width, height))
 			{
+				var span = img.GetPixelSpan();
+
 				for (var y = 0; y < height; y++)
 					for (var x = 0; x < width; x++)
-						img[x, y] = Globals.GetMappedColor(pal, changeColor(colors[y * width + x]));
+					{
+						var c = y * width + x;
+						span[c] = Globals.GetMappedColor(pal, changeColor(colors[c]));
+					}
 
-				using (var strm = Parser.OpenFileStream(output))
-					img.SaveAsTga(strm);
+				WriteImageTo(img, stream, width, height);
 			}
+		}
+
+		public static void WriteImageTo(BinaryReader reader, PaletteID pal, Stream output)
+		{
+			int width = reader.ReadInt32();
+			int height = reader.ReadInt32();
+			byte[] bytes = reader.ReadBytes(width * height);
+
+			WriteImageTo(bytes, pal, output, width, height);
+		}
+
+		public static void WriteImageTo(byte[] colors, PaletteID pal, string output, int width, int height, Func<byte, byte> changeColor = null)
+		{
+			using (var strm = GameParser.OpenFileStream(output, Globals.TgaSize(colors.Length)))
+				WriteImageTo(colors, pal, strm, width, height, changeColor);
+		}
+
+		public static void WriteImageTo(ImageType image, string output, int width, int height)
+		{
+			using (var strm = GameParser.OpenFileStream(output, Globals.TgaSize(image.Width * image.Height)))
+				WriteImageTo(image, strm, width, height);
 		}
 
 		public void WriteImageTo(IArchiveFile file, PaletteID pal, string output)
@@ -99,7 +138,7 @@ namespace asset_transpiler
 		}
 	}
 
-	class GRPFile : IArchiveFile
+	class IARchiveFile : IArchiveFile
 	{
 		public string Name { get; set; }
 		public uint Offset { get; set; }
@@ -108,8 +147,12 @@ namespace asset_transpiler
 
 	class GRP : ArchiveBase
 	{
-		public GRP(GameParser parser, Stream stream) :
-			base(parser, stream)
+		public GRP(Stream stream) :
+			base(stream)
+		{
+		}
+
+		protected override void ParseArchive()
 		{
 			var magic = Encoding.ASCII.GetString(Reader.ReadBytes(12));
 
@@ -121,7 +164,7 @@ namespace asset_transpiler
 
 			for (uint i = 0; i < num_entries; ++i)
 			{
-				GRPFile file = new GRPFile();
+				IARchiveFile file = new IARchiveFile();
 
 				file.Name = Encoding.ASCII.GetString(Reader.ReadBytes(12));
 				file.Length = Reader.ReadUInt32();
@@ -156,8 +199,12 @@ namespace asset_transpiler
 
 	class WAD : ArchiveBase
 	{
-		public WAD(GameParser parser, Stream stream) :
-			base(parser, stream)
+		public WAD(Stream stream) :
+			base(stream)
+		{
+		}
+		
+		protected override void ParseArchive()
 		{
 			var magic = Encoding.ASCII.GetString(Reader.ReadBytes(4));
 
@@ -220,8 +267,12 @@ namespace asset_transpiler
 
 	class PAK : ArchiveBase
 	{
-		public PAK(GameParser parser, Stream stream) :
-			base(parser, stream)
+		public PAK(Stream stream) :
+			base(stream)
+		{
+		}
+
+		protected override void ParseArchive()
 		{
 			if (Encoding.ASCII.GetString(Reader.ReadBytes(4)) != "PACK")
 				throw new Exception();

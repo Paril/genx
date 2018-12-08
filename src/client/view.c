@@ -24,8 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // development tools for weapons
 //
 int         	gun_frame;
-// Generations
-modelhandle_t   gun_model;
+qhandle_t	   gun_model;
 
 //=============
 
@@ -300,8 +299,7 @@ static void V_Gun_Model_f(void)
     char    name[MAX_QPATH];
 
     if (Cmd_Argc() != 2) {
-		// Generations
-		gun_model = (modelhandle_t) { 0 };
+		gun_model = 0;
         return;
     }
     Q_concat(name, sizeof(name), "models/", Cmd_Argv(1), "/tris.md2", NULL);
@@ -325,10 +323,10 @@ static int entitycmpfnc(const void *_a, const void *_b)
 		return 1;
 
     // all other models are sorted by model then skin
-    if (a->model.handle == b->model.handle)
-        return a->skin.handle - b->skin.handle;
+    if (a->model == b->model)
+        return a->skin - b->skin;
     else
-        return a->model.handle - b->model.handle;
+        return a->model - b->model;
 }
 
 static void V_SetLightLevel(void)

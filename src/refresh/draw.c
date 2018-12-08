@@ -190,7 +190,7 @@ void R_SetScale(float scale)
 	draw.scale = scale;
 }
 
-void R_DrawStretchPic(int x, int y, int w, int h, pichandle_t pic, gametype_t game)
+void R_DrawStretchPic(int x, int y, int w, int h, qhandle_t pic, gametype_t game)
 {
 	image_t *image = IMG_ForHandle(pic, game);
 
@@ -198,17 +198,20 @@ void R_DrawStretchPic(int x, int y, int w, int h, pichandle_t pic, gametype_t ga
 		draw.colors[0].u32, image);
 }
 
-void R_DrawPic(int x, int y, pichandle_t pic, gametype_t game)
+void R_DrawPic(int x, int y, qhandle_t pic, gametype_t game)
 {
 	image_t *image = IMG_ForHandle(pic, game);
 
-	GL_StretchPic(x, y, image->width, image->height,
-		image->sl, image->tl, image->sh, image->th, draw.colors[0].u32, image);
+	if (image)
+		GL_StretchPic(x, y, image->width, image->height,
+			image->sl, image->tl, image->sh, image->th, draw.colors[0].u32, image);
+	else
+		_GL_StretchPic(x, y, 1, 1, 0, 0, 1, 1, draw.colors[0].u32, TEXNUM_WHITE, 0);
 }
 
 #define DIV64 (1.0f / 64.0f)
 
-void R_TileClear(int x, int y, int w, int h, pichandle_t pic, gametype_t game)
+void R_TileClear(int x, int y, int w, int h, qhandle_t pic, gametype_t game)
 {
 	GL_StretchPic(x, y, w, h, x * DIV64, y * DIV64,
 				  (x + w) * DIV64, (y + h) * DIV64, U32_WHITE, IMG_ForHandle(pic, game));
@@ -245,6 +248,7 @@ static inline void draw_char(int x, int y, int flags, int ch, image_t *image)
 
 	float w = image->width;
 	float h = image->height;
+	float chw = CHAR_WIDTH;
 
 	if (image->flags & IF_SCRAP)
 	{
@@ -252,11 +256,19 @@ static inline void draw_char(int x, int y, int flags, int ch, image_t *image)
 		h = SCRAP_BLOCK_HEIGHT;
 	}
 
-	w = (CHAR_WIDTH / w);
-	h = (CHAR_WIDTH / h);
+	if (image->font_widths) {
+		s = image->font_x[ch] / w;
+		w = (chw = image->font_widths[ch]) / w;
 
-	s = image->sl + (ch & 15) * w;
-	t = image->tl + (ch >> 4) * h;
+		h = (CHAR_WIDTH / h);
+		t = 0;
+	} else {
+		w = (CHAR_WIDTH / w);
+		h = (CHAR_WIDTH / h);
+
+		s = image->sl + (ch & 15) * w;
+		t = image->tl + (ch >> 4) * h;
+	}
 
 	if (gl_fontshadow->integer > 0 && ch != 0x83) {
 		uint32_t black = MakeColor(0, 0, 0, draw.colors[0].u8[3]);
@@ -269,16 +281,32 @@ static inline void draw_char(int x, int y, int flags, int ch, image_t *image)
 				s + w, t + h, black, image);
 	}
 
-	GL_StretchPic(x, y, CHAR_WIDTH, CHAR_HEIGHT, s, t,
+	GL_StretchPic(x, y, chw, CHAR_HEIGHT, s, t,
 		s + w, t + h, draw.colors[ch >> 7].u32, image);
 }
 
-void R_DrawChar(int x, int y, int flags, int ch, pichandle_t font, gametype_t game)
+void R_DrawChar(int x, int y, int flags, int ch, qhandle_t font, gametype_t game)
 {
 	draw_char(x, y, flags, ch & 255, IMG_ForHandle(font, game));
 }
 
-int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, pichandle_t font, gametype_t game)
+int R_StringWidth(size_t maxlen, const char *s, qhandle_t font, gametype_t game)
+{
+	image_t *image = IMG_ForHandle(font, game);
+	int x = 0;
+
+	if (!image)
+		return 0;
+
+	while (maxlen-- && *s) {
+		byte ch = *s++;
+		x += image->font_widths ? image->font_widths[ch] : CHAR_WIDTH;
+	}
+
+	return x;
+}
+
+int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, qhandle_t font, gametype_t game)
 {
 	image_t *image = IMG_ForHandle(font, game);
 
@@ -288,7 +316,7 @@ int R_DrawString(int x, int y, int flags, size_t maxlen, const char *s, pichandl
 	while (maxlen-- && *s) {
 		byte ch = *s++;
 		draw_char(x, y, flags, ch, image);
-		x += CHAR_WIDTH;
+		x += image->font_widths ? image->font_widths[ch] : CHAR_WIDTH;
 	}
 
 	return x;
@@ -340,9 +368,9 @@ void Draw_Stats(void)
 	int x = 10, y = 10;
 
 	if (!r_charset) {
-		pichandle_t tmp;
+		qhandle_t tmp;
 		tmp = R_RegisterFont("%conchars");
-		if (!tmp.handle) return;
+		if (!tmp) return;
 		r_charset = IMG_ForHandle(tmp, CL_GetClientGame());
 	}
 
@@ -376,6 +404,7 @@ void Draw_Stats(void)
 		y += 10;
 	}
     Draw_Stringf(x, y, "2D batches   : %i", c.batchesDrawn2D); y += 10;
+    Draw_Stringf(x, y, "Location     : %f %f %f", glr.fd.vieworg[0], glr.fd.vieworg[1], glr.fd.vieworg[2]); y += 10;
 }
 
 void Draw_Lightmaps(void)

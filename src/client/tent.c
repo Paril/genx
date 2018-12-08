@@ -19,80 +19,80 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-soundhandle_t   cl_sfx_ric1;
-soundhandle_t   cl_sfx_ric2;
-soundhandle_t   cl_sfx_ric3;
-soundhandle_t   cl_sfx_lashit;
-soundhandle_t   cl_sfx_spark5;
-soundhandle_t   cl_sfx_spark6;
-soundhandle_t   cl_sfx_spark7;
-soundhandle_t   cl_sfx_railg;
-soundhandle_t   cl_sfx_rockexp;
-soundhandle_t   cl_sfx_grenexp;
-soundhandle_t   cl_sfx_watrexp;
-soundhandle_t   cl_sfx_footsteps[4];
+qhandle_t   cl_sfx_ric1;
+qhandle_t   cl_sfx_ric2;
+qhandle_t   cl_sfx_ric3;
+qhandle_t   cl_sfx_lashit;
+qhandle_t   cl_sfx_spark5;
+qhandle_t   cl_sfx_spark6;
+qhandle_t   cl_sfx_spark7;
+qhandle_t   cl_sfx_railg;
+qhandle_t   cl_sfx_rockexp;
+qhandle_t   cl_sfx_grenexp;
+qhandle_t   cl_sfx_watrexp;
+qhandle_t   cl_sfx_footsteps[4];
 
-soundhandle_t   cl_sfx_lightning;
-soundhandle_t   cl_sfx_disrexp;
+qhandle_t   cl_sfx_lightning;
+qhandle_t   cl_sfx_disrexp;
 
-modelhandle_t   cl_mod_explode;
-modelhandle_t   cl_mod_smoke;
-modelhandle_t   cl_mod_flash;
-modelhandle_t   cl_mod_parasite_segment;
-modelhandle_t   cl_mod_grapple_cable;
-modelhandle_t   cl_mod_explo4;
-modelhandle_t   cl_mod_bfg_explo;
-modelhandle_t   cl_mod_powerscreen;
-modelhandle_t   cl_mod_laser;
-modelhandle_t   cl_mod_dmspot;
+qhandle_t   cl_mod_explode;
+qhandle_t   cl_mod_smoke;
+qhandle_t   cl_mod_flash;
+qhandle_t   cl_mod_parasite_segment;
+qhandle_t   cl_mod_grapple_cable;
+qhandle_t   cl_mod_explo4;
+qhandle_t   cl_mod_bfg_explo;
+qhandle_t   cl_mod_powerscreen;
+qhandle_t   cl_mod_laser;
+qhandle_t   cl_mod_dmspot;
 
-modelhandle_t   cl_mod_lightning;
-modelhandle_t   cl_mod_heatbeam;
-modelhandle_t   cl_mod_explo4_big;
+qhandle_t   cl_mod_lightning;
+qhandle_t   cl_mod_heatbeam;
+qhandle_t   cl_mod_explo4_big;
 
 // Generations
-soundhandle_t   cl_sfx_tink1;
-soundhandle_t	cl_sfx_r_exp3;
-soundhandle_t	cl_sfx_wizhit;
-soundhandle_t	cl_sfx_knighthit;
+qhandle_t   cl_sfx_tink1;
+qhandle_t	cl_sfx_r_exp3;
+qhandle_t	cl_sfx_wizhit;
+qhandle_t	cl_sfx_knighthit;
 
-modelhandle_t	cl_mod_q1_lightning1;
-modelhandle_t	cl_mod_q1_lightning2;
-modelhandle_t	cl_mod_q1_lightning3;
-modelhandle_t	cl_mod_q1_explode;
-modelhandle_t	cl_mod_player;
+qhandle_t	cl_mod_q1_lightning1;
+qhandle_t	cl_mod_q1_lightning2;
+qhandle_t	cl_mod_q1_lightning3;
+qhandle_t	cl_mod_q1_explode;
+qhandle_t	cl_mod_player;
 
-soundhandle_t	cl_sfx_doom_boom;
-soundhandle_t	cl_sfx_doom_plas;
-soundhandle_t	cl_sfx_doom_imp_xplo;
+qhandle_t	cl_sfx_doom_boom;
+qhandle_t	cl_sfx_doom_plas;
+qhandle_t	cl_sfx_doom_imp_xplo;
 
-modelhandle_t	cl_mod_doom_tfog;
-modelhandle_t	cl_mod_doom_ifog;
-modelhandle_t	cl_mod_doom_puff;
-modelhandle_t	cl_mod_doom_misl;
-modelhandle_t	cl_mod_doom_plse;
-modelhandle_t	cl_mod_doom_bal1;
-modelhandle_t	cl_mod_doom_bal2;
-modelhandle_t	cl_mod_doom_bal7;
-modelhandle_t	cl_mod_doom_apbx;
-modelhandle_t	cl_mod_doom_blud;
-modelhandle_t	cl_mod_doom_fbxp;
+qhandle_t	cl_mod_doom_tfog;
+qhandle_t	cl_mod_doom_ifog;
+qhandle_t	cl_mod_doom_puff;
+qhandle_t	cl_mod_doom_misl;
+qhandle_t	cl_mod_doom_plse;
+qhandle_t	cl_mod_doom_bal1;
+qhandle_t	cl_mod_doom_bal2;
+qhandle_t	cl_mod_doom_bal7;
+qhandle_t	cl_mod_doom_apbx;
+qhandle_t	cl_mod_doom_blud;
+qhandle_t	cl_mod_doom_fbxp;
 
-modelhandle_t	cl_mod_duke_shotspark;
-modelhandle_t	cl_mod_duke_shotsmoke;
-modelhandle_t	cl_mod_duke_shotblood;
-modelhandle_t	cl_mod_duke_shotgunshell;
-modelhandle_t	cl_mod_duke_shell;
-modelhandle_t	cl_mod_duke_explosion;
-modelhandle_t	cl_mod_duke_explosion2;
-modelhandle_t	cl_mod_duke_teleport;
-modelhandle_t	cl_mod_duke_freezeblast;
-modelhandle_t	cl_mod_duke_glass;
+qhandle_t	cl_mod_duke_shotspark;
+qhandle_t	cl_mod_duke_shotsmoke;
+qhandle_t	cl_mod_duke_shotblood;
+qhandle_t	cl_mod_duke_shotgunshell;
+qhandle_t	cl_mod_duke_shell;
+qhandle_t	cl_mod_duke_explosion;
+qhandle_t	cl_mod_duke_explosion2;
+qhandle_t	cl_mod_duke_teleport;
+qhandle_t	cl_mod_duke_freezeblast;
+qhandle_t	cl_mod_duke_glass;
 
-soundhandle_t	cl_sfx_duke_rpg_boom;
-soundhandle_t	cl_sfx_duke_pipe_boom;
-soundhandle_t	cl_sfx_duke_ricochet;
-soundhandle_t	cl_sfx_duke_glass;
+qhandle_t	cl_sfx_duke_rpg_boom;
+qhandle_t	cl_sfx_duke_pipe_boom;
+qhandle_t	cl_sfx_duke_ricochet;
+qhandle_t	cl_sfx_duke_glass;
 
 /*
 =================
@@ -705,7 +705,7 @@ BEAM MANAGEMENT
 typedef struct {
     int         	entity;
     int         	dest_entity;
-	modelhandle_t   model;
+	qhandle_t   model;
     int         	endtime;
     vec3_t      	offset;
     vec3_t      	start, end;
@@ -720,7 +720,7 @@ static void CL_ClearBeams(void)
     memset(cl_playerbeams, 0, sizeof(cl_playerbeams));
 }
 
-static void CL_ParseBeam(modelhandle_t model)
+static void CL_ParseBeam(qhandle_t model)
 {
     beam_t  *b;
     int     i;
@@ -732,7 +732,7 @@ static void CL_ParseBeam(modelhandle_t model)
 
 // find a free beam
     for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model.handle || b->endtime < cl.time) {
+        if (!b->model || b->endtime < cl.time) {
 override:
             b->entity = te.entity1;
             b->dest_entity = te.entity2;
@@ -746,7 +746,7 @@ override:
     }
 }
 
-static void CL_ParsePlayerBeam(modelhandle_t model)
+static void CL_ParsePlayerBeam(qhandle_t model)
 {
     beam_t  *b;
     int     i;
@@ -766,7 +766,7 @@ static void CL_ParsePlayerBeam(modelhandle_t model)
 
 // find a free beam
     for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model.handle || b->endtime < cl.time) {
+        if (!b->model || b->endtime < cl.time) {
             b->entity = te.entity1;
             b->model = model;
             b->endtime = cl.time + 100;     // PMM - this needs to be 100 to prevent multiple heatbeams
@@ -797,7 +797,7 @@ static void CL_AddBeams(void)
 
 // update beams
     for (i = 0, b = cl_beams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model.handle || b->endtime < cl.time)
+        if (!b->model || b->endtime < cl.time)
             continue;
 
         // if coming from the player, update the start position
@@ -812,7 +812,7 @@ static void CL_AddBeams(void)
 
         // add new entities for the beams
         d = VectorNormalize(dist);
-        if (b->model.handle == cl_mod_lightning.handle) {
+        if (b->model == cl_mod_lightning) {
             model_length = 35.0f;
             d -= 20.0f; // correction so it doesn't end in middle of tesla
         } else {
@@ -830,7 +830,7 @@ static void CL_AddBeams(void)
         // PMM - special case for lightning model .. if the real length is shorter than the model,
         // flip it around & draw it from the end to the start.  This prevents the model from going
         // through the tesla mine (instead it goes through the target)
-        if ((b->model.handle == cl_mod_lightning.handle) && (d <= model_length)) {
+        if ((b->model == cl_mod_lightning) && (d <= model_length)) {
             VectorCopy(b->end, ent.origin);
             ent.flags = RF_FULLBRIGHT;
             ent.angles[0] = angles[0];
@@ -842,7 +842,7 @@ static void CL_AddBeams(void)
 
         while (d > 0) {
             VectorCopy(org, ent.origin);
-            if (b->model.handle == cl_mod_lightning.handle) {
+            if (b->model == cl_mod_lightning) {
                 ent.flags = RF_FULLBRIGHT;
                 ent.angles[0] = -angles[0];
                 ent.angles[1] = angles[1] + 180.0f;
@@ -892,7 +892,7 @@ static void CL_AddPlayerBeams(void)
 
 // update beams
     for (i = 0, b = cl_playerbeams; i < MAX_BEAMS; i++, b++) {
-        if (!b->model.handle || b->endtime < cl.time)
+        if (!b->model || b->endtime < cl.time)
             continue;
 
         // if coming from the player, update the start position

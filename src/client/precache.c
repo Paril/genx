@@ -115,7 +115,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 	Q_concat(model_filename, sizeof(model_filename),
 		"players/", model_name, "/tris.md2", NULL);
 	ci->model = R_RegisterModel(model_filename);
-	if (!ci->model.handle && Q_stricmp(model_name, "male")) {
+	if (!ci->model && Q_stricmp(model_name, "male")) {
 		strcpy(model_name, "male");
 		strcpy(model_filename, "players/male/tris.md2");
 		ci->model = R_RegisterModel(model_filename);
@@ -128,7 +128,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 
 	// if we don't have the skin and the model was female,
 	// see if athena skin exists
-	if (!ci->skin.handle && !Q_stricmp(model_name, "female")) {
+	if (!ci->skin && !Q_stricmp(model_name, "female")) {
 		strcpy(skin_name, "athena");
 		strcpy(skin_filename, "players/female/athena.pcx");
 		ci->skin = R_RegisterSkin(skin_filename);
@@ -136,7 +136,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 
 	// if we don't have the skin and the model wasn't male,
 	// see if the male has it (this is for CTF's skins)
-	if (!ci->skin.handle && Q_stricmp(model_name, "male")) {
+	if (!ci->skin && Q_stricmp(model_name, "male")) {
 		// change model to male
 		strcpy(model_name, "male");
 		strcpy(model_filename, "players/male/tris.md2");
@@ -150,7 +150,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 
 	// if we still don't have a skin, it means that the male model
 	// didn't have it, so default to grunt
-	if (!ci->skin.handle) {
+	if (!ci->skin) {
 		// see if the skin exists for the male model
 		strcpy(skin_name, "grunt");
 		strcpy(skin_filename, "players/male/grunt.pcx");
@@ -162,7 +162,7 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 		Q_concat(weapon_filename, sizeof(weapon_filename),
 			"players/", model_name, "/", cl.weaponModels[i], NULL);
 		ci->weaponmodel[i] = R_RegisterModel(weapon_filename);
-		if (!ci->weaponmodel[i].handle && !Q_stricmp(model_name, "cyborg")) {
+		if (!ci->weaponmodel[i] && !Q_stricmp(model_name, "cyborg")) {
 			// try male
 			Q_concat(weapon_filename, sizeof(weapon_filename),
 				"players/male/", cl.weaponModels[i], NULL);
@@ -183,11 +183,11 @@ void CL_LoadClientinfo(clientinfo_t *ci, const char *s)
 		return;
 
 	// must have loaded all data types to be valid
-	if (!ci->skin.handle || !ci->icon.handle || !ci->model.handle || !ci->weaponmodel[0].handle) {
-		ci->skin = (pichandle_t) { 0 };
-		ci->icon = (pichandle_t) { 0 };
-		ci->model = (modelhandle_t) { 0 };
-		ci->weaponmodel[0] = (modelhandle_t) { 0 };
+	if (!ci->skin || !ci->icon || !ci->model || !ci->weaponmodel[0]) {
+		ci->skin = 0;
+		ci->icon = 0;
+		ci->model = 0;
+		ci->weaponmodel[0] = 0;
 		ci->model_name[0] = 0;
 		ci->skin_name[0] = 0;
 	}
@@ -393,6 +393,9 @@ void CL_PrepRefresh(void)
 
 		cl.precache[i].type = PRECACHE_PIC;
 		cl.precache[i].image = R_RegisterPic2(name);
+
+		if (cl.precache[i].image < 0)
+			cl.precache[i].image = cl.precache[i].image;
 	}
 
 	CL_LoadState(LOAD_CLIENTS);

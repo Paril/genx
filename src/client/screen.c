@@ -25,44 +25,44 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 static struct {
 	bool        initialized;        // ready to draw
 
-	pichandle_t crosshair_pic;
+	qhandle_t	crosshair_pic;
 	int         crosshair_width, crosshair_height;
 	color_t     crosshair_color;
 
-	pichandle_t pause_pic;
+	qhandle_t	pause_pic;
 	int         pause_width, pause_height;
 
-	pichandle_t loading_pic;
+	qhandle_t	loading_pic;
 	int         loading_width, loading_height;
 	bool        draw_loading;
 
-	pichandle_t sb_pics[2][STAT_PICS];
-	pichandle_t inven_pic;
-	pichandle_t field_pic;
+	qhandle_t	sb_pics[2][STAT_PICS];
+	qhandle_t	inven_pic;
+	qhandle_t	field_pic;
 
-	pichandle_t backtile_pic;
+	qhandle_t	backtile_pic;
 
-	pichandle_t net_pic;
-	pichandle_t font_pic;
+	qhandle_t	net_pic;
+	qhandle_t	font_pic;
 
 	int         hud_width, hud_height;
 	float       hud_scale;
 
 	// Generations
-	pichandle_t q1_backtile_pic;
-	pichandle_t d_backtile_pic;
+	qhandle_t	q1_backtile_pic;
+	qhandle_t	d_backtile_pic;
 
-	pichandle_t	sb_faces[5][2];
-	pichandle_t	sb_face_invis;
-	pichandle_t	sb_face_invuln;
-	pichandle_t	sb_face_invis_invuln;
-	pichandle_t	sb_face_quad;
+	qhandle_t	sb_faces[5][2];
+	qhandle_t	sb_face_invis;
+	qhandle_t	sb_face_invuln;
+	qhandle_t	sb_face_invis_invuln;
+	qhandle_t	sb_face_quad;
 
-	pichandle_t sb_doom_nums[10];
-	pichandle_t sb_doom_gray_nums[10];
-	pichandle_t	sb_doom_faces[ST_NUMFACES];
+	qhandle_t	sb_doom_nums[10];
+	qhandle_t	sb_doom_gray_nums[10];
+	qhandle_t	sb_doom_faces[ST_NUMFACES];
 
-	pichandle_t	sb_duke_nums[12];
+	qhandle_t	sb_duke_nums[12];
 } scr;
 
 static cvar_t   *scr_viewsize;
@@ -142,7 +142,7 @@ SCR_DrawStringEx
 ==============
 */
 int SCR_DrawStringEx(int x, int y, int flags, size_t maxlen,
-	const char *s, pichandle_t font, gametype_t game)
+	const char *s, qhandle_t font, gametype_t game)
 {
 	size_t len = strlen(s);
 
@@ -166,7 +166,7 @@ SCR_DrawStringMulti
 ==============
 */
 void SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen,
-	const char *s, pichandle_t font, gametype_t game)
+	const char *s, qhandle_t font, gametype_t game)
 {
     char    *p;
 	size_t  len;
@@ -1147,7 +1147,7 @@ static void scr_crosshair_changed(cvar_t *self)
 		}
         scr.crosshair_color.u8[3] = Cvar_ClampValue(ch_alpha, 0, 1) * 255;
     } else {
-        scr.crosshair_pic = (pichandle_t) { 0 };
+        scr.crosshair_pic = 0;
 	}
 }
 
@@ -1213,64 +1213,64 @@ void SCR_RegisterMedia(void)
 			scr.sb_pics[i][j] = R_RegisterPic(sb_nums[i][j]);
 
 	// Generations
-	scr.sb_faces[4][0] = R_RegisterPic("q1/face1");
-	scr.sb_faces[4][1] = R_RegisterPic("q1/face_p1");
-	scr.sb_faces[3][0] = R_RegisterPic("q1/face2");
-	scr.sb_faces[3][1] = R_RegisterPic("q1/face_p2");
-	scr.sb_faces[2][0] = R_RegisterPic("q1/face3");
-	scr.sb_faces[2][1] = R_RegisterPic("q1/face_p3");
-	scr.sb_faces[1][0] = R_RegisterPic("q1/face4");
-	scr.sb_faces[1][1] = R_RegisterPic("q1/face_p4");
-	scr.sb_faces[0][0] = R_RegisterPic("q1/face5");
-	scr.sb_faces[0][1] = R_RegisterPic("q1/face_p5");
+	scr.sb_faces[4][0] = R_RegisterPic("q1/face1.q1p");
+	scr.sb_faces[4][1] = R_RegisterPic("q1/face_p1.q1p");
+	scr.sb_faces[3][0] = R_RegisterPic("q1/face2.q1p");
+	scr.sb_faces[3][1] = R_RegisterPic("q1/face_p2.q1p");
+	scr.sb_faces[2][0] = R_RegisterPic("q1/face3.q1p");
+	scr.sb_faces[2][1] = R_RegisterPic("q1/face_p3.q1p");
+	scr.sb_faces[1][0] = R_RegisterPic("q1/face4.q1p");
+	scr.sb_faces[1][1] = R_RegisterPic("q1/face_p4.q1p");
+	scr.sb_faces[0][0] = R_RegisterPic("q1/face5.q1p");
+	scr.sb_faces[0][1] = R_RegisterPic("q1/face_p5.q1p");
 
-	scr.sb_face_invis = R_RegisterPic("q1/face_invis");
-	scr.sb_face_invuln = R_RegisterPic("q1/face_invul2");
-	scr.sb_face_invis_invuln = R_RegisterPic("q1/face_inv2");
-	scr.sb_face_quad = R_RegisterPic("q1/face_quad");
+	scr.sb_face_invis = R_RegisterPic("q1/face_invis.q1p");
+	scr.sb_face_invuln = R_RegisterPic("q1/face_invul2.q1p");
+	scr.sb_face_invis_invuln = R_RegisterPic("q1/face_inv2.q1p");
+	scr.sb_face_quad = R_RegisterPic("q1/face_quad.q1p");
 
-	scr.sb_doom_nums[0] = R_RegisterPic("doom/STYSNUM0");
-	scr.sb_doom_nums[1] = R_RegisterPic("doom/STYSNUM1");
-	scr.sb_doom_nums[2] = R_RegisterPic("doom/STYSNUM2");
-	scr.sb_doom_nums[3] = R_RegisterPic("doom/STYSNUM3");
-	scr.sb_doom_nums[4] = R_RegisterPic("doom/STYSNUM4");
-	scr.sb_doom_nums[5] = R_RegisterPic("doom/STYSNUM5");
-	scr.sb_doom_nums[6] = R_RegisterPic("doom/STYSNUM6");
-	scr.sb_doom_nums[7] = R_RegisterPic("doom/STYSNUM7");
-	scr.sb_doom_nums[8] = R_RegisterPic("doom/STYSNUM8");
-	scr.sb_doom_nums[9] = R_RegisterPic("doom/STYSNUM9");
+	scr.sb_doom_nums[0] = R_RegisterPic("doom/STYSNUM0.d2p");
+	scr.sb_doom_nums[1] = R_RegisterPic("doom/STYSNUM1.d2p");
+	scr.sb_doom_nums[2] = R_RegisterPic("doom/STYSNUM2.d2p");
+	scr.sb_doom_nums[3] = R_RegisterPic("doom/STYSNUM3.d2p");
+	scr.sb_doom_nums[4] = R_RegisterPic("doom/STYSNUM4.d2p");
+	scr.sb_doom_nums[5] = R_RegisterPic("doom/STYSNUM5.d2p");
+	scr.sb_doom_nums[6] = R_RegisterPic("doom/STYSNUM6.d2p");
+	scr.sb_doom_nums[7] = R_RegisterPic("doom/STYSNUM7.d2p");
+	scr.sb_doom_nums[8] = R_RegisterPic("doom/STYSNUM8.d2p");
+	scr.sb_doom_nums[9] = R_RegisterPic("doom/STYSNUM9.d2p");
 
-	scr.sb_doom_gray_nums[0] = R_RegisterPic("doom/STGNUM0");
-	scr.sb_doom_gray_nums[1] = R_RegisterPic("doom/STGNUM1");
-	scr.sb_doom_gray_nums[2] = R_RegisterPic("doom/STGNUM2");
-	scr.sb_doom_gray_nums[3] = R_RegisterPic("doom/STGNUM3");
-	scr.sb_doom_gray_nums[4] = R_RegisterPic("doom/STGNUM4");
-	scr.sb_doom_gray_nums[5] = R_RegisterPic("doom/STGNUM5");
-	scr.sb_doom_gray_nums[6] = R_RegisterPic("doom/STGNUM6");
-	scr.sb_doom_gray_nums[7] = R_RegisterPic("doom/STGNUM7");
-	scr.sb_doom_gray_nums[8] = R_RegisterPic("doom/STGNUM8");
-	scr.sb_doom_gray_nums[9] = R_RegisterPic("doom/STGNUM9");
+	scr.sb_doom_gray_nums[0] = R_RegisterPic("doom/STGNUM0.d2p");
+	scr.sb_doom_gray_nums[1] = R_RegisterPic("doom/STGNUM1.d2p");
+	scr.sb_doom_gray_nums[2] = R_RegisterPic("doom/STGNUM2.d2p");
+	scr.sb_doom_gray_nums[3] = R_RegisterPic("doom/STGNUM3.d2p");
+	scr.sb_doom_gray_nums[4] = R_RegisterPic("doom/STGNUM4.d2p");
+	scr.sb_doom_gray_nums[5] = R_RegisterPic("doom/STGNUM5.d2p");
+	scr.sb_doom_gray_nums[6] = R_RegisterPic("doom/STGNUM6.d2p");
+	scr.sb_doom_gray_nums[7] = R_RegisterPic("doom/STGNUM7.d2p");
+	scr.sb_doom_gray_nums[8] = R_RegisterPic("doom/STGNUM8.d2p");
+	scr.sb_doom_gray_nums[9] = R_RegisterPic("doom/STGNUM9.d2p");
 	
-	scr.sb_duke_nums[0] = R_RegisterPic("duke/35_0");
-	scr.sb_duke_nums[1] = R_RegisterPic("duke/35_1");
-	scr.sb_duke_nums[2] = R_RegisterPic("duke/35_2");
-	scr.sb_duke_nums[3] = R_RegisterPic("duke/35_3");
-	scr.sb_duke_nums[4] = R_RegisterPic("duke/35_4");
-	scr.sb_duke_nums[5] = R_RegisterPic("duke/35_5");
-	scr.sb_duke_nums[6] = R_RegisterPic("duke/35_6");
-	scr.sb_duke_nums[7] = R_RegisterPic("duke/35_7");
-	scr.sb_duke_nums[8] = R_RegisterPic("duke/35_8");
-	scr.sb_duke_nums[9] = R_RegisterPic("duke/35_9");
-	scr.sb_duke_nums[10] = R_RegisterPic("duke/35_colon");
-	scr.sb_duke_nums[11] = R_RegisterPic("duke/35_slash");
+	scr.sb_duke_nums[0] = R_RegisterPic("duke/35_0.dnp");
+	scr.sb_duke_nums[1] = R_RegisterPic("duke/35_1.dnp");
+	scr.sb_duke_nums[2] = R_RegisterPic("duke/35_2.dnp");
+	scr.sb_duke_nums[3] = R_RegisterPic("duke/35_3.dnp");
+	scr.sb_duke_nums[4] = R_RegisterPic("duke/35_4.dnp");
+	scr.sb_duke_nums[5] = R_RegisterPic("duke/35_5.dnp");
+	scr.sb_duke_nums[6] = R_RegisterPic("duke/35_6.dnp");
+	scr.sb_duke_nums[7] = R_RegisterPic("duke/35_7.dnp");
+	scr.sb_duke_nums[8] = R_RegisterPic("duke/35_8.dnp");
+	scr.sb_duke_nums[9] = R_RegisterPic("duke/35_9.dnp");
+	scr.sb_duke_nums[10] = R_RegisterPic("duke/35_colon.dnp");
+	scr.sb_duke_nums[11] = R_RegisterPic("duke/35_slash.dnp");
 
 	scr.inven_pic = R_RegisterPic("inventory");
 	scr.field_pic = R_RegisterPic("field_3");
 
 	scr.backtile_pic = R_RegisterImage("backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
 	// Generations
-	scr.q1_backtile_pic = R_RegisterImage("q1/backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
-	scr.d_backtile_pic = R_RegisterImage("doom/backtile", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
+	scr.q1_backtile_pic = R_RegisterImage("q1/backtile.q1p", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
+	scr.d_backtile_pic = R_RegisterImage("doom/backtile.d2p", IT_PIC, IF_PERMANENT | IF_REPEAT, NULL);
 
 	scr.pause_pic = R_RegisterPic("pause");
 	R_GetPicSize(&scr.pause_width, &scr.pause_height, scr.pause_pic, CL_GetClientGame());
@@ -1292,22 +1292,22 @@ void SCR_RegisterMedia(void)
 	{
 		for (j=0; j<ST_NUMSTRAIGHTFACES; j++)
 		{
-			Q_snprintf(namebuf, sizeof(namebuf), "doom/STFST%d%d", i, j);
+			Q_snprintf(namebuf, sizeof(namebuf), "doom/STFST%d%d.d2p", i, j);
 			scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
 		}
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTR%d0", i);	// turn right
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTR%d0.d2p", i);	// turn right
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTL%d0", i);	// turn left
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFTL%d0.d2p", i);	// turn left
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFOUCH%d", i);	// ouch!
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFOUCH%d.d2p", i);	// ouch!
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFEVL%d", i);	// evil grin ;)
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFEVL%d.d2p", i);	// evil grin ;)
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
-		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFKILL%d", i);	// pissed off
+		Q_snprintf(namebuf, sizeof(namebuf), "doom/STFKILL%d.d2p", i);	// pissed off
 		scr.sb_doom_faces[facenum++] = R_RegisterPic(namebuf);
 	}
-	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFGOD0");
-	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFDEAD0");
+	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFGOD0.d2p");
+	scr.sb_doom_faces[facenum++] = R_RegisterPic("doom/STFDEAD0.d2p");
 
 	SCR_FreeHUDLayouts();
 }
@@ -1424,7 +1424,7 @@ void SCR_PlayCinematic(const char *name)
 	cl.precache[0].type = PRECACHE_PIC;
 	cl.precache[0].image = R_RegisterPic2(name);
 
-	if (!cl.precache[0].image.handle) {
+	if (!cl.precache[0].image) {
 		SCR_FinishCinematic();
 		return;
 	}
@@ -1927,7 +1927,7 @@ typedef struct {
 } layout_string_client_t;
 
 typedef struct {
-	pichandle_t	pic;
+	qhandle_t	pic;
 } layout_string_picn_t;
 
 typedef struct {
@@ -1964,8 +1964,8 @@ typedef struct {
 typedef struct {
 	int			weapon_index;
 	int			stat_bit;
-	pichandle_t	selected_pic;
-	pichandle_t	unselected_pic;
+	qhandle_t	selected_pic;
+	qhandle_t	unselected_pic;
 } layout_string_q1_weapon_t;
 
 typedef struct {
@@ -2042,7 +2042,9 @@ uint8_t SCR_ParseLayoutStatOffset(const char *token)
 		{ NULL }
 	};
 
-	for (stat_offset_t *o = stat_offsets; o->stat; o++)
+	stat_offset_t *o;
+
+	for (o = stat_offsets; o->stat; o++)
 	{
 		if (Q_stricmp(token + 1, o->stat) != 0)
 			continue;
@@ -2356,13 +2358,13 @@ layout_string_t *SCR_ParseLayoutString(const char *filename)
 			token = COM_Parse(&s);
 
 			if (Q_stricmp(token, "shells") == 0)
-				entry->q1_ammo.type = ITI_Q1_SHELLS;
+				entry->q1_ammo.type = 0;
 			else if (Q_stricmp(token, "nails") == 0)
-				entry->q1_ammo.type = ITI_Q1_NAILS;
+				entry->q1_ammo.type = 1;
 			else if (Q_stricmp(token, "rockets") == 0)
-				entry->q1_ammo.type = ITI_Q1_ROCKETS;
+				entry->q1_ammo.type = 2;
 			else if (Q_stricmp(token, "cells") == 0)
-				entry->q1_ammo.type = ITI_Q1_CELLS;
+				entry->q1_ammo.type = 3;
 			else
 				Com_Error(ERR_DROP, "%s: invalid ammo type %s", __func__, token);
 
@@ -2439,13 +2441,13 @@ layout_string_t *SCR_ParseLayoutString(const char *filename)
 			token = COM_Parse(&s);
 			
 			if (Q_stricmp(token, "bullets") == 0)
-				entry->doom_ammo.type = ITI_DOOM_BULLETS;
+				entry->doom_ammo.type = 0;
 			else if (Q_stricmp(token, "shells") == 0)
-				entry->doom_ammo.type = ITI_DOOM_SHELLS;
+				entry->doom_ammo.type = 1;
 			else if (Q_stricmp(token, "rockets") == 0)
-				entry->doom_ammo.type = ITI_DOOM_ROCKETS;
+				entry->doom_ammo.type = 2;
 			else if (Q_stricmp(token, "cells") == 0)
-				entry->doom_ammo.type = ITI_DOOM_CELLS;
+				entry->doom_ammo.type = 3;
 			else
 				Com_Error(ERR_DROP, "%s: invalid ammo type %s", __func__, token);
 
@@ -2601,7 +2603,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			Q_snprintf(buffer, sizeof(buffer), "Time:  %i", entry->client.time);
 			HUD_DrawString(SCR_LayoutOffsetX(&entry->x) + 32, SCR_LayoutOffsetY(&entry->y) + 3 * CHAR_HEIGHT, buffer);
 
-			if (!ci->icon.handle)
+			if (!ci->icon)
 				ci = &cl.baseclientinfo;
 
 			R_DrawPic(SCR_LayoutOffsetX(&entry->x), SCR_LayoutOffsetY(&entry->y), ci->icon, CL_GetClientGame());
@@ -2729,10 +2731,10 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 				value = 0;
 				switch (entry->q1_ammo.type)
 				{
-				case ITI_Q1_SHELLS: value = cl.frame.ps.stats.q1.ammo_shells; break;
-				case ITI_Q1_NAILS: value = cl.frame.ps.stats.q1.ammo_nails; break;
-				case ITI_Q1_ROCKETS: value = cl.frame.ps.stats.q1.ammo_rockets; break;
-				case ITI_Q1_CELLS: value = cl.frame.ps.stats.q1.ammo_cells; break;
+				case 0: value = cl.frame.ps.stats.q1.ammo_shells; break;
+				case 1: value = cl.frame.ps.stats.q1.ammo_nails; break;
+				case 2: value = cl.frame.ps.stats.q1.ammo_rockets; break;
+				case 3: value = cl.frame.ps.stats.q1.ammo_cells; break;
 				}
 
 				Q_snprintf(buffer, sizeof(buffer), "%3i", value);
@@ -2769,7 +2771,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 		case LAYOUT_Q1_FACE:
 
 			{
-				pichandle_t face;
+				qhandle_t face;
 
 				if ((cl.frame.ps.stats.q1.items & (IT_Q1_INVIS | IT_Q1_INVUL)) == (IT_Q1_INVIS | IT_Q1_INVUL))
 					face = scr.sb_face_invis_invuln;
@@ -2837,10 +2839,10 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 				switch (entry->doom_ammo.type)
 				{
-					SET_AMMO(ITI_DOOM_BULLETS, ammo_bullets)
-					SET_AMMO(ITI_DOOM_SHELLS, ammo_shells)
-					SET_AMMO(ITI_DOOM_ROCKETS, ammo_rockets)
-					SET_AMMO(ITI_DOOM_CELLS, ammo_cells)
+					SET_AMMO(0, ammo_bullets)
+					SET_AMMO(1, ammo_shells)
+					SET_AMMO(2, ammo_rockets)
+					SET_AMMO(3, ammo_cells)
 				}
 				
 #undef SET_AMMO
@@ -3015,7 +3017,9 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 
 void SCR_FreeLayoutString(layout_string_t *layout)
 {
-	for (layout_string_t *entry = layout; entry; )
+	layout_string_t *entry;
+	
+	for (entry = layout; entry; )
 	{
 		layout_string_t *next = entry->mem_next;
 		Z_Free(entry);
@@ -3065,7 +3069,7 @@ static void SCR_DrawCrosshair(void)
 {
 	int x, y;
 
-	if (!scr_crosshair->integer)
+	if (!scr_crosshair->integer || !scr.crosshair_pic)
 		return;
 
 	x = (scr_vrect.x + (scr_vrect.width / 2)) * scr.hud_scale - (scr.crosshair_width / 2);
@@ -3183,7 +3187,7 @@ draw:
 	SCR_ExecuteLayoutStruct(cl.layout);
 }
 
-void R_DrawWeaponSprite(modelhandle_t handle, gunindex_e index, float velocity, int time, float frametime, int oldframe, int frame, float frac, int hud_width, int hud_height, bool firing, float yofs, float scale, color_t color, bool invul, float height_diff);
+void R_DrawWeaponSprite(qhandle_t handle, gunindex_e index, float velocity, int time, float frametime, int oldframe, int frame, float frac, int hud_width, int hud_height, bool firing, float yofs, float scale, color_t color, bool invul, float height_diff);
 
 static inline void MoveTowards(float *inout, const float *to, const float howmuch)
 {
@@ -3241,7 +3245,8 @@ static void SCR_DrawWeapon()
 
 	if (cl_entities[cl.frame.clientNum + 1].current.renderfx & RF_SPECTRE)
 	{
-		for (int i = 0; i < 3; ++i)
+		int i;
+		for (i = 0; i < 3; ++i)
 			color.u8[i] = (byte)(0.25f * 255);
 		color.u8[3] = (byte)(0.25f * 255);
 	}
@@ -3265,18 +3270,15 @@ static void SCR_DrawWeapon()
 		color.u8[1] /= 8;
 	}
 
-	for (gunindex_e i = GUN_MAIN; i < MAX_PLAYER_GUNS; ++i)
+	gunindex_e gun;
+
+	for (gun = GUN_MAIN; gun < MAX_PLAYER_GUNS; ++gun)
 	{
-		bool firing = cl.frame.ps.guns[i].offset[1] <= 0;
-		float ofs = LerpFloat(cl.oldframe.ps.guns[i].offset[2], cl.frame.ps.guns[i].offset[2], cl.lerpfrac);
+		bool firing = cl.frame.ps.guns[gun].offset[1] <= 0;
+		float ofs = LerpFloat(cl.oldframe.ps.guns[gun].offset[2], cl.frame.ps.guns[gun].offset[2], cl.lerpfrac);
 
-		if (CL_GetClientGame() == GAME_DUKE)
-			ofs += 0.22f;
-
-		ofs *= scr.hud_scale;
-
-		R_DrawWeaponSprite(cl.precache[cl.frame.ps.guns[i].index].model.handle, i, curVel, cl.time, cls.frametime,
-			cl.oldframe.ps.guns[i].frame, cl.frame.ps.guns[i].frame, cl.lerpfrac, scr.hud_width,
+		R_DrawWeaponSprite(cl.precache[cl.frame.ps.guns[gun].index].model.handle, gun, curVel, cl.time, cls.frametime,
+			cl.oldframe.ps.guns[gun].frame, cl.frame.ps.guns[gun].frame, cl.lerpfrac, scr.hud_width,
 			scr.hud_height, firing, ofs, scr.hud_scale, color, !!(cl.refdef.rdflags & RDF_INVUL), r_config.height - scr_vrect.height);
 	}
 

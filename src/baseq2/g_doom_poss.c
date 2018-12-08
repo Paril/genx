@@ -185,10 +185,10 @@ void poss_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		self->monsterinfo.currentmove = &poss_die1;
 	}
 
-	if (self->dmg == 1)
+	/*if (self->dmg == 1)
 		Doom_TossItem(self, ITI_DOOM_SHOTGUN, 4);
 	else
-		Doom_TossItem(self, ITI_BULLETS, 5);
+		Doom_TossItem(self, ITI_BULLETS, 5);*/
 
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;

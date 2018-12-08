@@ -4,13 +4,13 @@
     <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\$(TargetName)$(TargetExt)</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>+set game genx +set cl_autopause 0 +set cheats 1 +set deathmatch 0 +set coop 0 +set invasion 1 +map xdm10c</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>+set game genx +set cl_autopause 0 +set cheats 1 +set deathmatch 1 +set coop 0 +map q2dm1</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\$(TargetName)$(TargetExt)</LocalDebuggerCommand>
     <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>+set game genx +set cl_autopause 0 +set cheats 1 +set deathmatch 0 +set coop 0 +set invasion 1 +map xdm10c</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>+set game genx +set cl_autopause 0 +set cheats 1 +set deathmatch 1 +set coop 0 +map q2dm1</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup>
     <ShowAllFiles>false</ShowAllFiles>

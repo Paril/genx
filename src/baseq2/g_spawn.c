@@ -144,72 +144,11 @@ void SP_turret_breach(edict_t *self);
 void SP_turret_base(edict_t *self);
 void SP_turret_driver(edict_t *self);
 
-// Q1
-void SP_q1_item_ammo(edict_t *);
-void SP_q1_item_weapon(edict_t *);
-void SP_q1_item_health(edict_t *);
-void SP_q1_item_armor(edict_t *);
-void item_sigil(edict_t *);
-void SP_q1_item_key1(edict_t *);
-void SP_q1_item_key2(edict_t *);
-void SP_q1_item_artifact(edict_t *);
-void SP_q1_weapon(edict_t *);
-void light_torch_small_walltorch(edict_t *);
-void light_flame_large_yellow(edict_t *);
-
-void light_flame_small_yellow(edict_t *);
-void light_flame_small_white(edict_t *);
-void light_fluoro(edict_t *);
-void light_fluorospark(edict_t *);
-void ambient_suck_wind(edict_t *);
-void ambient_drone(edict_t *);
-void ambient_flouro_buzz(edict_t *);
-void ambient_drip(edict_t *);
-void ambient_comp_hum(edict_t *);
-void ambient_thunder(edict_t *);
-void ambient_light_buzz(edict_t *);
-
-void ambient_swamp1(edict_t *);
-void ambient_swamp2(edict_t *);
-void SP_trigger_teleport(edict_t *);
-void trigger_changelevel(edict_t *);
-void event_lightning(edict_t *);
-void func_door(edict_t *);
-void func_plat(edict_t *);
-void func_button(edict_t *);
-void func_door_secret(edict_t *);
-void func_wall(edict_t *);
-void func_illusionary(edict_t *);
-void func_episodegate(edict_t *);
-void func_bossgate(edict_t *);
-
-void trigger_multiple(edict_t *);
-void trigger_once(edict_t *);
-void trigger_relay(edict_t *);
-void trigger_secret(edict_t *);
-void trigger_counter(edict_t *);
-void trigger_setskill(edict_t *);
-void trigger_onlyregistered(edict_t *);
-void trigger_hurt(edict_t *);
-void trigger_monsterjump(edict_t *);
-void trigger_push(edict_t *);
-void func_train(edict_t *);
-void misc_teleporttrain(edict_t *);
-
-void path_corner(edict_t *);
-void trap_shooter(edict_t *);
-void trap_spikeshooter(edict_t *);
-void misc_fireball(edict_t *);
-void misc_explobox(edict_t *);
-void misc_explobox2(edict_t *);
-void info_teleport_destination(edict_t *);
-
 void q1_monster_army(edict_t *self);
 void q1_monster_dog(edict_t *self);
 void q1_monster_enforcer(edict_t *self);
 void q1_monster_ogre(edict_t *self);
 void q1_monster_wizard(edict_t *self);
-void q1_monster_boss(edict_t *self);
 void q1_monster_zombie(edict_t *self);
 void q1_monster_fish(edict_t *self);
 void q1_monster_tarbaby(edict_t *self);
@@ -231,6 +170,7 @@ void doom_monster_bspi(edict_t *self);
 void doom_monster_skel(edict_t *self);
 void doom_monster_boss(edict_t *self);
 void doom_monster_spid(edict_t *self);
+void doom_monster_cybr(edict_t *self);
 
 typedef struct {
 	const char			*classname;
@@ -354,70 +294,6 @@ static classname_to_entitytype_t classname_to_entitytype[] = {
 		{ "turret_driver",				ET_TURRET_DRIVER },
 
 		// Q1
-		{ "item_shells",				ET_Q1_ITEM_SHELLS },
-		{ "item_spikes",				ET_Q1_ITEM_SPIKES },
-		{ "item_rockets",				ET_Q1_ITEM_ROCKETS },
-		{ "item_cells",					ET_Q1_ITEM_CELLS },
-		{ "item_weapon",				ET_Q1_ITEM_WEAPON },
-
-		{ "item_health",				ET_Q1_ITEM_HEALTH },
-
-		{ "item_armor1",				ET_Q1_ITEM_ARMOR1 },
-		{ "item_armor2",				ET_Q1_ITEM_ARMOR2 },
-		{ "item_armorinv",				ET_Q1_ITEM_ARMORINV },
-
-		{ "item_sigil",					ET_Q1_ITEM_SIGIL },
-
-		{ "item_key1",					ET_Q1_ITEM_KEY1 },
-		{ "item_key2",					ET_Q1_ITEM_KEY2 },
-
-		{ "item_artifact_envirosuit",	ET_Q1_ITEM_ARTIFACT_ENVIROSUIT },
-		{ "item_artifact_invisibility",	ET_Q1_ITEM_ARTIFACT_INVISIBILITY },
-		{ "item_artifact_invulnerability",ET_Q1_ITEM_ARTIFACT_INVULNERABILITY },
-		{ "item_artifact_super_damage",	ET_Q1_ITEM_ARTIFACT_SUPER_DAMAGE },
-
-		{ "weapon_supershotgun",		ET_Q1_WEAPON_SUPERSHOTGUN },
-		{ "weapon_nailgun",				ET_Q1_WEAPON_NAILGUN },
-		{ "weapon_supernailgun",		ET_Q1_WEAPON_SUPERNAILGUN },
-		{ "weapon_grenadelauncher",		ET_Q1_WEAPON_GRENADELAUNCHER },
-		{ "weapon_rocketlauncher",		ET_Q1_WEAPON_ROCKETLAUNCHER },
-		{ "weapon_lightning",			ET_Q1_WEAPON_LIGHTNING },
-
-		{ "light_torch_small_walltorch",ET_Q1_LIGHT_TORCH_SMALL_WALLTORCH },
-		{ "light_flame_large_yellow",	ET_Q1_LIGHT_FLAME_LARGE_YELLOW },
-		{ "light_flame_small_yellow",	ET_Q1_LIGHT_FLAME_SMALL_YELLOW },
-		{ "light_flame_small_white",	ET_Q1_LIGHT_FLAME_SMALL_WHITE },
-
-		{ "light_fluoro",				ET_Q1_LIGHT_FLUORO },
-		{ "light_fluorospark",			ET_Q1_LIGHT_FLUOROSPARK },
-
-		{ "ambient_suck_wind",			ET_Q1_AMBIENT_SUCK_WIND },
-		{ "ambient_drone",				ET_Q1_AMBIENT_DRONE },
-		{ "ambient_fluoro_buzz",		ET_Q1_AMBIENT_FLUORO_BUZZ },
-		{ "ambient_drip",				ET_Q1_AMBIENT_DRIP },
-		{ "ambient_comp_hum",			ET_Q1_AMBIENT_COMP_HUM },
-		{ "ambient_thunder",			ET_Q1_AMBIENT_THUNDER },
-		{ "ambient_light_buzz",			ET_Q1_AMBIENT_LIGHT_BUZZ },
-		{ "ambient_swamp1",				ET_Q1_AMBIENT_SWAMP1 },
-		{ "ambient_swamp2",				ET_Q1_AMBIENT_SWAMP2 },
-
-		{ "event_lightning",			ET_Q1_EVENT_LIGHTNING },
-
-		{ "func_illusionary",			ET_Q1_FUNC_ILLUSIONARY },
-		{ "func_episodegate",			ET_Q1_FUNC_EPISODEGATE },
-		{ "func_bossgate",				ET_Q1_FUNC_BOSSGATE },
-
-		{ "trigger_secret",				ET_Q1_TRIGGER_SECRET },
-		{ "trigger_setskill",			ET_Q1_TRIGGER_SETSKILL },
-		{ "trigger_onlyregistered",		ET_Q1_TRIGGER_ONLYREGISTERED },
-		{ "trigger_teleport",			ET_Q1_TRIGGER_TELEPORT },
-		{ "trigger_changelevel",		ET_Q1_TRIGGER_CHANGELEVEL },
-
-		{ "misc_teleporttrain",			ET_Q1_MISC_TELEPORTTRAIN },
-
-		{ "trap_shooter",				ET_Q1_TRAP_SHOOTER },
-		{ "trap_spikeshooter",			ET_Q1_TRAP_SPIKESHOOTER },
-
 		{ "monster_army",				ET_Q1_MONSTER_ARMY },
 		{ "monster_dog",				ET_Q1_MONSTER_DOG },
 		{ "monster_ogre",				ET_Q1_MONSTER_OGRE },
@@ -432,14 +308,6 @@ static classname_to_entitytype_t classname_to_entitytype[] = {
 		{ "monster_shalrath",			ET_Q1_MONSTER_SHALRATH },
 		{ "monster_tarbaby",			ET_Q1_MONSTER_TARBABY },
 		{ "monster_fish",				ET_Q1_MONSTER_FISH },
-		{ "monster_boss",				ET_Q1_MONSTER_BOSS },
-
-		{ "misc_fireball",				ET_Q1_MISC_FIREBALL },
-
-		{ "misc_explobox2",				ET_Q1_MISC_EXPLOBOX2 },
-
-		{ "info_teleport_destination",	ET_Q1_INFO_TELEPORT_DESTINATION },
-		{ "info_intermission",			ET_INFO_PLAYER_INTERMISSION },
 
 		// Doom
 		{ "monster_poss",				ET_DOOM_MONSTER_POSS },
@@ -455,7 +323,8 @@ static classname_to_entitytype_t classname_to_entitytype[] = {
 		{ "monster_skel",				ET_DOOM_MONSTER_SKEL },
 		{ "monster_baron",				ET_DOOM_MONSTER_BOSS },
 		{ "monster_bos2",				ET_DOOM_MONSTER_BOS2 },
-		{ "monster_spid",				ET_DOOM_MONSTER_SPID }
+		{ "monster_spid",				ET_DOOM_MONSTER_SPID },
+		{ "monster_cybr",				ET_DOOM_MONSTER_CYBR }
 };
 
 /*
@@ -487,19 +356,23 @@ static list_t   gitem_hash[ITEMHASH_SIZE];
 
 static void init_classname_to_entitytype_hashes()
 {
-	for (int i = 0; i < CLASSHASH_SIZE; i++)
+	size_t i;
+
+	for (i = 0; i < CLASSHASH_SIZE; i++)
 		List_Init(&classname_to_entitytype_hash[i]);
-	for (int i = 0; i < ITEMHASH_SIZE; i++)
+	for (i = 0; i < ITEMHASH_SIZE; i++)
 		List_Init(&gitem_hash[i]);
 
-	for (size_t i = 0; i < ENTITY_NUM; ++i)
+	for (i = 0; i < ENTITY_NUM; ++i)
 	{
 		classname_to_entitytype_t *cte = &classname_to_entitytype[i];
 		uint32_t hash = HASH_FUNC(cte->classname, CLASSHASH_SIZE);
 		List_Append(&classname_to_entitytype_hash[hash], &cte->hashEntry);
 	}
 
-	for (itemid_e it = ITI_NULL; it < ITI_TOTAL; ++it)
+	itemid_e it;
+
+	for (it = ITI_NULL; it < ITI_TOTAL; ++it)
 	{
 		gitem_t *item = &itemlist[it];
 
@@ -688,90 +561,6 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 
 static const entitytype_func_t q1_entitytype_funcs[] =
 {
-	{ ET_Q1_ITEM_SHELLS, SP_q1_item_ammo },
-	{ ET_Q1_ITEM_SPIKES, SP_q1_item_ammo },
-	{ ET_Q1_ITEM_ROCKETS, SP_q1_item_ammo },
-	{ ET_Q1_ITEM_CELLS, SP_q1_item_ammo },
-	{ ET_Q1_ITEM_WEAPON, SP_q1_item_weapon },
-
-	{ ET_Q1_ITEM_HEALTH, SP_q1_item_health },
-
-	{ ET_Q1_ITEM_ARMOR1, SP_q1_item_armor },
-	{ ET_Q1_ITEM_ARMOR2, SP_q1_item_armor },
-	{ ET_Q1_ITEM_ARMORINV, SP_q1_item_armor },
-
-	{ ET_Q1_ITEM_SIGIL, item_sigil },
-
-	{ ET_Q1_ITEM_KEY1, SP_q1_item_key1 },
-	{ ET_Q1_ITEM_KEY2, SP_q1_item_key2 },
-
-	{ ET_Q1_ITEM_ARTIFACT_ENVIROSUIT, SP_q1_item_artifact },
-	{ ET_Q1_ITEM_ARTIFACT_INVISIBILITY, SP_q1_item_artifact },
-	{ ET_Q1_ITEM_ARTIFACT_INVULNERABILITY, SP_q1_item_artifact },
-	{ ET_Q1_ITEM_ARTIFACT_SUPER_DAMAGE, SP_q1_item_artifact },
-
-	{ ET_Q1_WEAPON_SUPERSHOTGUN, SP_q1_weapon },
-	{ ET_Q1_WEAPON_NAILGUN, SP_q1_weapon },
-	{ ET_Q1_WEAPON_SUPERNAILGUN, SP_q1_weapon },
-	{ ET_Q1_WEAPON_GRENADELAUNCHER, SP_q1_weapon },
-	{ ET_Q1_WEAPON_ROCKETLAUNCHER, SP_q1_weapon },
-	{ ET_Q1_WEAPON_LIGHTNING, SP_q1_weapon },
-
-	{ ET_INFO_PLAYER_START, SP_info_player_start },
-	{ ET_INFO_PLAYER_DEATHMATCH, SP_info_player_deathmatch },
-	{ ET_INFO_PLAYER_COOP, SP_info_player_coop },
-	{ ET_INFO_PLAYER_INTERMISSION, SP_info_player_intermission },
-
-	{ ET_Q1_LIGHT_TORCH_SMALL_WALLTORCH, light_torch_small_walltorch },
-	{ ET_Q1_LIGHT_FLAME_LARGE_YELLOW, light_flame_large_yellow },
-	{ ET_Q1_LIGHT_FLAME_SMALL_YELLOW, light_flame_small_yellow },
-	{ ET_Q1_LIGHT_FLAME_SMALL_WHITE, light_flame_small_white },
-
-	{ ET_Q1_LIGHT_FLUORO, light_fluoro },
-	{ ET_Q1_LIGHT_FLUOROSPARK, light_fluorospark },
-
-	{ ET_Q1_AMBIENT_SUCK_WIND, ambient_suck_wind },
-	{ ET_Q1_AMBIENT_DRONE, ambient_drone },
-	{ ET_Q1_AMBIENT_FLUORO_BUZZ, ambient_flouro_buzz },
-	{ ET_Q1_AMBIENT_DRIP, ambient_drip },
-	{ ET_Q1_AMBIENT_COMP_HUM, ambient_comp_hum },
-	{ ET_Q1_AMBIENT_THUNDER, ambient_thunder },
-	{ ET_Q1_AMBIENT_LIGHT_BUZZ, ambient_light_buzz },
-	{ ET_Q1_AMBIENT_SWAMP1, ambient_swamp1 },
-	{ ET_Q1_AMBIENT_SWAMP2, ambient_swamp2 },
-
-	{ ET_Q1_TRIGGER_TELEPORT, SP_trigger_teleport },
-	{ ET_Q1_TRIGGER_CHANGELEVEL, trigger_changelevel },
-
-	{ ET_Q1_EVENT_LIGHTNING, event_lightning },
-
-	{ ET_FUNC_DOOR, func_door },
-	{ ET_FUNC_PLAT, func_plat },
-	{ ET_FUNC_BUTTON, func_button },
-	{ ET_FUNC_DOOR_SECRET, func_door_secret },
-	{ ET_FUNC_WALL, func_wall },
-	{ ET_Q1_FUNC_ILLUSIONARY, func_illusionary },
-	{ ET_Q1_FUNC_EPISODEGATE, func_episodegate },
-	{ ET_Q1_FUNC_BOSSGATE, func_bossgate },
-
-	{ ET_TRIGGER_MULTIPLE, trigger_multiple },
-	{ ET_TRIGGER_ONCE, trigger_once },
-	{ ET_TRIGGER_RELAY, trigger_relay },
-	{ ET_Q1_TRIGGER_SECRET, trigger_secret },
-	{ ET_TRIGGER_COUNTER, trigger_counter },
-	{ ET_Q1_TRIGGER_SETSKILL, trigger_setskill },
-	{ ET_Q1_TRIGGER_ONLYREGISTERED, trigger_onlyregistered },
-	{ ET_TRIGGER_HURT, trigger_hurt },
-	{ ET_TRIGGER_MONSTERJUMP, trigger_monsterjump },
-	{ ET_TRIGGER_PUSH, trigger_push },
-
-	{ ET_FUNC_TRAIN, func_train },
-	{ ET_Q1_MISC_TELEPORTTRAIN, misc_teleporttrain },
-	{ ET_PATH_CORNER, path_corner },
-
-	{ ET_Q1_TRAP_SHOOTER, trap_shooter },
-	{ ET_Q1_TRAP_SPIKESHOOTER, trap_spikeshooter },
-
 	{ ET_Q1_MONSTER_ARMY, q1_monster_army },
 	{ ET_Q1_MONSTER_DOG, q1_monster_dog },
 	{ ET_Q1_MONSTER_OGRE, q1_monster_ogre },
@@ -785,15 +574,7 @@ static const entitytype_func_t q1_entitytype_funcs[] =
 	{ ET_Q1_MONSTER_HELL_KNIGHT, q1_monster_hell_knight },
 	{ ET_Q1_MONSTER_SHALRATH, q1_monster_shalrath },
 	{ ET_Q1_MONSTER_TARBABY, q1_monster_tarbaby },
-	{ ET_Q1_MONSTER_FISH, q1_monster_fish },
-	{ ET_Q1_MONSTER_BOSS, q1_monster_boss },
-
-	{ ET_Q1_MISC_FIREBALL, misc_fireball },
-
-	{ ET_MISC_EXPLOBOX, misc_explobox },
-	{ ET_Q1_MISC_EXPLOBOX2, misc_explobox2 },
-
-	{ ET_Q1_INFO_TELEPORT_DESTINATION, info_teleport_destination }
+	{ ET_Q1_MONSTER_FISH, q1_monster_fish }
 };
 
 static const entitytype_func_t doom_entitytype_funcs[] =
@@ -811,46 +592,37 @@ static const entitytype_func_t doom_entitytype_funcs[] =
 	{ ET_DOOM_MONSTER_SKEL, doom_monster_skel },
 	{ ET_DOOM_MONSTER_BOSS, doom_monster_boss },
 	{ ET_DOOM_MONSTER_BOS2, doom_monster_boss },
-	{ ET_DOOM_MONSTER_SPID, doom_monster_spid }
+	{ ET_DOOM_MONSTER_SPID, doom_monster_spid },
+	{ ET_DOOM_MONSTER_CYBR, doom_monster_cybr }
 };
 
 typedef struct {
 	spawnfunc_t		funcs[ENTITYTYPE_SPAWNABLE_COUNT];
 } game_spawn_func_list_t;
 
-static game_spawn_func_list_t game_spawn_func_list[GAME_TOTAL - GAME_Q2];
+static game_spawn_func_list_t game_spawn_func_list[GAME_TOTAL];
 
 static void init_game_spawn_func_list(const entitytype_func_t *funcs, const size_t funccount, game_spawn_func_list_t *list)
 {
-	for (size_t i = 0; i < funccount; ++i)
+	size_t i;
+	for (i = 0; i < funccount; ++i)
 		list->funcs[funcs[i].entityid] = funcs[i].func;
 }
 
 static void init_game_spawn_func_lists()
 {
-	init_game_spawn_func_list(q2_entitytype_funcs, q_countof(q2_entitytype_funcs), &game_spawn_func_list[GAME_Q2 - 1]);
-	init_game_spawn_func_list(q1_entitytype_funcs, q_countof(q1_entitytype_funcs), &game_spawn_func_list[GAME_Q1 - 1]);
-	init_game_spawn_func_list(doom_entitytype_funcs, q_countof(doom_entitytype_funcs), &game_spawn_func_list[GAME_DOOM - 1]);
+	init_game_spawn_func_list(q2_entitytype_funcs, q_countof(q2_entitytype_funcs), &game_spawn_func_list[GAME_Q2]);
+	init_game_spawn_func_list(q1_entitytype_funcs, q_countof(q1_entitytype_funcs), &game_spawn_func_list[GAME_Q1]);
+	init_game_spawn_func_list(doom_entitytype_funcs, q_countof(doom_entitytype_funcs), &game_spawn_func_list[GAME_DOOM]);
 }
 
 static spawnfunc_t get_func_from_entitytype(entitytype_e id, gametype_t *game_ptr)
 {
-	// try level type first
-	spawnfunc_t func = game_spawn_func_list[level.level_type - 1].funcs[id];
-
-	if (func)
+	// go through all types
+	gametype_t gametype;
+	for (gametype = GAME_Q2; gametype < GAME_TOTAL; ++gametype)
 	{
-		*game_ptr = level.level_type;
-		return func;
-	}
-
-	// go through all other types
-	for (gametype_t gametype = GAME_Q2; gametype < GAME_TOTAL; ++gametype)
-	{
-		if (gametype == level.level_type)
-			continue;
-
-		func = game_spawn_func_list[gametype - 1].funcs[id];
+		spawnfunc_t func = game_spawn_func_list[gametype].funcs[id];
 
 		if (func)
 		{
@@ -1041,7 +813,8 @@ enemyrandomize_t enemy_randomizations[] =
 
 entitytype_e randomize_monster(entitytype_e monster)
 {
-	for (size_t i = 0; i < q_countof(enemy_randomizations); ++i)
+	size_t i;
+	for (i = 0; i < q_countof(enemy_randomizations); ++i)
 	{
 		enemyrandomize_t *randomize = &enemy_randomizations[i];
 
@@ -1072,6 +845,9 @@ bool ED_CallSpawnByType(edict_t *ent, entitytype_e type)
 	return false;
 }
 
+void SP_weapon(edict_t *ent);
+void SP_ammo(edict_t *ent);
+
 void ED_CallSpawn(edict_t *ent)
 {
 	if (!spawnTemp.classname[0])
@@ -1080,20 +856,12 @@ void ED_CallSpawn(edict_t *ent)
 		return;
 	}
 
-	if (level.level_type == GAME_Q2)
+	itemid_e item = get_item_from_classname(spawnTemp.classname);
+
+	if (item)
 	{
-		itemid_e item = get_item_from_classname(spawnTemp.classname);
-
-		if (item == ITI_SHELLS)
-			item = !!(ent->s.number & 1) ? ITI_SHELLS : ITI_SHELLS_LARGE;
-		else if (item == ITI_BULLETS)
-			item = !!(ent->s.number & 1) ? ITI_BULLETS : ITI_BULLETS_LARGE;
-
-		if (item)
-		{
-			SpawnItem(ent, GetItemByIndex(item));
-			return;
-		}
+		SpawnItem(ent, GetItemByIndex(item));
+		return;
 	}
 
 	// regular funcs
@@ -1106,6 +874,17 @@ void ED_CallSpawn(edict_t *ent)
 
 		if (ED_CallSpawnByType(ent, type))
 			return;
+	}
+	
+	if (!Q_strncasecmp(spawnTemp.classname, "weapon_", 7))
+	{
+		SP_weapon(ent);
+		return;
+	}
+	else if (!Q_strncasecmp(spawnTemp.classname, "ammo_", 5))
+	{
+		SP_ammo(ent);
+		return;
 	}
 
 	gi.dprintf("%s doesn't have a spawn function\n", spawnTemp.classname);
@@ -1157,17 +936,6 @@ static bool ED_ParseField(const spawn_field_t *fields, const char *key, const ch
 	const spawn_field_t *f;
 	float   v;
 	vec3_t  vec;
-
-	if (!Q_stricmp(key, "wad"))
-	{
-		level.level_type = GAME_Q1;
-		return true;
-	}
-	else if (!Q_stricmp(key, "worldtype"))
-	{
-		level.world_type = atoi(value);
-		return true;
-	}
 
 	for (f = fields ; f->name ; f++) {
 		if (!Q_stricmp(f->name, key)) {
@@ -1318,6 +1086,8 @@ void G_FindTeams(void)
 	gi.dprintf("%i teams with %i entities\n", c, c2);
 }
 
+void Spawn_Weapons();
+
 /*
 ==============
 SpawnEntities
@@ -1331,7 +1101,6 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 	Q_srand(game.random_seed);
 
 	randomize_enemies = true;
-	level.level_type = GAME_Q2;
 
 	init_classname_to_entitytype_hashes();
 	init_game_spawn_func_lists();
@@ -1366,8 +1135,6 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
 	ent = NULL;
 	inhibit = 0;
-
-	level.level_type = GAME_Q2;
 
 	if (!level.spawn_rand)
 		level.spawn_rand = time(NULL);
@@ -1433,6 +1200,8 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 	G_FindTeams();
 
 	AI_NewMap();//JABot
+
+	Spawn_Weapons();
 }
 
 
@@ -1533,8 +1302,6 @@ void SP_worldspawn(edict_t *ent)
 
 	snd_fry = gi.soundindex("player/fry.wav");  // standing in lava / slime
 
-	PrecacheItem(GetItemByIndex(ITI_BLASTER));
-
 	gi.soundindex("player/lava1.wav");
 	gi.soundindex("player/lava2.wav");
 
@@ -1568,17 +1335,9 @@ void SP_worldspawn(edict_t *ent)
 	// sexed models
 	// THIS ORDER MUST MATCH THE DEFINES IN g_local.h
 	// you can add more, max 15
-	gi.modelindex("#w_blaster.md2");
-	gi.modelindex("#w_shotgun.md2");
-	gi.modelindex("#w_sshotgun.md2");
-	gi.modelindex("#w_machinegun.md2");
-	gi.modelindex("#w_chaingun.md2");
-	gi.modelindex("#a_grenades.md2");
-	gi.modelindex("#w_glauncher.md2");
-	gi.modelindex("#w_rlauncher.md2");
-	gi.modelindex("#w_hyperblaster.md2");
-	gi.modelindex("#w_railgun.md2");
-	gi.modelindex("#w_bfg.md2");
+	itemid_e item;
+	for (item = ITI_WEAPONS_START; item <= ITI_WEAPONS_END; item++)
+		gi.modelindex(GetItemByIndex(item)->weapmodel);
 
 	//-------------------
 
@@ -1656,6 +1415,9 @@ void SP_worldspawn(edict_t *ent)
 
 	// 63 testing
 	gi.configstring(CS_LIGHTS + 63, "a");
+
+	for (item = ITI_WEAPONS_START; item <= ITI_WEAPONS_END; item++)
+		PrecacheItem(GetItemByIndex(item));
 
 	Wave_Precache();
 	Weapons_Init();

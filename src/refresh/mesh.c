@@ -562,7 +562,7 @@ static int texnum_for_mesh(maliasmesh_t *mesh)
     if (ent->flags & RF_SHELL_MASK)
         return TEXNUM_WHITE;
 
-    if (ent->skin.handle)
+    if (ent->skin)
         return IMG_ForHandle(ent->skin, GAME_Q2)->texnum;
 
     if (!mesh->numskins)
