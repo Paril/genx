@@ -1,0 +1,20 @@
+{
+	"game" "q2"
+	"path" "models/items/ammo/shells/medium/tris.md2"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/b_shell1.q1m"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/SHEL.d2s"
+	"translate" "0 0 -15"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/a_shells.dns"
+	"scale" "0.5"
+	"translate" "0 0 -7"
+}

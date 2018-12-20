@@ -1,0 +1,8 @@
+{
+	"game" "q2"
+	"path" "models/weapons/v_rail/tris.md2"
+}
+{
+	"game" "duke"
+	"path" "weaponscripts/duke/v_tripwires.wsc"
+}

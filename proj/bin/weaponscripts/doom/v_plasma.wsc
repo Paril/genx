@@ -1,0 +1,21 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/doom/PLSF.d2s" // 0
+	"load_sprite" "sprites/doom/PLSG.d2s" // 1
+
+	{
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom left" "bottom left" "24 0" "virtual"
+	}
+	
+	"animations" "0 1 2 3"
+}

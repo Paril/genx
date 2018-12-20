@@ -1,0 +1,16 @@
+{
+	"game" "q2"
+	"path" "misc/ar1_pkup.wav"
+}
+{
+	"game" "q1"
+	"path" "q1/items/armor1.wav"
+}
+{
+	"game" "doom"
+	"path" "doom/ITEMUP.wav"
+}
+{
+	"game" "duke"
+	"path" "duke/GETITM19.wav"
+}

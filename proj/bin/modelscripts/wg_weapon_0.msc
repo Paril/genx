@@ -1,0 +1,23 @@
+{
+	"game" "q2"
+	"path" "models/weapons/g_bfg/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/g_light.mdl"
+	"effects" "1"
+	"translate" "0 0 -16"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/CSAW.d2s"
+	"translate" "0 0 -13"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/g_freezer.dns"
+	"scale" "0.9"
+	"translate" "0 0 4"
+}

@@ -1,0 +1,20 @@
+{
+	"game" "q2"
+	"path" "models/items/healing/medium/tris.md2"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/b_bh10.q1m"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/STIM.d2s"
+	"translate" "0 0 -15"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/i_healthsm.dns"
+	"scale" "0.5"
+	"translate" "0 0 -8"
+}

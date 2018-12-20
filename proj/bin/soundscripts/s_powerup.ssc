@@ -1,0 +1,12 @@
+{
+	"game" "q2"
+	"path" "items/pkup.wav"
+}
+{
+	"game" "doom"
+	"path" "doom/GETPOW.wav"
+}
+{
+	"game" "duke"
+	"path" "duke/GETITM19.wav"
+}

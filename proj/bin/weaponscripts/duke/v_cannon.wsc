@@ -1,0 +1,99 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/duke/v_cannon.dns" // 0
+	"load_sprite" "sprites/duke/v_cannon.dns" // 1
+	"load_sprite" "sprites/duke/v_cannon.dns" // 2
+	"load_sprite" "sprites/duke/v_cannon.dns" // 3
+	"load_sprite" "sprites/duke/v_cannon.dns" // 4
+	
+	{
+		"translate" "20 32"
+		"lerp" "translates"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "9 -52" "virtual"
+	}
+	{
+		"translate" "22 34"
+		"lerp" "translates"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "1" "2" "bottom center" "bottom center" "9 -52" "virtual"
+		
+		"draw_sprite" "2" "5" "bottom center" "bottom center" "-8 -63" "virtual"
+	}
+	{
+		"translate" "21 35"
+		"lerp" "translates"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "1" "3" "bottom center" "bottom center" "9 -52" "virtual"
+		
+		"draw_sprite" "3" "5" "bottom center" "bottom center" "-28 -63" "virtual"
+		"draw_sprite" "2" "6" "bottom center" "bottom center" "-8 -57" "virtual"
+		"draw_sprite" "4" "5" "bottom center" "bottom center" "12 -67" "virtual"
+	}
+	{
+		"translate" "19 31"
+		"lerp" "translates"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "1" "4" "bottom center" "bottom center" "9 -52" "virtual"
+		
+		"draw_sprite" "3" "6" "bottom center" "bottom center" "-28 -63" "virtual"
+		"draw_sprite" "2" "7" "bottom center" "bottom center" "-8 -57" "virtual"
+		"draw_sprite" "4" "6" "bottom center" "bottom center" "12 -67" "virtual"
+	}
+	{
+		"translate" "18 32"
+		"lerp" "translates"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "1" "3" "bottom center" "bottom center" "9 -52" "virtual"
+		
+		"draw_sprite" "3" "7" "bottom center" "bottom center" "-28 -57" "virtual"
+		"draw_sprite" "2" "5" "bottom center" "bottom center" "-8 -63" "virtual"
+		"draw_sprite" "4" "7" "bottom center" "bottom center" "12 -57" "virtual"
+	}
+	
+	/*{
+		"draw_sprite" "3" "0"
+		"draw_sprite_ofs" "4" "1" "10 -27"
+	}
+	{
+		"translate" "-1 0"
+		"draw_sprite" "3" "0"
+		"draw_sprite_ofs" "4" "2" "10 -27"
+
+		"draw_sprite_ofs" "2" "5" "-8 -57"
+	}
+	{
+		"translate" "0 -1"
+		"draw_sprite" "3" "0"
+		"draw_sprite_ofs" "4" "3" "10 -27"
+
+		"draw_sprite_ofs" "2" "6" "-8 -57"
+		"draw_sprite_ofs" "0" "5" "-28 -57"
+		"draw_sprite_ofs" "1" "5" "12 -57"
+	}
+	{
+		"translate" "-1 1"
+		"draw_sprite" "3" "0"
+		"draw_sprite_ofs" "4" "4" "10 -27"
+
+		"draw_sprite_ofs" "2" "7" "-8 -57"
+		"draw_sprite_ofs" "0" "6" "-28 -57"
+		"draw_sprite_ofs" "1" "6" "12 -57"
+	}
+	{
+		"translate" "0 1"
+		"draw_sprite" "3" "0"
+		"draw_sprite_ofs" "4" "2" "10 -27"
+
+		"draw_sprite_ofs" "2" "5" "-8 -57"
+		"draw_sprite_ofs" "0" "7" "-28 -57"
+		"draw_sprite_ofs" "1" "7" "12 -57"
+	}
+	{
+		"draw_sprite" "3" "0"
+		"draw_sprite_ofs" "4" "1" "10 -27"
+	}*/
+	
+	"animations" "0 1 2 3 4 0"
+}

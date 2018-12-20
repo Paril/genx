@@ -1,0 +1,19 @@
+{
+	"game" "q2"
+	"path" "models/weapons/g_rail/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/g_light.mdl"
+	"effects" "1"
+	"translate" "0 0 -16"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/v_tripwire.dns"
+	"frame" "1"
+	"scale" "0.15"
+	"translate" "0 0 -11"
+}

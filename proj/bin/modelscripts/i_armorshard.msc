@@ -1,0 +1,13 @@
+{
+	"game" "q2"
+	"path" "models/items/armor/shard/tris.md2"
+	"renderfx" "512"
+	"effects" "1"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/BON2.d2s"
+	"effects" "73728"
+	"renderfx" "2097152"
+	"translate" "0 0 -13"
+}

@@ -1,0 +1,23 @@
+{
+	"game" "q2"
+	"path" "models/items/mega_h/tris.md2"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/b_bh100.q1m"
+	"renderfx" "524288"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/MEGA.d2s"
+	"effects" "73728"
+	"translate" "0 0 -15"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/i_atomic.dns"
+	"scale" "0.5"
+	"effects" "8192"
+	"translate" "0 0 0"
+}

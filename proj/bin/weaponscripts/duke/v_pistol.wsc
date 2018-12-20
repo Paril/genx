@@ -1,0 +1,67 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/duke/v_pistol.dns"
+	"load_sprite" "sprites/duke/v_pistol.dns"
+	"load_sprite" "sprites/duke/v_pistol.dns"
+	
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "64 14" "virtual"
+	}
+	{
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "59 14" "virtual"
+	}
+	{
+		"draw_sprite" "0" "2" "bottom center" "bottom center" "63 16" "virtual"
+	}
+	{
+		"draw_sprite" "0" "3" "bottom center" "bottom center" "63 16" "virtual"
+	}
+	{
+		"draw_sprite" "0" "4" "bottom right" "bottom right" "0 12" "full"
+		"draw_sprite" "1" "6" "bottom right" "bottom right" "-90 12" "full"
+	}
+	{
+		"lerp" "draws"
+		"draw_sprite" "0" "4" "bottom right" "bottom right" "0 12" "full"
+		"draw_sprite" "1" "6" "bottom right" "bottom right" "-110 67" "full"
+	}
+	{
+		"lerp" "draws"
+		"draw_sprite" "0" "4" "bottom right" "bottom right" "0 12" "full"
+		"draw_sprite" "1" "5" "bottom right" "bottom right" "-110 67" "full"
+	}
+	{
+		"lerp" "draws"
+		"draw_sprite" "0" "4" "bottom right" "bottom right" "0 10" "full"
+		"draw_sprite" "1" "5" "bottom right" "bottom right" "-102 32" "full"
+		"draw_sprite" "2" "7" "bottom right" "bottom right" "-97 70" "full"
+	}
+	{
+		"lerp" "draws"
+		"draw_sprite" "0" "4" "bottom right" "bottom right" "0 0" "full"
+		"draw_sprite" "1" "5" "bottom right" "bottom right" "-70 -38" "full"
+		"draw_sprite" "2" "7" "bottom right" "bottom right" "-65 0" "full"
+	}
+	{
+		"draw_sprite" "0" "8" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "0" "9" "bottom center" "bottom center" "0 19" "virtual"
+	}
+	{
+		"draw_sprite" "0" "10" "bottom center" "bottom center" "0 15" "virtual"
+	}
+	{
+		"draw_sprite" "0" "11" "bottom center" "bottom center" "0 0" "virtual"
+	}
+
+	// idle
+	// firing
+	// reload
+	// knuckles
+	"animations"		"0
+				1 2 0
+				3 4 5 5 5 6 7 8 3 0
+				9 10 11 12 11 10 9"
+}

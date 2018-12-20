@@ -1,0 +1,19 @@
+{
+	"game" "q1"
+	"path" "models/q1/player.mdl"
+	"renderfx" "1048576"
+	"skin" "0"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/play.d2s"
+	"skin" "0"
+	"translate" "0 0 -19"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/duke.dns"
+	"skin" "0"
+	"scale" "0.8"
+	"translate" "0 0 8"
+}

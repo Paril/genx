@@ -1,0 +1,16 @@
+{
+	"game" "q2"
+	"path" "models/items/quaddama/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/quaddama.mdl"
+	"effects" "1"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/PSTR.d2s"
+	"translate" "0 0 -11"
+}

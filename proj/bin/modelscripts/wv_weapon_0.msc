@@ -1,0 +1,12 @@
+{
+	"game" "q2"
+	"path" "models/weapons/v_bfg/tris.md2"
+}
+{
+	"game" "doom"
+	"path" "weaponscripts/doom/v_chainsaw.wsc"
+}
+{
+	"game" "duke"
+	"path" "weaponscripts/duke/v_freezer.wsc"
+}

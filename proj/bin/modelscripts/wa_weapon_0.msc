@@ -1,0 +1,16 @@
+{
+	"game" "q2"
+	"path" "models/items/ammo/cells/medium/tris.md2"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/b_batt1.q1m"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/a_freezer.dns"
+	"scale" "0.5"
+	"translate" "0 0 -8"
+	"effects" "8192"
+}

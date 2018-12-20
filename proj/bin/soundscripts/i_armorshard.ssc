@@ -1,0 +1,8 @@
+{
+	"game" "q2"
+	"path" "misc/ar2_pkup.wav"
+}
+{
+	"game" "doom"
+	"path" "doom/ITEMUP.wav"
+}

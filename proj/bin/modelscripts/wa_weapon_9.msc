@@ -1,0 +1,16 @@
+{
+	"game" "q2"
+	"path" "models/items/ammo/slugs/medium/tris.md2"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/b_batt0.q1m"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/v_tripwire.dns"
+	"frame" "1"
+	"scale" "0.15"
+	"translate" "0 0 -11"
+}

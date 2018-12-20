@@ -1,0 +1,32 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/duke/v_shotgun.dns" // 0
+	"load_sprite" "sprites/duke/v_shotgun.dns" // 1
+	
+	{
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "42 12" "virtual"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "42 12" "virtual"
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "13 -53" "virtual"
+	}
+	{
+		"draw_sprite" "1" "3" "bottom center" "bottom center" "64 87" "virtual"
+		"draw_sprite" "0" "2" "bottom center" "bottom center" "36 -32" "virtual"
+	}
+	{
+		"draw_sprite" "1" "3" "bottom center" "bottom center" "42 52" "virtual"
+	}
+	{
+		"draw_sprite" "1" "4" "bottom center" "bottom center" "58 24" "virtual"
+	}
+	{
+		"draw_sprite" "1" "5" "bottom center" "bottom center" "72 8" "virtual"
+	}
+	{
+		"draw_sprite" "1" "6" "bottom center" "bottom center" "80 8" "virtual"
+	}
+	
+	"animations" "0 1 2 3 4 5 6 5 4 0"
+}

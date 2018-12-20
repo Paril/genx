@@ -1,0 +1,20 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/doom/SAWG.d2s" // 0
+
+	{
+		"draw_sprite" "0" "2" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "0" "3" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	
+	"animations" "0 1 2 3"
+}

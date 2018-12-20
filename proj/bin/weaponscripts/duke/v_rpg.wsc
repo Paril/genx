@@ -1,0 +1,50 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/duke/v_rpg.dns" // 0
+	"load_sprite" "sprites/duke/v_rpg.dns" // 1
+	
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"draw_sprite" "0" "1" "bottom right" "bottom right" "-72 -39" "full"
+		"translate" "5 5"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"draw_sprite" "0" "2" "bottom right" "bottom right" "-57 -31" "full"
+		"translate" "15 15"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"translate" "10 10"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"translate" "5 5"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"translate" "15 15"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"translate" "10 10"
+		"lerp" "translates"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom right" "bottom right" "24 18" "full"
+		"translate" "5 5"
+		"lerp" "translates"
+	}
+	
+	"animations" "0 1 2 3 4 5 6 7"
+}

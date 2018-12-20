@@ -1,0 +1,17 @@
+{
+	"game" "q2"
+	"path" "models/items/breather/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/invisibl.mdl"
+	"effects" "1"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/PINS.d2s"
+	"effects" "73728"
+	"translate" "0 0 -15"
+}

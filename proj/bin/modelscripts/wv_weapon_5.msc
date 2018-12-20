@@ -1,0 +1,17 @@
+{
+	"game" "q2"
+	"path" "models/weapons/v_chain/tris.md2"
+}
+{
+	"game" "q1"
+	"path" "models/q1/v_nail2.mdl"
+	"renderfx" "1048576"
+}
+{
+	"game" "doom"
+	"path" "weaponscripts/doom/v_rocket.wsc"
+}
+{
+	"game" "duke"
+	"path" "weaponscripts/duke/v_rpg.wsc"
+}

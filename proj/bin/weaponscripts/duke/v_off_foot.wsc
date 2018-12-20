@@ -1,0 +1,16 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/duke/v_foot.dns" // 0
+	
+	{
+	}
+	{
+		"draw_sprite_flip_x" "0" "0" "bottom center" "bottom center" "-68 0" "virtual"
+	}
+	{
+		"draw_sprite_flip_x" "0" "1" "bottom center" "bottom center" "-20 0" "virtual"
+	}
+	
+	"animations" "0 1 1 2 2 1 1"
+}

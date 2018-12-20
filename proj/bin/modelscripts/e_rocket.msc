@@ -1,0 +1,17 @@
+{
+	"game" "q2"
+	"path" "models/objects/rocket/tris.md2"
+}
+{
+	"game" "q1"
+	"path" "models/q1/missile.mdl"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/MISL.d2s"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/rocket.dns"
+	"scale" "0.4"
+}

@@ -1,0 +1,17 @@
+{
+	"game" "q2"
+	"path" "models/weapons/v_hyperb/tris.md2"
+}
+{
+	"game" "q1"
+	"path" "models/q1/v_light.mdl"
+	"renderfx" "1048576"
+}
+{
+	"game" "doom"
+	"path" "weaponscripts/doom/v_sshotgun.wsc"
+}
+{
+	"game" "duke"
+	"path" "weaponscripts/duke/v_devastate.wsc"
+}

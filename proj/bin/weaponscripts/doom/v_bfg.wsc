@@ -1,0 +1,23 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/doom/BFGF.d2s" // 0
+	"load_sprite" "sprites/doom/BFGG.d2s" // 1
+
+	{
+		"translate" "0 32"
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "0 0" "virtual"
+	}
+	{
+		"translate" "0 32"
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 -62" "virtual"
+	}
+	{
+		"translate" "0 32"
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "0 0" "virtual"
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "0 -56" "virtual"
+	}
+	
+	"animations" "0 0 1 2 0"
+}

@@ -1,0 +1,17 @@
+{
+	"game" "q2"
+	"path" "models/weapons/g_shotg/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/g_shot.mdl"
+	"effects" "1"
+	"translate" "0 0 -16"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/g_pistol.dns"
+	"translate" "0 0 0"
+}

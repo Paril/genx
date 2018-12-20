@@ -1,0 +1,22 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/doom/PISF.d2s" // 0
+	"load_sprite" "sprites/doom/PISG.d2s" // 1
+
+	{
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "-5 0" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "-16 0" "virtual"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "1 -64" "virtual"
+	}
+	{
+		"draw_sprite" "1" "2" "bottom center" "bottom center" "-8 0" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "-16 0" "virtual"
+	}
+	
+	"animations" " 0 1 1 2 3 0"
+}

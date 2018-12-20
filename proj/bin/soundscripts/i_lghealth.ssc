@@ -1,0 +1,16 @@
+{
+	"game" "q2"
+	"path" "items/l_health.wav"
+}
+{
+	"game" "q1"
+	"path" "q1/items/health1.wav"
+}
+{
+	"game" "doom"
+	"path" "doom/ITEMUP.wav"
+}
+{
+	"game" "duke"
+	"path" "duke/GETITM19.wav"
+}

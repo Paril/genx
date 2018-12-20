@@ -1,0 +1,25 @@
+{
+	"game" "q2"
+	"path" "models/items/armor/body/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/armor.mdl"
+	"effects" "1"
+	"skin" "2"
+	"translate" "0 0 -16"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/ARM2.d2s"
+	"effects" "73728"
+	"renderfx" "2097152"
+	"translate" "0 0 -15"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/i_armor.dns"
+	"scale" "0.7"
+}

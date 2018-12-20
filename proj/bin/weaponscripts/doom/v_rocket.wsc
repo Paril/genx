@@ -1,0 +1,31 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/doom/MISF.d2s" // 0
+	"load_sprite" "sprites/doom/MISG.d2s" // 1
+
+	{
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "0 44" "virtual"
+	}
+	{
+		"draw_sprite" "1" "0" "bottom center" "bottom center" "0 44" "virtual"
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "0 -20" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "0 44" "virtual"
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "0 -4" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "0 44" "virtual"
+		"draw_sprite" "0" "2" "bottom center" "bottom center" "-2 -4" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "0 44" "virtual"
+		"draw_sprite" "0" "3" "bottom center" "bottom center" "2 4" "virtual"
+	}
+	{
+		"draw_sprite" "1" "1" "bottom center" "bottom center" "0 44" "virtual"
+	}
+	
+	"animations" "0 1 2 3 4 5 5 5"
+}

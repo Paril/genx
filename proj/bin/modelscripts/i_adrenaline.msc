@@ -1,0 +1,12 @@
+{
+	"game" "q2"
+	"path" "models/items/adrenal/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/SOUL.d2s"
+	"effects" "73728"
+	"translate" "0 0 -15"
+}

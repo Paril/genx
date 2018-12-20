@@ -1,0 +1,21 @@
+{
+	"game" "q2"
+	"path" "models/weapons/g_machn/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/g_nail.mdl"
+	"effects" "1"
+	"translate" "0 0 -16"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/MGUN.d2s"
+	"translate" "0 0 -13"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/g_cannon.dns"
+}

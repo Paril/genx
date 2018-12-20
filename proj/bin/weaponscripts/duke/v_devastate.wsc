@@ -1,0 +1,34 @@
+{
+	"view" "320 200"
+	
+	"load_sprite" "sprites/duke/v_devastate.dns" // 0
+	"load_sprite" "sprites/duke/v_devastate.dns" // 1
+	
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "130 10" "virtual"
+		"draw_sprite_flip_x" "1" "0" "bottom center" "bottom center" "-130 10" "virtual"
+		"lerp" "draws"
+	}
+	{
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "140 18" "virtual"
+		"draw_sprite_flip_x" "1" "0" "bottom center" "bottom center" "-130 10" "virtual"
+		"lerp" "draws"
+	}
+	{
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "148 26" "virtual"
+		"draw_sprite_flip_x" "1" "0" "bottom center" "bottom center" "-130 10" "virtual"
+		"lerp" "draws"
+	}
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "130 10" "virtual"
+		"draw_sprite_flip_x" "1" "1" "bottom center" "bottom center" "-140 18" "virtual"
+		"lerp" "draws"
+	}
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "130 10" "virtual"
+		"draw_sprite_flip_x" "1" "1" "bottom center" "bottom center" "-148 26" "virtual"
+		"lerp" "draws"
+	}
+	
+	"animations" "0 1 2 3 4"
+}

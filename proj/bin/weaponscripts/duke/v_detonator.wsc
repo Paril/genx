@@ -1,0 +1,17 @@
+{
+	"view" "320 200"
+
+	"load_sprite" "sprites/duke/v_pipebomb.dns" // 0
+	
+	{
+		"draw_sprite" "0" "0" "bottom center" "bottom center" "-80 32" "virtual"
+	}
+	{
+		"draw_sprite" "0" "1" "bottom center" "bottom center" "-67 29" "virtual"
+	}
+	{
+		"draw_sprite" "0" "2" "bottom center" "bottom center" "-81 42" "virtual"
+	}
+
+	"animations" "0 1 2"
+}

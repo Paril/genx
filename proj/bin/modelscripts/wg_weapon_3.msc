@@ -1,0 +1,23 @@
+{
+	"game" "q2"
+	"path" "models/weapons/g_shotg2/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/g_shot.mdl"
+	"effects" "1"
+	"translate" "0 0 -16"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/SHOT.d2s"
+	"translate" "0 0 -10"
+}
+{
+	"game" "duke"
+	"path" "sprites/duke/g_shotgun.dns"
+	"translate" "0 0 0"
+	"scale" "0.7"
+}

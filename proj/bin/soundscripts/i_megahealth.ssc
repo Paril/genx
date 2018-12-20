@@ -1,0 +1,18 @@
+{
+	"game" "q2"
+	"path" "items/m_health.wav"
+}
+{
+	"game" "q1"
+	"path" "q1/items/r_item2.wav"
+}
+{
+	"game" "doom"
+	"path" "doom/GETPOW.wav"
+}
+{
+	"game" "duke"
+	"path" "duke/TELEPORT.wav"
+	"pitch_min" "6144"
+	"pitch_max" "6144"
+}

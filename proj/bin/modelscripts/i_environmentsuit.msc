@@ -1,0 +1,15 @@
+{
+	"game" "q2"
+	"path" "models/items/enviro/tris.md2"
+	"effects" "1"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/suit.mdl"
+	"effects" "1"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/SUIT.d2s"
+}

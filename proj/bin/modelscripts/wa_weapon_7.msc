@@ -1,0 +1,14 @@
+{
+	"game" "q2"
+	"path" "models/items/ammo/rockets/medium/tris.md2"
+	"renderfx" "512"
+}
+{
+	"game" "q1"
+	"path" "models/q1/b_rock1.q1m"
+}
+{
+	"game" "doom"
+	"path" "sprites/doom/CELP.d2s"
+	"translate" "0 0 -14"
+}
