@@ -62,7 +62,6 @@ cvar_t  *sv_novis;
 cvar_t  *sv_maxclients;
 cvar_t  *sv_reserved_slots;
 cvar_t  *sv_locked;
-cvar_t  *sv_downloadserver;
 cvar_t  *sv_redirect_address;
 
 cvar_t  *sv_hostname;
@@ -78,9 +77,6 @@ cvar_t  *sv_changemapcmd;
 
 cvar_t  *sv_strafejump_hack;
 cvar_t  *sv_waterjump_hack;
-#if USE_PACKETDUP
-cvar_t  *sv_packetdup_hack;
-#endif
 cvar_t  *sv_allow_map;
 #if !USE_CLIENT
 cvar_t  *sv_recycle;
@@ -122,13 +118,6 @@ void SV_RemoveClient(client_t *client)
     // itself to make code that traverses client list in a loop happy!
     List_Remove(&client->entry);
 
-#if USE_MVD_CLIENT
-    // unlink them from MVD client list
-    if (sv.state == ss_broadcast) {
-        MVD_RemoveClient(client);
-    }
-#endif
-
     Com_DPrintf("Going from cs_zombie to cs_free for %s\n", client->name);
 
     client->state = cs_free;    // can now be reused
@@ -138,18 +127,6 @@ void SV_RemoveClient(client_t *client)
 void SV_CleanClient(client_t *client)
 {
     int i;
-#if USE_AC_SERVER
-    string_entry_t *bad, *next;
-
-    for (bad = client->ac_bad_files; bad; bad = next) {
-        next = bad->next;
-        Z_Free(bad);
-    }
-    client->ac_bad_files = NULL;
-#endif
-
-    // close any existing donwload
-    SV_CloseDownload(client);
 
     if (client->version_string) {
         Z_Free(client->version_string);
@@ -182,13 +159,8 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
 
     if (announce == 2) {
         // announce to others
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast)
-            MVD_GameClientDrop(client->edict, prefix, reason);
-        else
-#endif
-            SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
-                               client->name, prefix, reason);
+        SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
+                           client->name, prefix, reason);
     }
 
     if (announce)
@@ -237,14 +209,9 @@ void SV_DropClient(client_t *client, const char *reason)
         ge->ClientDisconnect(client->edict);
     }
 
-    AC_ClientDisconnect(client);
-
     SV_CleanClient(client);
 
     Com_DPrintf("Going to cs_zombie for %s\n", client->name);
-
-    // give MVD server a chance to detect if its dummy client was dropped
-    SV_MvdClientDropped(client);
 }
 
 
@@ -880,11 +847,8 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
     // copy userinfo off
     Q_strlcpy(userinfo, info, MAX_INFO_STRING);
 
-    // mvdspec, ip, etc are passed in extra userinfo if supported
+    // ip, etc are passed in extra userinfo if supported
     if (!(g_features->integer & GMF_EXTRA_USERINFO)) {
-        // make sure mvdspec key is not set
-        Info_RemoveKey(userinfo, "mvdspec");
-
         if (sv_password->string[0] || sv_reserved_password->string[0]) {
             // unset password key to make game mod happy
             Info_RemoveKey(userinfo, "password");
@@ -1018,9 +982,6 @@ static void init_pmove_and_es_flags(client_t *newcl)
 static void send_connect_packet(client_t *newcl, int nctype)
 {
     const char *ncstring    = "";
-    const char *acstring    = "";
-    const char *dlstring1   = "";
-    const char *dlstring2   = "";
 
     if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
         if (nctype == NETCHAN_NEW)
@@ -1029,16 +990,8 @@ static void send_connect_packet(client_t *newcl, int nctype)
             ncstring = " nc=0";
     }
 
-    if (!sv_force_reconnect->string[0] || newcl->reconnect_var[0])
-        acstring = AC_ClientConnect(newcl);
-
-    if (sv_downloadserver->string[0]) {
-        dlstring1 = " dlserver=";
-        dlstring2 = sv_downloadserver->string;
-    }
-
-    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s%s%s map=%s",
-                      ncstring, acstring, dlstring1, dlstring2, newcl->mapname);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s map=%s",
+                      ncstring, newcl->mapname);
 }
 
 // converts all the extra positional parameters to `connect' command into an
@@ -1139,7 +1092,6 @@ static void SVC_DirectConnect(void)
                                    &net_from, params.qport,
                                    params.maxlength,
                                    params.protocol);
-    newcl->numpackets = 1;
 
     // parse some info from the info strings
     Q_strlcpy(newcl->userinfo, userinfo, sizeof(newcl->userinfo));
@@ -1700,13 +1652,6 @@ static void SV_PrepWorldFrame(void)
     edict_t    *ent;
     int        i;
 
-#if USE_MVD_CLIENT
-    if (sv.state == ss_broadcast) {
-        MVD_PrepWorldFrame();
-        return;
-    }
-#endif
-
     sv.tracecount = 0;
 
     if (!SV_FRAMESYNC)
@@ -1736,11 +1681,6 @@ static inline bool check_paused(void)
     if (!LIST_SINGLE(&sv_clientlist))
         goto resume;
 
-#if USE_MVD_CLIENT
-    if (!LIST_EMPTY(&mvd_gtv_list))
-        goto resume;
-#endif
-
     if (!sv_paused->integer) {
         Cvar_Set("sv_paused", "1");
         IN_Activate();
@@ -1765,9 +1705,6 @@ SV_RunGameFrame
 */
 static void SV_RunGameFrame(void)
 {
-    // save the entire world state if recording a serverdemo
-    SV_MvdBeginFrame();
-
 #if USE_CLIENT
     if (host_speeds->integer)
         time_before_game = Sys_Milliseconds();
@@ -1786,9 +1723,6 @@ static void SV_RunGameFrame(void)
                     msg_write.cursize);
         SZ_Clear(&msg_write);
     }
-
-    // save the entire world state if recording a serverdemo
-    SV_MvdEndFrame();
 }
 
 /*
@@ -1869,7 +1803,7 @@ static void SV_MasterShutdown(void)
 ==================
 SV_Frame
 
-Some things like MVD client connections and command buffer
+Some things like command buffer
 processing are run even when server is not yet initalized.
 
 Returns amount of extra frametime available for sleeping on IO.
@@ -1889,21 +1823,10 @@ unsigned SV_Frame(unsigned msec)
         Cbuf_Execute(&cmd_buffer);
     }
 
-#if USE_MVD_CLIENT
-    // run connections to MVD/GTV servers
-    MVD_Frame();
-#endif
-
     // read packets from UDP clients
     NET_GetPackets(NS_SERVER, SV_PacketEvent);
 
     if (svs.initialized) {
-        // run connection to the anticheat server
-        AC_Run();
-
-        // run connections from MVD/GTV clients
-        SV_MvdRunClients();
-
         // deliver fragments and reliable messages for connecting clients
         SV_SendAsyncPackets();
     }
@@ -1954,9 +1877,9 @@ unsigned SV_Frame(unsigned msec)
     }
 
     // don't accumulate bogus residual
-    if (sv.frameresidual > 250) {
+    if (sv.frameresidual > SV_FRAMETIME * 2.5f) {
         Com_DDDPrintf("Reset residual %u\n", sv.frameresidual);
-        sv.frameresidual = 100;
+        sv.frameresidual = SV_FRAMETIME;
     }
 
     return 0;
@@ -1996,11 +1919,6 @@ void SV_UserinfoChanged(client_t *cl)
             Com_Printf("%s[%s] changed name to %s\n", cl->name,
                        NET_AdrToString(&cl->netchan->remote_address), name);
         }
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            MVD_GameClientNameChanged(cl->edict, name);
-        } else
-#endif
         if (sv_show_name_changes->integer > 1 ||
             (sv_show_name_changes->integer == 1 && cl->state == cs_spawned)) {
             SV_BroadcastPrintf(PRINT_HIGH, "%s changed name to %s\n",
@@ -2124,14 +2042,6 @@ void SV_Init(void)
 {
     SV_InitOperatorCommands();
 
-    SV_MvdRegister();
-
-#if USE_MVD_CLIENT
-    MVD_Register();
-#endif
-
-    AC_Register();
-
     SV_RegisterSavegames();
 
     Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_DEFAULT), CVAR_SERVERINFO | CVAR_ROM);
@@ -2182,7 +2092,6 @@ void SV_Init(void)
     sv_reserved_password = Cvar_Get("sv_reserved_password", "", CVAR_PRIVATE);
     sv_locked = Cvar_Get("sv_locked", "0", 0);
     sv_novis = Cvar_Get("sv_novis", "0", 0);
-    sv_downloadserver = Cvar_Get("sv_downloadserver", "", 0);
     sv_redirect_address = Cvar_Get("sv_redirect_address", "", 0);
 
 #ifdef _DEBUG
@@ -2195,10 +2104,6 @@ void SV_Init(void)
 
     sv_strafejump_hack = Cvar_Get("sv_strafejump_hack", "1", CVAR_LATCH);
     sv_waterjump_hack = Cvar_Get("sv_waterjump_hack", "0", CVAR_LATCH);
-
-#if USE_PACKETDUP
-    sv_packetdup_hack = Cvar_Get("sv_packetdup_hack", "0", 0);
-#endif
 
     sv_allow_map = Cvar_Get("sv_allow_map", "0", 0);
 
@@ -2295,7 +2200,7 @@ static void SV_FinalMessage(const char *message, error_type_t type)
             while (netchan->fragment_pending) {
                 netchan->TransmitNextFragment(netchan);
             }
-            netchan->Transmit(netchan, msg_write.cursize, msg_write.data, 1);
+            netchan->Transmit(netchan, msg_write.cursize, msg_write.data);
         }
     }
 
@@ -2324,19 +2229,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 {
     if (!sv_registered)
         return;
-
-#if USE_MVD_CLIENT
-    if (ge != &mvd_ge && !(type & MVD_SPAWN_INTERNAL)) {
-        // shutdown MVD client now if not already running the built-in MVD game module
-        // don't shutdown if called from internal MVD spawn function (ugly hack)!
-        MVD_Shutdown();
-    }
-    type &= ~MVD_SPAWN_MASK;
-#endif
-
-    AC_Disconnect();
-
-    SV_MvdShutdown(type);
 
     SV_FinalMessage(finalmsg, type);
     SV_MasterShutdown();

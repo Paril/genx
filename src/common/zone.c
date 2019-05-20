@@ -60,7 +60,6 @@ static const char   z_tagnames[TAG_MAX][8] = {
     "refresh",
     "ui",
     "server",
-    "mvd",
     "sound",
     "cmodel"
 };

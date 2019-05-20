@@ -121,7 +121,7 @@ void PlayerModel_Load(void)
 
     // go through the subdirectories
     for (i = 0; i < ndirs; i++) {
-        int k, s;
+        int k, l;
         char **pcxnames;
         char **skinnames;
         int npcxfiles;
@@ -158,11 +158,11 @@ void PlayerModel_Load(void)
         skinnames[nskins] = NULL;
 
         // copy the valid skins
-        for (s = 0, k = 0; k < npcxfiles; k++) {
+        for (l = 0, k = 0; k < npcxfiles; k++) {
             if (!strstr(pcxnames[k], "_i.pcx")) {
                 if (IconOfSkinExists(pcxnames[k], pcxnames, npcxfiles)) {
                     COM_StripExtension(scratch, pcxnames[k], sizeof(scratch));
-                    skinnames[s++] = UI_CopyString(scratch);
+                    skinnames[l++] = UI_CopyString(scratch);
                 }
             }
         }

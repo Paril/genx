@@ -19,7 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-#if USE_DLIGHTS
 void CL_Flashlight(int ent, vec3_t pos)
 {
     cdlight_t   *dl;
@@ -27,7 +26,6 @@ void CL_Flashlight(int ent, vec3_t pos)
     dl = CL_AllocDlight(ent);
     VectorCopy(pos,  dl->origin);
     dl->radius = 400;
-    //dl->minlight = 250;
     dl->die = cl.time + 100;
     dl->color[0] = 1;
     dl->color[1] = 1;
@@ -46,13 +44,11 @@ void CL_ColorFlash(vec3_t pos, int ent, int intensity, float r, float g, float b
     dl = CL_AllocDlight(ent);
     VectorCopy(pos,  dl->origin);
     dl->radius = intensity;
-    //dl->minlight = 250;
     dl->die = cl.time + 100;
     dl->color[0] = r;
     dl->color[1] = g;
     dl->color[2] = b;
 }
-#endif
 
 
 /*
@@ -837,8 +833,7 @@ void CL_TrapParticles(centity_t *ent, vec3_t origin)
     }
 
     {
-        int         i, j, k;
-        cparticle_t *p;
+        int         i, k;
         float       vel;
         vec3_t      dir;
         vec3_t      org;

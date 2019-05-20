@@ -131,8 +131,15 @@ typedef struct refdef_s {
 typedef enum {
     QVF_ACCELERATED     = (1 << 0),
     QVF_GAMMARAMP       = (1 << 1),
-    QVF_FULLSCREEN      = (1 << 2)
+    QVF_FULLSCREEN      = (1 << 2),
+	QVF_BORDERLESS		= (1 << 3)
 } vidFlags_t;
+
+typedef enum {
+	VM_WINDOWED,
+	VM_BORDERLESS,
+	VM_FULLSCREEN
+} vidMode_t;
 
 typedef struct {
     int         width;

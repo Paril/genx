@@ -1888,7 +1888,7 @@ static void SCR_DrawStats(void)
 static void SCR_DrawLayout(void)
 {
     if (scr_draw2d->integer == 3 && !Key_IsDown(K_F1))
-        return;     // turn off for GTV
+        return;
 
     if (cls.demo.playback && Key_IsDown(K_F1))
         goto draw;

@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static cvar_t    *cl_nodelta;
 static cvar_t    *cl_maxpackets;
-static cvar_t    *cl_packetdup;
 static cvar_t    *cl_fuzzhack;
 #ifdef _DEBUG
 static cvar_t    *cl_showpackets;
@@ -89,9 +88,6 @@ static bool IN_GetCurrentGrab(void)
         return false;   // not connected
 
     if (in_grab->integer >= 2) {
-        if (cls.demo.playback && !Key_IsDown(K_SHIFT))
-            return false;   // playing a demo (and not using freelook)
-
         if (cl.frame.ps.pmove.pm_type == PM_FREEZE)
             return false;   // spectator mode
     }
@@ -700,7 +696,6 @@ void CL_RegisterInput(void)
     cl_nodelta = Cvar_Get("cl_nodelta", "0", 0);
     cl_maxpackets = Cvar_Get("cl_maxpackets", "30", 0);
     cl_fuzzhack = Cvar_Get("cl_fuzzhack", "0", 0);
-    cl_packetdup = Cvar_Get("cl_packetdup", "1", 0);
 #ifdef _DEBUG
     cl_showpackets = Cvar_Get("cl_showpackets", "0", 0);
 #endif
@@ -908,7 +903,7 @@ static void CL_SendDefaultCmd(void)
 
     // let the server know what the last frame we
     // got was, so the next message can be delta compressed
-    if (cl_nodelta->integer || !cl.frame.valid /*|| cls.demowaiting*/) {
+    if (cl_nodelta->integer || !cl.frame.valid) {
         MSG_WriteLong(-1);   // no compression
     } else {
         MSG_WriteLong(cl.frame.number);
@@ -943,7 +938,7 @@ static void CL_SendDefaultCmd(void)
     //
     // deliver the message
     //
-    cursize = cls.netchan->Transmit(cls.netchan, msg_write.cursize, msg_write.data, 1);
+    cursize = cls.netchan->Transmit(cls.netchan, msg_write.cursize, msg_write.data);
 #ifdef _DEBUG
     if (cl_showpackets->integer) {
         Com_Printf("%"PRIz" ", cursize);
@@ -961,7 +956,7 @@ CL_SendBatchedCmd
 static void CL_SendBatchedCmd(void)
 {
     int i, j, seq, bits q_unused;
-    int numCmds, numDups;
+    int numCmds;
     int totalCmds, totalMsec;
     size_t cursize q_unused;
     usercmd_t *cmd, *oldcmd;
@@ -989,17 +984,12 @@ static void CL_SendBatchedCmd(void)
 
     // let the server know what the last frame we
     // got was, so the next message can be delta compressed
-    if (cl_nodelta->integer || !cl.frame.valid /*|| cls.demowaiting*/) {
+    if (cl_nodelta->integer || !cl.frame.valid) {
         *patch = clc_move_nodelta; // no compression
     } else {
         *patch = clc_move_batched;
         MSG_WriteLong(cl.frame.number);
     }
-
-    Cvar_ClampInteger(cl_packetdup, 0, MAX_PACKET_FRAMES - 1);
-    numDups = cl_packetdup->integer;
-
-    *patch |= numDups << SVCMD_BITS;
 
     // send lightlevel
     MSG_WriteByte(cl.lightlevel);
@@ -1009,7 +999,7 @@ static void CL_SendBatchedCmd(void)
     oldcmd = NULL;
     totalCmds = 0;
     totalMsec = 0;
-    for (i = seq - numDups; i <= seq; i++) {
+    for (i = seq; i <= seq; i++) {
         oldest = &cl.history[(i - 1) & CMD_MASK];
         history = &cl.history[i & CMD_MASK];
 
@@ -1039,7 +1029,7 @@ static void CL_SendBatchedCmd(void)
     //
     // deliver the message
     //
-    cursize = cls.netchan->Transmit(cls.netchan, msg_write.cursize, msg_write.data, 1);
+    cursize = cls.netchan->Transmit(cls.netchan, msg_write.cursize, msg_write.data);
 #ifdef _DEBUG
     if (cl_showpackets->integer == 1) {
         Com_Printf("%"PRIz"(%i) ", cursize, totalCmds);
@@ -1068,7 +1058,7 @@ static void CL_SendKeepAlive(void)
     cl.lastTransmitCmdNumber = cl.cmdNumber;
     cl.lastTransmitCmdNumberReal = cl.cmdNumber;
 
-    cursize = cls.netchan->Transmit(cls.netchan, 0, "", 1);
+    cursize = cls.netchan->Transmit(cls.netchan, 0, "");
 #ifdef _DEBUG
     if (cl_showpackets->integer) {
         Com_Printf("%"PRIz" ", cursize);

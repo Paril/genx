@@ -20,10 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "../client.h"
 
-#if USE_SNDDMA
-#include "client/sound/dma.h"
-#endif
-
 typedef struct samplepair_s {
     int         left;
     int         right;
@@ -33,10 +29,8 @@ typedef struct sfxcache_s {
     int         length;
     int         loopstart;
     int         width;
-#if USE_OPENAL
     int         size;
     int         bufnum;
-#endif
     byte        data[1];        // variable sized
 } sfxcache_t;
 
@@ -65,11 +59,8 @@ typedef struct playsound_s {
 
 typedef struct channel_s {
     sfx_t       *sfx;           // sfx number
-    int         leftvol;        // 0-255 volume
-    int         rightvol;       // 0-255 volume
     int         end;            // end time in global paintsamples
     int         pos;            // sample position in sfx
-    int         looping;        // where to loop, -1 = no looping OBSOLETE?
     int         entnum;         // to allow overriding a specific sound
     int         entchannel;     //
     vec3_t      origin;         // only use if fixed_origin is set
@@ -77,10 +68,8 @@ typedef struct channel_s {
     float       master_vol;     // 0.0-1.0 master volume
     bool        fixed_origin;   // use origin instead of fetching entnum's origin
     bool        autosound;      // from an entity->sound, cleared each frame
-#if USE_OPENAL
     int         autoframe;
     int         srcnum;
-#endif
 } channel_t;
 
 typedef struct {
@@ -100,17 +89,6 @@ typedef struct {
 ====================================================================
 */
 
-#if USE_SNDDMA
-void DMA_SoundInfo(void);
-bool DMA_Init(void);
-void DMA_Shutdown(void);
-void DMA_Activate(void);
-int DMA_DriftBeginofs(float timeofs);
-void DMA_ClearBuffer(void);
-void DMA_Update(void);
-#endif
-
-#if USE_OPENAL
 void AL_SoundInfo(void);
 bool AL_Init(void);
 void AL_Shutdown(void);
@@ -120,7 +98,6 @@ void AL_StopChannel(channel_t *ch);
 void AL_PlayChannel(channel_t *ch);
 void AL_StopAllChannels(void);
 void AL_Update(void);
-#endif
 
 //====================================================================
 
@@ -131,12 +108,7 @@ void AL_Update(void);
 
 typedef enum {
     SS_NOT,
-#if USE_SNDDMA
-    SS_DMA,
-#endif
-#if USE_OPENAL
     SS_OAL
-#endif
 } sndstarted_t;
 
 extern sndstarted_t s_started;
@@ -158,10 +130,6 @@ extern  int         listener_entnum;
 extern  wavinfo_t   s_info;
 
 extern cvar_t   *s_volume;
-#if USE_SNDDMA
-extern cvar_t   *s_khz;
-extern cvar_t   *s_testsound;
-#endif
 extern cvar_t   *s_ambient;
 extern cvar_t   *s_show;
 
@@ -173,7 +141,3 @@ sfxcache_t *S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
-#if USE_SNDDMA
-void S_InitScaletable(void);
-void S_PaintChannels(int endtime);
-#endif

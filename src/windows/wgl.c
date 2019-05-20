@@ -38,6 +38,8 @@ BOOL (WINAPI * qwglChoosePixelFormatARB)(HDC, const int *, const FLOAT *, UINT, 
 
 BOOL (WINAPI * qwglSwapIntervalEXT)(int interval);
 
+HGLRC (WINAPI *qwglCreateContextAttribsARB)(HDC, HGLRC, const int *);
+
 void WGL_Shutdown(void)
 {
     if (glw.hinstOpenGL) {
@@ -58,7 +60,7 @@ void WGL_Shutdown(void)
     qwglGetProcAddress          = NULL;
     qwglMakeCurrent             = NULL;
 
-    WGL_ShutdownExtensions(~0);
+    WGL_ShutdownExtensions();
 }
 
 #define GPA(x)  (void *)GetProcAddress(glw.hinstOpenGL, x);
@@ -87,32 +89,22 @@ bool WGL_Init(const char *dllname)
 
 #undef GPA
 
-void WGL_ShutdownExtensions(unsigned mask)
+void WGL_ShutdownExtensions(void)
 {
-    if (mask & QWGL_ARB_extensions_string) {
-        qwglGetExtensionsStringARB  = NULL;
-    }
-    if (mask & QWGL_ARB_pixel_format) {
-        qwglChoosePixelFormatARB    = NULL;
-    }
-    if (mask & QWGL_EXT_swap_control) {
-        qwglSwapIntervalEXT         = NULL;
-    }
+    qwglGetExtensionsStringARB  = NULL;
+    qwglChoosePixelFormatARB    = NULL;
+    qwglSwapIntervalEXT         = NULL;
+	qwglCreateContextAttribsARB = NULL;
 }
 
 #define GPA(x)  (void *)qwglGetProcAddress(x)
 
-void WGL_InitExtensions(unsigned mask)
+void WGL_InitExtensions(void)
 {
-    if (mask & QWGL_ARB_extensions_string) {
-        qwglGetExtensionsStringARB  = GPA("wglGetExtensionsStringARB");
-    }
-    if (mask & QWGL_ARB_pixel_format) {
-        qwglChoosePixelFormatARB    = GPA("wglChoosePixelFormatARB");
-    }
-    if (mask & QWGL_EXT_swap_control) {
-        qwglSwapIntervalEXT         = GPA("wglSwapIntervalEXT");
-    }
+    qwglGetExtensionsStringARB  = GPA("wglGetExtensionsStringARB");
+    qwglChoosePixelFormatARB    = GPA("wglChoosePixelFormatARB");
+	qwglSwapIntervalEXT = GPA("wglSwapIntervalEXT");
+	qwglCreateContextAttribsARB = GPA("wglCreateContextAttribsARB");
 }
 
 #undef GPA
@@ -129,5 +121,5 @@ unsigned WGL_ParseExtensionString(const char *s)
         NULL
     };
 
-    return Com_ParseExtensionString(s, extnames);
+    Com_ParseExtensionString(s, extnames, (bool * const)&glw.extensions);
 }

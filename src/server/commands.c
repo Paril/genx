@@ -284,7 +284,7 @@ static void SV_Map(bool restart)
 
     // any error will drop from this point
     if ((sv.state != ss_game && sv.state != ss_pic) || restart)
-        SV_InitGame(MVD_SPAWN_DISABLED);    // the game is just starting
+        SV_InitGame();    // the game is just starting
 
     // clear pending CM
     Com_AbortFunc(NULL, NULL);
@@ -555,34 +555,6 @@ static void dump_versions(void)
     }
 }
 
-static void dump_downloads(void)
-{
-    client_t    *client;
-    int         size, percent;
-    char        *name;
-
-    Com_Printf(
-        "num name            download                                 size    done\n"
-        "--- --------------- ---------------------------------------- ------- ----\n");
-
-    FOR_EACH_CLIENT(client) {
-        if (client->download) {
-            name = client->downloadname;
-            size = client->downloadsize;
-            if (!size)
-                size = 1;
-            percent = client->downloadcount * 100 / size;
-        } else if (client->http_download) {
-            name = "<HTTP download>";
-            size = percent = 0;
-        } else {
-            continue;
-        }
-        Com_Printf("%3i %-15.15s %-40.40s %-7d %3d%%\n",
-                   client->number, client->name, name, size, percent);
-    }
-}
-
 static void dump_time(void)
 {
     client_t    *client;
@@ -684,14 +656,13 @@ static void SV_Status_f(void)
         if (Cmd_Argc() > 1) {
             char *w = Cmd_Argv(1);
             switch (*w) {
-            case 'd': dump_downloads(); break;
             case 'l': dump_lag();       break;
             case 'p': dump_protocols(); break;
             case 's': dump_settings();  break;
             case 't': dump_time();      break;
             case 'v': dump_versions();  break;
             default:
-                Com_Printf("Usage: %s [d|l|p|s|t|v]\n", Cmd_Argv(0));
+                Com_Printf("Usage: %s [l|p|s|t|v]\n", Cmd_Argv(0));
                 dump_clients();
                 break;
             }
@@ -700,8 +671,6 @@ static void SV_Status_f(void)
         }
     }
     Com_Printf("\n");
-
-    SV_MvdStatus_f();
 }
 
 /*
@@ -783,9 +752,6 @@ void SV_PrintMiscInfo(void)
                sv_client->min_ping, AVG_PING(sv_client), sv_client->max_ping);
     Com_Printf("PL server to client  %.2f%% (approx)\n", PL_S2C(sv_client));
     Com_Printf("PL client to server  %.2f%%\n", PL_C2S(sv_client));
-#ifdef USE_PACKETDUP
-    Com_Printf("packetdup            %d\n", sv_client->numpackets - 1);
-#endif
     Com_Printf("timescale            %.3f\n", sv_client->timescale);
     Com_TimeDiff(buffer, sizeof(buffer),
                  &sv_client->connect_time, time(NULL));
@@ -1674,50 +1640,6 @@ static void SV_ListInfoBans_f(void)
     SV_ListCvarBans(&sv_infobanlist, "userinfo");
 }
 
-#if USE_MVD_CLIENT || USE_MVD_SERVER
-
-const cmd_option_t o_record[] = {
-    { "h", "help", "display this message" },
-    { "z", "compress", "compress file with gzip" },
-    { NULL }
-};
-
-static void SV_Record_c(genctx_t *ctx, int argnum)
-{
-#if USE_MVD_CLIENT
-    // TODO
-    if (argnum == 1) {
-        MVD_File_g(ctx);
-    }
-#endif
-}
-
-static void SV_Record_f(void)
-{
-#if USE_MVD_CLIENT
-    if (sv.state == ss_broadcast) {
-        MVD_StreamedRecord_f();
-        return;
-    }
-#endif
-
-    SV_MvdRecord_f();
-}
-
-static void SV_Stop_f(void)
-{
-#if USE_MVD_CLIENT
-    if (sv.state == ss_broadcast) {
-        MVD_StreamedStop_f();
-        return;
-    }
-#endif
-
-    SV_MvdStop_f();
-}
-
-#endif
-
 //===========================================================
 
 static const cmdreg_t c_server[] = {
@@ -1761,10 +1683,6 @@ static const cmdreg_t c_server[] = {
     { "adduserinfoban", SV_AddInfoBan_f },
     { "deluserinfoban", SV_DelInfoBan_f },
     { "listuserinfobans", SV_ListInfoBans_f },
-#if USE_MVD_CLIENT || USE_MVD_SERVER
-    { "mvdrecord", SV_Record_f, SV_Record_c },
-    { "mvdstop", SV_Stop_f },
-#endif
 
     { NULL }
 };

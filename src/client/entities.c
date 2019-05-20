@@ -357,7 +357,6 @@ void CL_DeltaFrame(void)
     entity_state_t      *state;
     int                 i, j;
     int                 framenum;
-    int                 prevstate = cls.state;
 
     // getting a valid frame message ends the connection process
     if (cls.state == ca_precached)
@@ -393,11 +392,6 @@ void CL_DeltaFrame(void)
     if (cls.demo.recording && !cls.demo.paused && !cls.demo.seeking && CL_FRAMESYNC) {
         CL_EmitDemoFrame();
     }
-
-    if (prevstate == ca_precached)
-        CL_GTV_Resume();
-    else
-        CL_GTV_EmitFrame();
 
     if (cls.demo.playback) {
         // this delta has nothing to do with local viewangles,
@@ -832,23 +826,19 @@ static void CL_AddPacketEntities(void)
             } else if (effects & EF_BFG) {
                 if (effects & EF_ANIM_ALLFAST) {
                     CL_BfgParticles(&ent);
-#if USE_DLIGHTS
                     i = 200;
                 } else {
                     static const int bfg_lightramp[6] = {300, 400, 600, 300, 150, 75};
 
                     i = s1->frame; clamp(i, 0, 5);
                     i = bfg_lightramp[i];
-#endif
                 }
                 V_AddLight(ent.origin, i, 0, 1, 0);
             } else if (effects & EF_TRAP) {
                 ent.origin[2] += 32;
                 CL_TrapParticles(cent, ent.origin);
-#if USE_DLIGHTS
                 i = (Q_rand() % 100) + 100;
                 V_AddLight(ent.origin, i, 1, 0.8f, 0.1f);
-#endif
             } else if (effects & EF_FLAG1) {
                 CL_FlagTrail(cent->lerp_origin, ent.origin, 242);
                 V_AddLight(ent.origin, 225, 1, 0.1f, 0.1f);
@@ -860,12 +850,10 @@ static void CL_AddPacketEntities(void)
                 V_AddLight(ent.origin, 225, 1.0f, 1.0f, 0.0f);
             } else if (effects & EF_TRACKERTRAIL) {
                 if (effects & EF_TRACKER) {
-#if USE_DLIGHTS
                     float intensity;
 
                     intensity = 50 + (500 * (sin(cl.time / 500.0f) + 1.0f));
                     V_AddLight(ent.origin, intensity, -1.0f, -1.0f, -1.0f);
-#endif
                 } else {
                     CL_Tracker_Shell(cent->lerp_origin);
                     V_AddLight(ent.origin, 155, -1.0f, -1.0f, -1.0f);
@@ -1260,9 +1248,7 @@ void CL_AddEntities(void)
     CL_AddPacketEntities();
     CL_AddTEnts();
     CL_AddParticles();
-#if USE_DLIGHTS
     CL_AddDLights();
-#endif
     CL_AddLightStyles();
     LOC_AddLocationsToScene();
 }

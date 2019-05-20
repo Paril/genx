@@ -236,9 +236,6 @@ void SV_SpawnServer(mapcmd_t *cmd)
     // all precaches are complete
     sv.state = cmd->state;
 
-    // respawn dummy MVD client, set base states, etc
-    SV_MvdMapChanged();
-
     // set serverinfo variable
     SV_InfoSet("mapname", sv.name);
     SV_InfoSet("port", net_port->string);
@@ -337,10 +334,9 @@ bool SV_ParseMapCmd(mapcmd_t *cmd)
 SV_InitGame
 
 A brand new game has been started.
-If mvd_spawn is non-zero, load the built-in MVD game module.
 ==============
 */
-void SV_InitGame(unsigned mvd_spawn)
+void SV_InitGame(void)
 {
     int     i, entnum;
     edict_t *ent;
@@ -348,7 +344,7 @@ void SV_InitGame(unsigned mvd_spawn)
 
     if (svs.initialized) {
         // cause any connected clients to reconnect
-        SV_Shutdown("Server restarted\n", ERR_RECONNECT | mvd_spawn);
+        SV_Shutdown("Server restarted\n", ERR_RECONNECT);
     } else {
         // make sure the client is down
         CL_Disconnect(ERR_RECONNECT);
@@ -371,22 +367,17 @@ void SV_InitGame(unsigned mvd_spawn)
     Cvar_Reset(sv_recycle);
 #endif
 
-    if (mvd_spawn) {
-        Cvar_Set("deathmatch", "1");
+    if (Cvar_VariableInteger("coop") &&
+        Cvar_VariableInteger("deathmatch")) {
+        Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
         Cvar_Set("coop", "0");
-    } else {
-        if (Cvar_VariableInteger("coop") &&
-            Cvar_VariableInteger("deathmatch")) {
-            Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
-            Cvar_Set("coop", "0");
-        }
+    }
 
-        // dedicated servers can't be single player and are usually DM
-        // so unless they explicity set coop, force it to deathmatch
-        if (COM_DEDICATED) {
-            if (!Cvar_VariableInteger("coop"))
-                Cvar_Set("deathmatch", "1");
-        }
+    // dedicated servers can't be single player and are usually DM
+    // so unless they explicity set coop, force it to deathmatch
+    if (COM_DEDICATED) {
+        if (!Cvar_VariableInteger("coop"))
+            Cvar_Set("deathmatch", "1");
     }
 
     // init clients
@@ -413,11 +404,6 @@ void SV_InitGame(unsigned mvd_spawn)
     svs.num_entities = sv_maxclients->integer * UPDATE_BACKUP * MAX_PACKET_ENTITIES;
     svs.entities = SV_Mallocz(sizeof(entity_packed_t) * svs.num_entities);
 
-    // initialize MVD server
-    if (!mvd_spawn) {
-        SV_MvdInit();
-    }
-
     Cvar_ClampInteger(sv_reserved_slots, 0, sv_maxclients->integer - 1);
 
 #if USE_ZLIB
@@ -430,16 +416,7 @@ void SV_InitGame(unsigned mvd_spawn)
 #endif
 
     // init game
-#if USE_MVD_CLIENT
-    if (mvd_spawn) {
-        if (ge) {
-            SV_ShutdownGameProgs();
-        }
-        ge = &mvd_ge;
-        ge->Init();
-    } else
-#endif
-        SV_InitGameProgs();
+    SV_InitGameProgs();
 
     // send heartbeat very soon
     svs.last_heartbeat = -(HEARTBEAT_SECONDS - 5) * 1000;
@@ -452,8 +429,6 @@ void SV_InitGame(unsigned mvd_spawn)
         client->edict = ent;
         client->number = i;
     }
-
-    AC_Connect(mvd_spawn);
 
     svs.initialized = true;
 }

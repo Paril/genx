@@ -38,7 +38,6 @@ typedef enum {
     TAG_RENDERER,
     TAG_UI,
     TAG_SERVER,
-    TAG_MVD,
     TAG_SOUND,
     TAG_CMODEL,
 

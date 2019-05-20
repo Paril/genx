@@ -75,7 +75,10 @@ static void Win_SetPosition(void)
             after = HWND_NOTOPMOST;
         }
         style |= WS_OVERLAPPED;
-        if (win_notitle->integer) {
+		if (win.flags & QVF_BORDERLESS) {
+			style &= ~WS_THICKFRAME;
+			style |= WS_POPUP;
+		} else if (win_notitle->integer) {
             if (win_noresize->integer) {
                 style |= WS_DLGFRAME;
             } else {
@@ -155,7 +158,7 @@ static bool mode_is_sane(const DEVMODE *dm)
         return false;
 
     // grayscale and interlaced modes are not supported
-    if (dm->dmDisplayFlags & (DM_GRAYSCALE | DM_INTERLACED))
+    if (dm->dmDisplayFlags & DM_INTERLACED)
         return false;
 
     // according to MSDN, frequency can be 0 or 1 for some weird hardware
@@ -185,80 +188,6 @@ static bool modes_are_equal(const DEVMODE *base, const DEVMODE *compare)
     return true;
 }
 
-/*
-============
-VID_GetDefaultModeList
-============
-*/
-char *VID_GetDefaultModeList(void)
-{
-    DEVMODE desktop, dm, *modes;
-    int i, j, num_modes, max_modes;
-    size_t size, len;
-    char *buf;
-
-    memset(&desktop, 0, sizeof(desktop));
-    desktop.dmSize = sizeof(desktop);
-
-    if (!EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &desktop))
-        return Z_CopyString(VID_MODELIST);
-
-    modes = NULL;
-    num_modes = 0;
-    max_modes = 0;
-    for (i = 0; i < 4096; i++) {
-        memset(&dm, 0, sizeof(dm));
-        dm.dmSize = sizeof(dm);
-        if (!EnumDisplaySettings(NULL, i, &dm))
-            break;
-
-        // sanity check
-        if (!mode_is_sane(&dm))
-            continue;
-
-        // completely ignore non-desktop bit depths for now
-        if (dm.dmBitsPerPel != desktop.dmBitsPerPel)
-            continue;
-
-        // skip duplicate modes
-        for (j = 0; j < num_modes; j++)
-            if (modes_are_equal(&modes[j], &dm))
-                break;
-        if (j != num_modes)
-            continue;
-
-        if (num_modes == max_modes) {
-            max_modes += 32;
-            modes = Z_Realloc(modes, sizeof(modes[0]) * max_modes);
-        }
-
-        modes[num_modes++] = dm;
-    }
-
-    if (!num_modes)
-        return Z_CopyString(VID_MODELIST);
-
-    qsort(modes, num_modes, sizeof(modes[0]), modecmp);
-
-    size = 8 + num_modes * 32 + 1;
-    buf = Z_Malloc(size);
-
-    len = Q_strlcpy(buf, "desktop ", size);
-    for (i = 0; i < num_modes; i++) {
-        len += Q_scnprintf(buf + len, size - len, "%lux%lu@%lu",
-                           modes[i].dmPelsWidth,
-                           modes[i].dmPelsHeight,
-                           modes[i].dmDisplayFrequency);
-        if (len < size - 1 && i < num_modes - 1)
-            buf[len++] = ' ';
-    }
-    buf[len] = 0;
-
-    Z_Free(modes);
-
-    return buf;
-}
-
 // avoid doing CDS to the same fullscreen mode to reduce flickering
 static bool mode_is_current(const DEVMODE *dm)
 {
@@ -277,7 +206,6 @@ static LONG set_fullscreen_mode(void)
 {
     DEVMODE desktop, dm;
     LONG ret;
-    int freq, depth;
 
     memset(&desktop, 0, sizeof(desktop));
     desktop.dmSize = sizeof(desktop);
@@ -285,13 +213,10 @@ static LONG set_fullscreen_mode(void)
     EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &desktop);
 
     // parse vid_modelist specification
-    if (VID_GetFullscreen(&win.rc, &freq, &depth)) {
-        Com_DPrintf("...setting fullscreen mode: %dx%d\n",
-                    win.rc.width, win.rc.height);
-    } else if (mode_is_sane(&desktop)) {
+    if (mode_is_sane(&desktop)) {
         win.rc.width = desktop.dmPelsWidth;
         win.rc.height = desktop.dmPelsHeight;
-        Com_DPrintf("...falling back to desktop mode: %dx%d\n",
+        Com_DPrintf("...setting fullscreen mode: %dx%d\n",
                     win.rc.width, win.rc.height);
     } else {
         Com_DPrintf("...falling back to default mode: %dx%d\n",
@@ -304,21 +229,13 @@ static LONG set_fullscreen_mode(void)
     dm.dmPelsHeight = win.rc.height;
     dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
 
-    if (freq) {
-        dm.dmDisplayFrequency = freq;
-        dm.dmFields |= DM_DISPLAYFREQUENCY;
-        Com_DPrintf("...using display frequency of %d\n", freq);
-    } else if (modes_are_equal(&desktop, &dm)) {
+    if (modes_are_equal(&desktop, &dm)) {
         dm.dmDisplayFrequency = desktop.dmDisplayFrequency;
         dm.dmFields |= DM_DISPLAYFREQUENCY;
         Com_DPrintf("...using desktop display frequency of %lu\n", desktop.dmDisplayFrequency);
     }
 
-    if (depth) {
-        dm.dmBitsPerPel = depth;
-        dm.dmFields |= DM_BITSPERPEL;
-        Com_DPrintf("...using bitdepth of %d\n", depth);
-    } else if (mode_is_sane(&desktop)) {
+    if (mode_is_sane(&desktop)) {
         dm.dmBitsPerPel = desktop.dmBitsPerPel;
         dm.dmFields |= DM_BITSPERPEL;
         Com_DPrintf("...using desktop bitdepth of %lu\n", desktop.dmBitsPerPel);
@@ -352,8 +269,10 @@ Win_SetMode
 */
 void Win_SetMode(void)
 {
+	win.flags &= ~QVF_BORDERLESS;
+
     // set full screen mode if requested
-    if (vid_fullscreen->integer > 0) {
+    if (vid_mode->integer == VM_FULLSCREEN) {
         LONG ret;
 
         ret = set_fullscreen_mode();
@@ -372,8 +291,10 @@ void Win_SetMode(void)
         }
 
         // fall back to windowed mode
-        Cvar_Reset(vid_fullscreen);
-    }
+        Cvar_Reset(vid_mode);
+	} else if (vid_mode->integer == VM_BORDERLESS) {
+		win.flags |= QVF_BORDERLESS;
+	}
 
     ChangeDisplaySettings(NULL, 0);
 
@@ -385,14 +306,25 @@ void Win_SetMode(void)
     win.rc.height &= ~1;
 
     // don't allow too small size
-    if (win.rc.width < 320) win.rc.width = 320;
-    if (win.rc.height < 240) win.rc.height = 240;
+	if (!(win.flags & QVF_BORDERLESS)) {
+		if (win.rc.width < 320) win.rc.width = 320;
+		if (win.rc.height < 240) win.rc.height = 240;
+	} else {
+		DEVMODE desktop;
+		memset(&desktop, 0, sizeof(desktop));
+		desktop.dmSize = sizeof(desktop);
+
+		EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &desktop);
+
+		win.rc.width = desktop.dmPelsWidth;
+		win.rc.height = desktop.dmPelsHeight + 2;
+	}
 
     Com_DPrintf("...setting windowed mode: %dx%d%+d%+d\n",
                 win.rc.width, win.rc.height, win.rc.x, win.rc.y);
 
     memset(&win.dm, 0, sizeof(win.dm));
-    win.flags &= ~QVF_FULLSCREEN;
+	win.flags &= ~QVF_FULLSCREEN;
     Win_SetPosition();
     win.mode_changed = 0;
 
@@ -914,7 +846,7 @@ STATIC LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARA
         case SC_SCREENSAVE:
             return FALSE;
         case SC_MAXIMIZE:
-            if (!vid_fullscreen->integer)
+            if (vid_mode->integer != VM_FULLSCREEN)
                 VID_ToggleFullscreen();
             return FALSE;
         }

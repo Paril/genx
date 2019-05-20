@@ -204,8 +204,6 @@ static GLuint create_and_use_program(GLbitfield bits)
     GLint status;
     qglGetProgramiv(program, GL_LINK_STATUS, &status);
     if (!status) {
-        char buffer[MAX_STRING_CHARS] = { 0 };
-
         qglGetProgramInfoLog(program, sizeof(buffer), NULL, buffer);
 
         if (buffer[0])

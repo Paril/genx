@@ -17,6 +17,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "shared/shared.h"
+
+#if USE_TESTS
+
 #include "common/bsp.h"
 #include "common/cmd.h"
 #include "common/common.h"
@@ -624,3 +627,5 @@ void TST_Init(void)
 #endif
     Cmd_AddCommand("mdfourtest", Com_MdfourTest_f);
 }
+
+#endif

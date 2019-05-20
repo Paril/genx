@@ -115,7 +115,6 @@ EVENT MESSAGES
 SV_ClientPrintf
 
 Sends text across to be displayed if the level passes.
-NOT archived in MVD stream.
 =================
 */
 void SV_ClientPrintf(client_t *client, int level, const char *fmt, ...)
@@ -148,7 +147,6 @@ void SV_ClientPrintf(client_t *client, int level, const char *fmt, ...)
 SV_BroadcastPrintf
 
 Sends text to all active clients.
-NOT archived in MVD stream.
 =================
 */
 void SV_BroadcastPrintf(int level, const char *fmt, ...)
@@ -208,7 +206,6 @@ void SV_ClientCommand(client_t *client, const char *fmt, ...)
 SV_BroadcastCommand
 
 Sends command to all active clients.
-NOT archived in MVD stream.
 =================
 */
 void SV_BroadcastCommand(const char *fmt, ...)
@@ -245,8 +242,6 @@ SV_Multicast
 Sends the contents of the write buffer to a subset of the clients,
 then clears the write buffer.
 
-Archived in MVD stream.
-
 MULTICAST_ALL    same as broadcast (origin can be NULL)
 MULTICAST_PVS    send to clients potentially visible from org
 MULTICAST_PHS    send to clients potentially hearable from org
@@ -256,7 +251,7 @@ void SV_Multicast(vec3_t origin, multicast_t to)
 {
     client_t    *client;
     byte        mask[VIS_MAX_BYTES];
-    mleaf_t     *leaf1, *leaf2;
+    mleaf_t     *leaf1 = NULL, *leaf2;
     int         leafnum q_unused;
     int         flags;
 
@@ -316,9 +311,6 @@ void SV_Multicast(vec3_t origin, multicast_t to)
 
         SV_ClientAddMessage(client, flags);
     }
-
-    // add to MVD datagram
-    SV_MvdMulticast(leafnum, to);
 
     // clear the buffer
     SZ_Clear(&msg_write);
@@ -769,8 +761,7 @@ static void write_datagram_old(client_t *client)
     // send the datagram
     cursize = client->netchan->Transmit(client->netchan,
                                         msg_write.cursize,
-                                        msg_write.data,
-                                        client->numpackets);
+                                        msg_write.data);
 
     // record the size for rate estimation
     SV_CalcSendTime(client, cursize);
@@ -839,8 +830,7 @@ static void write_datagram_new(client_t *client)
     // send the datagram
     cursize = client->netchan->Transmit(client->netchan,
                                         msg_write.cursize,
-                                        msg_write.data,
-                                        client->numpackets);
+                                        msg_write.data);
 
     // record the size for rate estimation
     SV_CalcSendTime(client, cursize);
@@ -943,49 +933,6 @@ finish:
     }
 }
 
-static void write_pending_download(client_t *client)
-{
-    sizebuf_t   *buf;
-    size_t      remaining;
-    int         chunk, percent;
-
-    if (!client->download)
-        return;
-
-    if (!client->downloadpending)
-        return;
-
-    if (client->netchan->reliable_length)
-        return;
-
-    buf = &client->netchan->message;
-    if (buf->cursize > client->netchan->maxpacketlen)
-        return;
-
-    remaining = client->netchan->maxpacketlen - buf->cursize;
-    if (remaining <= 4)
-        return;
-
-    chunk = client->downloadsize - client->downloadcount;
-    if (chunk > remaining - 4)
-        chunk = remaining - 4;
-
-    client->downloadpending = false;
-    client->downloadcount += chunk;
-
-    percent = client->downloadcount * 100 / client->downloadsize;
-
-    SZ_WriteByte(buf, client->downloadcmd);
-    SZ_WriteShort(buf, chunk);
-    SZ_WriteByte(buf, percent);
-    SZ_Write(buf, client->download + client->downloadcount - chunk, chunk);
-
-    if (client->downloadcount == client->downloadsize) {
-        SV_CloseDownload(client);
-        SV_AlignKeyFrames(client);
-    }
-}
-
 /*
 ==================
 SV_SendAsyncPackets
@@ -1038,12 +985,9 @@ void SV_SendAsyncPackets(void)
             write_reliables_old(client, netchan->maxpacketlen);
         }
 
-        // now fill up remaining buffer space with download
-        write_pending_download(client);
-
         if (netchan->message.cursize || netchan->reliable_ack_pending ||
             netchan->reliable_length || retransmit) {
-            cursize = netchan->Transmit(netchan, 0, "", 1);
+            cursize = netchan->Transmit(netchan, 0, "");
             SV_DPrintf(0, "%s: send: %"PRIz"\n", client->name, cursize);
 calctime:
             SV_CalcSendTime(client, cursize);

@@ -17,12 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "sound.h"
-
-#if USE_FIXED_LIBAL
-#include "qal/fixed.h"
-#else
 #include "qal/dynamic.h"
-#endif
 
 // translates from AL coordinate system to quake
 #define AL_UnpackVector(v)  -v[1],v[2],-v[0]
@@ -121,13 +116,11 @@ sfxcache_t *AL_UploadSfx(sfx_t *s)
         return NULL;
     }
 
-#if 0
     // specify OpenAL-Soft style loop points
     if (s_info.loopstart > 0 && qalIsExtensionPresent("AL_SOFT_loop_points")) {
         ALint points[2] = { s_info.loopstart, s_info.samples };
         qalBufferiv(name, AL_LOOP_POINTS_SOFT, points);
     }
-#endif
 
     // allocate placeholder sfxcache
     sc = s->cache = S_Malloc(sizeof(*sc));

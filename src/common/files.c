@@ -77,13 +77,6 @@ QUAKE FILESYSTEM
 
 #define PATH_NOT_CHECKED    -1
 
-#define FOR_EACH_SYMLINK(link, list) \
-    LIST_FOR_EACH(symlink_t, link, list, entry)
-
-#define FOR_EACH_SYMLINK_SAFE(link, next, list) \
-    LIST_FOR_EACH_SAFE(symlink_t, link, next, list, entry)
-
-//
 // in memory
 //
 
@@ -153,14 +146,6 @@ typedef struct {
     int64_t     length;     // total cached file length
 } file_t;
 
-typedef struct {
-    list_t      entry;
-    unsigned    targlen;
-    unsigned    namelen;
-    char        *target;
-    char        name[1];
-} symlink_t;
-
 // these point to user home directory
 char                fs_gamedir[MAX_OSPATH];
 //static char       fs_basedir[MAX_OSPATH];
@@ -168,26 +153,7 @@ char                fs_gamedir[MAX_OSPATH];
 static searchpath_t *fs_searchpaths;
 static searchpath_t *fs_base_searchpaths;
 
-static list_t       fs_hard_links;
-static list_t       fs_soft_links;
-
 static file_t       fs_files[MAX_FILE_HANDLES];
-
-#ifdef _DEBUG
-static int          fs_count_read;
-static int          fs_count_open;
-static int          fs_count_strcmp;
-static int          fs_count_strlwr;
-#define FS_COUNT_READ       fs_count_read++
-#define FS_COUNT_OPEN       fs_count_open++
-#define FS_COUNT_STRCMP     fs_count_strcmp++
-#define FS_COUNT_STRLWR     fs_count_strlwr++
-#else
-#define FS_COUNT_READ       (void)0
-#define FS_COUNT_OPEN       (void)0
-#define FS_COUNT_STRCMP     (void)0
-#define FS_COUNT_STRLWR     (void)0
-#endif
 
 #ifdef _DEBUG
 static cvar_t       *fs_debug;
@@ -442,33 +408,6 @@ static file_t *file_for_handle(qhandle_t f)
         Com_Error(ERR_FATAL, "%s: bad file type", __func__);
 
     return file;
-}
-
-// expects a buffer of at least MAX_OSPATH bytes!
-static symlink_t *expand_links(list_t *list, char *buffer, size_t *len_p)
-{
-    symlink_t   *link;
-    size_t      namelen = *len_p;
-
-    FOR_EACH_SYMLINK(link, list) {
-        if (link->namelen > namelen) {
-            continue;
-        }
-        if (!FS_pathcmpn(buffer, link->name, link->namelen)) {
-            size_t newlen = namelen - link->namelen + link->targlen;
-
-            if (newlen < MAX_OSPATH) {
-                memmove(buffer + link->targlen, buffer + link->namelen,
-                        namelen - link->namelen + 1);
-                memcpy(buffer, link->target, link->targlen);
-            }
-
-            *len_p = newlen;
-            return link;
-        }
-    }
-
-    return NULL;
 }
 
 /*
@@ -889,7 +828,6 @@ static int64_t open_file_write(file_t *file, const char *name)
             strcat(mode_str, "x");
         break;
     case FS_MODE_RDWR:
-        // this mode is only used by client downloading code
         // similar to FS_MODE_APPEND, but does not create
         // the file if it does not exist
         strcpy(mode_str, "r+");
@@ -1220,8 +1158,6 @@ static int64_t open_from_disk(file_t *file, const char *fullpath)
     file_info_t info;
     int ret;
 
-    FS_COUNT_OPEN;
-
     fp = fopen(fullpath, "rb");
     if (!fp) {
         ret = Q_ERRNO;
@@ -1275,8 +1211,6 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
     int             valid;
     size_t          len;
 
-    FS_COUNT_READ;
-
     hash = FS_HashPath(normalized, 0);
 
     valid = PATH_NOT_CHECKED;
@@ -1315,7 +1249,6 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
                     continue;
                 }
 #endif
-                FS_COUNT_STRCMP;
                 if (!FS_pathcmp(entry->name, normalized)) {
                     // found it!
                     return open_from_pak(file, pak, entry, unique);
@@ -1354,7 +1287,6 @@ static int64_t open_file_read(file_t *file, const char *normalized, size_t namel
 #ifndef _WIN32
             if (valid == PATH_MIXED_CASE) {
                 // convert to lower case and retry
-                FS_COUNT_STRLWR;
                 Q_strlwr(fullpath + strlen(search->filename) + 1);
                 ret = open_from_disk(file, fullpath);
                 if (ret != Q_ERR_NOENT)
@@ -1372,7 +1304,7 @@ fail:
     return ret;
 }
 
-// Normalizes quake path, expands symlinks
+// Normalizes quake path
 static int64_t expand_open_file_read(file_t *file, const char *name, bool unique)
 {
     char        normalized[MAX_OSPATH];
@@ -1385,26 +1317,12 @@ static int64_t expand_open_file_read(file_t *file, const char *name, bool unique
         return Q_ERR_NAMETOOLONG;
     }
 
-// expand hard symlinks
-    if (expand_links(&fs_hard_links, normalized, &namelen) && namelen >= MAX_OSPATH) {
-        return Q_ERR_NAMETOOLONG;
-    }
-
 // reject empty paths
     if (namelen == 0) {
         return Q_ERR_NAMETOOSHORT;
     }
 
     ret = open_file_read(file, normalized, namelen, unique);
-    if (ret == Q_ERR_NOENT) {
-// expand soft symlinks
-        if (expand_links(&fs_soft_links, normalized, &namelen)) {
-            if (namelen >= MAX_OSPATH) {
-                return Q_ERR_NAMETOOLONG;
-            }
-            ret = open_file_read(file, normalized, namelen, unique);
-        }
-    }
 
     return ret;
 }
@@ -2871,224 +2789,6 @@ static void print_file_list(const char *path, const char *ext, unsigned flags)
 
 /*
 ============
-FS_FDir_f
-============
-*/
-static void FS_FDir_f(void)
-{
-    unsigned flags;
-    char *filter;
-
-    if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <filter> [full_path]\n", Cmd_Argv(0));
-        return;
-    }
-
-    filter = Cmd_Argv(1);
-
-    flags = FS_SEARCH_BYFILTER;
-    if (Cmd_Argc() > 2) {
-        flags |= FS_SEARCH_SAVEPATH;
-    }
-
-    print_file_list(NULL, filter, flags);
-}
-
-/*
-============
-FS_Dir_f
-============
-*/
-static void FS_Dir_f(void)
-{
-    char    *path, *ext;
-
-    if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <directory> [.extension]\n", Cmd_Argv(0));
-        return;
-    }
-
-    path = Cmd_Argv(1);
-    if (Cmd_Argc() > 2) {
-        ext = Cmd_Argv(2);
-    } else {
-        ext = NULL;
-    }
-
-    print_file_list(path, ext, 0);
-}
-
-/*
-============
-FS_WhereIs_f
-
-Verbosely looks up a filename with exactly the same logic as expand_open_file_read.
-============
-*/
-static void FS_WhereIs_f(void)
-{
-    char            normalized[MAX_OSPATH], fullpath[MAX_OSPATH];
-    searchpath_t    *search;
-    pack_t          *pak;
-    packfile_t      *entry;
-    symlink_t       *link;
-    unsigned        hash;
-    file_info_t     info;
-    int             ret, total, valid;
-    size_t          len, namelen;
-    bool            report_all;
-
-    if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <path> [all]\n", Cmd_Argv(0));
-        return;
-    }
-
-// normalize path
-    namelen = FS_NormalizePathBuffer(normalized, Cmd_Argv(1), MAX_OSPATH);
-    if (namelen >= MAX_OSPATH) {
-        Com_Printf("Refusing to lookup oversize path.\n");
-        return;
-    }
-
-// expand hard symlinks
-    link = expand_links(&fs_hard_links, normalized, &namelen);
-    if (link) {
-        if (namelen >= MAX_OSPATH) {
-            Com_Printf("Oversize symbolic link ('%s --> '%s').\n",
-                       link->name, link->target);
-            return;
-        }
-
-        Com_Printf("Symbolic link ('%s' --> '%s') in effect.\n",
-                   link->name, link->target);
-    }
-
-    report_all = Cmd_Argc() >= 3;
-    total = 0;
-    link = NULL;
-
-// reject empty paths
-    if (namelen == 0) {
-        Com_Printf("Refusing to lookup empty path.\n");
-        return;
-    }
-
-recheck:
-
-// warn about non-standard path length
-    if (namelen >= MAX_QPATH) {
-        Com_Printf("Not searching for '%s' in pack files "
-                   "since path length exceedes %d characters.\n",
-                   normalized, MAX_QPATH - 1);
-    }
-
-    hash = FS_HashPath(normalized, 0);
-
-    valid = PATH_NOT_CHECKED;
-
-// search through the path, one element at a time
-    for (search = fs_searchpaths; search; search = search->next) {
-        // is the element a pak file?
-        if (search->pack) {
-            // don't bother searching in paks if length exceedes MAX_QPATH
-            if (namelen >= MAX_QPATH) {
-                continue;
-            }
-            // look through all the pak file elements
-            pak = search->pack;
-            entry = pak->file_hash[hash & (pak->hash_size - 1)];
-            for (; entry; entry = entry->hash_next) {
-                if (entry->namelen != namelen) {
-                    continue;
-                }
-                if (!FS_pathcmp(entry->name, normalized)) {
-                    // found it!
-                    Com_Printf("%s/%s (%d bytes)\n", pak->filename,
-                               normalized, entry->filelen);
-                    if (!report_all) {
-                        return;
-                    }
-                    total++;
-                }
-            }
-        } else {
-            if (valid == PATH_NOT_CHECKED) {
-                valid = FS_ValidatePath(normalized);
-                if (valid == PATH_INVALID) {
-                    // warn about invalid path
-                    Com_Printf("Not searching for '%s' in physical file "
-                               "system since path contains invalid characters.\n",
-                               normalized);
-                }
-            }
-            if (valid == PATH_INVALID) {
-                continue;
-            }
-
-            // check a file in the directory tree
-            len = Q_concat(fullpath, MAX_OSPATH,
-                           search->filename, "/", normalized, NULL);
-            if (len >= MAX_OSPATH) {
-                Com_WPrintf("Full path length '%s/%s' exceeded %d characters.\n",
-                            search->filename, normalized, MAX_OSPATH - 1);
-                if (!report_all) {
-                    return;
-                }
-                continue;
-            }
-
-            ret = get_path_info(fullpath, &info);
-
-#ifndef _WIN32
-            if (ret == Q_ERR_NOENT && valid == PATH_MIXED_CASE) {
-                Q_strlwr(fullpath + strlen(search->filename) + 1);
-                ret = get_path_info(fullpath, &info);
-                if (ret == Q_ERR_SUCCESS)
-                    Com_Printf("Physical path found after converting to lower case.\n");
-            }
-#endif
-
-            if (ret == Q_ERR_SUCCESS) {
-                Com_Printf("%s (%"PRId64" bytes)\n", fullpath, info.size);
-                if (!report_all) {
-                    return;
-                }
-                total++;
-            } else if (ret != Q_ERR_NOENT) {
-                Com_EPrintf("Couldn't get info on '%s': %s\n",
-                            fullpath, Q_ErrorString(ret));
-                if (!report_all) {
-                    return;
-                }
-            }
-        }
-    }
-
-    if ((total == 0 || report_all) && link == NULL) {
-        // expand soft symlinks
-        link = expand_links(&fs_soft_links, normalized, &namelen);
-        if (link) {
-            if (namelen >= MAX_OSPATH) {
-                Com_Printf("Oversize symbolic link ('%s --> '%s').\n",
-                           link->name, link->target);
-                return;
-            }
-
-            Com_Printf("Symbolic link ('%s' --> '%s') in effect.\n",
-                       link->name, link->target);
-            goto recheck;
-        }
-    }
-
-    if (total) {
-        Com_Printf("%d instances of %s\n", total, normalized);
-    } else {
-        Com_Printf("%s was not found\n", normalized);
-    }
-}
-
-/*
-============
 FS_Path_f
 ============
 */
@@ -3123,216 +2823,6 @@ static void FS_Path_f(void)
         Com_Printf("%i files in PKZ files\n", numFilesInZIP);
     }
 #endif
-}
-
-#ifdef _DEBUG
-/*
-================
-FS_Stats_f
-================
-*/
-static void FS_Stats_f(void)
-{
-    searchpath_t *path;
-    pack_t *pack, *maxpack = NULL;
-    packfile_t *file, *max = NULL;
-    int i;
-    int len, maxLen = 0;
-    int totalHashSize, totalLen;
-
-    totalHashSize = totalLen = 0;
-    for (path = fs_searchpaths; path; path = path->next) {
-        if (!(pack = path->pack)) {
-            continue;
-        }
-        for (i = 0; i < pack->hash_size; i++) {
-            if (!(file = pack->file_hash[i])) {
-                continue;
-            }
-            len = 0;
-            for (; file; file = file->hash_next) {
-                len++;
-            }
-            if (maxLen < len) {
-                max = pack->file_hash[i];
-                maxpack = pack;
-                maxLen = len;
-            }
-            totalLen += len;
-            totalHashSize++;
-        }
-        //totalHashSize += pack->hash_size;
-    }
-
-    Com_Printf("Total calls to open_file_read: %d\n", fs_count_read);
-    Com_Printf("Total path comparsions: %d\n", fs_count_strcmp);
-    Com_Printf("Total calls to open_from_disk: %d\n", fs_count_open);
-    Com_Printf("Total mixed-case reopens: %d\n", fs_count_strlwr);
-
-    if (!totalHashSize) {
-        Com_Printf("No stats to display\n");
-        return;
-    }
-
-    Com_Printf("Maximum hash bucket length is %d, average is %.2f\n", maxLen, (float)totalLen / totalHashSize);
-    if (max) {
-        Com_Printf("Dumping longest bucket (%s):\n", maxpack->filename);
-        for (file = max; file; file = file->hash_next) {
-            Com_Printf("%s\n", file->name);
-        }
-    }
-}
-#endif // _DEBUG
-
-static void FS_Link_g(genctx_t *ctx)
-{
-    list_t *list;
-    symlink_t *link;
-
-    if (!strncmp(Cmd_Argv(ctx->argnum - 1), "soft", 4))
-        list = &fs_soft_links;
-    else
-        list = &fs_hard_links;
-
-    FOR_EACH_SYMLINK(link, list)
-        Prompt_AddMatch(ctx, link->name);
-}
-
-static void FS_Link_c(genctx_t *ctx, int argnum)
-{
-    if (argnum == 1) {
-        FS_Link_g(ctx);
-    }
-}
-
-static void free_all_links(list_t *list)
-{
-    symlink_t *link, *next;
-
-    FOR_EACH_SYMLINK_SAFE(link, next, list) {
-        Z_Free(link->target);
-        Z_Free(link);
-    }
-
-    List_Init(list);
-}
-
-static void FS_UnLink_f(void)
-{
-    static const cmd_option_t options[] = {
-        { "a", "all", "delete all links" },
-        { "h", "help", "display this message" },
-        { NULL }
-    };
-    list_t *list;
-    symlink_t *link;
-    char *name;
-    int c;
-
-    if (!strncmp(Cmd_Argv(0), "soft", 4))
-        list = &fs_soft_links;
-    else
-        list = &fs_hard_links;
-
-    while ((c = Cmd_ParseOptions(options)) != -1) {
-        switch (c) {
-        case 'h':
-            Cmd_PrintUsage(options, "<name>");
-            Com_Printf("Deletes a symbolic link with the specified name.");
-            Cmd_PrintHelp(options);
-            return;
-        case 'a':
-            free_all_links(list);
-            Com_Printf("Deleted all symbolic links.\n");
-            return;
-        default:
-            return;
-        }
-    }
-
-    name = cmd_optarg;
-    if (!name[0]) {
-        Com_Printf("Missing name argument.\n");
-        Cmd_PrintHint();
-        return;
-    }
-
-    FOR_EACH_SYMLINK(link, list) {
-        if (!FS_pathcmp(link->name, name)) {
-            List_Remove(&link->entry);
-            Z_Free(link->target);
-            Z_Free(link);
-            return;
-        }
-    }
-
-    Com_Printf("Symbolic link '%s' does not exist.\n", name);
-}
-
-static void FS_Link_f(void)
-{
-    int argc, count;
-    list_t *list;
-    symlink_t *link;
-    size_t namelen, targlen;
-    char name[MAX_OSPATH];
-    char target[MAX_OSPATH];
-
-    if (!strncmp(Cmd_Argv(0), "soft", 4))
-        list = &fs_soft_links;
-    else
-        list = &fs_hard_links;
-
-    argc = Cmd_Argc();
-    if (argc == 1) {
-        count = 0;
-        FOR_EACH_SYMLINK(link, list) {
-            Com_Printf("%s --> %s\n", link->name, link->target);
-            count++;
-        }
-        Com_Printf("------------------\n"
-                   "%d symbolic link%s listed.\n", count, count == 1 ? "" : "s");
-        return;
-    }
-
-    if (argc != 3) {
-        Com_Printf("Usage: %s <name> <target>\n"
-                   "Creates symbolic link to target with the specified name.\n"
-                   "Virtual quake paths are accepted.\n"
-                   "Links are effective only for reading.\n",
-                   Cmd_Argv(0));
-        return;
-    }
-
-    namelen = FS_NormalizePathBuffer(name, Cmd_Argv(1), sizeof(name));
-    if (namelen == 0 || namelen >= sizeof(name)) {
-        Com_Printf("Invalid symbolic link name.\n");
-        return;
-    }
-
-    targlen = FS_NormalizePathBuffer(target, Cmd_Argv(2), sizeof(target));
-    if (targlen == 0 || targlen >= sizeof(target)) {
-        Com_Printf("Invalid symbolic link target.\n");
-        return;
-    }
-
-    // search for existing link with this name
-    FOR_EACH_SYMLINK(link, list) {
-        if (!FS_pathcmp(link->name, name)) {
-            Z_Free(link->target);
-            goto update;
-        }
-    }
-
-    // create new link
-    link = FS_Malloc(sizeof(*link) + namelen);
-    memcpy(link->name, name, namelen + 1);
-    link->namelen = namelen;
-    List_Append(list, &link->entry);
-
-update:
-    link->target = FS_CopyString(target);
-    link->targlen = targlen;
 }
 
 static void free_search_path(searchpath_t *path)
@@ -3460,16 +2950,6 @@ static void FS_Restart_f(void)
 
 static const cmdreg_t c_fs[] = {
     { "path", FS_Path_f },
-    { "fdir", FS_FDir_f },
-    { "dir", FS_Dir_f },
-#ifdef _DEBUG
-    { "fs_stats", FS_Stats_f },
-#endif
-    { "whereis", FS_WhereIs_f },
-    { "link", FS_Link_f, FS_Link_c },
-    { "unlink", FS_UnLink_f, FS_Link_c },
-    { "softlink", FS_Link_f, FS_Link_c },
-    { "softunlink", FS_UnLink_f, FS_Link_c },
     { "fs_restart", FS_Restart_f },
 
     { NULL }
@@ -3496,10 +2976,6 @@ void FS_Shutdown(void)
             FS_FCloseFile(i + 1);
         }
     }
-
-    // free symbolic links
-    free_all_links(&fs_hard_links);
-    free_all_links(&fs_soft_links);
 
     // free search paths
     free_all_paths();
@@ -3568,9 +3044,6 @@ FS_Init
 void FS_Init(void)
 {
     Com_Printf("------- FS_Init -------\n");
-
-    List_Init(&fs_hard_links);
-    List_Init(&fs_soft_links);
 
     Cmd_Register(c_fs);
 

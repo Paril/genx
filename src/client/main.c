@@ -274,12 +274,6 @@ void CL_UpdateRecordingSetting(void)
         rec = 0;
     }
 
-#if USE_CLIENT_GTV
-    if (cls.gtv.state == ca_active) {
-        rec |= 1;
-    }
-#endif
-
     MSG_WriteByte(clc_setting);
     MSG_WriteShort(CLS_RECORDING);
     MSG_WriteShort(rec);
@@ -355,13 +349,6 @@ CL_Pause_f
 */
 static void CL_Pause_f(void)
 {
-#if USE_MVD_CLIENT
-    if (sv_running->integer == ss_broadcast) {
-        Cbuf_InsertText(&cmd_buffer, "mvdpause @@\n");
-        return;
-    }
-#endif
-
     // activate manual pause
     if (cl_paused->integer == 2) {
         Cvar_Set("cl_paused", "0");
@@ -744,8 +731,6 @@ void CL_Disconnect(error_type_t type)
     }
 #endif
 
-    //cls.connect_time = 0;
-    //cls.connect_count = 0;
     cls.passive = false;
 #if USE_ICMP
     cls.errorReceived = false;
@@ -756,7 +741,7 @@ void CL_Disconnect(error_type_t type)
         MSG_WriteByte(clc_stringcmd);
         MSG_WriteData("disconnect", 11);
 
-        cls.netchan->Transmit(cls.netchan, msg_write.cursize, msg_write.data, 3);
+        cls.netchan->Transmit(cls.netchan, msg_write.cursize, msg_write.data);
 
         SZ_Clear(&msg_write);
 
@@ -771,8 +756,6 @@ void CL_Disconnect(error_type_t type)
     CL_CleanupDownloads();
 
     CL_ClearState();
-
-    CL_GTV_Suspend();
 
     cls.state = ca_disconnected;
     cls.userinfo_modified = 0;
@@ -938,12 +921,10 @@ static void CL_ParsePrintMessage(void)
             CL_ParseStatusResponse(&status, string);
             CL_DumpStatusResponse(&status);
             break;
-#if USE_UI
         case REQ_STATUS_UI:
             CL_ParseStatusResponse(&status, string);
             UI_StatusEvent(&status);
             break;
-#endif
         case REQ_RCON:
             Com_Printf("%s", string);
             return; // rcon may come in multiple packets
@@ -1146,7 +1127,6 @@ static void CL_Reconnect_f(void)
     SCR_UpdateScreen();
 }
 
-#ifdef USE_UI
 /*
 =================
 CL_SendStatusRequest
@@ -1160,7 +1140,6 @@ void CL_SendStatusRequest(const netadr_t *address)
 
     OOB_PRINT(NS_CLIENT, address, "status");
 }
-#endif
 
 /*
 =================
@@ -1210,7 +1189,7 @@ static void CL_PingServers_f(void)
 =================
 CL_Skins_f
 
-Load or download any custom player skins and models
+Load any custom player skins and models
 =================
 */
 static void CL_Skins_f(void)
@@ -1387,7 +1366,6 @@ static void CL_ConnectionlessPacket(void)
         netchan_type_t type;
         int anticheat = 0;
         char mapname[MAX_QPATH];
-        bool got_server = false;
 
         if (cls.state < ca_connecting) {
             Com_DPrintf("Connect received while not connecting.  Ignored.\n");
@@ -1430,16 +1408,7 @@ static void CL_ConnectionlessPacket(void)
                 }
             } else if (!strncmp(s, "map=", 4)) {
                 Q_strlcpy(mapname, s + 4, sizeof(mapname));
-            } else if (!strncmp(s, "dlserver=", 9)) {
-                if (!got_server) {
-                    HTTP_SetServer(s + 9);
-                    got_server = true;
-                }
             }
-        }
-
-        if (!got_server) {
-            HTTP_SetServer(NULL);
         }
 
         Com_Printf("Connected to %s (protocol %d).\n",
@@ -1451,27 +1420,10 @@ static void CL_ConnectionlessPacket(void)
         cls.netchan = Netchan_Setup(NS_CLIENT, type, &cls.serverAddress,
                                     cls.quakePort, 1024, cls.serverProtocol);
 
-#if USE_AC_CLIENT
-        if (anticheat) {
-            MSG_WriteByte(clc_nop);
-            MSG_FlushTo(&cls.netchan->message);
-            cls.netchan->Transmit(cls.netchan, 0, "", 3);
-            S_StopAllSounds();
-            cls.connect_count = -1;
-            Com_Printf("Loading anticheat, this may take a few moments...\n");
-            SCR_UpdateScreen();
-            if (!Sys_GetAntiCheatAPI()) {
-                Com_Printf("Trying to connect without anticheat.\n");
-            } else {
-                Com_LPrintf(PRINT_NOTICE, "Anticheat loaded successfully.\n");
-            }
-        }
-#else
         if (anticheat >= 2) {
             Com_Printf("Anticheat required by server, "
                        "but no anticheat support linked in.\n");
         }
-#endif
 
         CL_ClientCommand("new");
         cls.state = ca_connected;
@@ -1566,9 +1518,6 @@ static void CL_PacketEvent(void)
     if (cls.demo.recording && !cls.demo.paused && CL_FRAMESYNC) {
         CL_WriteDemoMessage(&cls.demo.buffer);
     }
-
-    // if running GTV server, transmit to client
-    CL_GTV_Transmit();
 
     if (!cls.netchan)
         return;     // might have disconnected
@@ -1734,20 +1683,11 @@ static int precache_spawncount;
 =================
 CL_Begin
 
-Called after all downloads are done. Not used for demos.
+Not used for demos.
 =================
 */
 void CL_Begin(void)
 {
-#if USE_REF
-    if (!Q_stricmp(cl.gamedir, "gloom")) {
-        // cheat protect our custom modulate cvars
-        gl_modulate_world->flags |= CVAR_CHEAT;
-        gl_modulate_entities->flags |= CVAR_CHEAT;
-        gl_brightness->flags |= CVAR_CHEAT;
-    }
-#endif
-
     Cvar_FixCheats();
 
     CL_PrepRefresh();
@@ -1805,8 +1745,8 @@ static void CL_Precache_f(void)
 
     precache_spawncount = atoi(Cmd_Argv(1));
 
-    CL_ResetPrecacheCheck();
-    CL_RequestNextDownload();
+	CL_RegisterBspModels();
+	CL_Begin();
 
     if (cls.state != ca_precached) {
         cls.state = ca_connected;
@@ -2153,7 +2093,7 @@ static void CL_WriteConfig_f(void)
         return;
     }
 
-    FS_FPrintf(f, "// generated by q2pro\n");
+    FS_FPrintf(f, "// generated by " APPLICATION "\n");
 
     if (bindings) {
         FS_FPrintf(f, "\n// key bindings\n");
@@ -2384,8 +2324,6 @@ void CL_RestartFilesystem(bool total)
         cl.image_precache[0] = R_RegisterPic2(cl.mapname);
     }
 
-    CL_LoadDownloadIgnores();
-
     // switch back to original state
     cls.state = cls_state;
 
@@ -2574,16 +2512,6 @@ static void cl_maxfps_changed(cvar_t* self)
     warn_on_fps_rounding(self);
 }
 
-// allow downloads to be permanently disabled as a
-// protection measure from malicious (or just stupid) servers
-// that force downloads by stuffing commands
-static void cl_allow_download_changed(cvar_t *self)
-{
-    if (self->integer == -1) {
-        self->flags |= CVAR_ROM;
-    }
-}
-
 // ugly hack for compatibility
 static void cl_chat_sound_changed(cvar_t *self)
 {
@@ -2668,8 +2596,6 @@ static void CL_InitLocal(void)
     CL_InitAscii();
     CL_InitEffects();
     CL_InitTEnts();
-    CL_InitDownloads();
-    CL_GTV_Init();
 
     List_Init(&cl_ignore_text);
     List_Init(&cl_ignore_nick);
@@ -2756,9 +2682,6 @@ static void CL_InitLocal(void)
     cl_vwep = Cvar_Get("cl_vwep", "1", CVAR_ARCHIVE);
     cl_vwep->changed = cl_vwep_changed;
 
-    allow_download->changed = cl_allow_download_changed;
-    cl_allow_download_changed(allow_download);
-
     //
     // userinfo
     //
@@ -2818,12 +2741,6 @@ bool CL_CheatsOK(void)
     // single player can cheat
     if (cls.state > ca_connected && cl.maxclients == 1)
         return true;
-
-#if USE_MVD_CLIENT
-    // can cheat when playing MVD
-    if (MVD_GetDemoPercent(NULL, NULL) != -1)
-        return true;
-#endif
 
     return false;
 }
@@ -2934,23 +2851,6 @@ static void CL_MeasureStats(void)
 
     cls.measure.time = com_localTime;
 }
-
-#if USE_AUTOREPLY
-static void CL_CheckForReply(void)
-{
-    if (!cl.reply_delta) {
-        return;
-    }
-
-    if (cls.realtime - cl.reply_time < cl.reply_delta) {
-        return;
-    }
-
-    CL_ClientCommand(va("say \"%s\"", com_version->string));
-
-    cl.reply_delta = 0;
-}
-#endif
 
 static void CL_CheckTimeout(void)
 {
@@ -3182,11 +3082,6 @@ unsigned CL_Frame(unsigned msec)
     if (cls.state == ca_active && !sv_paused->integer)
         CL_SetClientTime();
 
-#if USE_AUTOREPLY
-    // check for version reply
-    CL_CheckForReply();
-#endif
-
     // resend a connection request if necessary
     CL_CheckForResend();
 
@@ -3235,9 +3130,7 @@ run_fx:
         S_Update();
 
         // advance local effects for next frame
-#if USE_DLIGHTS
         CL_RunDLights();
-#endif
         CL_RunLightStyles();
     } else if (sync_mode == SYNC_SLEEP_10) {
         // force audio and effects update if not rendering
@@ -3279,10 +3172,6 @@ bool CL_ProcessEvents(void)
     // process console and stuffed commands
     Cbuf_Execute(&cmd_buffer);
     Cbuf_Execute(&cl_cmdbuf);
-
-    HTTP_RunDownloads();
-
-    CL_GTV_Run();
 
     return cl.sendPacketNow;
 }
@@ -3326,10 +3215,6 @@ void CL_Init(void)
     }
 #endif
 
-    CL_LoadDownloadIgnores();
-
-    HTTP_Init();
-
     UI_OpenMenu(UIMENU_DEFAULT);
 
     Con_PostInit();
@@ -3365,15 +3250,12 @@ void CL_Shutdown(void)
         return;
     }
 
-    CL_GTV_Shutdown();
-
     CL_Disconnect(ERR_FATAL);
 
 #if USE_ZLIB
     inflateEnd(&cls.z);
 #endif
 
-    HTTP_Shutdown();
     S_Shutdown();
     IN_Shutdown();
     Con_Shutdown();

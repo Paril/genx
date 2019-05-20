@@ -20,22 +20,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/prompt.h"
-#if USE_WINSVC
-#include <winsvc.h>
-#endif
+#include <VersionHelpers.h>
 
 HINSTANCE                       hGlobalInstance;
 
-#if USE_DBGHELP
+#if !_DEBUG
 HANDLE                          mainProcessThread;
 LPTOP_LEVEL_EXCEPTION_FILTER    prevExceptionFilter;
 #endif
 
 static char                     currentDirectory[MAX_OSPATH];
-
-#if USE_WINSVC
-static SERVICE_STATUS_HANDLE    statusHandle;
-#endif
 
 typedef enum {
     SE_NOT,
@@ -633,10 +627,6 @@ static void Sys_ConsoleInit(void)
         Com_EPrintf("Couldn't create system console.\n");
         return;
     }
-#elif USE_WINSVC
-    if (statusHandle) {
-        return;
-    }
 #endif
 
     hinput = GetStdHandle(STD_INPUT_HANDLE);
@@ -680,149 +670,6 @@ static void Sys_ConsoleInit(void)
 }
 
 #endif // USE_SYSCON
-
-/*
-===============================================================================
-
-SERVICE CONTROL
-
-===============================================================================
-*/
-
-#if USE_WINSVC
-
-static void Sys_InstallService_f(void)
-{
-    char servicePath[256];
-    char serviceName[1024];
-    SC_HANDLE scm, service;
-    DWORD error, length;
-    char *commandline;
-
-    if (Cmd_Argc() < 3) {
-        Com_Printf("Usage: %s <servicename> <+command> [...]\n"
-                   "Example: %s test +set net_port 27910 +map q2dm1\n",
-                   Cmd_Argv(0), Cmd_Argv(0));
-        return;
-    }
-
-    scm = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ALL_ACCESS);
-    if (!scm) {
-        error = GetLastError();
-        if (error == ERROR_ACCESS_DENIED) {
-            Com_Printf("Insufficient privileges for opening Service Control Manager.\n");
-        } else {
-            Com_EPrintf("%#lx opening Service Control Manager.\n", error);
-        }
-        return;
-    }
-
-    Q_concat(serviceName, sizeof(serviceName), "Q2PRO - ", Cmd_Argv(1), NULL);
-
-    length = GetModuleFileName(NULL, servicePath, MAX_PATH);
-    if (!length) {
-        error = GetLastError();
-        Com_EPrintf("%#lx getting module file name.\n", error);
-        goto fail;
-    }
-    commandline = Cmd_RawArgsFrom(2);
-    if (length + strlen(commandline) + 10 > sizeof(servicePath) - 1) {
-        Com_Printf("Oversize service command line.\n");
-        goto fail;
-    }
-    strcpy(servicePath + length, " -service ");
-    strcpy(servicePath + length + 10, commandline);
-
-    service = CreateService(
-                  scm,
-                  serviceName,
-                  serviceName,
-                  SERVICE_START,
-                  SERVICE_WIN32_OWN_PROCESS,
-                  SERVICE_AUTO_START,
-                  SERVICE_ERROR_IGNORE,
-                  servicePath,
-                  NULL,
-                  NULL,
-                  NULL,
-                  NULL,
-                  NULL);
-
-    if (!service) {
-        error = GetLastError();
-        if (error == ERROR_SERVICE_EXISTS || error == ERROR_DUPLICATE_SERVICE_NAME) {
-            Com_Printf("Service already exists.\n");
-        } else {
-            Com_EPrintf("%#lx creating service.\n", error);
-        }
-        goto fail;
-    }
-
-    Com_Printf("Service created successfully.\n");
-
-    CloseServiceHandle(service);
-
-fail:
-    CloseServiceHandle(scm);
-}
-
-static void Sys_DeleteService_f(void)
-{
-    char serviceName[256];
-    SC_HANDLE scm, service;
-    DWORD error;
-
-    if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <servicename>\n", Cmd_Argv(0));
-        return;
-    }
-
-    scm = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ALL_ACCESS);
-    if (!scm) {
-        error = GetLastError();
-        if (error == ERROR_ACCESS_DENIED) {
-            Com_Printf("Insufficient privileges for opening Service Control Manager.\n");
-        } else {
-            Com_EPrintf("%#lx opening Service Control Manager.\n", error);
-        }
-        return;
-    }
-
-    Q_concat(serviceName, sizeof(serviceName), "Q2PRO - ", Cmd_Argv(1), NULL);
-
-    service = OpenService(
-                  scm,
-                  serviceName,
-                  DELETE);
-
-    if (!service) {
-        error = GetLastError();
-        if (error == ERROR_SERVICE_DOES_NOT_EXIST) {
-            Com_Printf("Service doesn't exist.\n");
-        } else {
-            Com_EPrintf("%#lx opening service.\n", error);
-        }
-        goto fail;
-    }
-
-    if (!DeleteService(service)) {
-        error = GetLastError();
-        if (error == ERROR_SERVICE_MARKED_FOR_DELETE) {
-            Com_Printf("Service has already been marked for deletion.\n");
-        } else {
-            Com_EPrintf("%#lx deleting service.\n", error);
-        }
-    } else {
-        Com_Printf("Service deleted successfully.\n");
-    }
-
-    CloseServiceHandle(service);
-
-fail:
-    CloseServiceHandle(scm);
-}
-
-#endif // USE_WINSVC
 
 /*
 ===============================================================================
@@ -997,18 +844,13 @@ void Sys_Error(const char *error, ...)
     Sys_SetConsoleColor(COLOR_NONE);
 #endif
 
-#if USE_WINSVC
-    if (!statusHandle)
-#endif
-    {
 #if USE_SYSCON
-        if (gotConsole) {
-            hide_console_input();
-            Sleep(INFINITE);
-        }
-#endif
-        MessageBoxA(NULL, text, PRODUCT " Fatal Error", MB_ICONERROR | MB_OK);
+    if (gotConsole) {
+        hide_console_input();
+        Sleep(INFINITE);
     }
+#endif
+    MessageBox(NULL, text, PRODUCT " Fatal Error", MB_ICONERROR | MB_OK);
 
     exit(1);
 }
@@ -1024,16 +866,9 @@ void Sys_Quit(void)
 {
     shutdown_work();
 
-#if USE_CLIENT
-#if USE_SYSCON
+#if USE_CLIENT && USE_SYSCON
     if (dedicated && dedicated->integer) {
         FreeConsole();
-    }
-#endif
-#elif USE_WINSVC
-    if (statusHandle && !shouldExit) {
-        shouldExit = SE_YES;
-        Com_AbortFrame();
     }
 #endif
 
@@ -1068,23 +903,13 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    OSVERSIONINFO vinfo;
-#ifndef _WIN64
-    HMODULE module;
-    BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
-#endif
+#if !_DEBUG
     cvar_t *var q_unused;
+#endif
 
     // check windows version
-    vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-    if (!GetVersionEx(&vinfo)) {
-        Sys_Error("Couldn't get OS info");
-    }
-    if (vinfo.dwPlatformId != VER_PLATFORM_WIN32_NT) {
-        Sys_Error(PRODUCT " requires Windows NT");
-    }
-    if (vinfo.dwMajorVersion < 5) {
-        Sys_Error(PRODUCT " requires Windows 2000 or greater");
+    if (!IsWindows7SP1OrGreater()) {
+        Sys_Error(PRODUCT " requires Windows 7 SP1 or greater");
     }
 
     if (!QueryPerformanceFrequency(&timer_freq))
@@ -1096,15 +921,10 @@ void Sys_Init(void)
     sys_libdir = Cvar_Get("libdir", currentDirectory, CVAR_NOSET);
 
     // homedir <path>
-    // specifies per-user writable directory for demos, screenshots, etc
+    // specifies per-user writable directory for screenshots, etc
     sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);
 
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
-
-#if USE_WINSVC
-    Cmd_AddCommand("installservice", Sys_InstallService_f);
-    Cmd_AddCommand("deleteservice", Sys_DeleteService_f);
-#endif
 
 #if USE_SYSCON
     houtput = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -1116,7 +936,7 @@ void Sys_Init(void)
         Sys_ConsoleInit();
 #endif // USE_SYSCON
 
-#if USE_DBGHELP
+#if !_DEBUG
     var = Cvar_Get("sys_disablecrashdump", "0", CVAR_NOSET);
 
     // install our exception filter
@@ -1124,26 +944,6 @@ void Sys_Init(void)
         mainProcessThread = GetCurrentThread();
         prevExceptionFilter = SetUnhandledExceptionFilter(
                                   Sys_ExceptionFilter);
-    }
-#endif
-
-#ifndef _WIN64
-    module = GetModuleHandle("kernel32.dll");
-    if (module) {
-        pSetProcessDEPPolicy = (PVOID)GetProcAddress(module,
-                                                     "SetProcessDEPPolicy");
-        if (pSetProcessDEPPolicy) {
-            var = Cvar_Get("sys_disabledep", "0", CVAR_NOSET);
-
-            // opt-in or opt-out for DEP
-            if (!var->integer) {
-                pSetProcessDEPPolicy(
-                    PROCESS_DEP_ENABLE |
-                    PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION);
-            } else if (var->integer == 2) {
-                pSetProcessDEPPolicy(0);
-            }
-        }
     }
 #endif
 }
@@ -1170,7 +970,7 @@ void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
 
     *handle = NULL;
 
-    module = LoadLibraryA(path);
+    module = LoadLibrary(path);
     if (!module) {
         Com_SetLastError(va("%s: LoadLibrary failed with error %lu",
                             path, GetLastError()));
@@ -1267,7 +1067,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
         FS_ReplaceSeparators(fullpath, '\\');
     }
 
-    handle = FindFirstFileA(fullpath, &data);
+    handle = FindFirstFile(fullpath, &data);
     if (handle == INVALID_HANDLE_VALUE) {
         return;
     }
@@ -1353,7 +1153,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
         list->files = FS_ReallocList(list->files, list->count + 1);
         list->files[list->count++] = info;
     } while (list->count < MAX_LISTED_FILES &&
-             FindNextFileA(handle, &data) != FALSE);
+             FindNextFile(handle, &data) != FALSE);
 
     FindClose(handle);
 }
@@ -1370,7 +1170,7 @@ static BOOL fix_current_directory(void)
 {
     char *p;
 
-    if (!GetModuleFileNameA(NULL, currentDirectory, sizeof(currentDirectory) - 1)) {
+    if (!GetModuleFileName(NULL, currentDirectory, sizeof(currentDirectory) - 1)) {
         return FALSE;
     }
 
@@ -1378,11 +1178,9 @@ static BOOL fix_current_directory(void)
         *p = 0;
     }
 
-#ifndef UNDER_CE
-    if (!SetCurrentDirectoryA(currentDirectory)) {
+    if (!SetCurrentDirectory(currentDirectory)) {
         return FALSE;
     }
-#endif
 
     return TRUE;
 }
@@ -1414,10 +1212,7 @@ static int Sys_Main(int argc, char **argv)
         complete_work();
         Qcommon_Frame();
         if (shouldExit) {
-#if USE_WINSVC
-            if (shouldExit == SE_FULL)
-#endif
-                Com_Quit(NULL, ERR_DISCONNECT);
+            Com_Quit(NULL, ERR_DISCONNECT);
             break;
         }
     }
@@ -1488,47 +1283,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 
 #else // USE_CLIENT
 
-#if USE_WINSVC
-
-static char     **sys_argv;
-static int      sys_argc;
-
-static VOID WINAPI ServiceHandler(DWORD fdwControl)
-{
-    if (fdwControl == SERVICE_CONTROL_STOP) {
-        shouldExit = SE_FULL;
-    }
-}
-
-static VOID WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
-{
-    SERVICE_STATUS    status;
-
-    statusHandle = RegisterServiceCtrlHandler(APPLICATION, ServiceHandler);
-    if (!statusHandle) {
-        return;
-    }
-
-    memset(&status, 0, sizeof(status));
-    status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-    status.dwCurrentState = SERVICE_RUNNING;
-    status.dwControlsAccepted = SERVICE_ACCEPT_STOP;
-    SetServiceStatus(statusHandle, &status);
-
-    Sys_Main(sys_argc, sys_argv);
-
-    status.dwCurrentState = SERVICE_STOPPED;
-    status.dwControlsAccepted = 0;
-    SetServiceStatus(statusHandle, &status);
-}
-
-static SERVICE_TABLE_ENTRY serviceTable[] = {
-    { APPLICATION, ServiceMain },
-    { NULL, NULL }
-};
-
-#endif // USE_WINSVC
-
 /*
 ==================
 main
@@ -1537,28 +1291,7 @@ main
 */
 int main(int argc, char **argv)
 {
-#if USE_WINSVC
-    int i;
-#endif
-
     hGlobalInstance = GetModuleHandle(NULL);
-
-#if USE_WINSVC
-    for (i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "-service")) {
-            argv[i] = NULL;
-            sys_argc = argc;
-            sys_argv = argv;
-            if (StartServiceCtrlDispatcher(serviceTable)) {
-                return 0;
-            }
-            if (GetLastError() == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
-                break; // fall back to normal server startup
-            }
-            return 1;
-        }
-    }
-#endif
 
     return Sys_Main(argc, argv);
 }

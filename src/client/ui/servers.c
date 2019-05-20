@@ -249,7 +249,7 @@ void UI_StatusEvent(const serverStatus_t *status)
 
     mod = Info_ValueForKey(info, "game");
     if (COM_IsWhite(mod)) {
-        mod = "baseq2";
+        mod = DEFGAME;
     }
 
     map = Info_ValueForKey(info, "mapname");
@@ -591,19 +591,6 @@ static void ParseMasterArgs(netadr_t *broadcast)
                 continue;
             (*parse)(data, len, chunk);
             FS_FreeFile(data);
-            continue;
-        }
-
-        if (!strncmp(s, "http://", 7)) {
-#if USE_CURL
-            len = HTTP_FetchFile(s + 7, &data);
-            if (len < 0)
-                continue;
-            (*parse)(data, len, chunk);
-            Z_Free(data);
-#else
-            Com_Printf("Can't fetch '%s', no HTTP support compiled in.\n", s);
-#endif
             continue;
         }
 

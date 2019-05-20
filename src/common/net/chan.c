@@ -181,14 +181,13 @@ transmition / retransmition of the reliable messages.
 A 0 length will still generate a packet and deal with the reliable messages.
 ================
 */
-static size_t NetchanOld_Transmit(netchan_t *netchan, size_t length, const void *data, int numpackets)
+static size_t NetchanOld_Transmit(netchan_t *netchan, size_t length, const void *data)
 {
     netchan_old_t *chan = (netchan_old_t *)netchan;
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable;
     uint32_t    w1, w2;
-    int         i;
 
 // check for message overflow
     if (netchan->message.overflowed) {
@@ -262,16 +261,14 @@ static size_t NetchanOld_Transmit(netchan_t *netchan, size_t length, const void 
     SHOWPACKET("\n");
 
     // send the datagram
-    for (i = 0; i < numpackets; i++) {
-        NET_SendPacket(netchan->sock, send.data, send.cursize,
-                       &netchan->remote_address);
-    }
+    NET_SendPacket(netchan->sock, send.data, send.cursize,
+                   &netchan->remote_address);
 
     netchan->outgoing_sequence++;
     netchan->reliable_ack_pending = false;
     netchan->last_sent = com_localTime;
 
-    return send.cursize * numpackets;
+    return send.cursize;
 }
 
 /*
@@ -520,14 +517,13 @@ static size_t NetchanNew_TransmitNextFragment(netchan_t *netchan)
 NetchanNew_Transmit
 ================
 */
-static size_t NetchanNew_Transmit(netchan_t *netchan, size_t length, const void *data, int numpackets)
+static size_t NetchanNew_Transmit(netchan_t *netchan, size_t length, const void *data)
 {
     netchan_new_t *chan = (netchan_new_t *)netchan;
     sizebuf_t   send;
     byte        send_buf[MAX_PACKETLEN];
     bool        send_reliable;
     uint32_t    w1, w2;
-    int         i;
 
 // check for message overflow
     if (netchan->message.overflowed) {
@@ -612,16 +608,14 @@ static size_t NetchanNew_Transmit(netchan_t *netchan, size_t length, const void 
     SHOWPACKET("\n");
 
     // send the datagram
-    for (i = 0; i < numpackets; i++) {
-        NET_SendPacket(netchan->sock, send.data, send.cursize,
-                       &netchan->remote_address);
-    }
+    NET_SendPacket(netchan->sock, send.data, send.cursize,
+                   &netchan->remote_address);
 
     netchan->outgoing_sequence++;
     netchan->reliable_ack_pending = false;
     netchan->last_sent = com_localTime;
 
-    return send.cursize * numpackets;
+    return send.cursize;
 }
 
 /*

@@ -300,23 +300,7 @@ void GL_ClearState(void)
 
 void GL_InitState(void)
 {
-    gl_static.use_shaders = gl_shaders->integer > 0;
-
-    if (gl_static.use_shaders) {
-        if (!(gl_config.caps & QGL_CAP_SHADER)) {
-            Com_Printf("GLSL rendering backend not available.\n");
-            gl_static.use_shaders = false;
-            Cvar_Set("gl_shaders", "0");
-        }
-    } else {
-        if (!(gl_config.caps & QGL_CAP_LEGACY)) {
-            Com_Printf("Legacy rendering backend not available.\n");
-            gl_static.use_shaders = true;
-            Cvar_Set("gl_shaders", "1");
-        }
-    }
-
-    gl_static.backend = gl_static.use_shaders ? backend_shader : backend_legacy;
+    gl_static.backend = backend_shader;
     gl_static.backend.init();
 
     Com_Printf("Using %s rendering backend.\n", gl_static.backend.name);

@@ -22,6 +22,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #if USE_SDL
 #include <SDL_opengl.h>
 #else
+#if _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#endif
 #include <GL/gl.h>
 #include <GL/glext.h>
 #endif
@@ -68,22 +72,6 @@ QGLAPI void (APIENTRYP qglTexParameteri)(GLenum target, GLenum pname, GLint para
 QGLAPI void (APIENTRYP qglTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void *pixels);
 QGLAPI void (APIENTRYP qglViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 
-// GL 1.1, compat
-QGLAPI void (APIENTRYP qglAlphaFunc)(GLenum func, GLclampf ref);
-QGLAPI void (APIENTRYP qglColor4f)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
-QGLAPI void (APIENTRYP qglColorPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
-QGLAPI void (APIENTRYP qglDisableClientState)(GLenum cap);
-QGLAPI void (APIENTRYP qglEnableClientState)(GLenum cap);
-QGLAPI void (APIENTRYP qglLoadIdentity)(void);
-QGLAPI void (APIENTRYP qglLoadMatrixf)(const GLfloat *m);
-QGLAPI void (APIENTRYP qglMatrixMode)(GLenum mode);
-QGLAPI void (APIENTRYP qglScalef)(GLfloat x, GLfloat y, GLfloat z);
-QGLAPI void (APIENTRYP qglShadeModel)(GLenum mode);
-QGLAPI void (APIENTRYP qglTexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
-QGLAPI void (APIENTRYP qglTexEnvf)(GLenum target, GLenum pname, GLfloat param);
-QGLAPI void (APIENTRYP qglTranslatef)(GLfloat x, GLfloat y, GLfloat z);
-QGLAPI void (APIENTRYP qglVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *ptr);
-
 // GL 1.1, not ES
 QGLAPI void (APIENTRYP qglClearDepth)(GLdouble depth);
 QGLAPI void (APIENTRYP qglDepthRange)(GLdouble near, GLdouble far);
@@ -93,9 +81,6 @@ QGLAPI void (APIENTRYP qglPolygonMode)(GLenum face, GLenum mode);
 
 // GL 1.3
 QGLAPI void (APIENTRYP qglActiveTexture)(GLenum texture);
-
-// GL 1.3, compat
-QGLAPI void (APIENTRYP qglClientActiveTexture)(GLenum texture);
 
 // GL 1.5
 QGLAPI void (APIENTRYP qglBindBuffer)(GLenum target, GLuint buffer);

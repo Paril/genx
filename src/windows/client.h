@@ -41,14 +41,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define STATIC static
 #endif
 
-// supported in XP SP3 or greater
-#ifndef PROCESS_DEP_ENABLE
-#define PROCESS_DEP_ENABLE 0x01
-#endif
-#ifndef PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION
-#define PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION 0x02
-#endif
-
 #if USE_CLIENT
 
 #include <tchar.h>
@@ -56,24 +48,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define IDI_APP 100
 
 #define MOUSE_BUTTONS   5
-
-// supported in Vista or greater
-#ifndef WM_MOUSEHWHEEL
-#define WM_MOUSEHWHEEL  0x020E
-#endif
-
-#ifndef __LPCGUID_DEFINED__
-#define __LPCGUID_DEFINED__
-typedef const GUID *LPCGUID;
-#endif
-
-// MinGW-w64 doesn't define these...
-#ifndef DM_GRAYSCALE
-#define DM_GRAYSCALE    1
-#endif
-#ifndef DM_INTERLACED
-#define DM_INTERLACED   2
-#endif
 
 typedef struct {
     HWND    wnd;
@@ -128,7 +102,7 @@ void Win_ModeChanged(void);
 
 extern HINSTANCE                    hGlobalInstance;
 
-#if USE_DBGHELP
+#if !_DEBUG
 extern HANDLE                       mainProcessThread;
 extern LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
 

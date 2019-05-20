@@ -26,15 +26,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // Console variables that we need to access from this module
 cvar_t      *vid_ref;           // Name of Refresh DLL loaded
 cvar_t      *vid_geometry;
-cvar_t      *vid_modelist;
-cvar_t      *vid_fullscreen;
-cvar_t      *_vid_fullscreen;
+cvar_t      *vid_mode;
 
-#define MODE_GEOMETRY   1
-#define MODE_FULLSCREEN 2
-#define MODE_MODELIST   4
-
-static int  mode_changed;
+static bool	mode_changed;
 
 /*
 ==========================================================================
@@ -43,94 +37,6 @@ HELPER FUNCTIONS
 
 ==========================================================================
 */
-
-// 640x480 800x600 1024x768
-// 640x480@75
-// 640x480@75:32
-// 640x480:32@75
-bool VID_GetFullscreen(vrect_t *rc, int *freq_p, int *depth_p)
-{
-    unsigned long w, h, freq, depth;
-    char *s;
-    int mode;
-
-    // fill in default parameters
-    rc->x = 0;
-    rc->y = 0;
-    rc->width = 640;
-    rc->height = 480;
-
-    if (freq_p)
-        *freq_p = 0;
-    if (depth_p)
-        *depth_p = 0;
-
-    if (!vid_modelist || !vid_fullscreen)
-        return false;
-
-    s = vid_modelist->string;
-    while (Q_isspace(*s))
-        s++;
-    if (!*s)
-        return false;
-
-    mode = 1;
-    while (1) {
-        if (!strncmp(s, "desktop", 7)) {
-            s += 7;
-            if (*s && !Q_isspace(*s)) {
-                Com_DPrintf("Mode %d is malformed\n", mode);
-                return false;
-            }
-            w = h = freq = depth = 0;
-        } else {
-            w = strtoul(s, &s, 10);
-            if (*s != 'x' && *s != 'X') {
-                Com_DPrintf("Mode %d is malformed\n", mode);
-                return false;
-            }
-            h = strtoul(s + 1, &s, 10);
-            freq = depth = 0;
-            if (*s == '@') {
-                freq = strtoul(s + 1, &s, 10);
-                if (*s == ':') {
-                    depth = strtoul(s + 1, &s, 10);
-                }
-            } else if (*s == ':') {
-                depth = strtoul(s + 1, &s, 10);
-                if (*s == '@') {
-                    freq = strtoul(s + 1, &s, 10);
-                }
-            }
-        }
-        if (mode == vid_fullscreen->integer) {
-            break;
-        }
-        while (Q_isspace(*s))
-            s++;
-        if (!*s) {
-            Com_DPrintf("Mode %d not found\n", vid_fullscreen->integer);
-            return false;
-        }
-        mode++;
-    }
-
-    // sanity check
-    if (w < 64 || w > 8192 || h < 64 || h > 8192 || freq > 1000 || depth > 32) {
-        Com_DPrintf("Mode %lux%lu@%lu:%lu doesn't look sane\n", w, h, freq, depth);
-        return false;
-    }
-
-    rc->width = w;
-    rc->height = h;
-
-    if (freq_p)
-        *freq_p = freq;
-    if (depth_p)
-        *depth_p = depth;
-
-    return true;
-}
 
 // 640x480
 // 640x480+0
@@ -148,7 +54,7 @@ bool VID_GetGeometry(vrect_t *rc)
     rc->width = 640;
     rc->height = 480;
 
-    if (!vid_geometry)
+    if (!vid_geometry || vid_mode->integer != VM_WINDOWED)
         return false;
 
     s = vid_geometry->string;
@@ -197,16 +103,13 @@ void VID_SetGeometry(vrect_t *rc)
 
 void VID_ToggleFullscreen(void)
 {
-    if (!vid_fullscreen || !_vid_fullscreen)
+    if (!vid_mode)
         return;
 
-    if (!vid_fullscreen->integer) {
-        if (!_vid_fullscreen->integer) {
-            Cvar_Set("_vid_fullscreen", "1");
-        }
-        Cbuf_AddText(&cmd_buffer, "set vid_fullscreen $_vid_fullscreen\n");
+    if (vid_mode->integer != VM_FULLSCREEN) {
+        Cbuf_AddText(&cmd_buffer, "set vid_mode 1\n");
     } else {
-        Cbuf_AddText(&cmd_buffer, "set vid_fullscreen 0\n");
+        Cbuf_AddText(&cmd_buffer, "set vid_mode 0\n");
     }
 }
 
@@ -232,23 +135,8 @@ void CL_RunRefresh(void)
     VID_PumpEvents();
 
     if (mode_changed) {
-        if (mode_changed & MODE_FULLSCREEN) {
-            VID_SetMode();
-            if (vid_fullscreen->integer) {
-                Cvar_Set("_vid_fullscreen", vid_fullscreen->string);
-            }
-        } else {
-            if (vid_fullscreen->integer) {
-                if (mode_changed & MODE_MODELIST) {
-                    VID_SetMode();
-                }
-            } else {
-                if (mode_changed & MODE_GEOMETRY) {
-                    VID_SetMode();
-                }
-            }
-        }
-        mode_changed = 0;
+        VID_SetMode();
+        mode_changed = false;
     }
 
     if (cvar_modified & CVAR_REFRESH) {
@@ -260,19 +148,9 @@ void CL_RunRefresh(void)
     }
 }
 
-static void vid_geometry_changed(cvar_t *self)
+static void vid_mode_changed(cvar_t *self)
 {
-    mode_changed |= MODE_GEOMETRY;
-}
-
-static void vid_fullscreen_changed(cvar_t *self)
-{
-    mode_changed |= MODE_FULLSCREEN;
-}
-
-static void vid_modelist_changed(cvar_t *self)
-{
-    mode_changed |= MODE_MODELIST;
+    mode_changed = true;
 }
 
 /*
@@ -282,33 +160,16 @@ CL_InitRefresh
 */
 void CL_InitRefresh(void)
 {
-    char *modelist;
-
     if (cls.ref_initialized) {
         return;
     }
 
     Com_SetLastError(NULL);
 
-    modelist = VID_GetDefaultModeList();
-    if (!modelist) {
-        Com_Error(ERR_FATAL, "Couldn't initialize refresh: %s", Com_GetLastError());
-    }
-
     // Create the video variables so we know how to start the graphics drivers
     vid_ref = Cvar_Get("vid_ref", VID_REF, CVAR_ROM);
-    vid_fullscreen = Cvar_Get("vid_fullscreen", "0", CVAR_ARCHIVE);
-    _vid_fullscreen = Cvar_Get("_vid_fullscreen", "1", CVAR_ARCHIVE);
-    vid_modelist = Cvar_Get("vid_modelist", modelist, 0);
+	vid_mode = Cvar_Get("vid_mode", "0", CVAR_ARCHIVE);
     vid_geometry = Cvar_Get("vid_geometry", VID_GEOMETRY, CVAR_ARCHIVE);
-
-    Z_Free(modelist);
-
-    if (vid_fullscreen->integer) {
-        Cvar_Set("_vid_fullscreen", vid_fullscreen->string);
-    } else if (!_vid_fullscreen->integer) {
-        Cvar_Set("_vid_fullscreen", "1");
-    }
 
     Com_SetLastError(NULL);
 
@@ -318,11 +179,10 @@ void CL_InitRefresh(void)
 
     cls.ref_initialized = true;
 
-    vid_geometry->changed = vid_geometry_changed;
-    vid_fullscreen->changed = vid_fullscreen_changed;
-    vid_modelist->changed = vid_modelist_changed;
+    vid_geometry->changed = vid_mode_changed;
+	vid_mode->changed = vid_mode_changed;
 
-    mode_changed = 0;
+    mode_changed = false;
 
     // Initialize the rest of graphics subsystems
     V_Init();
@@ -352,8 +212,7 @@ void CL_ShutdownRefresh(void)
     UI_Shutdown();
 
     vid_geometry->changed = NULL;
-    vid_fullscreen->changed = NULL;
-    vid_modelist->changed = NULL;
+    vid_mode->changed = NULL;
 
     R_Shutdown(true);
 

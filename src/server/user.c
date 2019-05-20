@@ -77,13 +77,6 @@ static void SV_CreateBaselines(void)
         base = *chunk + (i & SV_BASELINES_MASK);
         MSG_PackEntity(base, &ent->s, Q2PRO_SHORTANGLES(sv_client, i));
 
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (base->solid != PACKED_BSP)
-                base->solid = 0;
-        } else
-#endif
         if (sv_client->esFlags & MSG_ES_LONGSOLID) {
             base->solid = sv.entities[i].solid32;
         }
@@ -351,11 +344,7 @@ void SV_New_f(void)
 
     // send version string request
     if (oldstate == cs_assigned) {
-        SV_ClientCommand(sv_client, "cmd \177c version $version\n"
-#if USE_AC_SERVER
-                         "cmd \177c actoken $actoken\n"
-#endif
-                        );
+        SV_ClientCommand(sv_client, "cmd \177c version $version\n");
         stuff_cmds(&sv_cmdlist_connect);
     }
 
@@ -421,10 +410,6 @@ void SV_Begin_f(void)
         return;
     }
 
-    if (!AC_ClientBegin(sv_client)) {
-        return;
-    }
-
     Com_DPrintf("Going from cs_primed to cs_spawned for %s\n",
                 sv_client->name);
     sv_client->state = cs_spawned;
@@ -432,7 +417,6 @@ void SV_Begin_f(void)
     sv_client->command_msec = 1800;
     sv_client->cmd_msec_used = 0;
     sv_client->suppress_count = 0;
-    sv_client->http_download = false;
 
     SV_AlignKeyFrames(sv_client);
 
@@ -440,231 +424,9 @@ void SV_Begin_f(void)
 
     // call the game begin function
     ge->ClientBegin(sv_player);
-
-    AC_ClientAnnounce(sv_client);
 }
 
 //=============================================================================
-
-void SV_CloseDownload(client_t *client)
-{
-    if (client->download) {
-        Z_Free(client->download);
-        client->download = NULL;
-    }
-    if (client->downloadname) {
-        Z_Free(client->downloadname);
-        client->downloadname = NULL;
-    }
-    client->downloadsize = 0;
-    client->downloadcount = 0;
-    client->downloadcmd = 0;
-    client->downloadpending = false;
-}
-
-/*
-==================
-SV_NextDownload_f
-==================
-*/
-static void SV_NextDownload_f(void)
-{
-    if (!sv_client->download)
-        return;
-
-    sv_client->downloadpending = true;
-}
-
-/*
-==================
-SV_BeginDownload_f
-==================
-*/
-static void SV_BeginDownload_f(void)
-{
-    char    name[MAX_QPATH];
-    byte    *download;
-    int     downloadcmd;
-    int64_t downloadsize;
-    int     maxdownloadsize, result, offset = 0;
-    cvar_t  *allow;
-    size_t  len;
-    qhandle_t f;
-
-    len = Cmd_ArgvBuffer(1, name, sizeof(name));
-    if (len >= MAX_QPATH) {
-        goto fail1;
-    }
-
-    // hack for 'status' command
-    if (!strcmp(name, "http")) {
-        sv_client->http_download = true;
-        return;
-    }
-
-    len = FS_NormalizePath(name, name);
-
-    if (Cmd_Argc() > 2)
-        offset = atoi(Cmd_Argv(2));     // downloaded offset
-
-    // hacked by zoid to allow more conrol over download
-    // first off, no .. or global allow check
-    if (!allow_download->integer
-        // check for empty paths
-        || !len
-        // check for illegal negative offsets
-        || offset < 0
-        // don't allow anything with .. path
-        || strstr(name, "..")
-        // leading dots, slashes, etc are no good
-        || !Q_ispath(name[0])
-        // trailing dots, slashes, etc are no good
-        || !Q_ispath(name[len - 1])
-        // MUST be in a subdirectory
-        || !strchr(name, '/')) {
-        Com_DPrintf("Refusing download of %s to %s\n", name, sv_client->name);
-        goto fail1;
-    }
-
-    if (FS_pathcmpn(name, CONST_STR_LEN("players/")) == 0) {
-        allow = allow_download_players;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("models/")) == 0 ||
-               FS_pathcmpn(name, CONST_STR_LEN("sprites/")) == 0) {
-        allow = allow_download_models;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("sound/")) == 0) {
-        allow = allow_download_sounds;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("maps/")) == 0) {
-        allow = allow_download_maps;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("textures/")) == 0 ||
-               FS_pathcmpn(name, CONST_STR_LEN("env/")) == 0) {
-        allow = allow_download_textures;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("pics/")) == 0) {
-        allow = allow_download_pics;
-    } else {
-        allow = allow_download_others;
-    }
-
-    if (!allow->integer) {
-        Com_DPrintf("Refusing download of %s to %s\n", name, sv_client->name);
-        goto fail1;
-    }
-
-    if (sv_client->download) {
-        Com_DPrintf("Closing existing download for %s (should not happen)\n", sv_client->name);
-        SV_CloseDownload(sv_client);
-    }
-
-    f = 0;
-    downloadcmd = svc_download;
-
-#if USE_ZLIB
-    // prefer raw deflate stream from .pkz if supported
-    if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
-        sv_client->version >= PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS &&
-        sv_client->has_zlib && offset == 0) {
-        downloadsize = FS_FOpenFile(name, &f, FS_MODE_READ | FS_FLAG_DEFLATE);
-        if (f) {
-            Com_DPrintf("Serving compressed download to %s\n", sv_client->name);
-            downloadcmd = svc_zdownload;
-        }
-    }
-#endif
-
-    if (!f) {
-        downloadsize = FS_FOpenFile(name, &f, FS_MODE_READ);
-        if (!f) {
-            Com_DPrintf("Couldn't download %s to %s\n", name, sv_client->name);
-            goto fail1;
-        }
-    }
-
-    maxdownloadsize = MAX_LOADFILE;
-#if 0
-    if (sv_max_download_size->integer) {
-        maxdownloadsize = Cvar_ClampInteger(sv_max_download_size, 1, MAX_LOADFILE);
-    }
-#endif
-
-    if (downloadsize == 0) {
-        Com_DPrintf("Refusing empty download of %s to %s\n", name, sv_client->name);
-        goto fail2;
-    }
-
-    if (downloadsize > maxdownloadsize) {
-        Com_DPrintf("Refusing oversize download of %s to %s\n", name, sv_client->name);
-        goto fail2;
-    }
-
-    if (offset > downloadsize) {
-        Com_DPrintf("Refusing download, %s has wrong version of %s (%d > %d)\n",
-                    sv_client->name, name, offset, (int)downloadsize);
-        SV_ClientPrintf(sv_client, PRINT_HIGH, "File size differs from server.\n"
-                        "Please delete the corresponding .tmp file from your system.\n");
-        goto fail2;
-    }
-
-    if (offset == downloadsize) {
-        Com_DPrintf("Refusing download, %s already has %s (%d bytes)\n",
-                    sv_client->name, name, offset);
-        FS_FCloseFile(f);
-        MSG_WriteByte(svc_download);
-        MSG_WriteShort(0);
-        MSG_WriteByte(100);
-        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-        return;
-    }
-
-    download = SV_Malloc(downloadsize);
-    result = FS_Read(download, downloadsize, f);
-    if (result != downloadsize) {
-        Com_DPrintf("Couldn't download %s to %s\n", name, sv_client->name);
-        goto fail3;
-    }
-
-    FS_FCloseFile(f);
-
-    sv_client->download = download;
-    sv_client->downloadsize = downloadsize;
-    sv_client->downloadcount = offset;
-    sv_client->downloadname = SV_CopyString(name);
-    sv_client->downloadcmd = downloadcmd;
-    sv_client->downloadpending = true;
-
-    Com_DPrintf("Downloading %s to %s\n", name, sv_client->name);
-    return;
-
-fail3:
-    Z_Free(download);
-fail2:
-    FS_FCloseFile(f);
-fail1:
-    MSG_WriteByte(svc_download);
-    MSG_WriteShort(-1);
-    MSG_WriteByte(0);
-    SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-}
-
-static void SV_StopDownload_f(void)
-{
-    int percent;
-
-    if (!sv_client->download)
-        return;
-
-    percent = sv_client->downloadcount * 100 / sv_client->downloadsize;
-
-    MSG_WriteByte(svc_download);
-    MSG_WriteShort(-1);
-    MSG_WriteByte(percent);
-    SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-
-    Com_DPrintf("Download of %s to %s stopped by user request\n",
-                sv_client->downloadname, sv_client->name);
-    SV_CloseDownload(sv_client);
-    SV_AlignKeyFrames(sv_client);
-}
-
-//============================================================================
 
 // special hack for end game screen in coop mode
 static void SV_NextServer_f(void)
@@ -743,28 +505,6 @@ static void SV_Lag_f(void)
                     cl->name, cl->min_ping, AVG_PING(cl), cl->max_ping,
                     PL_S2C(cl), PL_C2S(cl), cl->timescale);
 }
-
-#if USE_PACKETDUP
-static void SV_PacketdupHack_f(void)
-{
-    int numdups = sv_client->numpackets - 1;
-
-    if (Cmd_Argc() > 1) {
-        numdups = atoi(Cmd_Argv(1));
-        if (numdups < 0 || numdups > sv_packetdup_hack->integer) {
-            SV_ClientPrintf(sv_client, PRINT_HIGH,
-                            "Packetdup of %d is not allowed on this server.\n", numdups);
-            return;
-        }
-
-        sv_client->numpackets = numdups + 1;
-    }
-
-    SV_ClientPrintf(sv_client, PRINT_HIGH,
-                    "Server is sending %d duplicate packet%s to you.\n",
-                    numdups, numdups == 1 ? "" : "s");
-}
-#endif
 
 static bool match_cvar_val(const char *s, const char *v)
 {
@@ -854,8 +594,6 @@ static void SV_CvarResult_f(void)
                 sv_client->reconnected = true;
             }
         }
-    } else if (!strcmp(c, "actoken")) {
-        AC_ClientToken(sv_client, Cmd_Argv(2));
     } else if (!strcmp(c, "console")) {
         if (sv_client->console_queries > 0) {
             Com_Printf("%s[%s]: \"%s\" is \"%s\"\n", sv_client->name,
@@ -874,20 +612,6 @@ static void SV_CvarResult_f(void)
     }
 }
 
-static void SV_AC_List_f(void)
-{
-    SV_ClientRedirect();
-    AC_List_f();
-    Com_EndRedirect();
-}
-
-static void SV_AC_Info_f(void)
-{
-    SV_ClientRedirect();
-    AC_Info_f();
-    Com_EndRedirect();
-}
-
 static const ucmd_t ucmds[] = {
     // auto issued
     { "new", SV_New_f },
@@ -901,18 +625,9 @@ static const ucmd_t ucmds[] = {
     { "info", SV_ShowServerInfo_f },
     { "sinfo", SV_ShowMiscInfo_f },
 
-    { "download", SV_BeginDownload_f },
-    { "nextdl", SV_NextDownload_f },
-    { "stopdl", SV_StopDownload_f },
-
     { "\177c", SV_CvarResult_f },
     { "nogamedata", SV_NoGameData_f },
     { "lag", SV_Lag_f },
-#if USE_PACKETDUP
-    { "packetdup", SV_PacketdupHack_f },
-#endif
-    { "aclist", SV_AC_List_f },
-    { "acinfo", SV_AC_Info_f },
 
     { NULL, NULL }
 };

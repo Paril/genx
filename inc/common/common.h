@@ -26,12 +26,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // common.h -- definitions common between client and server, but not game.dll
 //
 
-#define PRODUCT         "Q2PRO"
+#define PRODUCT         "GenerationsX"
 
 #if USE_CLIENT
-#define APPLICATION     "q2pro"
+#define APPLICATION     "genx"
 #else
-#define APPLICATION     "q2proded"
+#define APPLICATION     "genxded"
 #endif
 
 #define COM_DEFAULT_CFG     "default.cfg"
@@ -39,11 +39,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define COM_POSTEXEC_CFG    "postexec.cfg"
 #define COM_POSTINIT_CFG    "postinit.cfg"
 
-#ifdef _WIN32
-#define COM_CONFIG_CFG      "q2config.cfg"
-#else
-#define COM_CONFIG_CFG      "config.cfg"
-#endif
+#define COM_CONFIG_CFG      APPLICATION "config.cfg"
 
 // FIXME: rename these
 #define COM_HISTORYFILE_NAME    ".conhistory"
@@ -158,15 +154,6 @@ extern cvar_t   *sv_running;
 extern cvar_t   *sv_paused;
 extern cvar_t   *com_timedemo;
 extern cvar_t   *com_sleep;
-
-extern cvar_t   *allow_download;
-extern cvar_t   *allow_download_players;
-extern cvar_t   *allow_download_models;
-extern cvar_t   *allow_download_sounds;
-extern cvar_t   *allow_download_maps;
-extern cvar_t   *allow_download_textures;
-extern cvar_t   *allow_download_pics;
-extern cvar_t   *allow_download_others;
 
 extern cvar_t   *rcon_password;
 

@@ -227,25 +227,23 @@ Com_ParseExtensionString
 Helper function to parse an OpenGL-style extension string.
 ================
 */
-unsigned Com_ParseExtensionString(const char *s, const char *const extnames[])
+void Com_ParseExtensionString(const char *s, const char *const extnames[], bool *const extensions)
 {
-    unsigned mask;
     const char *p;
     size_t l1, l2;
     int i;
 
     if (!s) {
-        return 0;
+        return;
     }
 
-    mask = 0;
     while (*s) {
         p = Q_strchrnul(s, ' ');
         l1 = p - s;
         for (i = 0; extnames[i]; i++) {
             l2 = strlen(extnames[i]);
             if (l1 == l2 && !memcmp(s, extnames[i], l1)) {
-                mask |= 1U << i;
+				extensions[i] = true;
                 break;
             }
         }
@@ -281,7 +279,7 @@ void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
     es->angles[ROLL] = 0;
 }
 
-#if USE_CLIENT || USE_MVD_CLIENT
+#if USE_CLIENT
 /*
 ================
 Com_ParseTimespec

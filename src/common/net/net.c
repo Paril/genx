@@ -766,80 +766,6 @@ int NET_Sleep(int msec)
     return ret;
 }
 
-#if USE_AC_SERVER
-
-/*
-=============
-NET_Sleepv
-
-Sleeps msec or until some file descriptor from a given subset is ready
-=============
-*/
-int NET_Sleepv(int msec, ...)
-{
-    va_list argptr;
-    struct timeval tv;
-    fd_set rfds, wfds, efds;
-    ioentry_t *e;
-    qsocket_t fd;
-    int ret;
-
-    FD_ZERO(&rfds);
-    FD_ZERO(&wfds);
-    FD_ZERO(&efds);
-
-    va_start(argptr, msec);
-    while (1) {
-        fd = va_arg(argptr, qsocket_t);
-        if (fd == -1) {
-            break;
-        }
-        e = os_get_io(fd);
-        if (!e->inuse) {
-            continue;
-        }
-        e->canread = false;
-        e->canwrite = false;
-        e->canexcept = false;
-        if (e->wantread) FD_SET(fd, &rfds);
-        if (e->wantwrite) FD_SET(fd, &wfds);
-        if (e->wantexcept) FD_SET(fd, &efds);
-    }
-    va_end(argptr);
-
-    tv.tv_sec = msec / 1000;
-    tv.tv_usec = (msec % 1000) * 1000;
-
-    ret = os_select(io_numfds, &rfds, &wfds, &efds, &tv);
-    if (ret == -1) {
-        Com_EPrintf("%s: %s\n", __func__, NET_ErrorString());
-        return ret;
-    }
-
-    if (ret == 0)
-        return ret;
-
-    va_start(argptr, msec);
-    while (1) {
-        fd = va_arg(argptr, qsocket_t);
-        if (fd == -1) {
-            break;
-        }
-        e = os_get_io(fd);
-        if (!e->inuse) {
-            continue;
-        }
-        if (FD_ISSET(fd, &rfds)) e->canread = true;
-        if (FD_ISSET(fd, &wfds)) e->canwrite = true;
-        if (FD_ISSET(fd, &efds)) e->canexcept = true;
-    }
-    va_end(argptr);
-
-    return ret;
-}
-
-#endif // USE_AC_SERVER
-
 //=============================================================================
 
 static void NET_GetUdpPackets(qsocket_t sock, void (*packet_cb)(void))
@@ -919,7 +845,7 @@ bool NET_SendPacket(netsrc_t sock, const void *data,
                     size_t len, const netadr_t *to)
 {
     int ret;
-    qsocket_t s;
+    qsocket_t s = -1;
 
     if (len == 0)
         return false;
@@ -1540,7 +1466,6 @@ neterr_t NET_Connect(const netadr_t *peer, netstream_t *s)
     neterr_t ret;
 
     // always bind to `net_ip' for outgoing TCP connections
-    // to avoid problems with AC or MVD/GTV auth on a multi IP system
     switch (peer->type) {
     case NA_IP:
         socket = TCP_OpenSocket(net_ip->string, PORT_ANY, AF_INET, NS_CLIENT);

@@ -37,7 +37,6 @@ int registration_sequence;
 // regular variables
 cvar_t *gl_partscale;
 cvar_t *gl_partstyle;
-cvar_t *gl_celshading;
 cvar_t *gl_dotshading;
 cvar_t *gl_shadows;
 cvar_t *gl_modulate;
@@ -45,13 +44,10 @@ cvar_t *gl_modulate_world;
 cvar_t *gl_coloredlightmaps;
 cvar_t *gl_brightness;
 cvar_t *gl_dynamic;
-#if USE_DLIGHTS
 cvar_t *gl_dlight_falloff;
-#endif
 cvar_t *gl_modulate_entities;
 cvar_t *gl_doublelight_entities;
 cvar_t *gl_fontshadow;
-cvar_t *gl_shaders;
 
 // development variables
 cvar_t *gl_znear;
@@ -76,7 +72,6 @@ cvar_t *gl_novis;
 cvar_t *gl_lockpvs;
 cvar_t *gl_lightmap;
 cvar_t *gl_fullbright;
-cvar_t *gl_vertexlight;
 cvar_t *gl_polyblend;
 cvar_t *gl_showerrors;
 
@@ -515,11 +510,9 @@ void R_RenderFrame(refdef_t *fd)
     glr.fd = *fd;
     glr.num_beams = 0;
 
-#if USE_DLIGHTS
-    if (gl_dynamic->integer != 1 || gl_vertexlight->integer) {
+    if (gl_dynamic->integer != 1) {
         glr.fd.num_dlights = 0;
     }
-#endif
 
     if (lm.dirty) {
         GL_RebuildLighting();
@@ -639,7 +632,7 @@ static void GL_Strings_f(void)
     qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &integer);
     Com_Printf("GL_MAX_TEXTURE_SIZE: %d\n", integer);
 
-    if (qglClientActiveTexture) {
+    if (qglActiveTexture) {
         qglGetIntegerv(GL_MAX_TEXTURE_UNITS, &integer);
         Com_Printf("GL_MAX_TEXTURE_UNITS: %d\n", integer);
     }
@@ -665,7 +658,7 @@ static void gl_lightmap_changed(cvar_t *self)
     lm.add = 255 * Cvar_ClampValue(gl_brightness, -1, 1);
     lm.modulate = Cvar_ClampValue(gl_modulate, 0, 1e6f);
     lm.modulate *= Cvar_ClampValue(gl_modulate_world, 0, 1e6f);
-    if (gl_static.use_shaders && (self == gl_brightness || self == gl_modulate || self == gl_modulate_world) && !gl_vertexlight->integer)
+    if (self == gl_brightness || self == gl_modulate || self == gl_modulate_world)
         return;
     lm.dirty = true; // rebuild all lightmaps next frame
 }
@@ -699,7 +692,6 @@ static void GL_Register(void)
     // regular variables
     gl_partscale = Cvar_Get("gl_partscale", "2", 0);
     gl_partstyle = Cvar_Get("gl_partstyle", "0", 0);
-    gl_celshading = Cvar_Get("gl_celshading", "0", 0);
     gl_dotshading = Cvar_Get("gl_dotshading", "1", 0);
     gl_shadows = Cvar_Get("gl_shadows", "0", CVAR_ARCHIVE);
     gl_modulate = Cvar_Get("gl_modulate", "1", CVAR_ARCHIVE);
@@ -710,16 +702,13 @@ static void GL_Register(void)
     gl_coloredlightmaps->changed = gl_lightmap_changed;
     gl_brightness = Cvar_Get("gl_brightness", "0", 0);
     gl_brightness->changed = gl_lightmap_changed;
-    gl_dynamic = Cvar_Get("gl_dynamic", "2", 0);
+    gl_dynamic = Cvar_Get("gl_dynamic", "1", 0);
     gl_dynamic->changed = gl_lightmap_changed;
-#if USE_DLIGHTS
     gl_dlight_falloff = Cvar_Get("gl_dlight_falloff", "1", 0);
-#endif
     gl_modulate_entities = Cvar_Get("gl_modulate_entities", "1", 0);
     gl_modulate_entities->changed = gl_modulate_entities_changed;
-    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "1", 0);
+    gl_doublelight_entities = Cvar_Get("gl_doublelight_entities", "0", 0);
     gl_fontshadow = Cvar_Get("gl_fontshadow", "0", 0);
-    gl_shaders = Cvar_Get("gl_shaders", (gl_config.caps & QGL_CAP_SHADER) ? "1" : "0", CVAR_REFRESH);
 
     // development variables
     gl_znear = Cvar_Get("gl_znear", "2", CVAR_CHEAT);
@@ -747,8 +736,6 @@ static void GL_Register(void)
     gl_lightmap = Cvar_Get("gl_lightmap", "0", CVAR_CHEAT);
     gl_fullbright = Cvar_Get("r_fullbright", "0", CVAR_CHEAT);
     gl_fullbright->changed = gl_lightmap_changed;
-    gl_vertexlight = Cvar_Get("gl_vertexlight", "0", 0);
-    gl_vertexlight->changed = gl_lightmap_changed;
     gl_polyblend = Cvar_Get("gl_polyblend", "1", 0);
     gl_showerrors = Cvar_Get("gl_showerrors", "1", 0);
 
