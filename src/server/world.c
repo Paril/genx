@@ -95,7 +95,6 @@ static areanode_t *SV_CreateAreaNode(int depth, vec3_t mins, vec3_t maxs)
 /*
 ===============
 SV_ClearWorld
-
 ===============
 */
 void SV_ClearWorld(void)
@@ -123,7 +122,6 @@ void SV_ClearWorld(void)
 ===============
 SV_LinkEdict
 
-General purpose routine shared between game DLL and MVD code.
 Links entity to PVS leafs.
 ===============
 */

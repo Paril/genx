@@ -26,9 +26,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 typedef struct {
     HGLRC       hGLRC;          // handle to GL rendering context
     HINSTANCE   hinstOpenGL;    // handle to GL library
-    bool        minidriver;
     GLenum      drawbuffer;
-    unsigned    extensions;
+    struct {
+		bool multisample;
+		bool pixel_format;
+		bool swap_control;
+		bool swap_control_tear;
+		bool create_context;
+	} extensions;
 } glwstate_t;
 
 extern glwstate_t glw;

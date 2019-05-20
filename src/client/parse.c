@@ -309,7 +309,7 @@ static void CL_ParseFrame(int extrabits)
     SHOWNET(2, "%3"PRIz":playerinfo\n", msg_read.readcount - 1);
 
     // parse playerstate
-    bits = MSG_ReadShort();
+    bits = MSG_ReadWord();
     if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT) {
 	    MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
 #ifdef _DEBUG
@@ -949,29 +949,6 @@ static void CL_ParseReconnect(void)
     CL_CheckForResend();
 }
 
-#if USE_AUTOREPLY
-static void CL_CheckForVersion(const char *s)
-{
-    char *p;
-
-    p = strstr(s, ": ");
-    if (!p) {
-        return;
-    }
-
-    if (strncmp(p + 2, "!version", 8)) {
-        return;
-    }
-
-    if (cl.reply_time && cls.realtime - cl.reply_time < 120000) {
-        return;
-    }
-
-    cl.reply_time = cls.realtime;
-    cl.reply_delta = 1024 + (Q_rand() & 1023);
-}
-#endif
-
 // attempt to scan out an IP address in dotted-quad notation and
 // add it into circular array of recent addresses
 static void CL_CheckForIP(const char *s)
@@ -1020,7 +997,7 @@ static void CL_ParsePrint(void)
 
     if (level != PRINT_CHAT) {
         Com_Printf("%s", s);
-        if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
+        if (!cls.demo.playback) {
             COM_strclr(s);
             Cmd_ExecTrigger(s);
         }
@@ -1030,12 +1007,6 @@ static void CL_ParsePrint(void)
     if (CL_CheckForIgnore(s)) {
         return;
     }
-
-#if USE_AUTOREPLY
-    if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
-        CL_CheckForVersion(s);
-    }
-#endif
 
     CL_CheckForIP(s);
 
@@ -1058,10 +1029,6 @@ static void CL_ParsePrint(void)
 
     SCR_AddToChatHUD(s);
 
-    // silence MVD spectator chat
-    if (cl.serverstate == ss_broadcast && !strncmp(s, "[MVD] ", 6))
-        return;
-
     // play sound
     if (cl_chat_sound->integer > 1)
         S_StartLocalSound_("misc/talk1.wav");
@@ -1077,7 +1044,7 @@ static void CL_ParseCenterPrint(void)
     SHOWNET(2, "    \"%s\"\n", s);
     SCR_CenterPrint(s);
 
-    if (!cls.demo.playback && cl.serverstate != ss_broadcast) {
+    if (!cls.demo.playback) {
         COM_strclr(s);
         Cmd_ExecTrigger(s);
     }
@@ -1114,54 +1081,12 @@ static void CL_ParseInventory(void)
     }
 }
 
-static void CL_ParseDownload(int cmd)
-{
-    int size, percent, compressed;
-    byte *data;
-
-    if (!cls.download.temp[0]) {
-        Com_Error(ERR_DROP, "%s: no download requested", __func__);
-    }
-
-    // read the data
-    size = MSG_ReadShort();
-    percent = MSG_ReadByte();
-    if (size == -1) {
-        CL_HandleDownload(NULL, size, percent, false);
-        return;
-    }
-
-    // read optional uncompressed packet size
-    if (cmd == svc_zdownload) {
-        if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2) {
-        	compressed = MSG_ReadShort();
-        } else {
-            compressed = -1;
-        }
-    } else {
-        compressed = 0;
-    }
-
-    if (size < 0) {
-        Com_Error(ERR_DROP, "%s: bad size: %d", __func__, size);
-    }
-
-    if (msg_read.readcount + size > msg_read.cursize) {
-        Com_Error(ERR_DROP, "%s: read past end of message", __func__);
-    }
-
-    data = msg_read.data + msg_read.readcount;
-    msg_read.readcount += size;
-
-    CL_HandleDownload(data, size, percent, compressed);
-}
-
 static void CL_ParseZPacket(void)
 {
 #if USE_ZLIB
     sizebuf_t   temp;
     byte        buffer[MAX_MSGLEN];
-    int         inlen, outlen;
+    int         ret, inlen, outlen;
 
     if (msg_read.data != msg_read_buffer) {
         Com_Error(ERR_DROP, "%s: recursively entered", __func__);
@@ -1184,8 +1109,9 @@ static void CL_ParseZPacket(void)
     cls.z.avail_in = (uInt)inlen;
     cls.z.next_out = buffer;
     cls.z.avail_out = (uInt)outlen;
-    if (inflate(&cls.z, Z_FINISH) != Z_STREAM_END) {
-        Com_Error(ERR_DROP, "%s: inflate() failed: %s", __func__, cls.z.msg);
+    ret = inflate(&cls.z, Z_FINISH);
+    if (ret != Z_STREAM_END) {
+        Com_Error(ERR_DROP, "%s: inflate() failed with error %d", __func__, ret);
     }
 
     msg_read.readcount += inlen;
@@ -1349,10 +1275,6 @@ badbyte:
             CL_MuzzleFlash2();
             break;
 
-        case svc_download:
-            CL_ParseDownload(cmd);
-            continue;
-
         case svc_frame:
             CL_ParseFrame(extrabits);
             continue;
@@ -1370,13 +1292,6 @@ badbyte:
                 goto badbyte;
             }
             CL_ParseZPacket();
-            continue;
-
-        case svc_zdownload:
-            if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-                goto badbyte;
-            }
-            CL_ParseDownload(cmd);
             continue;
 
         case svc_gamestate:
@@ -1422,10 +1337,6 @@ badbyte:
                 cls.demo.others_dropped++;
             }
         }
-
-        // if running GTV server, add current message
-        CL_GTV_WriteMessage(msg_read.data + readcount,
-                            msg_read.readcount - readcount);
     }
 }
 

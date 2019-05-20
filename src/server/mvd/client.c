@@ -441,7 +441,7 @@ int MVD_GetDemoPercent(bool *paused, int *framenum)
         return -1;
 
     if (paused)
-        *paused = mvd->state == MVD_WAITING ? true : false;
+        *paused = mvd->state == MVD_WAITING;
     if (framenum)
         *framenum = mvd->framenum;
 
@@ -1360,7 +1360,7 @@ static void inflate_more(gtv_t *gtv)
         gtv->z_act = false;
         break;
     default:
-        gtv_destroyf(gtv, "inflate() failed: %s", gtv->z_str.msg);
+        gtv_destroyf(gtv, "inflate() failed with error %d", ret);
     }
 }
 #endif

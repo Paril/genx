@@ -72,10 +72,6 @@ bool CL_CheatsOK(void);
 void CL_SetSky(void);
 gametype_t CL_GetClientGame();
 
-#if USE_CURL
-int HTTP_FetchFile(const char *url, void **data);
-#endif
-
 bool CL_ForwardToServer(void);
 // adds the current command line as a clc_stringcmd to the client message.
 // things like godmode, noclip, etc, are commands directed to the server,
@@ -152,7 +148,7 @@ typedef struct {
 #define CL_ErrorEvent(from)             (void)0
 #define CL_RestartFilesystem(total)     FS_Restart(total)
 #define CL_ForwardToServer()            false
-#define CL_CheatsOK()                   (!!Cvar_VariableInteger("cheats"))
+#define CL_CheatsOK()                   (bool)Cvar_VariableInteger("cheats")
 
 #define Con_Init()                      (void)0
 #define Con_SetColor(color)             (void)0

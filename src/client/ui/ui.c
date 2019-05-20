@@ -538,11 +538,8 @@ static void UI_Menu_g(genctx_t *ctx)
 {
     menuFrameWork_t *menu;
 
-    LIST_FOR_EACH(menuFrameWork_t, menu, &ui_menus, entry) {
-        if (!Prompt_AddMatch(ctx, menu->name)) {
-            break;
-        }
-    }
+    LIST_FOR_EACH(menuFrameWork_t, menu, &ui_menus, entry)
+        Prompt_AddMatch(ctx, menu->name);
 }
 
 static void UI_PushMenu_c(genctx_t *ctx, int argnum)
@@ -647,13 +644,13 @@ void UI_Init(void)
 
     strcpy(uis.weaponModel, "w_railgun.md2");
 
+    // load custom menus
+    UI_LoadScript();
+
     // load built-in menus
     M_Menu_PlayerConfig();
     M_Menu_Servers();
     M_Menu_Demos();
-
-    // load custom menus
-    UI_LoadScript();
 
     Com_DPrintf("Registered %d menus.\n", List_Count(&ui_menus));
 

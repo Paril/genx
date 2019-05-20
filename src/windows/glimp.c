@@ -38,7 +38,6 @@ glwstate_t glw;
 static cvar_t   *gl_driver;
 static cvar_t   *gl_drawbuffer;
 static cvar_t   *gl_swapinterval;
-static cvar_t   *gl_allow_software;
 static cvar_t   *gl_colorbits;
 static cvar_t   *gl_depthbits;
 static cvar_t   *gl_stencilbits;
@@ -109,90 +108,44 @@ static int SetupGL(int colorbits, int depthbits, int stencilbits, int multisampl
 	if (depthbits < 24)
 		stencilbits = 0;
 
-	// choose pixel format
-	if (qwglChoosePixelFormatARB && multisamples > 1) {
-		int iAttributes[20];
-		UINT numFormats;
+    // choose pixel format
+    UINT numFormats;
 
-		iAttributes[0] = WGL_DRAW_TO_WINDOW_ARB;
-		iAttributes[1] = TRUE;
-		iAttributes[2] = WGL_SUPPORT_OPENGL_ARB;
-		iAttributes[3] = TRUE;
-		iAttributes[4] = WGL_DOUBLE_BUFFER_ARB;
-		iAttributes[5] = TRUE;
-		iAttributes[6] = WGL_PIXEL_TYPE_ARB;
-		iAttributes[7] = WGL_TYPE_RGBA_ARB;
-		iAttributes[8] = WGL_COLOR_BITS_ARB;
-		iAttributes[9] = colorbits;
-		iAttributes[10] = WGL_DEPTH_BITS_ARB;
-		iAttributes[11] = depthbits;
-		iAttributes[12] = WGL_STENCIL_BITS_ARB;
-		iAttributes[13] = stencilbits;
-		iAttributes[14] = WGL_SAMPLE_BUFFERS_ARB;
-		iAttributes[15] = 1;
-		iAttributes[16] = WGL_SAMPLES_ARB;
-		iAttributes[17] = multisamples;
-		iAttributes[18] = 0;
-		iAttributes[19] = 0;
+    const int iAttributes[] = {
+		WGL_DRAW_TO_WINDOW_ARB, TRUE,
+		WGL_SUPPORT_OPENGL_ARB, TRUE,
+		WGL_DOUBLE_BUFFER_ARB, TRUE,
+		WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
+		WGL_COLOR_BITS_ARB, colorbits,
+		WGL_DEPTH_BITS_ARB, depthbits,
+		WGL_STENCIL_BITS_ARB, stencilbits,
+		WGL_SAMPLE_BUFFERS_ARB, 1,
+		WGL_SAMPLES_ARB, multisamples,
+		0, 0
+	};
 
-		if (qwglChoosePixelFormatARB(win.dc, iAttributes, NULL, 1, &pixelformat, &numFormats) == FALSE) {
-			ReportLastError("wglChoosePixelFormatARB");
-			goto soft;
-		}
-		if (numFormats == 0) {
-			Com_EPrintf("No suitable OpenGL pixelformat found for %d multisamples\n", multisamples);
-			goto soft;
-		}
-    } else {
-		memset(&pfd, 0, sizeof(pfd));
-		pfd.nSize = sizeof(pfd);
-		pfd.nVersion = 1;
-		pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-		pfd.iPixelType = PFD_TYPE_RGBA;
-		pfd.cColorBits = colorbits;
-		pfd.cDepthBits = depthbits;
-		pfd.cStencilBits = stencilbits;
-		pfd.iLayerType = PFD_MAIN_PLANE;
+    if (qwglChoosePixelFormatARB(win.dc, iAttributes, NULL, 1, &pixelformat, &numFormats) == FALSE) {
+        ReportLastError("wglChoosePixelFormatARB");
+        goto soft;
+    }
+    if (numFormats == 0) {
+        Com_EPrintf("No suitable OpenGL pixelformat found for %d multisamples\n", multisamples);
+        goto soft;
+    }
 
-		if (glw.minidriver) {
-			if ((pixelformat = qwglChoosePixelFormat(win.dc, &pfd)) == 0) {
-				ReportLastError("wglChoosePixelFormat");
-				goto soft;
-			}
-        } else {
-			if ((pixelformat = ChoosePixelFormat(win.dc, &pfd)) == 0) {
-				ReportLastError("ChoosePixelFormat");
-				goto soft;
-			}
-		}
-	}
+    // set pixel format
+    DescribePixelFormat(win.dc, pixelformat, sizeof(pfd), &pfd);
+    ReportPixelFormat(pixelformat, &pfd);
 
-	// set pixel format
-	if (glw.minidriver) {
-		qwglDescribePixelFormat(win.dc, pixelformat, sizeof(pfd), &pfd);
-		ReportPixelFormat(pixelformat, &pfd);
+    if (SetPixelFormat(win.dc, pixelformat, &pfd) == FALSE) {
+        ReportLastError("SetPixelFormat");
+        goto soft;
+    }
 
-		if (qwglSetPixelFormat(win.dc, pixelformat, &pfd) == FALSE) {
-			ReportLastError("wglSetPixelFormat");
-			goto soft;
-		}
-    } else {
-		DescribePixelFormat(win.dc, pixelformat, sizeof(pfd), &pfd);
-		ReportPixelFormat(pixelformat, &pfd);
-
-		if (SetPixelFormat(win.dc, pixelformat, &pfd) == FALSE) {
-			ReportLastError("SetPixelFormat");
-			goto soft;
-		}
-	}
-
-	// check for software emulation
-	if (pfd.dwFlags & PFD_GENERIC_FORMAT) {
-		if (!gl_allow_software->integer) {
-			Com_EPrintf("No hardware OpenGL acceleration detected\n");
-			goto soft;
-		}
-		Com_WPrintf("...using software emulation\n");
+    // check for software emulation
+    if (pfd.dwFlags & PFD_GENERIC_FORMAT) {
+        Com_EPrintf("No hardware OpenGL acceleration detected\n");
+        goto soft;
     } else if (pfd.dwFlags & PFD_GENERIC_ACCELERATED) {
 		Com_DPrintf("...MCD acceleration found\n");
 		win.flags |= QVF_ACCELERATED;
@@ -201,11 +154,18 @@ static int SetupGL(int colorbits, int depthbits, int stencilbits, int multisampl
 		win.flags |= QVF_ACCELERATED;
 	}
 
-	// startup the OpenGL subsystem by creating a context and making it current
-	if ((glw.hGLRC = qwglCreateContext(win.dc)) == NULL) {
-		ReportLastError("wglCreateContext");
-		goto hard;
-	}
+	const int iContextAttributes[] = {
+		//WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+		//WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+		//WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+		0, 0
+	};
+
+    // startup the OpenGL subsystem by creating a context and making it current
+    if ((glw.hGLRC = qwglCreateContextAttribsARB(win.dc, NULL, iContextAttributes)) == NULL) {
+        ReportLastError("wglCreateContext");
+        goto hard;
+    }
 
 	if (qwglMakeCurrent(win.dc, glw.hGLRC) == FALSE) {
 		ReportLastError("wglMakeCurrent");
@@ -229,15 +189,14 @@ hard:
 #define FAKE_WINDOW_CLASS   "Q2PRO FAKE WINDOW CLASS"
 #define FAKE_WINDOW_NAME    "Q2PRO FAKE WINDOW NAME"
 
-static unsigned GetFakeWindowExtensions(void)
+static void GetFakeWindowExtensions(void)
 {
-	WNDCLASSEX wc;
-	PIXELFORMATDESCRIPTOR pfd;
-	int pixelformat;
-	HWND wnd;
-	HDC dc;
-	HGLRC rc;
-	unsigned extensions = 0;
+    WNDCLASSEX wc;
+    PIXELFORMATDESCRIPTOR pfd;
+    int pixelformat;
+    HWND wnd;
+    HDC dc;
+    HGLRC rc;
 
 	memset(&wc, 0, sizeof(wc));
 	wc.cbSize = sizeof(wc);
@@ -273,19 +232,11 @@ static unsigned GetFakeWindowExtensions(void)
 	pfd.cStencilBits = 8;
 	pfd.iLayerType = PFD_MAIN_PLANE;
 
-	if (glw.minidriver) {
-		if ((pixelformat = qwglChoosePixelFormat(dc, &pfd)) == 0)
-			goto fail3;
+	if ((pixelformat = ChoosePixelFormat(dc, &pfd)) == 0)
+		goto fail3;
 
-		if (qwglSetPixelFormat(dc, pixelformat, &pfd) == FALSE)
-			goto fail3;
-    } else {
-		if ((pixelformat = ChoosePixelFormat(dc, &pfd)) == 0)
-			goto fail3;
-
-		if (SetPixelFormat(dc, pixelformat, &pfd) == FALSE)
-			goto fail3;
-	}
+	if (SetPixelFormat(dc, pixelformat, &pfd) == FALSE)
+		goto fail3;
 
 	if ((rc = qwglCreateContext(dc)) == NULL)
 		goto fail3;
@@ -293,17 +244,12 @@ static unsigned GetFakeWindowExtensions(void)
 	if (qwglMakeCurrent(dc, rc) == FALSE)
 		goto fail4;
 
-	WGL_InitExtensions(QWGL_ARB_extensions_string);
+    WGL_InitExtensions();
 
 	if (!qwglGetExtensionsStringARB)
 		goto fail5;
 
-	extensions = WGL_ParseExtensionString(qwglGetExtensionsStringARB(dc));
-
-	if (extensions & QWGL_ARB_pixel_format) {
-		Com_Printf("...enabling WGL_ARB_pixel_format\n");
-		WGL_InitExtensions(QWGL_ARB_pixel_format);
-	}
+    WGL_ParseExtensionString(qwglGetExtensionsStringARB(dc));
 
 fail5:
 	qwglMakeCurrent(NULL, NULL);
@@ -316,7 +262,7 @@ fail2:
 fail1:
 	UnregisterClass(FAKE_WINDOW_CLASS, hGlobalInstance);
 fail0:
-	return extensions;
+	;
 }
 
 static int LoadGL(const char *driver)
@@ -326,15 +272,6 @@ static int LoadGL(const char *driver)
 	int stencilbits = Cvar_ClampInteger(gl_stencilbits, 0, 8);
 	int multisamples = Cvar_ClampInteger(gl_multisamples, 0, 32);
 	int ret;
-
-	// figure out if we're running on a minidriver or not
-	if (!Q_stricmp(driver, "opengl32") ||
-		!Q_stricmp(driver, "opengl32.dll")) {
-        glw.minidriver = false;
-    } else {
-		Com_Printf("...running a minidriver: %s\n", driver);
-        glw.minidriver = true;
-	}
 
 	// load the OpenGL library and bind to it
 	if (!WGL_Init(driver)) {
@@ -348,33 +285,22 @@ static int LoadGL(const char *driver)
 		goto fail;
 	}
 
-	if (glw.minidriver) {
-		// check if MCD entry points are present if using a minidriver
-		if (!qwglChoosePixelFormat || !qwglSetPixelFormat ||
-			!qwglDescribePixelFormat || !qwglSwapBuffers) {
-			Com_EPrintf("Required MCD entry points are missing\n");
-			goto fail;
-		}
+    // check for extensions by creating a fake window
+    GetFakeWindowExtensions();
+	
+	if (!glw.extensions.pixel_format) {
+		Com_EPrintf("WGL_ARB_pixel_format not found\n");
+		goto fail;
+	} else if (!glw.extensions.create_context) {
+		Com_EPrintf("WGL_ARB_create_context not found\n");
+		goto fail;
 	}
 
-	// check for WGL_ARB_multisample by creating a fake window
-	if (multisamples > 1) {
-		unsigned extensions = GetFakeWindowExtensions();
-
-		if (extensions & QWGL_ARB_multisample) {
-			if (qwglChoosePixelFormatARB) {
-				Com_Printf("...enabling WGL_ARB_multisample\n");
-            } else {
-				Com_Printf("...ignoring WGL_ARB_multisample, WGL_ARB_pixel_format not found\n");
-				Cvar_Set("gl_multisamples", "0");
-				multisamples = 0;
-			}
-        } else {
-			Com_Printf("WGL_ARB_multisample not found\n");
-			Cvar_Set("gl_multisamples", "0");
-			multisamples = 0;
-		}
-	}
+    if (multisamples && !glw.extensions.multisample) {
+        Com_Printf("WGL_ARB_multisample not found\n");
+        Cvar_Set("gl_multisamples", "0");
+        multisamples = 0;
+    }
 
 	// create window, choose PFD, setup OpenGL context
 	ret = SetupGL(colorbits, depthbits, stencilbits, multisamples);
@@ -398,10 +324,10 @@ fail:
 
 static void gl_swapinterval_changed(cvar_t *self)
 {
-	if (self->integer < 0 && !(glw.extensions & QWGL_EXT_swap_control_tear)) {
-		Com_Printf("Negative swap interval is not supported on this system.\n");
-		Cvar_Reset(self);
-	}
+    if (self->integer < 0 && !glw.extensions.swap_control_tear) {
+        Com_Printf("Negative swap interval is not supported on this system.\n");
+        Cvar_Reset(self);
+    }
 
 	if (qwglSwapIntervalEXT && !qwglSwapIntervalEXT(self->integer))
 		ReportLastError("wglSwapIntervalEXT");
@@ -430,17 +356,15 @@ doing the wgl interface stuff.
 */
 bool VID_Init(void)
 {
-	const char *extensions;
-	int ret;
+    int ret;
 
-	gl_driver = Cvar_Get("gl_driver", "opengl32", CVAR_ARCHIVE | CVAR_REFRESH);
-	gl_drawbuffer = Cvar_Get("gl_drawbuffer", "GL_BACK", 0);
-	gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
-	gl_allow_software = Cvar_Get("gl_allow_software", "0", 0);
-	gl_colorbits = Cvar_Get("gl_colorbits", "0", CVAR_REFRESH);
-	gl_depthbits = Cvar_Get("gl_depthbits", "0", CVAR_REFRESH);
-	gl_stencilbits = Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH);
-	gl_multisamples = Cvar_Get("gl_multisamples", "0", CVAR_REFRESH);
+    gl_driver = Cvar_Get("gl_driver", "opengl32", CVAR_ARCHIVE | CVAR_REFRESH);
+    gl_drawbuffer = Cvar_Get("gl_drawbuffer", "GL_BACK", 0);
+    gl_swapinterval = Cvar_Get("gl_swapinterval", "1", CVAR_ARCHIVE);
+    gl_colorbits = Cvar_Get("gl_colorbits", "0", CVAR_REFRESH);
+    gl_depthbits = Cvar_Get("gl_depthbits", "0", CVAR_REFRESH);
+    gl_stencilbits = Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH);
+    gl_multisamples = Cvar_Get("gl_multisamples", "0", CVAR_REFRESH);
 
 	// don't allow absolute or relative paths
 	FS_SanitizeFilenameVariable(gl_driver);
@@ -448,39 +372,17 @@ bool VID_Init(void)
 	// load and initialize the OpenGL driver
 	ret = LoadGL(gl_driver->string);
 
-	// attempt to recover if this was a minidriver
-	if (ret == FAIL_SOFT && glw.minidriver) {
-		Com_Printf("...falling back to opengl32\n");
-		Cvar_Reset(gl_driver);
-		ret = LoadGL(gl_driver->string);
-	}
-
 	// it failed, abort
 	if (ret)
         return false;
 
-	// initialize WGL extensions
-	WGL_InitExtensions(QWGL_ARB_extensions_string);
-
-	if (qwglGetExtensionsStringARB)
-		extensions = qwglGetExtensionsStringARB(win.dc);
-	else
-		extensions = NULL;
-
-	// fall back to GL_EXTENSIONS for legacy drivers
-	if (!extensions || !*extensions)
-		extensions = (const char *)qwglGetString(GL_EXTENSIONS);
-
-	glw.extensions = WGL_ParseExtensionString(extensions);
-
-	if (glw.extensions & QWGL_EXT_swap_control) {
-		if (glw.extensions & QWGL_EXT_swap_control_tear)
-			Com_Printf("...enabling WGL_EXT_swap_control(_tear)\n");
-		else
-			Com_Printf("...enabling WGL_EXT_swap_control\n");
-		WGL_InitExtensions(QWGL_EXT_swap_control);
-		gl_swapinterval->changed = gl_swapinterval_changed;
-		gl_swapinterval_changed(gl_swapinterval);
+    if (glw.extensions.swap_control) {
+        if (glw.extensions.swap_control_tear)
+            Com_Printf("...enabling WGL_EXT_swap_control(_tear)\n");
+        else
+            Com_Printf("...enabling WGL_EXT_swap_control\n");
+        gl_swapinterval->changed = gl_swapinterval_changed;
+        gl_swapinterval_changed(gl_swapinterval);
     } else {
 		Com_Printf("WGL_EXT_swap_control not found\n");
 		Cvar_Set("gl_swapinterval", "0");
@@ -514,21 +416,17 @@ void VID_EndFrame(void)
 		return;
 	}
 
-	if (glw.minidriver) {
-		ret = qwglSwapBuffers(win.dc);
-    } else {
-		ret = SwapBuffers(win.dc);
-	}
+    ret = SwapBuffers(win.dc);
 
 	if (!ret) {
 		DWORD error = GetLastError();
 
-		// this happens sometimes when the window is iconified
-		if (!IsIconic(win.wnd)) {
-			Com_Error(ERR_FATAL, "%s failed with error %lu",
-				glw.minidriver ? "wglSwapBuffers" : "SwapBuffers", error);
-		}
-	}
+        // this happens sometimes when the window is iconified
+        if (!IsIconic(win.wnd)) {
+            Com_Error(ERR_FATAL, "SwapBuffers failed with error %lu",
+                      error);
+        }
+    }
 }
 
 void *VID_GetProcAddr(const char *sym)

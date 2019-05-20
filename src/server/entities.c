@@ -44,8 +44,7 @@ static void SV_EmitPacketEntities(client_t         *client,
 {
     entity_packed_t *newent;
     const entity_packed_t *oldent;
-    unsigned i, oldindex, newindex, from_num_entities;
-    int oldnum, newnum;
+    int i, oldnum, newnum, oldindex, newindex, from_num_entities;
     msgEsFlags_t flags;
 
     if (!from)
@@ -532,13 +531,6 @@ void SV_BuildClientFrame(client_t *client)
             state->modelindex = 0;
         }
 
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            // spectators only need to know about inline BSP models
-            if (state->solid != PACKED_BSP)
-                state->solid = 0;
-        } else
-#endif
         if (ent->owner == clent) {
             // don't mark players missiles as solid
             state->solid = 0;

@@ -31,8 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Cmd_Malloc(size)        Z_TagMalloc(size, TAG_CMD)
 #define Cmd_CopyString(string)  Z_TagCopyString(string, TAG_CMD)
 
-static char *Cmd_ArgsRange(int from, int to);
-
 /*
 =============================================================================
 
@@ -264,11 +262,8 @@ void Cmd_Alias_g(genctx_t *ctx)
 {
     cmdalias_t *a;
 
-    FOR_EACH_ALIAS(a) {
-        if (!Prompt_AddMatch(ctx, a->name)) {
-            break;
-        }
-    }
+    FOR_EACH_ALIAS(a)
+        Prompt_AddMatch(ctx, a->name);
 }
 
 
@@ -697,11 +692,8 @@ void Cmd_Macro_g(genctx_t *ctx)
 {
     cmd_macro_t *m;
 
-    for (m = cmd_macros; m; m = m->next) {
-        if (!Prompt_AddMatch(ctx, m->name)) {
-            break;
-        }
-    }
+    for (m = cmd_macros; m; m = m->next)
+        Prompt_AddMatch(ctx, m->name);
 }
 
 /*
@@ -897,7 +889,7 @@ char *Cmd_ArgsFrom(int from)
     return Cmd_ArgsRange(from, cmd_argc - 1);
 }
 
-static char *Cmd_ArgsRange(int from, int to)
+char *Cmd_ArgsRange(int from, int to)
 {
     int i;
 
@@ -1316,7 +1308,8 @@ void Cmd_TokenizeString(const char *text, bool macroExpand)
     }
 
 // copy off text
-    memcpy(cmd_string, text, len);
+// use memmove because text may overlap with cmd_string
+    memmove(cmd_string, text, len);
     cmd_string[len] = 0;
     cmd_string_len = len;
 
@@ -1479,9 +1472,7 @@ Cmd_Exists
 */
 bool Cmd_Exists(const char *name)
 {
-    cmd_function_t *cmd = Cmd_Find(name);
-
-    return cmd ? true : false;
+    return Cmd_Find(name);
 }
 
 xcommand_t Cmd_FindFunction(const char *name)
@@ -1502,11 +1493,8 @@ void Cmd_Command_g(genctx_t *ctx)
 {
     cmd_function_t *cmd;
 
-    FOR_EACH_CMD(cmd) {
-        if (!Prompt_AddMatch(ctx, cmd->name)) {
-            break;
-        }
-    }
+    FOR_EACH_CMD(cmd)
+        Prompt_AddMatch(ctx, cmd->name);
 }
 
 void Cmd_ExecuteCommand(cmdbuf_t *buf)
@@ -1515,6 +1503,13 @@ void Cmd_ExecuteCommand(cmdbuf_t *buf)
     cmdalias_t      *a;
     cvar_t          *v;
     char            *text;
+
+    // execute the command line
+    if (!cmd_argc) {
+        return;         // no tokens
+    }
+
+    cmd_current = buf;
 
     // check functions
     cmd = Cmd_Find(cmd_argv[0]);
@@ -1565,12 +1560,6 @@ A complete command line has been parsed, so try to execute it
 void Cmd_ExecuteString(cmdbuf_t *buf, const char *text)
 {
     Cmd_TokenizeString(text, true);
-
-    // execute the command line
-    if (!cmd_argc) {
-        return;        // no tokens
-    }
-
     Cmd_ExecuteCommand(buf);
 }
 
@@ -1774,7 +1763,7 @@ static void Cmd_EchoEx_f(void)
         }
     }
 
-    s = Cmd_RawArgsFrom(cmd_optind);
+    s = COM_StripQuotes(Cmd_RawArgsFrom(cmd_optind));
     if (escapes) {
         s = unescape_string(buffer, s);
     }

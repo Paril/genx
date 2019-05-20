@@ -52,13 +52,13 @@ typedef struct {
 #ifdef _WIN32
     qsocket_t fd;
 #endif
-    unsigned inuse: 1;
-    unsigned canread: 1;
-    unsigned canwrite: 1;
-    unsigned canexcept: 1;
-    unsigned wantread: 1;
-    unsigned wantwrite: 1;
-    unsigned wantexcept: 1;
+    bool inuse: 1;
+    bool canread: 1;
+    bool canwrite: 1;
+    bool canexcept: 1;
+    bool wantread: 1;
+    bool wantwrite: 1;
+    bool wantexcept: 1;
 } ioentry_t;
 
 typedef enum {
@@ -228,9 +228,6 @@ void        NET_UpdateStream(netstream_t *s);
 ioentry_t   *NET_AddFd(qsocket_t fd);
 void        NET_RemoveFd(qsocket_t fd);
 int         NET_Sleep(int msec);
-#if USE_AC_SERVER
-int         NET_Sleepv(int msec, ...);
-#endif
 
 extern cvar_t       *net_ip;
 extern cvar_t       *net_port;

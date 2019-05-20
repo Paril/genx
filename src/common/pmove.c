@@ -380,15 +380,8 @@ static void PM_AddCurrents(vec3_t wishvel)
             wishvel[2] = 0;
 
         // limit horizontal speed when on a ladder
-        if (wishvel[0] < -25)
-            wishvel[0] = -25;
-        else if (wishvel[0] > 25)
-            wishvel[0] = 25;
-
-        if (wishvel[1] < -25)
-            wishvel[1] = -25;
-        else if (wishvel[1] > 25)
-            wishvel[1] = 25;
+        clamp(wishvel[0], -25, 25);
+        clamp(wishvel[1], -25, 25);
     }
 
     //
@@ -528,11 +521,11 @@ static void PM_AirMove(void)
             if (pml.velocity[2] > 0) {
                 pml.velocity[2] -= pm->s.gravity * pml.frametime;
                 if (pml.velocity[2] < 0)
-                    pml.velocity[2]  = 0;
+                    pml.velocity[2] = 0;
             } else {
                 pml.velocity[2] += pm->s.gravity * pml.frametime;
                 if (pml.velocity[2] > 0)
-                    pml.velocity[2]  = 0;
+                    pml.velocity[2] = 0;
             }
         }
         PM_StepSlideMove();
@@ -1041,10 +1034,7 @@ static void PM_ClampAngles(void)
         }
 
         // don't let the player look up or down more than 90 degrees
-        if (pm->viewangles[PITCH] > 89 && pm->viewangles[PITCH] < 180)
-            pm->viewangles[PITCH] = 89;
-        else if (pm->viewangles[PITCH] < 271 && pm->viewangles[PITCH] >= 180)
-            pm->viewangles[PITCH] = 271;
+        clamp(pm->viewangles[PITCH], -89, 89);
     }
     AngleVectors(pm->viewangles, pml.forward, pml.right, pml.up);
 }

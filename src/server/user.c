@@ -19,6 +19,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
+#define MSG_GAMESTATE   (MSG_RELIABLE | MSG_CLEAR | MSG_COMPRESS)
+
 /*
 ============================================================
 
@@ -27,6 +29,8 @@ USER STRINGCMD EXECUTION
 sv_client and sv_player will be valid.
 ============================================================
 */
+
+static int      stringCmdCount;
 
 /*
 ================
@@ -37,7 +41,7 @@ to the clients -- only the fields that differ from the
 baseline will be transmitted
 ================
 */
-static void create_baselines(void)
+static void SV_CreateBaselines(void)
 {
 	int        i;
 	edict_t    *ent;
@@ -73,13 +77,6 @@ static void create_baselines(void)
 		base = *chunk + (i & SV_BASELINES_MASK);
 		MSG_PackEntity(base, &ent->s, Q2PRO_SHORTANGLES(sv_client, i));
 
-#if USE_MVD_CLIENT
-		if (sv.state == ss_broadcast) {
-			// spectators only need to know about inline BSP models
-			if (base->solid != PACKED_BSP)
-				base->solid = 0;
-        } else
-#endif
 		if (sv_client->esFlags & MSG_ES_LONGSOLID) {
 			base->solid = sv.entities[i].solid32;
 		}
@@ -89,11 +86,21 @@ static void create_baselines(void)
 	}
 }
 
-static void write_plain_configstrings(void)
+static bool need_flush_msg(size_t size)
 {
-	int     i;
-	char    *string;
-	size_t  length;
+    size += msg_write.cursize;
+#if USE_ZLIB
+    if (sv_client->has_zlib)
+        size = ZPACKET_HEADER + deflateBound(&svs.z, size);
+#endif
+    return size > sv_client->netchan->maxpacketlen;
+}
+
+static void write_configstrings(void)
+{
+    int     i;
+    char    *string;
+    size_t  length;
 
 	// write a packet full of data
 	string = sv_client->configstrings;
@@ -105,10 +112,10 @@ static void write_plain_configstrings(void)
         if (length > MAX_QPATH) {
 			length = MAX_QPATH;
         }
-		// check if this configstring will overflow
-		if (msg_write.cursize + length + 64 > sv_client->netchan->maxpacketlen) {
-			SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-		}
+        // check if this configstring will overflow
+        if (need_flush_msg(length + 4)) {
+            SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
+        }
 
 		MSG_WriteByte(svc_configstring);
 		MSG_WriteShort(i);
@@ -122,7 +129,7 @@ static void write_plain_configstrings(void)
 	MSG_WriteByte(svc_precache_baseline);
 	MSG_WriteData(precache, length_left);
 
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+	SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
 static void write_baseline(entity_packed_t *base)
@@ -136,23 +143,23 @@ static void write_baseline(entity_packed_t *base)
 	MSG_WriteDeltaEntity(NULL, base, flags);
 }
 
-static void write_plain_baselines(void)
+static void write_baselines(void)
 {
 	int i, j;
 	entity_packed_t *base;
 
-	// write a packet full of data
-	for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
-		base = sv_client->baselines[i];
-		if (!base) {
-			continue;
-		}
-		for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
-			if (base->number) {
-				// check if this baseline will overflow
-				if (msg_write.cursize + 64 > sv_client->netchan->maxpacketlen) {
-					SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-				}
+    // write a packet full of data
+    for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
+        base = sv_client->baselines[i];
+        if (!base) {
+            continue;
+        }
+        for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
+            if (base->number) {
+                // check if this baseline will overflow
+                if (need_flush_msg(64)) {
+                    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
+                }
 
 				MSG_WriteByte(svc_spawnbaseline);
 				write_baseline(base);
@@ -161,19 +168,15 @@ static void write_plain_baselines(void)
 		}
 	}
 
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
-#if USE_ZLIB
-
-static void write_compressed_gamestate(void)
+static void write_gamestate(void)
 {
-	sizebuf_t   *buf = &sv_client->netchan->message;
-	entity_packed_t  *base;
-	int         i, j;
-	size_t      length;
-	uint8_t     *patch;
-	char        *string;
+    entity_packed_t  *base;
+    int         i, j;
+    size_t      length;
+    char        *string;
 
 	MSG_WriteByte(svc_gamestate);
 
@@ -199,156 +202,37 @@ static void write_compressed_gamestate(void)
 	uint32_t length_left = MAX_PRECACHE_BITSET;
 	MSG_WriteData(precache, length_left);
 
-	// write baselines
-	for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
-		base = sv_client->baselines[i];
-		if (!base) {
-			continue;
-		}
-		for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
-			if (base->number) {
-				write_baseline(base);
-			}
-			base++;
-		}
-	}
-	MSG_WriteShort(0);   // end of baselines
-
-	SZ_WriteByte(buf, svc_zpacket);
-    patch = SZ_GetSpace(buf, 2);
-	SZ_WriteShort(buf, msg_write.cursize);
-
-	deflateReset(&svs.z);
-	svs.z.next_in = msg_write.data;
-	svs.z.avail_in = (uInt)msg_write.cursize;
-	svs.z.next_out = buf->data + buf->cursize;
-	svs.z.avail_out = (uInt)(buf->maxsize - buf->cursize);
-	SZ_Clear(&msg_write);
-
-	if (deflate(&svs.z, Z_FINISH) != Z_STREAM_END) {
-		SV_DropClient(sv_client, "deflate() failed on gamestate");
-		return;
-	}
-
-	SV_DPrintf(0, "%s: comp: %lu into %lu\n",
-		sv_client->name, svs.z.total_in, svs.z.total_out);
-
-	patch[0] = svs.z.total_out & 255;
-	patch[1] = (svs.z.total_out >> 8) & 255;
-	buf->cursize += svs.z.total_out;
+    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
-
-static inline int z_flush(byte *buffer)
-{
-	int ret;
-
-	ret = deflate(&svs.z, Z_FINISH);
-	if (ret != Z_STREAM_END) {
-		return ret;
-	}
-
-	SV_DPrintf(0, "%s: comp: %lu into %lu\n",
-		sv_client->name, svs.z.total_in, svs.z.total_out);
-
-	MSG_WriteByte(svc_zpacket);
-	MSG_WriteShort(svs.z.total_out);
-	MSG_WriteShort(svs.z.total_in);
-	MSG_WriteData(buffer, svs.z.total_out);
-
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-
-	return ret;
-}
-
-static inline void z_reset(byte *buffer)
-{
-	deflateReset(&svs.z);
-	svs.z.next_out = buffer;
-	svs.z.avail_out = (uInt)(sv_client->netchan->maxpacketlen - 5);
-}
-
-static void write_compressed_configstrings(void)
-{
-    int     i;
-    size_t  length;
-    byte    buffer[MAX_PACKETLEN_WRITABLE];
-    char    *string;
-
-    z_reset(buffer);
-
-    // write a packet full of data
-    string = sv_client->configstrings;
-    for (i = 0; i < MAX_CONFIGSTRINGS; i++, string += MAX_QPATH) {
-        if (!string[0]) {
-            continue;
-        }
-        length = strlen(string);
-        if (length > MAX_QPATH) {
-            length = MAX_QPATH;
-        }
-
-        // check if this configstring will overflow
-        if (svs.z.avail_out < length + 32) {
-            // then flush compressed data
-            if (z_flush(buffer) != Z_STREAM_END) {
-                goto fail;
-            }
-            z_reset(buffer);
-        }
-
-        MSG_WriteByte(svc_configstring);
-        MSG_WriteShort(i);
-        MSG_WriteData(string, length);
-        MSG_WriteByte(0);
-
-        svs.z.next_in = msg_write.data;
-        svs.z.avail_in = (uInt)msg_write.cursize;
-        SZ_Clear(&msg_write);
-
-        if (deflate(&svs.z, Z_SYNC_FLUSH) != Z_OK) {
-            goto fail;
-        }
-    }
-
-	// Generations
-	byte	*precache = sv_client->precache_bitset;
-	uint32_t length_left = MAX_PRECACHE_BITSET;
-	MSG_WriteByte(svc_precache_baseline);
-	MSG_WriteData(precache, length_left);
-
-    svs.z.next_in = msg_write.data;
-    svs.z.avail_in = (uInt)msg_write.cursize;
-    SZ_Clear(&msg_write);
-
-    // finally flush all remaining compressed data
-    if (z_flush(buffer) != Z_STREAM_END) {
-fail:
-        SV_DropClient(sv_client, "deflate() failed on configstrings");
-    }
-}
-
-#endif // USE_ZLIB
 
 static void stuff_cmds(list_t *list)
 {
 	stuffcmd_t *stuff;
 
-	LIST_FOR_EACH(stuffcmd_t, stuff, list, entry) {
-		MSG_WriteByte(svc_stufftext);
-		MSG_WriteData(stuff->string, stuff->len);
-		MSG_WriteByte('\n');
-		MSG_WriteByte(0);
-		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-	}
+    LIST_FOR_EACH(stuffcmd_t, stuff, list, entry) {
+        MSG_WriteByte(svc_stufftext);
+        MSG_WriteData(stuff->string, strlen(stuff->string));
+        MSG_WriteByte('\n');
+        MSG_WriteByte(0);
+        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+    }
+}
+
+static void stuff_cvar_bans(void)
+{
+    cvarban_t *ban;
+
+    LIST_FOR_EACH(cvarban_t, ban, &sv_cvarbanlist, entry)
+        if (Q_stricmp(ban->var, "version"))
+            SV_ClientCommand(sv_client, "cmd \177c %s $%s\n", ban->var, ban->var);
 }
 
 static void stuff_junk(void)
 {
-	static const char junkchars[] =
-		"!~#``&'()*`+,-./~01~2`3`4~5`67`89:~<=`>?@~ab~c"
-		"d`ef~j~k~lm`no~pq`rst`uv`w``x`yz[`\\]^_`|~";
-	char junk[8][16];
-	int i, j, k;
+    static const char junkchars[] =
+        "!#&'()*+,-./0123456789:<=>?@[\\]^_``````````abcdefghijklmnopqrstuvwxyz|~~~~~~~~~~";
+    char junk[8][16];
+    int i, j, k;
 
 	for (i = 0; i < 8; i++) {
 		for (j = 0; j < 15; j++) {
@@ -392,13 +276,13 @@ void SV_New_f(void)
 
 	Com_DPrintf("New() from %s\n", sv_client->name);
 
-	oldstate = sv_client->state;
-	if (sv_client->state < cs_connected) {
-		Com_DPrintf("Going from cs_assigned to cs_connected for %s\n",
-			sv_client->name);
-		sv_client->state = cs_connected;
-		sv_client->lastmessage = svs.realtime; // don't timeout
-		time(&sv_client->connect_time);
+    oldstate = sv_client->state;
+    if (sv_client->state < cs_connected) {
+        Com_DPrintf("Going from cs_assigned to cs_connected for %s\n",
+                    sv_client->name);
+        sv_client->state = cs_connected;
+        sv_client->lastmessage = svs.realtime; // don't timeout
+        sv_client->connect_time = time(NULL);
     } else if (sv_client->state > cs_connected) {
 		Com_DPrintf("New not valid -- already primed\n");
 		return;
@@ -419,8 +303,8 @@ void SV_New_f(void)
 	// to make sure the protocol is right, and to set the gamedir
 	//
 
-	// create baselines for this client
-	create_baselines();
+    // create baselines for this client
+    SV_CreateBaselines();
 
 	// send the serverdata
 	MSG_WriteByte(svc_serverdata);
@@ -451,23 +335,17 @@ void SV_New_f(void)
 			MSG_WriteByte(sv_client->pmp.waterhack);
 		}
         break;
-    default:
-        break;
     }
 
 	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
 
 	SV_ClientCommand(sv_client, "\n");
 
-	// send version string request
-	if (oldstate == cs_assigned) {
-		SV_ClientCommand(sv_client, "cmd \177c version $version\n"
-#if USE_AC_SERVER
-			"cmd \177c actoken $actoken\n"
-#endif
-		);
-		stuff_cmds(&sv_cmdlist_connect);
-	}
+    // send version string request
+    if (oldstate == cs_assigned) {
+        SV_ClientCommand(sv_client, "cmd \177c version $version\n");
+        stuff_cmds(&sv_cmdlist_connect);
+    }
 
 	// send reconnect var request
 	if (sv_force_reconnect->string[0] && !sv_client->reconnected) {
@@ -475,30 +353,27 @@ void SV_New_f(void)
 			sv_client->reconnect_var);
 	}
 
-	Com_DPrintf("Going from cs_connected to cs_primed for %s\n",
-		sv_client->name);
-	sv_client->state = cs_primed;
+    stuff_cvar_bans();
+
+    if (SV_CheckInfoBans(sv_client->userinfo, false))
+        return;
+
+    Com_DPrintf("Going from cs_connected to cs_primed for %s\n",
+                sv_client->name);
+    sv_client->state = cs_primed;
 
 	memset(&sv_client->lastcmd, 0, sizeof(sv_client->lastcmd));
 
 	if (sv.state == ss_pic)
 		return;
 
-#if USE_ZLIB
-    if (sv_client->has_zlib) {
-        if (sv_client->netchan->type == NETCHAN_NEW) {
-			write_compressed_gamestate();
-        } else {
-            // FIXME: Z_SYNC_FLUSH is not efficient for baselines
-            write_compressed_configstrings();
-            write_plain_baselines();
-        }
-    } else
-#endif // USE_ZLIB
-	{
-		write_plain_configstrings();
-		write_plain_baselines();
-	}
+    // send gamestate
+    if (sv_client->netchan->type == NETCHAN_NEW) {
+        write_gamestate();
+    } else {
+        write_configstrings();
+        write_baselines();
+    }
 
 	// send next command
 	SV_ClientCommand(sv_client, "precache %i\n", sv_client->spawncount);
@@ -534,17 +409,13 @@ void SV_Begin_f(void)
 		return;
 	}
 
-	if (!AC_ClientBegin(sv_client)) {
-		return;
-	}
-
-	Com_DPrintf("Going from cs_primed to cs_spawned for %s\n",
-		sv_client->name);
-	sv_client->state = cs_spawned;
-	sv_client->send_delta = 0;
-	sv_client->command_msec = 1800;
-	sv_client->suppress_count = 0;
-    sv_client->http_download = false;
+    Com_DPrintf("Going from cs_primed to cs_spawned for %s\n",
+                sv_client->name);
+    sv_client->state = cs_spawned;
+    sv_client->send_delta = 0;
+    sv_client->command_msec = 1800;
+    sv_client->cmd_msec_used = 0;
+    sv_client->suppress_count = 0;
 
 	SV_AlignKeyFrames(sv_client);
 
@@ -552,231 +423,9 @@ void SV_Begin_f(void)
 
 	// call the game begin function
 	ge->ClientBegin(sv_player);
-
-	AC_ClientAnnounce(sv_client);
 }
 
 //=============================================================================
-
-void SV_CloseDownload(client_t *client)
-{
-	if (client->download) {
-		Z_Free(client->download);
-		client->download = NULL;
-	}
-	if (client->downloadname) {
-		Z_Free(client->downloadname);
-		client->downloadname = NULL;
-	}
-	client->downloadsize = 0;
-	client->downloadcount = 0;
-	client->downloadcmd = 0;
-    client->downloadpending = false;
-}
-
-/*
-==================
-SV_NextDownload_f
-==================
-*/
-static void SV_NextDownload_f(void)
-{
-	if (!sv_client->download)
-		return;
-
-    sv_client->downloadpending = true;
-}
-
-/*
-==================
-SV_BeginDownload_f
-==================
-*/
-static void SV_BeginDownload_f(void)
-{
-	char    name[MAX_QPATH];
-	byte    *download;
-	int     downloadcmd;
-    int64_t downloadsize = 0;
-    int     maxdownloadsize, result, offset = 0;
-	cvar_t  *allow;
-	size_t  len;
-	qhandle_t f;
-
-	len = Cmd_ArgvBuffer(1, name, sizeof(name));
-	if (len >= MAX_QPATH) {
-		goto fail1;
-	}
-
-	// hack for 'status' command
-	if (!strcmp(name, "http")) {
-        sv_client->http_download = true;
-		return;
-	}
-
-	len = FS_NormalizePath(name, name);
-
-	if (Cmd_Argc() > 2)
-		offset = atoi(Cmd_Argv(2));     // downloaded offset
-
-	// hacked by zoid to allow more conrol over download
-	// first off, no .. or global allow check
-	if (!allow_download->integer
-		// check for empty paths
-		|| !len
-		// check for illegal negative offsets
-		|| offset < 0
-		// don't allow anything with .. path
-		|| strstr(name, "..")
-		// leading dots, slashes, etc are no good
-		|| !Q_ispath(name[0])
-		// trailing dots, slashes, etc are no good
-		|| !Q_ispath(name[len - 1])
-		// MUST be in a subdirectory
-		|| !strchr(name, '/')) {
-		Com_DPrintf("Refusing download of %s to %s\n", name, sv_client->name);
-		goto fail1;
-	}
-
-	if (FS_pathcmpn(name, CONST_STR_LEN("players/")) == 0) {
-		allow = allow_download_players;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("models/")) == 0 ||
-			   FS_pathcmpn(name, CONST_STR_LEN("sprites/")) == 0) {
-		allow = allow_download_models;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("sound/")) == 0) {
-		allow = allow_download_sounds;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("maps/")) == 0) {
-		allow = allow_download_maps;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("textures/")) == 0 ||
-			   FS_pathcmpn(name, CONST_STR_LEN("env/")) == 0) {
-		allow = allow_download_textures;
-    } else if (FS_pathcmpn(name, CONST_STR_LEN("pics/")) == 0) {
-		allow = allow_download_pics;
-    } else {
-		allow = allow_download_others;
-	}
-
-	if (!allow->integer) {
-		Com_DPrintf("Refusing download of %s to %s\n", name, sv_client->name);
-		goto fail1;
-	}
-
-	if (sv_client->download) {
-		Com_DPrintf("Closing existing download for %s (should not happen)\n", sv_client->name);
-		SV_CloseDownload(sv_client);
-	}
-
-	f = 0;
-	downloadcmd = svc_download;
-
-#if USE_ZLIB
-	// prefer raw deflate stream from .pkz if supported
-    if (sv_client->protocol == PROTOCOL_VERSION_Q2PRO &&
-        sv_client->version >= PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS &&
-		sv_client->has_zlib && offset == 0) {
-		downloadsize = FS_FOpenFile(name, &f, FS_MODE_READ | FS_FLAG_DEFLATE);
-		if (f) {
-			Com_DPrintf("Serving compressed download to %s\n", sv_client->name);
-			downloadcmd = svc_zdownload;
-		}
-	}
-#endif
-
-	if (!f) {
-		downloadsize = FS_FOpenFile(name, &f, FS_MODE_READ);
-		if (!f) {
-			Com_DPrintf("Couldn't download %s to %s\n", name, sv_client->name);
-			goto fail1;
-		}
-	}
-
-	maxdownloadsize = MAX_LOADFILE;
-#if 0
-	if (sv_max_download_size->integer) {
-		maxdownloadsize = Cvar_ClampInteger(sv_max_download_size, 1, MAX_LOADFILE);
-	}
-#endif
-
-	if (downloadsize == 0) {
-		Com_DPrintf("Refusing empty download of %s to %s\n", name, sv_client->name);
-		goto fail2;
-	}
-
-	if (downloadsize > maxdownloadsize) {
-		Com_DPrintf("Refusing oversize download of %s to %s\n", name, sv_client->name);
-		goto fail2;
-	}
-
-	if (offset > downloadsize) {
-		Com_DPrintf("Refusing download, %s has wrong version of %s (%d > %d)\n",
-			sv_client->name, name, offset, (int)downloadsize);
-		SV_ClientPrintf(sv_client, PRINT_HIGH, "File size differs from server.\n"
-			"Please delete the corresponding .tmp file from your system.\n");
-		goto fail2;
-	}
-
-	if (offset == downloadsize) {
-		Com_DPrintf("Refusing download, %s already has %s (%d bytes)\n",
-			sv_client->name, name, offset);
-		FS_FCloseFile(f);
-		MSG_WriteByte(svc_download);
-		MSG_WriteShort(0);
-		MSG_WriteByte(100);
-		SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-		return;
-	}
-
-    download = SV_Malloc(downloadsize);
-	result = FS_Read(download, downloadsize, f);
-	if (result != downloadsize) {
-		Com_DPrintf("Couldn't download %s to %s\n", name, sv_client->name);
-		goto fail3;
-	}
-
-	FS_FCloseFile(f);
-
-	sv_client->download = download;
-	sv_client->downloadsize = downloadsize;
-	sv_client->downloadcount = offset;
-	sv_client->downloadname = SV_CopyString(name);
-	sv_client->downloadcmd = downloadcmd;
-    sv_client->downloadpending = true;
-
-	Com_DPrintf("Downloading %s to %s\n", name, sv_client->name);
-	return;
-
-fail3:
-	Z_Free(download);
-fail2:
-	FS_FCloseFile(f);
-fail1:
-	MSG_WriteByte(svc_download);
-	MSG_WriteShort(-1);
-	MSG_WriteByte(0);
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-}
-
-static void SV_StopDownload_f(void)
-{
-	int percent;
-
-	if (!sv_client->download)
-		return;
-
-	percent = sv_client->downloadcount * 100 / sv_client->downloadsize;
-
-	MSG_WriteByte(svc_download);
-	MSG_WriteShort(-1);
-	MSG_WriteByte(percent);
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-
-	Com_DPrintf("Download of %s to %s stopped by user request\n",
-		sv_client->downloadname, sv_client->name);
-	SV_CloseDownload(sv_client);
-	SV_AlignKeyFrames(sv_client);
-}
-
-//============================================================================
 
 // special hack for end game screen in coop mode
 static void SV_NextServer_f(void)
@@ -847,40 +496,87 @@ static void SV_Lag_f(void)
 		cl = sv_client;
 	}
 
-	SV_ClientPrintf(sv_client, PRINT_HIGH,
-		"Lag stats for:       %s\n"
-		"RTT (min/avg/max):   %d/%d/%d ms\n"
-		"Server to client PL: %.2f%% (approx)\n"
-		"Client to server PL: %.2f%%\n",
-		cl->name, cl->min_ping, AVG_PING(cl), cl->max_ping,
-		PL_S2C(cl), PL_C2S(cl));
+    SV_ClientPrintf(sv_client, PRINT_HIGH,
+                    "Lag stats for:       %s\n"
+                    "RTT (min/avg/max):   %d/%d/%d ms\n"
+                    "Server to client PL: %.2f%% (approx)\n"
+                    "Client to server PL: %.2f%%\n"
+                    "Timescale          : %.3f\n",
+                    cl->name, cl->min_ping, AVG_PING(cl), cl->max_ping,
+                    PL_S2C(cl), PL_C2S(cl), cl->timescale);
 }
 
-#if USE_PACKETDUP
-static void SV_PacketdupHack_f(void)
+static bool match_cvar_val(const char *s, const char *v)
 {
-	int numdups = sv_client->numpackets - 1;
-
-	if (Cmd_Argc() > 1) {
-		numdups = atoi(Cmd_Argv(1));
-		if (numdups < 0 || numdups > sv_packetdup_hack->integer) {
-			SV_ClientPrintf(sv_client, PRINT_HIGH,
-				"Packetdup of %d is not allowed on this server.\n", numdups);
-			return;
-		}
-
-		sv_client->numpackets = numdups + 1;
-	}
-
-	SV_ClientPrintf(sv_client, PRINT_HIGH,
-		"Server is sending %d duplicate packet%s to you.\n",
-		numdups, numdups == 1 ? "" : "s");
+    switch (*s++) {
+    case '*':
+        return *v;
+    case '=':
+        return atof(v) == atof(s);
+    case '<':
+        return atof(v) < atof(s);
+    case '>':
+        return atof(v) > atof(s);
+    case '~':
+        return Q_stristr(v, s);
+    case '#':
+        return !Q_stricmp(v, s);
+    default:
+        return !Q_stricmp(v, s - 1);
+    }
 }
-#endif
+
+static bool match_cvar_ban(const cvarban_t *ban, const char *v)
+{
+    bool success = true;
+    const char *s = ban->match;
+
+    if (*s == '!') {
+        s++;
+        success = false;
+    }
+
+    return match_cvar_val(s, v) == success;
+}
+
+// returns true if matched ban is kickable
+static bool handle_cvar_ban(const cvarban_t *ban, const char *v)
+{
+    if (!match_cvar_ban(ban, v))
+        return false;
+
+    if (ban->action == FA_LOG || ban->action == FA_KICK)
+        Com_Printf("%s[%s]: matched cvarban: \"%s\" is \"%s\"\n", sv_client->name,
+                   NET_AdrToString(&sv_client->netchan->remote_address), ban->var, v);
+
+    if (ban->action == FA_LOG)
+        return false;
+
+    if (ban->comment) {
+        if (ban->action == FA_STUFF) {
+            MSG_WriteByte(svc_stufftext);
+        } else {
+            MSG_WriteByte(svc_print);
+            MSG_WriteByte(PRINT_HIGH);
+        }
+        MSG_WriteData(ban->comment, strlen(ban->comment));
+        MSG_WriteByte('\n');
+        MSG_WriteByte(0);
+        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+    }
+
+    if (ban->action == FA_KICK) {
+        SV_DropClient(sv_client, "?was kicked");
+        return true;
+    }
+
+    return false;
+}
 
 static void SV_CvarResult_f(void)
 {
-	char *c, *v;
+    cvarban_t *ban;
+    char *c, *v;
 
 	c = Cmd_Argv(1);
 	if (!strcmp(c, "version")) {
@@ -898,8 +594,6 @@ static void SV_CvarResult_f(void)
                 sv_client->reconnected = true;
 		}
 	}
-    } else if (!strcmp(c, "actoken")) {
-		AC_ClientToken(sv_client, Cmd_Argv(2));
     } else if (!strcmp(c, "console")) {
 		if (sv_client->console_queries > 0) {
 			Com_Printf("%s[%s]: \"%s\" is \"%s\"\n", sv_client->name,
@@ -908,20 +602,14 @@ static void SV_CvarResult_f(void)
 			sv_client->console_queries--;
 		}
 	}
-}
 
-static void SV_AC_List_f(void)
-{
-	SV_ClientRedirect();
-	AC_List_f();
-	Com_EndRedirect();
-}
-
-static void SV_AC_Info_f(void)
-{
-	SV_ClientRedirect();
-	AC_Info_f();
-	Com_EndRedirect();
+    LIST_FOR_EACH(cvarban_t, ban, &sv_cvarbanlist, entry) {
+        if (!Q_stricmp(ban->var, c)) {
+            if (handle_cvar_ban(ban, Cmd_RawArgsFrom(2)))
+                return;
+            stringCmdCount--;
+        }
+    }
 }
 
 static const ucmd_t ucmds[] = {
@@ -937,48 +625,40 @@ static const ucmd_t ucmds[] = {
 	{ "info", SV_ShowServerInfo_f },
 	{ "sinfo", SV_ShowMiscInfo_f },
 
-	{ "download", SV_BeginDownload_f },
-	{ "nextdl", SV_NextDownload_f },
-	{ "stopdl", SV_StopDownload_f },
-
 	{ "\177c", SV_CvarResult_f },
 	{ "nogamedata", SV_NoGameData_f },
 	{ "lag", SV_Lag_f },
-#if USE_PACKETDUP
-	{ "packetdup", SV_PacketdupHack_f },
-#endif
-	{ "aclist", SV_AC_List_f },
-	{ "acinfo", SV_AC_Info_f },
 
 	{ NULL, NULL }
 };
 
 static void handle_filtercmd(filtercmd_t *filter)
 {
-	size_t len;
+    if (filter->action == FA_IGNORE)
+        return;
 
-	switch (filter->action) {
-	case FA_PRINT:
-		MSG_WriteByte(svc_print);
-		MSG_WriteByte(PRINT_HIGH);
-		break;
-	case FA_STUFF:
-		MSG_WriteByte(svc_stufftext);
-		break;
-	case FA_KICK:
-		SV_DropClient(sv_client, filter->comment[0] ?
-			filter->comment : "issued banned command");
-		// fall through
-	default:
-		return;
-	}
+    if (filter->action == FA_LOG || filter->action == FA_KICK)
+        Com_Printf("%s[%s]: issued banned command: %s\n", sv_client->name,
+                   NET_AdrToString(&sv_client->netchan->remote_address), filter->string);
 
-	len = strlen(filter->comment);
-	MSG_WriteData(filter->comment, len);
-	MSG_WriteByte('\n');
-	MSG_WriteByte(0);
+    if (filter->action == FA_LOG)
+        return;
 
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+    if (filter->comment) {
+        if (filter->action == FA_STUFF) {
+            MSG_WriteByte(svc_stufftext);
+        } else {
+            MSG_WriteByte(svc_print);
+            MSG_WriteByte(PRINT_HIGH);
+        }
+        MSG_WriteData(filter->comment, strlen(filter->comment));
+        MSG_WriteByte('\n');
+        MSG_WriteByte(0);
+        SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
+    }
+
+    if (filter->action == FA_KICK)
+        SV_DropClient(sv_client, "?was kicked");
 }
 
 /*
@@ -1039,7 +719,6 @@ USER CMD EXECUTION
 */
 
 static bool     moveIssued;
-static int      stringCmdCount;
 static int      userinfoUpdateCount;
 
 /*
@@ -1051,8 +730,9 @@ static inline void SV_ClientThink(usercmd_t *cmd)
 {
 	usercmd_t *old = &sv_client->lastcmd;
 
-	sv_client->command_msec -= cmd->msec;
-	sv_client->num_moves++;
+    sv_client->command_msec -= cmd->msec;
+    sv_client->cmd_msec_used += cmd->msec;
+    sv_client->num_moves++;
 
 	if (sv_client->command_msec < 0 && sv_enforcetime->integer) {
 		Com_DPrintf("commandMsec underflow from %s: %d\n",
@@ -1272,6 +952,43 @@ static void SV_NewClientExecuteMove(int c)
 
 /*
 =================
+SV_CheckInfoBans
+
+Returns matched kickable ban or NULL
+=================
+*/
+cvarban_t *SV_CheckInfoBans(const char *info, bool match_only)
+{
+    char key[MAX_INFO_STRING];
+    char value[MAX_INFO_STRING];
+    cvarban_t *ban;
+
+    if (LIST_EMPTY(&sv_infobanlist))
+        return NULL;
+
+    while (1) {
+        Info_NextPair(&info, key, value);
+        if (!info)
+            return NULL;
+
+        LIST_FOR_EACH(cvarban_t, ban, &sv_infobanlist, entry) {
+            if (match_only && ban->action != FA_KICK)
+                continue;
+            if (Q_stricmp(ban->var, key))
+                continue;
+            if (match_only) {
+                if (match_cvar_ban(ban, value))
+                    return ban;
+            } else {
+                if (handle_cvar_ban(ban, value))
+                    return ban;
+            }
+        }
+    }
+}
+
+/*
+=================
 SV_UpdateUserinfo
 
 Ensures that userinfo is valid and name is properly set.
@@ -1311,7 +1028,10 @@ static void SV_UpdateUserinfo(void)
 		SV_ClientCommand(sv_client, "set name \"%s\"\n", sv_client->name);
 	}
 
-	SV_UserinfoChanged(sv_client);
+    if (SV_CheckInfoBans(sv_client->userinfo, false))
+        return;
+
+    SV_UserinfoChanged(sv_client);
 }
 
 static void SV_ParseFullUserinfo(void)
@@ -1351,19 +1071,19 @@ static void SV_ParseDeltaUserinfo(void)
 		return;
 	}
 
-	// optimize by combining multiple delta updates into one (hack)
-	while (1) {
-		len = MSG_ReadString(key, sizeof(key));
-		if (len >= sizeof(key)) {
-			SV_DropClient(sv_client, "oversize delta key");
-			return;
-		}
+    // optimize by combining multiple delta updates into one (hack)
+    while (1) {
+        len = MSG_ReadString(key, sizeof(key));
+        if (len >= sizeof(key)) {
+            SV_DropClient(sv_client, "oversize userinfo key");
+            return;
+        }
 
-		len = MSG_ReadString(value, sizeof(value));
-		if (len >= sizeof(value)) {
-			SV_DropClient(sv_client, "oversize delta value");
-			return;
-		}
+        len = MSG_ReadString(value, sizeof(value));
+        if (len >= sizeof(value)) {
+            SV_DropClient(sv_client, "oversize userinfo value");
+            return;
+        }
 
 		if (userinfoUpdateCount < MAX_PACKET_USERINFOS) {
 			if (!Info_SetValueForKey(sv_client->userinfo, key, value)) {

@@ -561,11 +561,8 @@ static void SCR_Color_g(genctx_t *ctx)
 {
 	int color;
 
-	for (color = 0; color < 10; color++) {
-		if (!Prompt_AddMatch(ctx, colorNames[color])) {
-			break;
-		}
-	}
+    for (color = 0; color < 10; color++)
+        Prompt_AddMatch(ctx, colorNames[color]);
 }
 
 static void SCR_Draw_c(genctx_t *ctx, int argnum)
@@ -671,12 +668,10 @@ static void SCR_Draw_g(genctx_t *ctx)
 
 	Prompt_AddMatch(ctx, "all");
 
-	FOR_EACH_DRAWOBJ(obj) {
-		s = obj->macro ? obj->macro->name : obj->cvar->name;
-		if (!Prompt_AddMatch(ctx, s)) {
-			break;
-		}
-	}
+    FOR_EACH_DRAWOBJ(obj) {
+        s = obj->macro ? obj->macro->name : obj->cvar->name;
+        Prompt_AddMatch(ctx, s);
+    }
 }
 
 static void SCR_UnDraw_c(genctx_t *ctx, int argnum)
@@ -3174,8 +3169,8 @@ static void SCR_DrawStats(void)
 
 static void SCR_DrawLayout(void)
 {
-	if (scr_draw2d->integer == 3 && !Key_IsDown(K_F1))
-		return;     // turn off for GTV
+    if (scr_draw2d->integer == 3 && !Key_IsDown(K_F1))
+        return;
 
 	if (cls.demo.playback && Key_IsDown(K_F1))
 		goto draw;

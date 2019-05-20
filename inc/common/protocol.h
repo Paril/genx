@@ -29,7 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_DEFAULT    34
 #define PROTOCOL_VERSION_R1Q2       35
 #define PROTOCOL_VERSION_Q2PRO      38 // Generations
-#define PROTOCOL_VERSION_MVD        39 // not used for UDP connections
 
 #define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
 #define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
@@ -49,9 +48,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS   1021    // r1358
 #define PROTOCOL_VERSION_Q2PRO_CURRENT          1021    // r1358
 
-#define PROTOCOL_VERSION_MVD_MINIMUM            2009    // r168
-#define PROTOCOL_VERSION_MVD_CURRENT            2010    // r177
-
 #define R1Q2_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
      (x) <= PROTOCOL_VERSION_R1Q2_CURRENT)
@@ -59,10 +55,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q2PRO_SUPPORTED(x) \
     ((x) >= PROTOCOL_VERSION_Q2PRO_MINIMUM && \
      (x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
-
-#define MVD_SUPPORTED(x) \
-    ((x) >= PROTOCOL_VERSION_MVD_MINIMUM && \
-     (x) <= PROTOCOL_VERSION_MVD_CURRENT)
 
 //=========================================
 
@@ -97,8 +89,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define CS_BITMAP_BYTES         (MAX_CONFIGSTRINGS / 8) // 260
 #define CS_BITMAP_LONGS         (CS_BITMAP_BYTES / 4)
 
-#define MVD_MAGIC               MakeRawLong('M','V','D','2')
-
 //
 // server to client
 //
@@ -124,7 +114,6 @@ typedef enum {
     svc_configstring,           // [short] [string]
     svc_spawnbaseline,
     svc_centerprint,            // [string] to put in center of the screen
-    svc_download,               // [short] size [size bytes]
     svc_playerinfo,             // variable
     svc_packetentities,         // [...]
     svc_deltapacketentities,    // [...]
@@ -132,7 +121,6 @@ typedef enum {
 
     // r1q2 specific operations
     svc_zpacket,
-    svc_zdownload,
     svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
     svc_setting,
 
@@ -142,41 +130,6 @@ typedef enum {
 
     svc_num_types
 } svc_ops_t;
-
-// MVD protocol specific operations
-typedef enum {
-    mvd_bad,
-    mvd_nop,
-    mvd_disconnect,     // reserved
-    mvd_reconnect,      // reserved
-    mvd_serverdata,
-    mvd_configstring,
-    mvd_frame,
-    mvd_frame_nodelta,  // reserved
-    mvd_unicast,
-    mvd_unicast_r,
-
-    // must match multicast_t order!!!
-    mvd_multicast_all,
-    mvd_multicast_phs,
-    mvd_multicast_pvs,
-    mvd_multicast_all_r,
-    mvd_multicast_phs_r,
-    mvd_multicast_pvs_r,
-
-    mvd_sound,
-    mvd_print,
-    mvd_stufftext,      // reserved
-
-    mvd_num_types
-} mvd_ops_t;
-
-// MVD stream flags (only 3 bits can be used)
-typedef enum {
-    MVF_NOMSGS      = 1,
-    MVF_SINGLEPOV   = 2,
-    MVF_RESERVED2   = 4
-} mvd_flags_t;
 
 //==============================================
 
@@ -245,32 +198,6 @@ typedef enum {
 	PS_GUN_ANGLE			= 1<<2,
 	PS_GUN_OFFSET			= 1<<3
 } ps_gun_bits;
-
-//==============================================
-
-// packetized player_state_t communication (MVD specific)
-
-#define PPS_M_TYPE          (1<<0)
-#define PPS_M_ORIGIN        (1<<1)
-#define PPS_M_ORIGIN2       (1<<2)
-
-#define PPS_VIEWOFFSET      (1<<3)
-#define PPS_VIEWANGLES      (1<<4)
-#define PPS_VIEWANGLE2      (1<<5)
-#define PPS_KICKANGLES      (1<<6)
-#define PPS_BLEND           (1<<7)
-#define PPS_FOV             (1<<8)
-#define PPS_WEAPONINDEX     (1<<9)
-#define PPS_WEAPONFRAME     (1<<10)
-#define PPS_GUNOFFSET       (1<<11)
-#define PPS_GUNANGLES       (1<<12)
-#define PPS_RDFLAGS         (1<<13)
-#define PPS_STATS           (1<<14)
-#define PPS_REMOVE          (1<<15)
-
-// this is just a small hack to store inuse flag
-// in a field left otherwise unused by MVD code
-#define PPS_INUSE(ps)       (ps)->pmove.pm_time
 
 //==============================================
 

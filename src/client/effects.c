@@ -148,8 +148,6 @@ DLIGHT MANAGEMENT
 ==============================================================
 */
 
-#if USE_DLIGHTS
-
 static cdlight_t       cl_dlights[MAX_DLIGHTS];
 
 static void CL_ClearDlights(void)
@@ -216,11 +214,6 @@ void CL_RunDLights(void)
             dl->radius = 0;
             return;
         }
-#if 0
-        dl->radius -= cls.frametime * dl->decay;
-        if (dl->radius < 0)
-            dl->radius = 0;
-#endif
     }
 }
 
@@ -243,8 +236,6 @@ void CL_AddDLights(void)
                    dl->color[0], dl->color[1], dl->color[2]);
     }
 }
-
-#endif
 
 // ==============================================================
 
@@ -382,10 +373,8 @@ CL_MuzzleFlash
 */
 void CL_MuzzleFlash(void)
 {
-#if USE_DLIGHTS
     vec3_t      fv, rv;
     cdlight_t   *dl;
-#endif
     centity_t   *pl;
     float       volume;
 
@@ -396,7 +385,6 @@ void CL_MuzzleFlash(void)
 
     pl = &cl_entities[mz.entity];
 
-#if USE_DLIGHTS
     dl = CL_AllocDlight(mz.entity);
     VectorCopy(pl->current.origin,  dl->origin);
     AngleVectors(pl->current.angles, fv, rv, NULL);
@@ -406,16 +394,10 @@ void CL_MuzzleFlash(void)
         dl->radius = 100 + (Q_rand() & 31);
     else
         dl->radius = 200 + (Q_rand() & 31);
-    //dl->minlight = 32;
     dl->die = cl.time + 50; // + 0.1;
 #define DL_COLOR(r, g, b)   VectorSet(dl->color, r, g, b)
 #define DL_RADIUS(r)        (dl->radius = r)
 #define DL_DIE(t)           (dl->die = cl.time + t)
-#else
-#define DL_COLOR(r, g, b)
-#define DL_RADIUS(r)
-#define DL_DIE(t)
-#endif
 
     if (mz.silenced)
         volume = 0.2f;
@@ -685,9 +667,7 @@ void CL_MuzzleFlash2(void)
     centity_t   *ent;
     vec3_t      origin;
     const vec_t *ofs;
-#if USE_DLIGHTS
     cdlight_t   *dl;
-#endif
     vec3_t      forward, right;
     char        soundname[MAX_QPATH];
 
@@ -699,13 +679,10 @@ void CL_MuzzleFlash2(void)
     origin[1] = ent->current.origin[1] + forward[1] * ofs[0] + right[1] * ofs[1];
     origin[2] = ent->current.origin[2] + forward[2] * ofs[0] + right[2] * ofs[1] + ofs[2];
 
-#if USE_DLIGHTS
     dl = CL_AllocDlight(mz.entity);
     VectorCopy(origin,  dl->origin);
     dl->radius = 200 + (Q_rand() & 31);
-    //dl->minlight = 32;
     dl->die = cl.time + 100;  // + 0.1;
-#endif
 
     switch (mz.weapon) {
     case MZ2_INFANTRY_MACHINEGUN_1:
@@ -1052,7 +1029,6 @@ PARTICLE MANAGEMENT
 static cparticle_t  *active_particles, *free_particles;
 
 static cparticle_t  particles[MAX_PARTICLES];
-static const int    cl_numparticles = MAX_PARTICLES;
 
 static void CL_ClearParticles(void)
 {
@@ -1061,9 +1037,9 @@ static void CL_ClearParticles(void)
     free_particles = &particles[0];
     active_particles = NULL;
 
-    for (i = 0; i < cl_numparticles; i++)
+    for (i = 0; i < MAX_PARTICLES - 1; i++)
         particles[i].next = &particles[i + 1];
-    particles[cl_numparticles - 1].next = NULL;
+    particles[i].next = NULL;
 }
 
 cparticle_t *CL_AllocParticle(void)
@@ -1971,7 +1947,7 @@ static void CL_FlyParticles(vec3_t origin, int count)
         p->color = 0;
 
         p->alpha = 1;
-        p->alphavel = -100;
+        p->alphavel = INSTANT_PARTICLE;
     }
 }
 
@@ -2051,7 +2027,7 @@ void CL_BfgParticles(entity_t *ent)
         p->color = floor(0xd0 + dist * 7);
 
         p->alpha = 1.0f - dist;
-        p->alphavel = -100;
+        p->alphavel = INSTANT_PARTICLE;
     }
 }
 
@@ -2278,9 +2254,7 @@ CL_ClearEffects
 void CL_ClearEffects(void)
 {
     CL_ClearParticles();
-#if USE_DLIGHTS
     CL_ClearDlights();
-#endif
 }
 
 void CL_InitEffects(void)

@@ -20,22 +20,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/field.h"
 #include "common/prompt.h"
-#if USE_WINSVC
-#include <winsvc.h>
-#endif
+#include <VersionHelpers.h>
 
 HINSTANCE                       hGlobalInstance;
 
-#if USE_DBGHELP
+#if !_DEBUG
 HANDLE                          mainProcessThread;
 LPTOP_LEVEL_EXCEPTION_FILTER    prevExceptionFilter;
 #endif
 
 static char                     currentDirectory[MAX_OSPATH];
-
-#if USE_WINSVC
-static SERVICE_STATUS_HANDLE    statusHandle;
-#endif
 
 typedef enum {
     SE_NOT,
@@ -74,39 +68,135 @@ static cvar_t           *sys_viewlog;
 
 static commandPrompt_t  sys_con;
 static int              sys_hidden;
-static CONSOLE_SCREEN_BUFFER_INFO   sbinfo;
 static bool             gotConsole;
 
 static void write_console_data(void *data, size_t len)
 {
-    DWORD dummy;
-
-    WriteFile(houtput, data, len, &dummy, NULL);
+    DWORD res;
+    WriteFile(houtput, data, len, &res, NULL);
 }
 
 static void hide_console_input(void)
 {
-    int i;
+    CONSOLE_SCREEN_BUFFER_INFO info;
 
-    if (!sys_hidden) {
-        for (i = 0; i <= sys_con.inputLine.cursorPos; i++) {
-            write_console_data("\b \b", 3);
-        }
+    if (!sys_hidden && GetConsoleScreenBufferInfo(houtput, &info)) {
+        size_t len = strlen(sys_con.inputLine.text);
+        COORD pos = { 0, info.dwCursorPosition.Y };
+        DWORD res = min(len + 1, info.dwSize.X);
+        FillConsoleOutputCharacter(houtput, ' ', res, pos, &res);
+        SetConsoleCursorPosition(houtput, pos);
     }
     sys_hidden++;
 }
 
 static void show_console_input(void)
 {
-    if (!sys_hidden) {
-        return;
-    }
+    CONSOLE_SCREEN_BUFFER_INFO info;
 
-    sys_hidden--;
-    if (!sys_hidden) {
-        write_console_data("]", 1);
-        write_console_data(sys_con.inputLine.text, sys_con.inputLine.cursorPos);
+    if (sys_hidden && !--sys_hidden && GetConsoleScreenBufferInfo(houtput, &info)) {
+        inputField_t *f = &sys_con.inputLine;
+        size_t pos = f->cursorPos;
+        char *text = f->text;
+
+        // update line width after resize
+        f->visibleChars = info.dwSize.X - 1;
+
+        // scroll horizontally
+        if (pos >= f->visibleChars) {
+            pos = f->visibleChars - 1;
+            text += f->cursorPos - pos;
+        }
+
+        size_t len = strlen(text);
+        DWORD res = min(len, f->visibleChars) + 1;
+        WriteConsoleOutputCharacter(houtput, va("]%s", text), res, (COORD){ 0, info.dwCursorPosition.Y }, &res);
+        SetConsoleCursorPosition(houtput, (COORD){ pos + 1, info.dwCursorPosition.Y });
     }
+}
+
+static void console_delete(inputField_t *f)
+{
+    if (f->text[f->cursorPos]) {
+        hide_console_input();
+        memmove(f->text + f->cursorPos, f->text + f->cursorPos + 1, sizeof(f->text) - f->cursorPos - 1);
+        show_console_input();
+    }
+}
+
+static void console_move_cursor(inputField_t *f, size_t pos)
+{
+    size_t oldpos = f->cursorPos;
+    f->cursorPos = pos = min(pos, f->maxChars - 1);
+
+    if (oldpos < f->visibleChars && pos < f->visibleChars) {
+        CONSOLE_SCREEN_BUFFER_INFO info;
+        if (GetConsoleScreenBufferInfo(houtput, &info)) {
+            SetConsoleCursorPosition(houtput, (COORD){ pos + 1, info.dwCursorPosition.Y });
+        }
+    } else {
+        hide_console_input();
+        show_console_input();
+    }
+}
+
+static void console_move_right(inputField_t *f)
+{
+    if (f->text[f->cursorPos] && f->cursorPos < f->maxChars - 1) {
+        console_move_cursor(f, f->cursorPos + 1);
+    }
+}
+
+static void console_move_left(inputField_t *f)
+{
+    if (f->cursorPos > 0) {
+        console_move_cursor(f, f->cursorPos - 1);
+    }
+}
+
+static void console_replace_char(inputField_t *f, int ch)
+{
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (GetConsoleScreenBufferInfo(houtput, &info)) {
+        DWORD res;
+        FillConsoleOutputCharacter(houtput, ch, 1, info.dwCursorPosition, &res);
+    }
+}
+
+static void scroll_console_window(int key)
+{
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if (GetConsoleScreenBufferInfo(houtput, &info)) {
+        int lo = -info.srWindow.Top;
+        int hi = max(info.dwCursorPosition.Y - info.srWindow.Bottom, 0);
+        int page = info.srWindow.Bottom - info.srWindow.Top + 1;
+        int rows = 0;
+        switch (key) {
+            case VK_HOME: rows = lo; break;
+            case VK_END:  rows = hi; break;
+            case VK_PRIOR: rows = max(-page, lo); break;
+            case VK_NEXT:  rows = min( page, hi); break;
+        }
+        if (rows)
+            SetConsoleWindowInfo(houtput, FALSE, &(SMALL_RECT){ .Top = rows, .Bottom = rows });
+    }
+}
+
+static void clear_console_window(void)
+{
+    CONSOLE_SCREEN_BUFFER_INFO info;
+
+    if (sys_hidden)
+        scroll_console_window(VK_END);
+
+    hide_console_input();
+    if (GetConsoleScreenBufferInfo(houtput, &info)) {
+        COORD pos = { 0, info.srWindow.Top };
+        DWORD res = (info.srWindow.Bottom - info.srWindow.Top) * info.dwSize.X;
+        FillConsoleOutputCharacter(houtput, ' ', res, pos, &res);
+        SetConsoleCursorPosition(houtput, pos);
+    }
+    show_console_input();
 }
 
 /*
@@ -120,7 +210,7 @@ void Sys_RunConsole(void)
     int     ch;
     DWORD   numread, numevents;
     int     i;
-    inputField_t    *f;
+    inputField_t    *f = &sys_con.inputLine;
     char    *s;
 
     if (hinput == INVALID_HANDLE_VALUE) {
@@ -131,7 +221,6 @@ void Sys_RunConsole(void)
         return;
     }
 
-    f = &sys_con.inputLine;
     while (1) {
         if (!GetNumberOfConsoleInputEvents(hinput, &numevents)) {
             Com_EPrintf("Error %lu getting number of console events.\n", GetLastError());
@@ -139,7 +228,7 @@ void Sys_RunConsole(void)
             return;
         }
 
-        if (numevents <= 0)
+        if (numevents < 1)
             break;
         if (numevents > MAX_CONSOLE_INPUT_EVENTS) {
             numevents = MAX_CONSOLE_INPUT_EVENTS;
@@ -154,25 +243,21 @@ void Sys_RunConsole(void)
         for (i = 0; i < numread; i++) {
             if (recs[i].EventType == WINDOW_BUFFER_SIZE_EVENT) {
                 // determine terminal width
-                size_t width = recs[i].Event.WindowBufferSizeEvent.dwSize.X;
+                COORD size = recs[i].Event.WindowBufferSizeEvent.dwSize;
+                WORD width = size.X;
 
-                if (!width) {
+                if (width < 2) {
                     Com_EPrintf("Invalid console buffer width.\n");
-                    gotConsole = false;
-                    return;
+                    continue;
                 }
-
-                sys_con.widthInChars = width;
 
                 // figure out input line width
-                width--;
-                if (width > MAX_FIELD_TEXT - 1) {
-                    width = MAX_FIELD_TEXT - 1;
+                if (width != sys_con.widthInChars) {
+                    sys_con.widthInChars = width;
+                    sys_con.inputLine.visibleChars = 0; // force refresh
                 }
 
-                hide_console_input();
-                IF_Init(&sys_con.inputLine, width, width);
-                show_console_input();
+                Com_DPrintf("System console resized (%d cols, %d rows).\n", size.X, size.Y);
                 continue;
             }
             if (recs[i].EventType != KEY_EVENT) {
@@ -183,17 +268,148 @@ void Sys_RunConsole(void)
                 continue;
             }
 
-            switch (recs[i].Event.KeyEvent.wVirtualKeyCode) {
+            WORD key = recs[i].Event.KeyEvent.wVirtualKeyCode;
+            DWORD mod = recs[i].Event.KeyEvent.dwControlKeyState;
+            size_t pos;
+
+            if (mod & (LEFT_CTRL_PRESSED | RIGHT_CTRL_PRESSED)) {
+                switch (key) {
+                case 'A':
+                    console_move_cursor(f, 0);
+                    break;
+                case 'E':
+                    console_move_cursor(f, strlen(f->text));
+                    break;
+
+                case 'B':
+                    console_move_left(f);
+                    break;
+                case 'F':
+                    console_move_right(f);
+                    break;
+
+                case 'C':
+                    GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+                    break;
+
+                case 'D':
+                    console_delete(f);
+                    break;
+
+                case 'W':
+                    pos = f->cursorPos;
+                    while (pos > 0 && f->text[pos - 1] <= ' ') {
+                        pos--;
+                    }
+                    while (pos > 0 && f->text[pos - 1] > ' ') {
+                        pos--;
+                    }
+                    if (pos < f->cursorPos) {
+                        hide_console_input();
+                        memmove(f->text + pos, f->text + f->cursorPos, sizeof(f->text) - f->cursorPos);
+                        f->cursorPos = pos;
+                        show_console_input();
+                    }
+                    break;
+
+                case 'U':
+                    if (f->cursorPos > 0) {
+                        hide_console_input();
+                        memmove(f->text, f->text + f->cursorPos, sizeof(f->text) - f->cursorPos);
+                        f->cursorPos = 0;
+                        show_console_input();
+                    }
+                    break;
+
+                case 'K':
+                    if (f->text[f->cursorPos]) {
+                        hide_console_input();
+                        f->text[f->cursorPos] = 0;
+                        show_console_input();
+                    }
+                    break;
+
+                case 'L':
+                    clear_console_window();
+                    break;
+
+                case 'N':
+                    hide_console_input();
+                    Prompt_HistoryDown(&sys_con);
+                    show_console_input();
+                    break;
+
+                case 'P':
+                    hide_console_input();
+                    Prompt_HistoryUp(&sys_con);
+                    show_console_input();
+                    break;
+
+                case 'R':
+                    hide_console_input();
+                    Prompt_CompleteHistory(&sys_con, false);
+                    show_console_input();
+                    break;
+
+                case 'S':
+                    hide_console_input();
+                    Prompt_CompleteHistory(&sys_con, true);
+                    show_console_input();
+                    break;
+
+                case VK_HOME:
+                case VK_END:
+                    scroll_console_window(key);
+                    break;
+                }
+                continue;
+            }
+
+            if (mod & (LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED)) {
+                switch (key) {
+                case 'B':
+                    pos = f->cursorPos;
+                    while (pos > 0 && f->text[pos - 1] <= ' ') {
+                        pos--;
+                    }
+                    while (pos > 0 && f->text[pos - 1] > ' ') {
+                        pos--;
+                    }
+                    console_move_cursor(f, pos);
+                    break;
+
+                case 'F':
+                    pos = f->cursorPos;
+                    while (f->text[pos] && f->text[pos] <= ' ') {
+                        pos++;
+                    }
+                    while (f->text[pos] > ' ') {
+                        pos++;
+                    }
+                    console_move_cursor(f, pos);
+                    break;
+                }
+                continue;
+            }
+
+            switch (key) {
             case VK_UP:
                 hide_console_input();
                 Prompt_HistoryUp(&sys_con);
                 show_console_input();
                 break;
+
             case VK_DOWN:
                 hide_console_input();
                 Prompt_HistoryDown(&sys_con);
                 show_console_input();
                 break;
+
+            case VK_PRIOR:
+            case VK_NEXT:
+                scroll_console_window(key);
+                break;
+
             case VK_RETURN:
                 hide_console_input();
                 s = Prompt_Action(&sys_con);
@@ -205,31 +421,72 @@ void Sys_RunConsole(void)
                     Cbuf_AddText(&cmd_buffer, s);
                     Cbuf_AddText(&cmd_buffer, "\n");
                 } else {
-                    write_console_data("\n", 1);
+                    write_console_data("]\n", 2);
                 }
                 show_console_input();
                 break;
+
             case VK_BACK:
-                if (f->cursorPos) {
-                    f->text[--f->cursorPos] = 0;
-                    write_console_data("\b \b", 3);
+                if (f->cursorPos > 0) {
+                    if (f->text[f->cursorPos] == 0 && f->cursorPos < f->visibleChars) {
+                        f->text[--f->cursorPos] = 0;
+                        write_console_data("\b \b", 3);
+                    } else {
+                        hide_console_input();
+                        memmove(f->text + f->cursorPos - 1, f->text + f->cursorPos, sizeof(f->text) - f->cursorPos);
+                        f->cursorPos--;
+                        show_console_input();
+                    }
                 }
                 break;
+
+            case VK_DELETE:
+                console_delete(f);
+                break;
+
+            case VK_END:
+                console_move_cursor(f, strlen(f->text));
+                break;
+            case VK_HOME:
+                console_move_cursor(f, 0);
+                break;
+
+            case VK_RIGHT:
+                console_move_right(f);
+                break;
+            case VK_LEFT:
+                console_move_left(f);
+                break;
+
             case VK_TAB:
                 hide_console_input();
                 Prompt_CompleteCommand(&sys_con, false);
-                f->cursorPos = strlen(f->text);
                 show_console_input();
                 break;
+
             default:
                 ch = recs[i].Event.KeyEvent.uChar.AsciiChar;
                 if (ch < 32) {
                     break;
                 }
-                if (f->cursorPos < f->maxChars - 1) {
-                    write_console_data(&ch, 1);
-                    f->text[f->cursorPos] = ch;
-                    f->text[++f->cursorPos] = 0;
+                if (f->cursorPos == f->maxChars - 1) {
+                    // buffer limit reached, replace the character under
+                    // cursor. replace without moving cursor to prevent
+                    // newline when cursor is at the rightmost column.
+                    console_replace_char(f, ch);
+                    f->text[f->cursorPos + 0] = ch;
+                    f->text[f->cursorPos + 1] = 0;
+                } else if (f->text[f->cursorPos] == 0 && f->cursorPos + 1 < f->visibleChars) {
+                    write_console_data(va("%c", ch), 1);
+                    f->text[f->cursorPos + 0] = ch;
+                    f->text[f->cursorPos + 1] = 0;
+                    f->cursorPos++;
+                } else {
+                    hide_console_input();
+                    memmove(f->text + f->cursorPos + 1, f->text + f->cursorPos, sizeof(f->text) - f->cursorPos - 1);
+                    f->text[f->cursorPos++] = ch;
+                    f->text[f->maxChars] = 0;
+                    show_console_input();
                 }
                 break;
             }
@@ -253,6 +510,7 @@ static const WORD textColors[8] = {
 
 void Sys_SetConsoleColor(color_index_t color)
 {
+    CONSOLE_SCREEN_BUFFER_INFO info;
     WORD    attr, w;
 
     if (houtput == INVALID_HANDLE_VALUE) {
@@ -263,11 +521,15 @@ void Sys_SetConsoleColor(color_index_t color)
         return;
     }
 
-    attr = sbinfo.wAttributes & ~FOREGROUND_WHITE;
+    if (!GetConsoleScreenBufferInfo(houtput, &info)) {
+        return;
+    }
+
+    attr = info.wAttributes & ~FOREGROUND_WHITE;
 
     switch (color) {
     case COLOR_NONE:
-        w = sbinfo.wAttributes;
+        w = attr | FOREGROUND_WHITE;
         break;
     case COLOR_ALT:
         w = attr | FOREGROUND_GREEN;
@@ -315,12 +577,26 @@ void Sys_ConsoleOutput(const char *text)
         return;
     }
 
+    if (!*text) {
+        return;
+    }
+
     if (!gotConsole) {
         write_console_output(text);
     } else {
-        hide_console_input();
+        static bool hack = false;
+
+        if (!hack) {
+            hide_console_input();
+            hack = true;
+        }
+
         write_console_output(text);
-        show_console_input();
+
+        if (text[strlen(text) - 1] == '\n') {
+            show_console_input();
+            hack = false;
+        }
     }
 }
 
@@ -342,198 +618,58 @@ static BOOL WINAPI Sys_ConsoleCtrlHandler(DWORD dwCtrlType)
 
 static void Sys_ConsoleInit(void)
 {
+    CONSOLE_SCREEN_BUFFER_INFO info;
     DWORD mode;
-    size_t width;
+    WORD width;
 
 #if USE_CLIENT
     if (!AllocConsole()) {
         Com_EPrintf("Couldn't create system console.\n");
         return;
     }
-#elif USE_WINSVC
-    if (statusHandle) {
-        return;
-    }
 #endif
 
     hinput = GetStdHandle(STD_INPUT_HANDLE);
     houtput = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (!GetConsoleScreenBufferInfo(houtput, &sbinfo)) {
+    if (!GetConsoleScreenBufferInfo(houtput, &info)) {
         Com_EPrintf("Couldn't get console buffer info.\n");
         return;
     }
 
     // determine terminal width
-    width = sbinfo.dwSize.X;
-    if (!width) {
+    width = info.dwSize.X;
+    if (width < 2) {
         Com_EPrintf("Invalid console buffer width.\n");
         return;
     }
+
+    if (!GetConsoleMode(hinput, &mode)) {
+        Com_EPrintf("Couldn't get console input mode.\n");
+        return;
+    }
+
+    mode &= ~(ENABLE_PROCESSED_INPUT | ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    mode |= ENABLE_WINDOW_INPUT;
+    if (!SetConsoleMode(hinput, mode)) {
+        Com_EPrintf("Couldn't set console input mode.\n");
+        return;
+    }
+
+    SetConsoleTitle(PRODUCT " console");
+    SetConsoleCtrlHandler(Sys_ConsoleCtrlHandler, TRUE);
+
     sys_con.widthInChars = width;
     sys_con.printf = Sys_Printf;
     gotConsole = true;
 
-    SetConsoleTitle(PRODUCT " console");
-    SetConsoleCtrlHandler(Sys_ConsoleCtrlHandler, TRUE);
-    GetConsoleMode(hinput, &mode);
-    mode |= ENABLE_WINDOW_INPUT;
-    SetConsoleMode(hinput, mode);
-
     // figure out input line width
-    width--;
-    if (width > MAX_FIELD_TEXT - 1) {
-        width = MAX_FIELD_TEXT - 1;
-    }
-    IF_Init(&sys_con.inputLine, width, width);
+    IF_Init(&sys_con.inputLine, width - 1, MAX_FIELD_TEXT - 1);
 
     Com_DPrintf("System console initialized (%d cols, %d rows).\n",
-                sbinfo.dwSize.X, sbinfo.dwSize.Y);
+                info.dwSize.X, info.dwSize.Y);
 }
 
 #endif // USE_SYSCON
-
-/*
-===============================================================================
-
-SERVICE CONTROL
-
-===============================================================================
-*/
-
-#if USE_WINSVC
-
-static void Sys_InstallService_f(void)
-{
-    char servicePath[256];
-    char serviceName[1024];
-    SC_HANDLE scm, service;
-    DWORD error, length;
-    char *commandline;
-
-    if (Cmd_Argc() < 3) {
-        Com_Printf("Usage: %s <servicename> <+command> [...]\n"
-                   "Example: %s test +set net_port 27910 +map q2dm1\n",
-                   Cmd_Argv(0), Cmd_Argv(0));
-        return;
-    }
-
-    scm = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ALL_ACCESS);
-    if (!scm) {
-        error = GetLastError();
-        if (error == ERROR_ACCESS_DENIED) {
-            Com_Printf("Insufficient privileges for opening Service Control Manager.\n");
-        } else {
-            Com_EPrintf("%#lx opening Service Control Manager.\n", error);
-        }
-        return;
-    }
-
-    Q_concat(serviceName, sizeof(serviceName), "Q2PRO - ", Cmd_Argv(1), NULL);
-
-    length = GetModuleFileName(NULL, servicePath, MAX_PATH);
-    if (!length) {
-        error = GetLastError();
-        Com_EPrintf("%#lx getting module file name.\n", error);
-        goto fail;
-    }
-    commandline = Cmd_RawArgsFrom(2);
-    if (length + strlen(commandline) + 10 > sizeof(servicePath) - 1) {
-        Com_Printf("Oversize service command line.\n");
-        goto fail;
-    }
-    strcpy(servicePath + length, " -service ");
-    strcpy(servicePath + length + 10, commandline);
-
-    service = CreateService(
-                  scm,
-                  serviceName,
-                  serviceName,
-                  SERVICE_START,
-                  SERVICE_WIN32_OWN_PROCESS,
-                  SERVICE_AUTO_START,
-                  SERVICE_ERROR_IGNORE,
-                  servicePath,
-                  NULL,
-                  NULL,
-                  NULL,
-                  NULL,
-                  NULL);
-
-    if (!service) {
-        error = GetLastError();
-        if (error == ERROR_SERVICE_EXISTS || error == ERROR_DUPLICATE_SERVICE_NAME) {
-            Com_Printf("Service already exists.\n");
-        } else {
-            Com_EPrintf("%#lx creating service.\n", error);
-        }
-        goto fail;
-    }
-
-    Com_Printf("Service created successfully.\n");
-
-    CloseServiceHandle(service);
-
-fail:
-    CloseServiceHandle(scm);
-}
-
-static void Sys_DeleteService_f(void)
-{
-    char serviceName[256];
-    SC_HANDLE scm, service;
-    DWORD error;
-
-    if (Cmd_Argc() < 2) {
-        Com_Printf("Usage: %s <servicename>\n", Cmd_Argv(0));
-        return;
-    }
-
-    scm = OpenSCManager(NULL, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ALL_ACCESS);
-    if (!scm) {
-        error = GetLastError();
-        if (error == ERROR_ACCESS_DENIED) {
-            Com_Printf("Insufficient privileges for opening Service Control Manager.\n");
-        } else {
-            Com_EPrintf("%#lx opening Service Control Manager.\n", error);
-        }
-        return;
-    }
-
-    Q_concat(serviceName, sizeof(serviceName), "Q2PRO - ", Cmd_Argv(1), NULL);
-
-    service = OpenService(
-                  scm,
-                  serviceName,
-                  DELETE);
-
-    if (!service) {
-        error = GetLastError();
-        if (error == ERROR_SERVICE_DOES_NOT_EXIST) {
-            Com_Printf("Service doesn't exist.\n");
-        } else {
-            Com_EPrintf("%#lx opening service.\n", error);
-        }
-        goto fail;
-    }
-
-    if (!DeleteService(service)) {
-        error = GetLastError();
-        if (error == ERROR_SERVICE_MARKED_FOR_DELETE) {
-            Com_Printf("Service has already been marked for deletion.\n");
-        } else {
-            Com_EPrintf("%#lx deleting service.\n", error);
-        }
-    } else {
-        Com_Printf("Service deleted successfully.\n");
-    }
-
-    CloseServiceHandle(service);
-
-fail:
-    CloseServiceHandle(scm);
-}
-
-#endif // USE_WINSVC
 
 /*
 ===============================================================================
@@ -708,17 +844,13 @@ void Sys_Error(const char *error, ...)
     Sys_SetConsoleColor(COLOR_NONE);
 #endif
 
-#if USE_WINSVC
-    if (!statusHandle)
-#endif
-    {
 #if USE_SYSCON
-        if (gotConsole) {
-            Sleep(INFINITE);
-        }
-#endif
-        MessageBoxA(NULL, text, PRODUCT " Fatal Error", MB_ICONERROR | MB_OK);
+    if (gotConsole) {
+        hide_console_input();
+        Sleep(INFINITE);
     }
+#endif
+    MessageBox(NULL, text, PRODUCT " Fatal Error", MB_ICONERROR | MB_OK);
 
     exit(1);
 }
@@ -734,16 +866,9 @@ void Sys_Quit(void)
 {
     shutdown_work();
 
-#if USE_CLIENT
-#if USE_SYSCON
+#if USE_CLIENT && USE_SYSCON
     if (dedicated && dedicated->integer) {
         FreeConsole();
-    }
-#endif
-#elif USE_WINSVC
-    if (statusHandle && !shouldExit) {
-        shouldExit = SE_YES;
-        Com_AbortFrame();
     }
 #endif
 
@@ -778,23 +903,13 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    OSVERSIONINFO vinfo;
-#ifndef _WIN64
-    HMODULE module;
-    BOOL (WINAPI * pSetProcessDEPPolicy)(DWORD);
+#if !_DEBUG
+    cvar_t *var q_unused;
 #endif
-    cvar_t *var;
 
     // check windows version
-    vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-    if (!GetVersionEx(&vinfo)) {
-        Sys_Error("Couldn't get OS info");
-    }
-    if (vinfo.dwPlatformId != VER_PLATFORM_WIN32_NT) {
-        Sys_Error(PRODUCT " requires Windows NT");
-    }
-    if (vinfo.dwMajorVersion < 5) {
-        Sys_Error(PRODUCT " requires Windows 2000 or greater");
+    if (!IsWindows7SP1OrGreater()) {
+        Sys_Error(PRODUCT " requires Windows 7 SP1 or greater");
     }
 
     if (!QueryPerformanceFrequency(&timer_freq))
@@ -806,15 +921,10 @@ void Sys_Init(void)
     sys_libdir = Cvar_Get("libdir", currentDirectory, CVAR_NOSET);
 
     // homedir <path>
-    // specifies per-user writable directory for demos, screenshots, etc
+    // specifies per-user writable directory for screenshots, etc
     sys_homedir = Cvar_Get("homedir", "", CVAR_NOSET);
 
     sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
-
-#if USE_WINSVC
-    Cmd_AddCommand("installservice", Sys_InstallService_f);
-    Cmd_AddCommand("deleteservice", Sys_DeleteService_f);
-#endif
 
 #if USE_SYSCON
     houtput = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -826,7 +936,7 @@ void Sys_Init(void)
         Sys_ConsoleInit();
 #endif // USE_SYSCON
 
-#if USE_DBGHELP
+#if !_DEBUG
     var = Cvar_Get("sys_disablecrashdump", "0", CVAR_NOSET);
 
     // install our exception filter
@@ -834,26 +944,6 @@ void Sys_Init(void)
         mainProcessThread = GetCurrentThread();
         prevExceptionFilter = SetUnhandledExceptionFilter(
                                   Sys_ExceptionFilter);
-    }
-#endif
-
-#ifndef _WIN64
-    module = GetModuleHandle("kernel32.dll");
-    if (module) {
-        pSetProcessDEPPolicy = (PVOID)GetProcAddress(module,
-                                                     "SetProcessDEPPolicy");
-        if (pSetProcessDEPPolicy) {
-            var = Cvar_Get("sys_disabledep", "0", CVAR_NOSET);
-
-            // opt-in or opt-out for DEP
-            if (!var->integer) {
-                pSetProcessDEPPolicy(
-                    PROCESS_DEP_ENABLE |
-                    PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION);
-            } else if (var->integer == 2) {
-                pSetProcessDEPPolicy(0);
-            }
-        }
     }
 #endif
 }
@@ -880,7 +970,7 @@ void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
 
     *handle = NULL;
 
-    module = LoadLibraryA(path);
+    module = LoadLibrary(path);
     if (!module) {
         Com_SetLastError(va("%s: LoadLibrary failed with error %lu",
                             path, GetLastError()));
@@ -977,7 +1067,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
         FS_ReplaceSeparators(fullpath, '\\');
     }
 
-    handle = FindFirstFileA(fullpath, &data);
+    handle = FindFirstFile(fullpath, &data);
     if (handle == INVALID_HANDLE_VALUE) {
         return;
     }
@@ -1063,7 +1153,7 @@ void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
         list->files = FS_ReallocList(list->files, list->count + 1);
         list->files[list->count++] = info;
     } while (list->count < MAX_LISTED_FILES &&
-             FindNextFileA(handle, &data) != FALSE);
+             FindNextFile(handle, &data) != FALSE);
 
     FindClose(handle);
 }
@@ -1080,7 +1170,7 @@ static BOOL fix_current_directory(void)
 {
     char *p;
 
-    if (!GetModuleFileNameA(NULL, currentDirectory, sizeof(currentDirectory) - 1)) {
+    if (!GetModuleFileName(NULL, currentDirectory, sizeof(currentDirectory) - 1)) {
         return FALSE;
     }
 
@@ -1088,11 +1178,9 @@ static BOOL fix_current_directory(void)
         *p = 0;
     }
 
-#ifndef UNDER_CE
-    if (!SetCurrentDirectoryA(currentDirectory)) {
+    if (!SetCurrentDirectory(currentDirectory)) {
         return FALSE;
     }
-#endif
 
     return TRUE;
 }
@@ -1124,10 +1212,7 @@ static int Sys_Main(int argc, char **argv)
         complete_work();
         Qcommon_Frame();
         if (shouldExit) {
-#if USE_WINSVC
-            if (shouldExit == SE_FULL)
-#endif
-                Com_Quit(NULL, ERR_DISCONNECT);
+            Com_Quit(NULL, ERR_DISCONNECT);
         }
     }
 
@@ -1197,47 +1282,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPTSTR lpCmdLin
 
 #else // USE_CLIENT
 
-#if USE_WINSVC
-
-static char     **sys_argv;
-static int      sys_argc;
-
-static VOID WINAPI ServiceHandler(DWORD fdwControl)
-{
-    if (fdwControl == SERVICE_CONTROL_STOP) {
-        shouldExit = SE_FULL;
-    }
-}
-
-static VOID WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
-{
-    SERVICE_STATUS    status;
-
-    statusHandle = RegisterServiceCtrlHandler(APPLICATION, ServiceHandler);
-    if (!statusHandle) {
-        return;
-    }
-
-    memset(&status, 0, sizeof(status));
-    status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
-    status.dwCurrentState = SERVICE_RUNNING;
-    status.dwControlsAccepted = SERVICE_ACCEPT_STOP;
-    SetServiceStatus(statusHandle, &status);
-
-    Sys_Main(sys_argc, sys_argv);
-
-    status.dwCurrentState = SERVICE_STOPPED;
-    status.dwControlsAccepted = 0;
-    SetServiceStatus(statusHandle, &status);
-}
-
-static SERVICE_TABLE_ENTRY serviceTable[] = {
-    { APPLICATION, ServiceMain },
-    { NULL, NULL }
-};
-
-#endif // USE_WINSVC
-
 /*
 ==================
 main
@@ -1246,28 +1290,7 @@ main
 */
 int main(int argc, char **argv)
 {
-#if USE_WINSVC
-    int i;
-#endif
-
     hGlobalInstance = GetModuleHandle(NULL);
-
-#if USE_WINSVC
-    for (i = 1; i < argc; i++) {
-        if (!strcmp(argv[i], "-service")) {
-            argv[i] = NULL;
-            sys_argc = argc;
-            sys_argv = argv;
-            if (StartServiceCtrlDispatcher(serviceTable)) {
-                return 0;
-            }
-            if (GetLastError() == ERROR_FAILED_SERVICE_CONTROLLER_CONNECT) {
-                break; // fall back to normal server startup
-            }
-            return 1;
-        }
-    }
-#endif
 
     return Sys_Main(argc, argv);
 }

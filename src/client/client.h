@@ -281,11 +281,6 @@ typedef struct client_state_s {
 	byte		precache_bitset[MAX_PRECACHE_BITSET];
     char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 
-#if USE_AUTOREPLY
-    unsigned    reply_time;
-    unsigned    reply_delta;
-#endif
-
     //
     // locally derived information from server state
     //
@@ -331,36 +326,6 @@ typedef enum {
     ca_active,          // game views should be displayed
     ca_cinematic        // running a cinematic
 } connstate_t;
-
-#define FOR_EACH_DLQ(q) \
-    LIST_FOR_EACH(dlqueue_t, q, &cls.download.queue, entry)
-#define FOR_EACH_DLQ_SAFE(q, n) \
-    LIST_FOR_EACH_SAFE(dlqueue_t, q, n, &cls.download.queue, entry)
-
-typedef enum {
-    // generic types
-    DL_OTHER,
-    DL_MAP,
-    DL_MODEL,
-#if USE_CURL
-    // special types
-    DL_LIST,
-    DL_PAK
-#endif
-} dltype_t;
-
-typedef enum {
-    DL_PENDING,
-    DL_RUNNING,
-    DL_DONE
-} dlstate_t;
-
-typedef struct {
-    list_t      entry;
-    dltype_t    type;
-    dlstate_t   state;
-    char        path[1];
-} dlqueue_t;
 
 typedef struct client_static_s {
     connstate_t state;
@@ -424,56 +389,6 @@ typedef struct client_static_s {
 
     netadr_t    recent_addr[RECENT_ADDR];
     int         recent_head;
-
-    struct {
-        list_t      queue;              // queue of paths we need
-        int         pending;            // number of non-finished entries in queue
-        dlqueue_t   *current;           // path being downloaded
-        int         percent;            // how much downloaded
-        int         position;           // how much downloaded (in bytes)
-        qhandle_t   file;               // UDP file transfer from server
-        char        temp[MAX_QPATH + 4];// account 4 bytes for .tmp suffix
-#if USE_ZLIB
-        z_stream    z;                  // UDP download zlib stream
-#endif
-        string_entry_t  *ignores;       // list of ignored paths
-    } download;
-
-// demo recording info must be here, so it isn't cleared on level change
-    struct {
-        qhandle_t   playback;
-        qhandle_t   recording;
-        unsigned    time_start;
-        unsigned    time_frames;
-        int         last_server_frame;  // number of server frame the last svc_frame was written
-        int         frames_written;     // number of frames written to demo file
-        int         frames_dropped;     // number of svc_frames that didn't fit
-        int         others_dropped;     // number of misc svc_* messages that didn't fit
-        int         frames_read;        // number of frames read from demo file
-        int         last_snapshot;      // number of demo frame the last snapshot was saved
-        int64_t     file_size;
-        int64_t     file_offset;
-        int         file_percent;
-        sizebuf_t   buffer;
-        list_t      snapshots;
-        bool        paused;
-        bool        seeking;
-        bool        eof;
-    } demo;
-
-#if USE_CLIENT_GTV
-    struct {
-        connstate_t     state;
-
-        netstream_t     stream;
-        size_t          msglen;
-
-        player_packed_t     ps;
-        entity_packed_t     entities[MAX_EDICTS];
-
-        sizebuf_t       message;
-    } gtv;
-#endif
 } client_static_t;
 
 extern client_static_t    cls;
@@ -608,22 +523,6 @@ void CL_UpdateConfigstring(int index);
 
 
 //
-// download.c
-//
-int CL_QueueDownload(const char *path, dltype_t type);
-bool CL_IgnoreDownload(const char *path);
-void CL_FinishDownload(dlqueue_t *q);
-void CL_CleanupDownloads(void);
-void CL_LoadDownloadIgnores(void);
-void CL_HandleDownload(byte *data, int size, int percent, int compressed);
-bool CL_CheckDownloadExtension(const char *ext);
-void CL_StartNextDownload(void);
-void CL_RequestNextDownload(void);
-void CL_ResetPrecacheCheck(void);
-void CL_InitDownloads(void);
-
-
-//
 // input.c
 //
 void IN_Init(void);
@@ -706,11 +605,7 @@ void V_Shutdown(void);
 void V_RenderView(void);
 void V_AddEntity(entity_t *ent);
 void V_AddParticle(particle_t *p);
-#if USE_DLIGHTS
 void V_AddLight(vec3_t org, float intensity, float r, float g, float b);
-#else
-#define V_AddLight(org, intensity, r, g, b)
-#endif
 void V_AddLightStyle(int style, vec4_t value);
 void CL_UpdateBlendSetting(void);
 
@@ -718,7 +613,6 @@ void CL_UpdateBlendSetting(void);
 //
 // tent.c
 //
-
 typedef struct cl_sustain_s {
     int     id;
     int     type;
@@ -793,17 +687,13 @@ typedef struct cparticle_s {
 	float			ramp;
 } cparticle_t;
 
-#if USE_DLIGHTS
 typedef struct cdlight_s {
     int     key;        // so entities can reuse same entry
     vec3_t  color;
     vec3_t  origin;
     float   radius;
     float   die;        // stop lighting after this time
-    //float   decay;      // drop this each second
-    //float   minlight;   // don't add when contributing less
 } cdlight_t;
-#endif
 
 void CL_BigTeleportParticles(vec3_t org);
 void CL_RocketTrail(vec3_t start, vec3_t end, centity_t *old);
@@ -827,13 +717,10 @@ void CL_TeleportParticles(vec3_t org);
 void CL_ParticleEffect(vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleEffect2(vec3_t org, vec3_t dir, int color, int count);
 cparticle_t *CL_AllocParticle(void);
-void CL_RunParticles(void);
 void CL_AddParticles(void);
-#if USE_DLIGHTS
 cdlight_t *CL_AllocDlight(int key);
 void CL_RunDLights(void);
 void CL_AddDLights(void);
-#endif
 void CL_ClearLightStyles(void);
 void CL_SetLightStyle(int index, const char *s);
 void CL_RunLightStyles(void);
@@ -846,18 +733,14 @@ void CL_AddLightStyles(void);
 void CL_BlasterParticles2(vec3_t org, vec3_t dir, unsigned int color);
 void CL_BlasterTrail2(vec3_t start, vec3_t end);
 void CL_DebugTrail(vec3_t start, vec3_t end);
-#if USE_DLIGHTS
 void CL_Flashlight(int ent, vec3_t pos);
-#endif
 void CL_ForceWall(vec3_t start, vec3_t end, int color);
 void CL_BubbleTrail2(vec3_t start, vec3_t end, int dist);
 void CL_Heatbeam(vec3_t start, vec3_t end);
 void CL_ParticleSteamEffect(vec3_t org, vec3_t dir, int color, int count, int magnitude);
 void CL_TrackerTrail(vec3_t start, vec3_t end, int particleColor);
 void CL_TagTrail(vec3_t start, vec3_t end, int color);
-#if USE_DLIGHTS
 void CL_ColorFlash(vec3_t pos, int ent, int intensity, float r, float g, float b);
-#endif
 void CL_Tracker_Shell(vec3_t origin);
 void CL_MonsterPlasma_Shell(vec3_t origin);
 void CL_ColorExplosionParticles(vec3_t org, int color, int run);
@@ -866,7 +749,7 @@ void CL_Widowbeamout(cl_sustain_t *self);
 void CL_Nukeblast(cl_sustain_t *self);
 void CL_WidowSplash(void);
 void CL_IonripperTrail(vec3_t start, vec3_t end);
-void CL_TrapParticles(entity_t *ent);
+void CL_TrapParticles(centity_t *ent, vec3_t origin);
 void CL_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleSteamEffect2(cl_sustain_t *self);
 
@@ -956,49 +839,6 @@ void    SCR_DrawStringMulti(int x, int y, int flags, size_t maxlen, const char *
 void    SCR_ClearChatHUD_f(void);
 void    SCR_AddToChatHUD(const char *text);
 
-
-//
-// http.c
-//
-#if USE_CURL
-void HTTP_Init(void);
-void HTTP_Shutdown(void);
-void HTTP_SetServer(const char *url);
-int HTTP_QueueDownload(const char *path, dltype_t type);
-void HTTP_RunDownloads(void);
-void HTTP_CleanupDownloads(void);
-#else
-#define HTTP_Init()                     (void)0
-#define HTTP_Shutdown()                 (void)0
-#define HTTP_SetServer(url)             (void)0
-#define HTTP_QueueDownload(path, type)  Q_ERR_NOSYS
-#define HTTP_RunDownloads()             (void)0
-#define HTTP_CleanupDownloads()         (void)0
-#endif
-
-//
-// gtv.c
-//
-
-#if USE_CLIENT_GTV
-void CL_GTV_EmitFrame(void);
-void CL_GTV_WriteMessage(byte *data, size_t len);
-void CL_GTV_Resume(void);
-void CL_GTV_Suspend(void);
-void CL_GTV_Transmit(void);
-void CL_GTV_Run(void);
-void CL_GTV_Init(void);
-void CL_GTV_Shutdown(void);
-#else
-#define CL_GTV_EmitFrame()              (void)0
-#define CL_GTV_WriteMessage(data, len)  (void)0
-#define CL_GTV_Resume()                 (void)0
-#define CL_GTV_Suspend()                (void)0
-#define CL_GTV_Transmit()               (void)0
-#define CL_GTV_Run()                    (void)0
-#define CL_GTV_Init()                   (void)0
-#define CL_GTV_Shutdown()               (void)0
-#endif
 
 //
 // crc.c

@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef struct {
     const char *name;
-    void *dest;
+    const void *dest;
 } glfunction_t;
 
 typedef struct {
@@ -77,32 +77,6 @@ static const glsection_t sections[] = {
         }
     },
 
-    // GL 1.1, compat
-    {
-        .ver_gl = 11,
-        .ver_es = 10,
-        .excl_gl = 31,
-        .excl_es = 20,
-        .caps = QGL_CAP_LEGACY,
-        .functions = (const glfunction_t []) {
-            QGL_FN(AlphaFunc),
-            QGL_FN(Color4f),
-            QGL_FN(ColorPointer),
-            QGL_FN(DisableClientState),
-            QGL_FN(EnableClientState),
-            QGL_FN(LoadIdentity),
-            QGL_FN(LoadMatrixf),
-            QGL_FN(MatrixMode),
-            QGL_FN(Scalef),
-            QGL_FN(ShadeModel),
-            QGL_FN(TexCoordPointer),
-            QGL_FN(TexEnvf),
-            QGL_FN(Translatef),
-            QGL_FN(VertexPointer),
-            { NULL }
-        }
-    },
-
     // GL 1.1, not ES
     {
         .ver_gl = 11,
@@ -144,20 +118,6 @@ static const glsection_t sections[] = {
         .ver_es = 10,
         .functions = (const glfunction_t []) {
             QGL_FN(ActiveTexture),
-            { NULL }
-        }
-    },
-
-    // GL 1.3, compat
-    // GL_ARB_multitexture
-    {
-        .extension = "GL_ARB_multitexture",
-        .ver_gl = 13,
-        .ver_es = 10,
-        .excl_gl = 31,
-        .excl_es = 20,
-        .functions = (const glfunction_t []) {
-            QGL_FN(ClientActiveTexture),
             { NULL }
         }
     },
@@ -519,20 +479,15 @@ bool QGL_Init(void)
     if (gl_config.ver_es) {
         if (gl_config.ver_es < 30 || gl_config.ver_sl < 300)
             gl_config.caps &= ~QGL_CAP_SHADER;
-
-        if (!(gl_config.caps & (QGL_CAP_LEGACY | QGL_CAP_SHADER))) {
-            Com_EPrintf("Unsupported OpenGL ES version\n");
-            return false;
-        }
     } else {
         if (gl_config.ver_gl < 30 || gl_config.ver_sl < 130)
             gl_config.caps &= ~QGL_CAP_SHADER;
-
-        if (!(gl_config.caps & QGL_CAP_LEGACY)) {
-            Com_EPrintf("Unsupported OpenGL version/profile\n");
-            return false;
-        }
     }
+
+	if (!(gl_config.caps & QGL_CAP_SHADER)) {
+		Com_EPrintf("Unsupported OpenGL version\n");
+		return false;
+	}
 
     return true;
 }

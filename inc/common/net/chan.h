@@ -59,7 +59,7 @@ typedef struct netchan_s {
     int         incoming_acknowledged;
     int         outgoing_sequence;
 
-    size_t      (*Transmit)(struct netchan_s *, size_t, const void *, int);
+    size_t      (*Transmit)(struct netchan_s *, size_t, const void *);
     size_t      (*TransmitNextFragment)(struct netchan_s *);
     bool        (*Process)(struct netchan_s *);
     bool        (*ShouldUpdate)(struct netchan_s *);

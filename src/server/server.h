@@ -40,10 +40,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "server/server.h"
 #include "system/system.h"
 
-#if USE_MVD_CLIENT
-#include "server/mvd/client.h"
-#endif
-
 #if USE_ZLIB
 #include <zlib.h>
 #endif
@@ -85,19 +81,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #endif
 
 // game features this server supports
-#define SV_FEATURES (GMF_CLIENTNUM | GMF_PROPERINUSE | GMF_MVDSPEC | \
+#define SV_FEATURES (GMF_CLIENTNUM | GMF_PROPERINUSE | \
                      GMF_WANT_ALL_DISCONNECTS | GMF_ENHANCED_SAVEGAMES | \
                      SV_GMF_VARIABLE_FPS | GMF_EXTRA_USERINFO)
 
-// ugly hack for SV_Shutdown
-#define MVD_SPAWN_DISABLED  0
-#define MVD_SPAWN_ENABLED   0x40000000
-#define MVD_SPAWN_INTERNAL  0x80000000
-#define MVD_SPAWN_MASK      0xc0000000
-
 typedef struct {
     int         number;
-    unsigned    num_entities;
+    int         num_entities;
     unsigned    first_entity;
     player_packed_t ps;
     int         clientNum;
@@ -195,28 +185,15 @@ typedef enum {
     cs_spawned      // client is fully in game
 } clstate_t;
 
-#if USE_AC_SERVER
-
-typedef enum {
-    AC_NORMAL,
-    AC_REQUIRED,
-    AC_EXEMPT
-} ac_required_t;
-
-typedef enum {
-    AC_QUERY_UNSENT,
-    AC_QUERY_SENT,
-    AC_QUERY_DONE
-} ac_query_t;
-
-#endif // USE_AC_SERVER
-
 #define MSG_POOLSIZE        1024
 #define MSG_TRESHOLD        (62 - sizeof(list_t))   // keep message_packet_t 64 bytes aligned
 
-#define MSG_RELIABLE    1
-#define MSG_CLEAR       2
-#define MSG_COMPRESS    4
+#define MSG_RELIABLE        1
+#define MSG_CLEAR           2
+#define MSG_COMPRESS        4
+#define MSG_COMPRESS_AUTO   8
+
+#define ZPACKET_HEADER      5
 
 #define MAX_SOUND_PACKET   14
 
@@ -242,6 +219,9 @@ typedef struct {
 
 #define FOR_EACH_CLIENT(client) \
     LIST_FOR_EACH(client_t, client, &sv_clientlist, entry)
+
+#define CLIENT_ACTIVE(cl) \
+    ((cl)->state == cs_spawned && !(cl)->nodata)
 
 #define PL_S2C(cl) (cl->frames_sent ? \
     (1.0f - (float)cl->frames_acked / cl->frames_sent) * 100.0f : 0.0f)
@@ -273,20 +253,19 @@ typedef struct client_s {
     int             number;     // client slot number
 
     // client flags
-    unsigned        reconnected: 1;
-    unsigned        nodata: 1;
-    unsigned        has_zlib: 1;
-    unsigned        drop_hack: 1;
+    bool            reconnected: 1;
+    bool            nodata: 1;
+    bool            has_zlib: 1;
+    bool            drop_hack: 1;
 #if USE_ICMP
-    unsigned        unreachable: 1;
+    bool            unreachable: 1;
 #endif
-    unsigned        http_download: 1;
 
     // userinfo
     char            userinfo[MAX_INFO_STRING];  // name, etc
     char            name[MAX_CLIENT_NAME];      // extracted from userinfo, high bits masked
     int             messagelevel;               // for filtering printed messages
-    size_t          rate;
+    unsigned        rate;
     ratelimit_t     ratelimit_namechange;       // for suppressing "foo changed name" flood
 
     // console var probes
@@ -304,6 +283,8 @@ typedef struct client_s {
                                     // commands exhaust it, assume time cheating
     int             num_moves;      // reset every 10 seconds
     int             moves_per_sec;  // average movement FPS
+    int             cmd_msec_used;
+    float           timescale;
 
     int             ping, min_ping, max_ping;
     int             avg_ping_time, avg_ping_count;
@@ -318,17 +299,9 @@ typedef struct client_s {
     unsigned        frameflags;
 
     // rate dropping
-    size_t          message_size[RATE_MESSAGES];    // used to rate drop normal packets
+    unsigned        message_size[RATE_MESSAGES];    // used to rate drop normal packets
     int             suppress_count;                 // number of messages rate suppressed
     unsigned        send_time, send_delta;          // used to rate drop async packets
-
-    // current download
-    byte            *download;      // file being downloaded
-    int             downloadsize;   // total bytes (can't use EOF because of paks)
-    int             downloadcount;  // bytes sent
-    char            *downloadname;  // name of the file
-    int             downloadcmd;    // svc_(z)download
-    bool            downloadpending;
 
     // protocol stuff
     int             challenge;  // challenge of this user, randomly generated
@@ -344,8 +317,8 @@ typedef struct client_s {
     list_t              msg_unreliable_list;
     list_t              msg_reliable_list;
     message_packet_t    *msg_pool;
-    size_t              msg_unreliable_bytes;   // total size of unreliable datagram
-    size_t              msg_dynamic_bytes;      // total size of dynamic memory allocated
+    unsigned            msg_unreliable_bytes;   // total size of unreliable datagram
+    unsigned            msg_dynamic_bytes;      // total size of dynamic memory allocated
 
     // per-client baseline chunks
     entity_packed_t *baselines[SV_BASELINES_CHUNKS];
@@ -368,21 +341,9 @@ typedef struct client_s {
 
     // netchan
     netchan_t       *netchan;
-    int             numpackets; // for that nasty packetdup hack
 
     // misc
     time_t          connect_time; // time of initial connect
-
-#if USE_AC_SERVER
-    bool            ac_valid;
-    ac_query_t      ac_query_sent;
-    ac_required_t   ac_required;
-    int             ac_file_failures;
-    unsigned        ac_query_time;
-    int             ac_client_type;
-    string_entry_t  *ac_bad_files;
-    char            *ac_token;
-#endif
 } client_t;
 
 // a client can leave the server in one of four ways:
@@ -415,12 +376,12 @@ typedef struct {
 
 typedef struct {
     list_t  entry;
-    int     len;
     char    string[1];
 } stuffcmd_t;
 
 typedef enum {
     FA_IGNORE,
+    FA_LOG,
     FA_PRINT,
     FA_STUFF,
     FA_KICK,
@@ -435,15 +396,23 @@ typedef struct {
     char            string[1];
 } filtercmd_t;
 
+typedef struct {
+    list_t          entry;
+    filteraction_t  action;
+    char            *var;
+    char            *match;
+    char            *comment;
+} cvarban_t;
+
 #define MAX_MASTERS         8       // max recipients for heartbeat packets
 #define HEARTBEAT_SECONDS   300
 
 typedef struct {
-    list_t entry;
-    netadr_t adr;
-    unsigned last_ack;
-    time_t last_resolved;
-    char name[1];
+    list_t          entry;
+    netadr_t        adr;
+    unsigned        last_ack;
+    time_t          last_resolved;
+    char            name[1];
 } master_t;
 
 typedef struct {
@@ -476,6 +445,7 @@ typedef struct server_static_s {
 #endif
 
     unsigned        last_heartbeat;
+    unsigned        last_timescale_check;
 
     ratelimit_t     ratelimit_status;
     ratelimit_t     ratelimit_auth;
@@ -486,16 +456,19 @@ typedef struct server_static_s {
 
 //=============================================================================
 
-extern list_t      sv_masterlist; // address of the master server
-extern list_t      sv_banlist;
-extern list_t      sv_blacklist;
-extern list_t      sv_cmdlist_connect;
-extern list_t      sv_cmdlist_begin;
-extern list_t      sv_filterlist;
-extern list_t      sv_clientlist; // linked list of non-free clients
+extern list_t       sv_masterlist;  // address of the master server
+extern list_t       sv_banlist;
+extern list_t       sv_blacklist;
+extern list_t       sv_cmdlist_connect;
+extern list_t       sv_cmdlist_begin;
+extern list_t       sv_lrconlist;
+extern list_t       sv_filterlist;
+extern list_t       sv_cvarbanlist;
+extern list_t       sv_infobanlist;
+extern list_t       sv_clientlist;  // linked list of non-free clients
 
-extern server_static_t     svs;        // persistant server info
-extern server_t            sv;         // local server
+extern server_static_t      svs;        // persistant server info
+extern server_t             sv;         // local server
 
 extern pmoveParams_t    sv_pmp;
 
@@ -522,9 +495,6 @@ extern cvar_t       *sv_calcpings_method;
 extern cvar_t       *sv_changemapcmd;
 
 extern cvar_t       *sv_strafejump_hack;
-#if USE_PACKETDUP
-extern cvar_t       *sv_packetdup_hack;
-#endif
 extern cvar_t       *sv_allow_map;
 #if !USE_CLIENT
 extern cvar_t       *sv_recycle;
@@ -586,7 +556,7 @@ void sv_min_timeout_changed(cvar_t *self);
 void SV_ClientReset(client_t *client);
 void SV_SpawnServer(mapcmd_t *cmd);
 bool SV_ParseMapCmd(mapcmd_t *cmd);
-void SV_InitGame(unsigned mvd_spawn);
+void SV_InitGame(void);
 
 //
 // sv_send.c
@@ -617,107 +587,21 @@ void SV_ShutdownClientSend(client_t *client);
 void SV_InitClientSend(client_t *newcl);
 
 //
-// sv_mvd.c
-//
-#if USE_MVD_SERVER
-void SV_MvdRegister(void);
-void SV_MvdInit(void);
-void SV_MvdShutdown(error_type_t type);
-void SV_MvdBeginFrame(void);
-void SV_MvdEndFrame(void);
-void SV_MvdRunClients(void);
-void SV_MvdStatus_f(void);
-void SV_MvdMapChanged(void);
-void SV_MvdClientDropped(client_t *client);
-
-void SV_MvdUnicast(edict_t *ent, int clientNum, bool reliable);
-void SV_MvdMulticast(int leafnum, multicast_t to);
-void SV_MvdConfigstring(int index, const char *string, size_t len);
-void SV_MvdBroadcastPrint(int level, const char *string);
-void SV_MvdStartSound(int entnum, int channel, int flags,
-                      int soundindex, int volume,
-                      int attenuation, int timeofs);
-
-void SV_MvdRecord_f(void);
-void SV_MvdStop_f(void);
-#else
-#define SV_MvdRegister()            (void)0
-#define SV_MvdInit()                (void)0
-#define SV_MvdShutdown(type)        (void)0
-#define SV_MvdBeginFrame()          (void)0
-#define SV_MvdEndFrame()            (void)0
-#define SV_MvdRunClients()          (void)0
-#define SV_MvdStatus_f()            (void)0
-#define SV_MvdMapChanged()          (void)0
-#define SV_MvdClientDropped(client) (void)0
-
-#define SV_MvdUnicast(ent, clientNum, reliable)     (void)0
-#define SV_MvdMulticast(leafnum, to)                (void)0
-#define SV_MvdConfigstring(index, string, len)      (void)0
-#define SV_MvdBroadcastPrint(level, string)         (void)0
-#define SV_MvdStartSound(entnum, channel, flags, \
-                         soundindex, volume, \
-                         attenuation, timeofs)      (void)0
-
-#define SV_MvdRecord_f()    (void)0
-#define SV_MvdStop_f()      (void)0
-#endif
-
-//
-// sv_ac.c
-//
-#if USE_AC_SERVER
-char *AC_ClientConnect(client_t *cl);
-void AC_ClientDisconnect(client_t *cl);
-bool AC_ClientBegin(client_t *cl);
-void AC_ClientAnnounce(client_t *cl);
-void AC_ClientToken(client_t *cl, const char *token);
-
-void AC_Register(void);
-void AC_Disconnect(void);
-void AC_Connect(unsigned mvd_spawn);
-void AC_Run(void);
-
-void AC_List_f(void);
-void AC_Info_f(void);
-#else
-#define AC_ClientConnect(cl)        ""
-#define AC_ClientDisconnect(cl)     (void)0
-#define AC_ClientBegin(cl)          true
-#define AC_ClientAnnounce(cl)       (void)0
-#define AC_ClientToken(cl, token)   (void)0
-
-#define AC_Register()               (void)0
-#define AC_Disconnect()             (void)0
-#define AC_Connect(mvd_spawn)       (void)0
-#define AC_Run()                    (void)0
-
-#define AC_List_f() \
-    Com_Printf("This server does not support anticheat.\n")
-#define AC_Info_f() \
-    Com_Printf("This server does not support anticheat.\n")
-#endif
-
-//
 // sv_user.c
 //
 void SV_New_f(void);
 void SV_Begin_f(void);
 void SV_ExecuteClientMessage(client_t *cl);
-void SV_CloseDownload(client_t *client);
 #if USE_FPS
 void SV_AlignKeyFrames(client_t *client);
 #else
 #define SV_AlignKeyFrames(client) (void)0
 #endif
+cvarban_t *SV_CheckInfoBans(const char *info, bool match_only);
 
 //
 // sv_ccmds.c
 //
-#if USE_MVD_CLIENT || USE_MVD_SERVER
-extern const cmd_option_t o_record[];
-#endif
-
 void SV_AddMatch_f(list_t *list);
 void SV_DelMatch_f(list_t *list);
 void SV_ListMatches_f(list_t *list);
@@ -727,7 +611,6 @@ void SV_PrintMiscInfo(void);
 //
 // sv_ents.c
 //
-
 #define ES_INUSE(s) \
     ((s)->modelindex || (s)->effects || (s)->sound || (s)->event)
 

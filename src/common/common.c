@@ -95,15 +95,6 @@ cvar_t  *com_debug_break;
 #endif
 cvar_t  *com_fatal_error;
 
-cvar_t  *allow_download;
-cvar_t  *allow_download_players;
-cvar_t  *allow_download_models;
-cvar_t  *allow_download_sounds;
-cvar_t  *allow_download_maps;
-cvar_t  *allow_download_textures;
-cvar_t  *allow_download_pics;
-cvar_t  *allow_download_others;
-
 cvar_t  *rcon_password;
 
 const char  com_version_string[] =
@@ -722,11 +713,8 @@ void Com_Address_g(genctx_t *ctx)
         if (!var) {
             break;
         }
-        if (!var->string[0]) {
-            continue;
-        }
-        if (!Prompt_AddMatch(ctx, var->string)) {
-            break;
+        if (var->string[0]) {
+            Prompt_AddMatch(ctx, var->string);
         }
     }
 }
@@ -768,11 +756,8 @@ void Com_Color_g(genctx_t *ctx)
 {
     int color;
 
-    for (color = 0; color < 8; color++) {
-        if (!Prompt_AddMatch(ctx, colorNames[color])) {
-            break;
-        }
-    }
+    for (color = 0; color < 8; color++)
+        Prompt_AddMatch(ctx, colorNames[color]);
 }
 #endif
 
@@ -936,15 +921,6 @@ void Qcommon_Init(int argc, char **argv)
 #endif
     com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
     com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
-
-    allow_download = Cvar_Get("allow_download", COM_DEDICATED ? "0" : "1", CVAR_ARCHIVE);
-    allow_download_players = Cvar_Get("allow_download_players", "1", CVAR_ARCHIVE);
-    allow_download_models = Cvar_Get("allow_download_models", "1", CVAR_ARCHIVE);
-    allow_download_sounds = Cvar_Get("allow_download_sounds", "1", CVAR_ARCHIVE);
-    allow_download_maps = Cvar_Get("allow_download_maps", "1", CVAR_ARCHIVE);
-    allow_download_textures = Cvar_Get("allow_download_textures", "1", CVAR_ARCHIVE);
-    allow_download_pics = Cvar_Get("allow_download_pics", "1", CVAR_ARCHIVE);
-    allow_download_others = Cvar_Get("allow_download_others", "0", 0);
 
     rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
 

@@ -21,6 +21,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #include "client.h"
+
+#if !_DEBUG
+
 #include <dbghelp.h>
 
 typedef DWORD (WINAPI *SETSYMOPTIONS)(DWORD);
@@ -192,7 +195,6 @@ LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
     char execdir[MAX_PATH];
     HMODULE moduleHandle;
     SYSTEMTIME systemTime;
-    OSVERSIONINFO vinfo;
     DWORD len;
     LONG action;
 
@@ -345,18 +347,25 @@ LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
         "by " APPLICATION " " VERSION
         ", built " __DATE__", " __TIME__ "\r\n");
 
-    vinfo.dwOSVersionInfoSize = sizeof(vinfo);
-    if (GetVersionEx(&vinfo)) {
+	HKEY keyHandle = NULL;
+
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE,
+		"SOFTWARE\\Microsoft\\Windows\\CurrentVersion", 0,
+		KEY_QUERY_VALUE, &keyHandle) == ERROR_SUCCESS) {
+
+		DWORD size1 = 1023;
+		DWORD Type;
+		char rgValue[1024];
+
+		RegQueryValueEx(keyHandle, "Productid", NULL, &Type, (LPBYTE)rgValue, &size1);
         write_report(
-            "\r\nWindows version: %u.%u (build %u) %s\r\n",
-            vinfo.dwMajorVersion,
-            vinfo.dwMinorVersion,
-            vinfo.dwBuildNumber,
-            vinfo.szCSDVersion);
+            "\r\nWindows Product ID: %s\r\n", rgValue);
     } else {
         write_report("GetVersionEx failed with error %#x\r\n",
                      GetLastError());
     }
+
+	RegCloseKey(keyHandle);
 
     // oh no, dbghelp is not backwards and forwards compatible
     // why in hell is it different from other windows DLLs?
@@ -512,3 +521,5 @@ LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
 
     return EXCEPTION_EXECUTE_HANDLER;
 }
+
+#endif

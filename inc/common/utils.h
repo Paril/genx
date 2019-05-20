@@ -38,7 +38,7 @@ extern const char *const colorNames[10];
 bool Com_WildCmpEx(const char *filter, const char *string, int term, bool ignorecase);
 #define Com_WildCmp(filter, string)  Com_WildCmpEx(filter, string, 0, false)
 
-#if USE_CLIENT || USE_MVD_CLIENT
+#if USE_CLIENT
 bool Com_ParseTimespec(const char *s, int *frames);
 #endif
 
@@ -57,7 +57,7 @@ void Com_PageInMemory(void *buffer, size_t size);
 color_index_t Com_ParseColor(const char *s, color_index_t last);
 
 #if USE_REF
-unsigned Com_ParseExtensionString(const char *s, const char *const extnames[]);
+void Com_ParseExtensionString(const char *s, const char *const extnames[], bool *const extensions);
 #endif
 
 #endif // UTILS_H

@@ -35,8 +35,6 @@ static vec4_t   color;
 static const vec_t  *shadelight;
 static vec3_t       shadedir;
 
-static float    celscale;
-
 static GLfloat  shadowmatrix[16];
 
 extern cvar_t	 *scr_gunfov;
@@ -408,46 +406,6 @@ static void setup_color(void)
     }
 }
 
-static void setup_celshading(void)
-{
-    float value = Cvar_ClampValue(gl_celshading, 0, 10);
-    vec3_t dir;
-
-    celscale = 0;
-
-    if (value == 0)
-        return;
-
-    if (glr.ent->flags & (RF_TRANSLUCENT | RF_SHELL_MASK))
-        return;
-
-    if (!qglPolygonMode)
-        return;
-
-    VectorSubtract(origin, glr.fd.vieworg, dir);
-    celscale = 1.0f - VectorLength(dir) / 700.0f;
-}
-
-static void draw_celshading(maliasmesh_t *mesh)
-{
-    if (celscale < 0.01f || celscale > 1)
-        return;
-
-    GL_BindTexture(0, TEXNUM_BLACK);
-    GL_StateBits(GLS_BLEND_BLEND);
-    GL_ArrayBits(GLA_VERTEX);
-
-    qglLineWidth(gl_celshading->value * celscale);
-    qglPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    qglCullFace(GL_FRONT);
-    GL_Color(0, 0, 0, color[3] * celscale);
-    qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
-                    mesh->indices);
-    qglCullFace(GL_BACK);
-    qglPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    qglLineWidth(1);
-}
-
 static void setup_shadow(void)
 {
     GLfloat matrix[16], tmp[16];
@@ -623,8 +581,6 @@ static void draw_alias_mesh(maliasmesh_t *mesh)
     qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
                     mesh->indices);
 
-    draw_celshading(mesh);
-
     if (gl_showtris->integer) {
         GL_DrawOutlines(mesh->numindices, mesh->indices);
     }
@@ -724,7 +680,6 @@ void GL_DrawAliasModel(model_t *model)
 
     // setup parameters common for all meshes
     setup_color();
-    setup_celshading();
     setup_dotshading();
     setup_shadow();
 

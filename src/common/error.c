@@ -19,6 +19,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "shared/shared.h"
 #include "common/error.h"
 
+#if _WIN32
+int q_errno;
+#endif
+
 static const char *const error_table[] = {
     "Unspecified error",
     "Unknown file format",

@@ -88,8 +88,7 @@ typedef enum {
     MSG_ES_LONGSOLID    = (1 << 3),
     MSG_ES_UMASK        = (1 << 4),
     MSG_ES_BEAMORIGIN   = (1 << 5),
-    MSG_ES_SHORTANGLES  = (1 << 6),
-    MSG_ES_REMOVE       = (1 << 7)
+    MSG_ES_SHORTANGLES  = (1 << 6)
 } msgEsFlags_t;
 
 extern sizebuf_t    msg_write;
@@ -166,15 +165,13 @@ void    MSG_ParseDeltaPlayerstate_Packet(const player_state_t *from, player_stat
 void    MSG_ShowDeltaPlayerstateBits_Default(int flags);
 void    MSG_ShowDeltaPlayerstateBits_Enhanced(int flags, int extraflags);
 void    MSG_ShowDeltaUsercmdBits_Enhanced(int bits);
-#endif
-#if USE_CLIENT || USE_MVD_CLIENT
+
 void    MSG_ShowDeltaEntityBits(int bits);
-void    MSG_ShowDeltaPlayerstateBits_Packet(int flags);
 const char *MSG_ServerCommandString(int cmd);
 #define MSG_ShowSVC(cmd) \
     Com_LPrintf(PRINT_DEVELOPER, "%3"PRIz":%s\n", msg_read.readcount - 1, \
         MSG_ServerCommandString(cmd))
-#endif // USE_CLIENT || USE_MVD_CLIENT
+#endif // USE_CLIENT
 #endif // _DEBUG
 
 

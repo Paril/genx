@@ -35,13 +35,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  *
  */
 
-#if USE_GLES
-#define QGL_INDEX_TYPE  GLushort
-#define QGL_INDEX_ENUM  GL_UNSIGNED_SHORT
-#else
 #define QGL_INDEX_TYPE  GLuint
 #define QGL_INDEX_ENUM  GL_UNSIGNED_INT
-#endif
 
 #define MAX_TMUS        2
 
@@ -76,7 +71,6 @@ typedef struct {
 
 typedef struct {
     bool            registering;
-    bool            use_shaders;
     glbackend_t     backend;
     struct {
         bsp_t       *cache;
@@ -105,9 +99,7 @@ typedef struct {
     GLfloat         viewmatrix[16];
     int             visframe;
     int             drawframe;
-#if USE_DLIGHTS
     int             dlightframe;
-#endif
     int             viewcluster1;
     int             viewcluster2;
     cplane_t        frustumPlanes[4];
@@ -120,14 +112,13 @@ typedef struct {
 } glRefdef_t;
 
 enum {
-    QGL_CAP_LEGACY                      = (1 << 0),
-    QGL_CAP_SHADER                      = (1 << 1),
-    QGL_CAP_TEXTURE_BITS                = (1 << 2),
-    QGL_CAP_TEXTURE_CLAMP_TO_EDGE       = (1 << 3),
-    QGL_CAP_TEXTURE_MAX_LEVEL           = (1 << 4),
-    QGL_CAP_TEXTURE_LOD_BIAS            = (1 << 5),
-    QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = (1 << 6),
-    QGL_CAP_TEXTURE_ANISOTROPY          = (1 << 7),
+    QGL_CAP_SHADER                      = (1 << 0),
+    QGL_CAP_TEXTURE_BITS                = (1 << 1),
+    QGL_CAP_TEXTURE_CLAMP_TO_EDGE       = (1 << 2),
+    QGL_CAP_TEXTURE_MAX_LEVEL           = (1 << 3),
+    QGL_CAP_TEXTURE_LOD_BIAS            = (1 << 4),
+    QGL_CAP_TEXTURE_NON_POWER_OF_TWO    = (1 << 5),
+    QGL_CAP_TEXTURE_ANISOTROPY          = (1 << 6),
 };
 
 typedef struct {
@@ -172,7 +163,6 @@ extern statCounters_t c;
 // regular variables
 extern cvar_t *gl_partscale;
 extern cvar_t *gl_partstyle;
-extern cvar_t *gl_celshading;
 extern cvar_t *gl_dotshading;
 extern cvar_t *gl_shadows;
 extern cvar_t *gl_modulate;
@@ -180,13 +170,10 @@ extern cvar_t *gl_modulate_world;
 extern cvar_t *gl_coloredlightmaps;
 extern cvar_t *gl_brightness;
 extern cvar_t *gl_dynamic;
-#if USE_DLIGHTS
 extern cvar_t *gl_dlight_falloff;
-#endif
 extern cvar_t *gl_modulate_entities;
 extern cvar_t *gl_doublelight_entities;
 extern cvar_t *gl_fontshadow;
-extern cvar_t *gl_shaders;
 
 // development variables
 extern cvar_t *gl_znear;
@@ -203,7 +190,6 @@ extern cvar_t *gl_novis;
 extern cvar_t *gl_lockpvs;
 extern cvar_t *gl_lightmap;
 extern cvar_t *gl_fullbright;
-extern cvar_t *gl_vertexlight;
 
 typedef enum {
     CULL_OUT,
@@ -481,14 +467,6 @@ static inline void GL_ActiveTexture(GLuint tmu)
     }
 }
 
-static inline void GL_ClientActiveTexture(GLuint tmu)
-{
-    if (gls.client_tmu != tmu) {
-        qglClientActiveTexture(GL_TEXTURE0 + tmu);
-        gls.client_tmu = tmu;
-    }
-}
-
 static inline void GL_StateBits(GLbitfield bits)
 {
     if (gls.state_bits != bits) {
@@ -569,7 +547,6 @@ void GL_ClearState(void);
 void GL_InitState(void);
 void GL_ShutdownState(void);
 
-extern const glbackend_t backend_legacy;
 extern const glbackend_t backend_shader;
 
 /*

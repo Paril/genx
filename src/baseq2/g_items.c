@@ -800,7 +800,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 	bool        weapon;
 	gitem_t		*item = ent->item;
 
-	weapon = !!(item->flags & IT_WEAPON);
+	weapon = (item->flags & IT_WEAPON);
 
 	if ((weapon) && ((int)dmflags->value & DF_INFINITE_AMMO))
 		count = DEFAULT_MAX_AMMO * 100;

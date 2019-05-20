@@ -19,7 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "client.h"
 
-#if USE_DLIGHTS
 void CL_Flashlight(int ent, vec3_t pos)
 {
     cdlight_t   *dl;
@@ -27,7 +26,6 @@ void CL_Flashlight(int ent, vec3_t pos)
     dl = CL_AllocDlight(ent);
     VectorCopy(pos,  dl->origin);
     dl->radius = 400;
-    //dl->minlight = 250;
     dl->die = cl.time + 100;
     dl->color[0] = 1;
     dl->color[1] = 1;
@@ -46,13 +44,11 @@ void CL_ColorFlash(vec3_t pos, int ent, int intensity, float r, float g, float b
     dl = CL_AllocDlight(ent);
     VectorCopy(pos,  dl->origin);
     dl->radius = intensity;
-    //dl->minlight = 250;
     dl->die = cl.time + 100;
     dl->color[0] = r;
     dl->color[1] = g;
     dl->color[2] = b;
 }
-#endif
 
 
 /*
@@ -786,7 +782,7 @@ void CL_IonripperTrail(vec3_t start, vec3_t ent)
 CL_TrapParticles
 ===============
 */
-void CL_TrapParticles(entity_t *ent)
+void CL_TrapParticles(centity_t *ent, vec3_t origin)
 {
     vec3_t      move;
     vec3_t      vec;
@@ -796,10 +792,14 @@ void CL_TrapParticles(entity_t *ent)
     cparticle_t *p;
     int         dec;
 
-    ent->origin[2] -= 14;
-    VectorCopy(ent->origin, start);
-    VectorCopy(ent->origin, end);
-    end[2] += 64;
+    if (cl.time - ent->fly_stoptime < 10)
+        return;
+    ent->fly_stoptime = cl.time;
+
+    VectorCopy(origin, start);
+    VectorCopy(origin, end);
+    start[2] -= 14;
+    end[2] += 50;
 
     VectorCopy(start, move);
     VectorSubtract(end, start, vec);
@@ -833,14 +833,12 @@ void CL_TrapParticles(entity_t *ent)
     }
 
     {
-        int         i, j, k;
-        cparticle_t *p;
+        int         i, k;
         float       vel;
         vec3_t      dir;
         vec3_t      org;
 
-        ent->origin[2] += 14;
-        VectorCopy(ent->origin, org);
+        VectorCopy(origin, org);
 
         for (i = -2; i <= 2; i += 4)
             for (j = -2; j <= 2; j += 4)

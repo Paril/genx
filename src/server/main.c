@@ -26,13 +26,19 @@ LIST_DECL(sv_banlist);
 LIST_DECL(sv_blacklist);
 LIST_DECL(sv_cmdlist_connect);
 LIST_DECL(sv_cmdlist_begin);
+LIST_DECL(sv_lrconlist);
 LIST_DECL(sv_filterlist);
+LIST_DECL(sv_cvarbanlist);
+LIST_DECL(sv_infobanlist);
 LIST_DECL(sv_clientlist);   // linked list of non-free clients
 
 client_t    *sv_client;         // current client
 edict_t     *sv_player;         // current client edict
 
 cvar_t  *sv_enforcetime;
+cvar_t  *sv_timescale_time;
+cvar_t  *sv_timescale_warn;
+cvar_t  *sv_timescale_kick;
 cvar_t  *sv_allow_nodelta;
 #if USE_FPS
 cvar_t  *sv_fps;
@@ -56,7 +62,6 @@ cvar_t  *sv_novis;
 cvar_t  *sv_maxclients;
 cvar_t  *sv_reserved_slots;
 cvar_t  *sv_locked;
-cvar_t  *sv_downloadserver;
 cvar_t  *sv_redirect_address;
 
 cvar_t  *sv_hostname;
@@ -72,9 +77,6 @@ cvar_t  *sv_changemapcmd;
 
 cvar_t  *sv_strafejump_hack;
 cvar_t  *sv_waterjump_hack;
-#if USE_PACKETDUP
-cvar_t  *sv_packetdup_hack;
-#endif
 cvar_t  *sv_allow_map;
 #if !USE_CLIENT
 cvar_t  *sv_recycle;
@@ -91,11 +93,13 @@ cvar_t  *sv_namechange_limit;
 
 cvar_t  *sv_allow_unconnected_cmds;
 
+cvar_t  *sv_lrcon_password;
+
 cvar_t  *g_features;
 
 cvar_t  *map_override_path;
 
-bool sv_registered;
+static bool     sv_registered;
 
 //============================================================================
 
@@ -114,13 +118,6 @@ void SV_RemoveClient(client_t *client)
     // itself to make code that traverses client list in a loop happy!
     List_Remove(&client->entry);
 
-#if USE_MVD_CLIENT
-    // unlink them from MVD client list
-    if (sv.state == ss_broadcast) {
-        MVD_RemoveClient(client);
-    }
-#endif
-
     Com_DPrintf("Going from cs_zombie to cs_free for %s\n", client->name);
 
     client->state = cs_free;    // can now be reused
@@ -130,18 +127,6 @@ void SV_RemoveClient(client_t *client)
 void SV_CleanClient(client_t *client)
 {
     int i;
-#if USE_AC_SERVER
-    string_entry_t *bad, *next;
-
-    for (bad = client->ac_bad_files; bad; bad = next) {
-        next = bad->next;
-        Z_Free(bad);
-    }
-    client->ac_bad_files = NULL;
-#endif
-
-    // close any existing donwload
-    SV_CloseDownload(client);
 
     if (client->version_string) {
         Z_Free(client->version_string);
@@ -174,13 +159,8 @@ static void print_drop_reason(client_t *client, const char *reason, clstate_t ol
 
     if (announce == 2) {
         // announce to others
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast)
-            MVD_GameClientDrop(client->edict, prefix, reason);
-        else
-#endif
-            SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
-                               client->name, prefix, reason);
+        SV_BroadcastPrintf(PRINT_HIGH, "%s%s%s\n",
+                           client->name, prefix, reason);
     }
 
     if (announce)
@@ -229,14 +209,9 @@ void SV_DropClient(client_t *client, const char *reason)
         ge->ClientDisconnect(client->edict);
     }
 
-    AC_ClientDisconnect(client);
-
     SV_CleanClient(client);
 
     Com_DPrintf("Going to cs_zombie for %s\n", client->name);
-
-    // give MVD server a chance to detect if its dummy client was dropped
-    SV_MvdClientDropped(client);
 }
 
 
@@ -626,12 +601,12 @@ typedef struct {
     char        reconnect_val[16];
 } conn_params_t;
 
-#define reject_(...) \
+#define reject_printf(...) \
     Netchan_OutOfBand(NS_SERVER, &net_from, "print\n" __VA_ARGS__)
 
 // small hack to permit one-line return statement :)
-#define reject(...) reject_(__VA_ARGS__), false
-#define reject2(...) reject_(__VA_ARGS__), NULL
+#define reject(...) reject_printf(__VA_ARGS__), false
+#define reject2(...) reject_printf(__VA_ARGS__), NULL
 
 static bool parse_basic_params(conn_params_t *p)
 {
@@ -788,11 +763,7 @@ static bool parse_enhanced_params(conn_params_t *p)
 
         // set zlib
         s = Cmd_Argv(7);
-        if (*s) {
-	        p->has_zlib = !!atoi(s);
-	    } else {
-            p->has_zlib = true;
-	    }
+        p->has_zlib = !*s || atoi(s);
 
     // set minor protocol version
         s = Cmd_Argv(8);
@@ -835,6 +806,7 @@ static char *userinfo_ip_string(void)
 static bool parse_userinfo(conn_params_t *params, char *userinfo)
 {
     char *info, *s;
+    cvarban_t *ban;
 
     // validate userinfo
     info = Cmd_Argv(4);
@@ -875,11 +847,8 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
     // copy userinfo off
     Q_strlcpy(userinfo, info, MAX_INFO_STRING);
 
-    // mvdspec, ip, etc are passed in extra userinfo if supported
+    // ip, etc are passed in extra userinfo if supported
     if (!(g_features->integer & GMF_EXTRA_USERINFO)) {
-        // make sure mvdspec key is not set
-        Info_RemoveKey(userinfo, "mvdspec");
-
         if (sv_password->string[0] || sv_reserved_password->string[0]) {
             // unset password key to make game mod happy
             Info_RemoveKey(userinfo, "password");
@@ -888,6 +857,14 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
         // force the IP key/value pair so the game can filter based on ip
         if (!Info_SetValueForKey(userinfo, "ip", userinfo_ip_string()))
             return reject("Oversize userinfo string.\n");
+    }
+
+    // reject if there is a kickable userinfo ban
+    if ((ban = SV_CheckInfoBans(userinfo, true)) != NULL) {
+        s = ban->comment;
+        if (!s)
+            s = "Userinfo banned.";
+        return reject("%s\nConnection refused.\n", s);
     }
 
     return true;
@@ -962,7 +939,7 @@ void init_pmove_and_es_flags(client_t *newcl)
 
     // copy default pmove parameters
     newcl->pmp = sv_pmp;
-    newcl->pmp.airaccelerate = sv_airaccelerate->integer ? true : false;
+    newcl->pmp.airaccelerate = sv_airaccelerate->integer;
 	newcl->pmp.game = svs.entities[newcl->number].game;
 
     // common extensions
@@ -971,7 +948,7 @@ void init_pmove_and_es_flags(client_t *newcl)
 	    newcl->pmp.speedmult = 2;
 	    force = 1;
 	}
-    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force ? true : false;
+    newcl->pmp.strafehack = sv_strafejump_hack->integer >= force;
 
     // r1q2 extensions
     if (newcl->protocol == PROTOCOL_VERSION_R1Q2) {
@@ -1000,7 +977,7 @@ void init_pmove_and_es_flags(client_t *newcl)
 	        force = 1;
 	    }
 	}
-    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force ? true : false;
+    newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
 
 	PmoveInit(&newcl->pmp, svs.entities[newcl->number].game);
 }
@@ -1008,9 +985,6 @@ void init_pmove_and_es_flags(client_t *newcl)
 static void send_connect_packet(client_t *newcl, int nctype)
 {
     const char *ncstring    = "";
-    const char *acstring    = "";
-    const char *dlstring1   = "";
-    const char *dlstring2   = "";
 
     if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
         if (nctype == NETCHAN_NEW)
@@ -1019,16 +993,8 @@ static void send_connect_packet(client_t *newcl, int nctype)
             ncstring = " nc=0";
     }
 
-    if (!sv_force_reconnect->string[0] || newcl->reconnect_var[0])
-        acstring = AC_ClientConnect(newcl);
-
-    if (sv_downloadserver->string[0]) {
-        dlstring1 = " dlserver=";
-        dlstring2 = sv_downloadserver->string;
-    }
-
-    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s%s%s%s map=%s",
-                      ncstring, acstring, dlstring1, dlstring2, newcl->mapname);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s map=%s",
+                      ncstring, newcl->mapname);
 }
 
 // converts all the extra positional parameters to `connect' command into an
@@ -1056,7 +1022,7 @@ static void SVC_DirectConnect(void)
     conn_params_t   params;
     client_t        *newcl;
     int             number;
-    int             allow;
+    qboolean        allow;
     char            *reason;
 
     memset(&params, 0, sizeof(params));
@@ -1118,9 +1084,9 @@ static void SVC_DirectConnect(void)
     if (!allow) {
         reason = Info_ValueForKey(userinfo, "rejmsg");
         if (*reason) {
-            reject_("%s\nConnection refused.\n", reason);
+            reject_printf("%s\nConnection refused.\n", reason);
         } else {
-            reject_("Connection refused.\n");
+            reject_printf("Connection refused.\n");
         }
         return;
     }
@@ -1130,7 +1096,6 @@ static void SVC_DirectConnect(void)
                                    &net_from, params.qport,
                                    params.maxlength,
                                    params.protocol);
-    newcl->numpackets = 1;
 
     // parse some info from the info strings
     Q_strlcpy(newcl->userinfo, userinfo, sizeof(newcl->userinfo));
@@ -1166,15 +1131,32 @@ static void SVC_DirectConnect(void)
     newcl->min_ping = 9999;
 }
 
-static bool rcon_valid(void)
+typedef enum {
+    RCON_BAD,
+    RCON_OK,
+    RCON_LIMITED
+} rcon_type_t;
+
+static rcon_type_t rcon_validate(void)
 {
-    if (!rcon_password->string[0])
-        return false;
+    if (rcon_password->string[0] && !strcmp(Cmd_Argv(1), rcon_password->string))
+        return RCON_OK;
 
-    if (strcmp(Cmd_Argv(1), rcon_password->string))
-        return false;
+    if (sv_lrcon_password->string[0] && !strcmp(Cmd_Argv(1), sv_lrcon_password->string))
+        return RCON_LIMITED;
 
-    return true;
+    return RCON_BAD;
+}
+
+static bool lrcon_validate(const char *s)
+{
+    stuffcmd_t *cmd;
+
+    LIST_FOR_EACH(stuffcmd_t, cmd, &sv_lrconlist, entry)
+        if (!strncmp(s, cmd->string, strlen(cmd->string)))
+            return true;
+
+    return false;
 }
 
 /*
@@ -1187,6 +1169,7 @@ Redirect all printfs.
 */
 static void SVC_RemoteCommand(void)
 {
+    rcon_type_t type;
     char *s;
 
     if (SV_RateLimited(&svs.ratelimit_rcon)) {
@@ -1195,23 +1178,44 @@ static void SVC_RemoteCommand(void)
         return;
     }
 
+    type = rcon_validate();
     s = Cmd_RawArgsFrom(2);
-    if (!rcon_valid()) {
+    if (type == RCON_BAD) {
         Com_Printf("Invalid rcon from %s:\n%s\n",
                    NET_AdrToString(&net_from), s);
-        Netchan_OutOfBand(NS_SERVER, &net_from,
-                          "print\nBad rcon_password.\n");
+        OOB_PRINT(NS_SERVER, &net_from, "print\nBad rcon_password.\n");
         return;
     }
 
-    // valid rcon packets are not rate limited
+    // authenticated rcon packets are not rate limited
     SV_RateRecharge(&svs.ratelimit_rcon);
 
-    Com_Printf("Rcon from %s:\n%s\n",
-               NET_AdrToString(&net_from), s);
+    if (type == RCON_LIMITED && lrcon_validate(s) == false) {
+        Com_Printf("Invalid limited rcon from %s:\n%s\n",
+                   NET_AdrToString(&net_from), s);
+        OOB_PRINT(NS_SERVER, &net_from,
+                  "print\nThis command is not permitted.\n");
+        return;
+    }
+
+    if (type == RCON_LIMITED) {
+        Com_Printf("Limited rcon from %s:\n%s\n",
+                   NET_AdrToString(&net_from), s);
+    } else {
+        Com_Printf("Rcon from %s:\n%s\n",
+                   NET_AdrToString(&net_from), s);
+    }
 
     SV_PacketRedirect();
-    Cmd_ExecuteString(&cmd_buffer, s);
+    if (type == RCON_LIMITED) {
+        // shift args down
+        Cmd_Shift();
+        Cmd_Shift();
+    } else {
+        // macro expand args
+        Cmd_TokenizeString(s, true);
+    }
+    Cmd_ExecuteCommand(&cmd_buffer);
     Com_EndRedirect();
 }
 
@@ -1405,11 +1409,30 @@ static void SV_GiveMsec(void)
 {
     client_t    *cl;
 
-    if (sv.framenum % (16 * SV_FRAMEDIV))
+    if (!(sv.framenum % (16 * SV_FRAMEDIV))) {
+        FOR_EACH_CLIENT(cl) {
+            cl->command_msec = 1800; // 1600 + some slop
+        }
+    }
+
+    if (svs.realtime - svs.last_timescale_check < sv_timescale_time->integer)
         return;
 
+    float d = svs.realtime - svs.last_timescale_check;
+    svs.last_timescale_check = svs.realtime;
+
     FOR_EACH_CLIENT(cl) {
-        cl->command_msec = 1800; // 1600 + some slop
+        cl->timescale = cl->cmd_msec_used / d;
+        cl->cmd_msec_used = 0;
+
+        if (sv_timescale_warn->value > 1.0f && cl->timescale > sv_timescale_warn->value) {
+            Com_Printf("%s[%s]: detected time skew: %.3f\n", cl->name,
+                       NET_AdrToString(&cl->netchan->remote_address), cl->timescale);
+        }
+
+        if (sv_timescale_kick->value > 1.0f && cl->timescale > sv_timescale_kick->value) {
+            SV_DropClient(cl, "time skew too high");
+        }
     }
 }
 
@@ -1633,13 +1656,6 @@ static void SV_PrepWorldFrame(void)
     edict_t    *ent;
     int        i;
 
-#if USE_MVD_CLIENT
-    if (sv.state == ss_broadcast) {
-        MVD_PrepWorldFrame();
-        return;
-    }
-#endif
-
     sv.tracecount = 0;
 
     if (!SV_FRAMESYNC)
@@ -1673,11 +1689,6 @@ static inline bool check_paused(void)
     if (!LIST_SINGLE(&sv_clientlist))
         goto resume;
 
-#if USE_MVD_CLIENT
-    if (!LIST_EMPTY(&mvd_gtv_list))
-        goto resume;
-#endif
-
     if (!sv_paused->integer) {
         Cvar_Set("sv_paused", "1");
         IN_Activate();
@@ -1702,9 +1713,6 @@ SV_RunGameFrame
 */
 static void SV_RunGameFrame(void)
 {
-    // save the entire world state if recording a serverdemo
-    SV_MvdBeginFrame();
-
 #if USE_CLIENT
     if (host_speeds->integer)
         time_before_game = Sys_Milliseconds();
@@ -1723,9 +1731,6 @@ static void SV_RunGameFrame(void)
                     msg_write.cursize);
         SZ_Clear(&msg_write);
     }
-
-    // save the entire world state if recording a serverdemo
-    SV_MvdEndFrame();
 }
 
 /*
@@ -1806,7 +1811,7 @@ static void SV_MasterShutdown(void)
 ==================
 SV_Frame
 
-Some things like MVD client connections and command buffer
+Some things like command buffer
 processing are run even when server is not yet initalized.
 
 Returns amount of extra frametime available for sleeping on IO.
@@ -1826,21 +1831,10 @@ unsigned SV_Frame(unsigned msec)
         Cbuf_Execute(&cmd_buffer);
     }
 
-#if USE_MVD_CLIENT
-    // run connections to MVD/GTV servers
-    MVD_Frame();
-#endif
-
     // read packets from UDP clients
     NET_GetPackets(NS_SERVER, SV_PacketEvent);
 
     if (svs.initialized) {
-        // run connection to the anticheat server
-        AC_Run();
-
-        // run connections from MVD/GTV clients
-        SV_MvdRunClients();
-
         // deliver fragments and reliable messages for connecting clients
         SV_SendAsyncPackets();
     }
@@ -1891,9 +1885,9 @@ unsigned SV_Frame(unsigned msec)
     }
 
     // don't accumulate bogus residual
-    if (sv.frameresidual > 250) {
+    if (sv.frameresidual > SV_FRAMETIME * 2.5f) {
         Com_DDDPrintf("Reset residual %u\n", sv.frameresidual);
-        sv.frameresidual = 100;
+        sv.frameresidual = SV_FRAMETIME;
     }
 
     return 0;
@@ -1933,11 +1927,6 @@ void SV_UserinfoChanged(client_t *cl)
             Com_Printf("%s[%s] changed name to %s\n", cl->name,
                        NET_AdrToString(&cl->netchan->remote_address), name);
         }
-#if USE_MVD_CLIENT
-        if (sv.state == ss_broadcast) {
-            MVD_GameClientNameChanged(cl->edict, name);
-        } else
-#endif
         if (sv_show_name_changes->integer > 1 ||
             (sv_show_name_changes->integer == 1 && cl->state == cs_spawned)) {
             SV_BroadcastPrintf(PRINT_HIGH, "%s changed name to %s\n",
@@ -2061,14 +2050,6 @@ void SV_Init(void)
 {
     SV_InitOperatorCommands();
 
-    SV_MvdRegister();
-
-#if USE_MVD_CLIENT
-    MVD_Register();
-#endif
-
-    AC_Register();
-
     SV_RegisterSavegames();
 
     Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_DEFAULT), CVAR_SERVERINFO | CVAR_ROM);
@@ -2101,6 +2082,11 @@ void SV_Init(void)
     sv_idlekick->changed = sv_sec_timeout_changed;
     sv_idlekick->changed(sv_idlekick);
     sv_enforcetime = Cvar_Get("sv_enforcetime", "1", 0);
+    sv_timescale_time = Cvar_Get("sv_timescale_time", "16", 0);
+    sv_timescale_time->changed = sv_sec_timeout_changed;
+    sv_timescale_time->changed(sv_timescale_time);
+    sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
+    sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
     sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
 #if USE_FPS
     sv_fps = Cvar_Get("sv_fps", "10", CVAR_LATCH);
@@ -2115,7 +2101,6 @@ void SV_Init(void)
     sv_reserved_password = Cvar_Get("sv_reserved_password", "", CVAR_PRIVATE);
     sv_locked = Cvar_Get("sv_locked", "0", 0);
     sv_novis = Cvar_Get("sv_novis", "0", 0);
-    sv_downloadserver = Cvar_Get("sv_downloadserver", "", 0);
     sv_redirect_address = Cvar_Get("sv_redirect_address", "", 0);
 
 #ifdef _DEBUG
@@ -2128,10 +2113,6 @@ void SV_Init(void)
 
     sv_strafejump_hack = Cvar_Get("sv_strafejump_hack", "1", CVAR_LATCH);
     sv_waterjump_hack = Cvar_Get("sv_waterjump_hack", "0", CVAR_LATCH);
-
-#if USE_PACKETDUP
-    sv_packetdup_hack = Cvar_Get("sv_packetdup_hack", "0", 0);
-#endif
 
     sv_allow_map = Cvar_Get("sv_allow_map", "0", CVAR_ARCHIVE);
 
@@ -2160,6 +2141,8 @@ void SV_Init(void)
     sv_namechange_limit->changed = sv_namechange_limit_changed;
 
     sv_allow_unconnected_cmds = Cvar_Get("sv_allow_unconnected_cmds", "0", 0);
+
+    sv_lrcon_password = Cvar_Get("lrcon_password", "", CVAR_PRIVATE);
 
     Cvar_Get("sv_features", va("%d", SV_FEATURES), CVAR_ROM);
     g_features = Cvar_Get("g_features", "0", CVAR_ROM);
@@ -2226,7 +2209,7 @@ static void SV_FinalMessage(const char *message, error_type_t type)
             while (netchan->fragment_pending) {
                 netchan->TransmitNextFragment(netchan);
             }
-            netchan->Transmit(netchan, msg_write.cursize, msg_write.data, 1);
+            netchan->Transmit(netchan, msg_write.cursize, msg_write.data);
         }
     }
 
@@ -2255,19 +2238,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 {
     if (!sv_registered)
         return;
-
-#if USE_MVD_CLIENT
-    if (ge != &mvd_ge && !(type & MVD_SPAWN_INTERNAL)) {
-        // shutdown MVD client now if not already running the built-in MVD game module
-        // don't shutdown if called from internal MVD spawn function (ugly hack)!
-        MVD_Shutdown();
-    }
-    type &= ~MVD_SPAWN_MASK;
-#endif
-
-    AC_Disconnect();
-
-    SV_MvdShutdown(type);
 
     SV_FinalMessage(finalmsg, type);
     SV_MasterShutdown();

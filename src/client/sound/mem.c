@@ -51,9 +51,9 @@ sfxcache_t *ResampleSfx(sfx_t *sfx, int wanted_rate)
     sc->width = s_info.width;
 
 // resample / decimate to the current source rate
-//Com_Printf("%s: %f, %d\n",sfx->name,stepscale,sc->width);
+    //Com_Printf("%s: %f, %d\n",sfx->name,stepscale,sc->width);
     if (stepscale == 1) {
-// fast special case
+    // fast special case
         if (sc->width == 1) {
             memcpy(sc->data, s_info.data, outcount);
         } else {
@@ -324,15 +324,8 @@ sfxcache_t *S_LoadSound(sfx_t *s)
         goto fail;
     }
 
-#if USE_OPENAL
     if (s_started == SS_OAL)
         sc = AL_UploadSfx(s);
-#endif
-
-#if USE_SNDDMA
-    if (s_started == SS_DMA)
-        sc = ResampleSfx(s, s_info.rate);
-#endif
 
 fail:
     FS_FreeFile(data);

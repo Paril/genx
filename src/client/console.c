@@ -316,7 +316,7 @@ static void start_message_mode(chatMode_t mode)
     }
 
     con.chat = mode;
-    IF_Replace(&con.chatPrompt.inputLine, Cmd_RawArgs());
+    IF_Replace(&con.chatPrompt.inputLine, COM_StripQuotes(Cmd_RawArgs()));
     Key_SetDest(cls.key_dest | KEY_MESSAGE);
 }
 
@@ -888,50 +888,8 @@ static void Con_DrawSolidConsole(void)
     }
 
     R_ClearColor();
-
-    // draw the download bar
-    if (cls.download.current) {
-        int n, j;
-
-        if ((text = strrchr(cls.download.current->path, '/')) != NULL)
-            text++;
-        else
-            text = cls.download.current->path;
-
-        // figure out width
-        x = con.linewidth;
-        y = x - strlen(text) - 18;
-        i = x / 3;
-        if (strlen(text) > i) {
-            y = x - i - 21;
-            strncpy(buffer, text, i);
-            buffer[i] = 0;
-            strcat(buffer, "...");
-        } else {
-            strcpy(buffer, text);
-        }
-        strcat(buffer, ": ");
-        i = strlen(buffer);
-        buffer[i++] = '\x80';
-        // where's the dot go?
-        n = y * cls.download.percent / 100;
-        for (j = 0; j < y; j++) {
-            if (j == n) {
-                buffer[i++] = '\x83';
-            } else {
-                buffer[i++] = '\x81';
-            }
-        }
-        buffer[i++] = '\x82';
-        buffer[i] = 0;
-
-        Q_snprintf(buffer + i, sizeof(buffer) - i, " %02d%% (%d kB)",
-                   cls.download.percent, cls.download.position / 1000);
-
-        // draw it
-        y = vislines - CON_PRESTEP + CHAR_HEIGHT * 2;
-        R_DrawString(CHAR_WIDTH, y, 0, con.linewidth, buffer, con.charsetImage, CL_GetClientGame());
-    } else if (cls.state == ca_loading) {
+    
+	if (cls.state == ca_loading) {
         // draw loading state
         switch (con.loadstate) {
         case LOAD_MAP:

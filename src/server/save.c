@@ -372,7 +372,7 @@ static int read_server_file(void)
     }
 
     // start a new game fresh with new cvars
-    SV_InitGame(MVD_SPAWN_DISABLED);
+    SV_InitGame();
 
     // error out immediately if game doesn't support safe savegames
     if (!(g_features->integer & GMF_ENHANCED_SAVEGAMES))

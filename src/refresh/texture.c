@@ -45,7 +45,6 @@ static cvar_t *gl_texturebits;
 static cvar_t *gl_anisotropy;
 static cvar_t *gl_saturation;
 static cvar_t *gl_gamma;
-static cvar_t *gl_invert;
 static cvar_t *gl_partshape;
 
 cvar_t *gl_intensity;
@@ -106,11 +105,8 @@ static void gl_texturemode_g(genctx_t *ctx)
     int i;
 
     ctx->ignorecase = true;
-    for (i = 0; i < numFilterModes; i++) {
-        if (!Prompt_AddMatch(ctx, filterModes[i].name)) {
-            break;
-        }
-    }
+    for (i = 0; i < numFilterModes; i++)
+        Prompt_AddMatch(ctx, filterModes[i].name);
 }
 
 static void gl_anisotropy_changed(cvar_t *self)
@@ -123,7 +119,7 @@ static void gl_anisotropy_changed(cvar_t *self)
         return;
 
     qglGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &value);
-    gl_filter_anisotropy = Cvar_ClampValue(self, 1, value);
+    gl_filter_anisotropy = self->integer == 1 ? value : Cvar_ClampValue(self, 2, value);
 
     // change all the existing mipmap texture objects
     for (i = 0, image = r_images; i < r_numImages; i++, image++) {
@@ -390,28 +386,6 @@ static void GL_LightScaleTexture(byte *in, int inwidth, int inheight, imagetype_
     }
 }
 
-static void GL_ColorInvertTexture(byte *in, int inwidth, int inheight, imagetype_t type, imageflags_t flags)
-{
-    int     i, c;
-    byte    *p;
-
-    if (type != IT_WALL)
-        return; // only invert world textures
-    if (flags & IF_TURBULENT)
-        return; // don't invert turbulent surfaces
-    if (!gl_invert->integer)
-        return;
-
-    p = in;
-    c = inwidth * inheight;
-
-    for (i = 0; i < c; i++, p += 4) {
-        p[0] = 255 - p[0];
-        p[1] = 255 - p[1];
-        p[2] = 255 - p[2];
-    }
-}
-
 static bool GL_TextureHasAlpha(byte *data, int width, int height)
 {
     int         i, c;
@@ -488,7 +462,6 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
     // set colorscale and lightscale before mipmap
     comp = GL_GrayScaleTexture(data, width, height, type, flags);
     GL_LightScaleTexture(data, width, height, type, flags);
-    GL_ColorInvertTexture(data, width, height, type, flags);
 
     if (scaled_width == width && scaled_height == height) {
         // optimized case, do nothing
@@ -792,20 +765,16 @@ byte *IMG_ReadPixels(int *width, int *height, int *rowbytes)
 static void GL_BuildIntensityTable(void)
 {
     int i, j;
-    float f;
 
-    f = Cvar_ClampValue(gl_intensity, 1, 5);
-    if (gl_static.use_shaders)
-        f = 1;
     for (i = 0; i < 256; i++) {
-        j = i * f;
+        j = i;
         if (j > 255) {
             j = 255;
         }
         intensitytable[i] = j;
     }
 
-    j = 255.0f / f;
+    j = 255.0f;
     gl_static.inverse_intensity_33 = MakeColor(j, j, j, 85);
     gl_static.inverse_intensity_66 = MakeColor(j, j, j, 170);
     gl_static.inverse_intensity_100 = MakeColor(j, j, j, 255);
@@ -1023,14 +992,13 @@ void GL_InitImages(void)
     gl_anisotropy = Cvar_Get("gl_anisotropy", "1", CVAR_ARCHIVE);
     gl_anisotropy->changed = gl_anisotropy_changed;
     gl_noscrap = Cvar_Get("gl_noscrap", "0", CVAR_FILES);
-    gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES | CVAR_ARCHIVE);
-    gl_picmip = Cvar_Get("gl_picmip", "0", CVAR_FILES | CVAR_ARCHIVE);
-    gl_downsample_skins = Cvar_Get("gl_downsample_skins", "1", CVAR_FILES | CVAR_ARCHIVE);
-    gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES | CVAR_ARCHIVE);
-    gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES | CVAR_ARCHIVE);
-    gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES | CVAR_ARCHIVE);
-    gl_intensity = Cvar_Get("intensity", "2", CVAR_ARCHIVE);
-    gl_invert = Cvar_Get("gl_invert", "0", CVAR_FILES);
+    gl_round_down = Cvar_Get("gl_round_down", "0", CVAR_FILES);
+    gl_picmip = Cvar_Get("gl_picmip", "0", CVAR_FILES);
+    gl_downsample_skins = Cvar_Get("gl_downsample_skins", "0", CVAR_FILES);
+    gl_gamma_scale_pics = Cvar_Get("gl_gamma_scale_pics", "0", CVAR_FILES);
+    gl_upscale_pcx = Cvar_Get("gl_upscale_pcx", "0", CVAR_FILES);
+    gl_saturation = Cvar_Get("gl_saturation", "1", CVAR_FILES);
+    gl_intensity = Cvar_Get("intensity", "2", 0);
     gl_gamma = Cvar_Get("vid_gamma", "1", CVAR_ARCHIVE);
     gl_partshape = Cvar_Get("gl_partshape", "0", 0);
     gl_partshape->changed = gl_partshape_changed;
@@ -1041,11 +1009,6 @@ void GL_InitImages(void)
     } else {
         gl_gamma->flags |= CVAR_FILES;
     }
-
-    if (gl_static.use_shaders)
-        gl_intensity->flags &= ~CVAR_FILES;
-    else
-        gl_intensity->flags |= CVAR_FILES;
 
     qglGetIntegerv(GL_MAX_TEXTURE_SIZE, &integer);
 

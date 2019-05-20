@@ -114,7 +114,6 @@ static int PF_ImageIndex(const char *name)
 PF_Unicast
 
 Sends the contents of the mutlicast buffer to a single client.
-Archived in MVD stream.
 ===============
 */
 static void PF_Unicast(edict_t *ent, qboolean reliable)
@@ -150,9 +149,9 @@ static void PF_Unicast(edict_t *ent, qboolean reliable)
 		flags |= MSG_RELIABLE;
 	}
 
-	if (cmd == svc_layout) {
-		flags |= MSG_COMPRESS;
-	}
+    if (cmd == svc_layout) {
+        flags |= MSG_COMPRESS_AUTO;
+    }
 
 	SV_ClientAddMessage(client, flags);
 
@@ -161,8 +160,6 @@ static void PF_Unicast(edict_t *ent, qboolean reliable)
         client->drop_hack = true;
 		goto clear;
 	}
-
-	SV_MvdUnicast(ent, clientNum, reliable);
 
 clear:
 	SZ_Clear(&msg_write);
@@ -173,7 +170,6 @@ clear:
 PF_bprintf
 
 Sends text to all active clients.
-Archived in MVD stream.
 =================
 */
 static void PF_bprintf(int level, const char *fmt, ...)
@@ -192,8 +188,6 @@ static void PF_bprintf(int level, const char *fmt, ...)
 		Com_WPrintf("%s: overflow\n", __func__);
 		return;
 	}
-
-	SV_MvdBroadcastPrint(level, string);
 
 	MSG_WriteByte(svc_print);
 	MSG_WriteByte(level);
@@ -218,7 +212,6 @@ static void PF_bprintf(int level, const char *fmt, ...)
 	SZ_Clear(&msg_write);
 }
 
-
 /*
 ===============
 PF_dprintf
@@ -238,13 +231,11 @@ static void PF_dprintf(const char *fmt, ...)
 	Com_Printf("%s", msg);
 }
 
-
 /*
 ===============
 PF_cprintf
 
 Print to a single client if the level passes.
-Archived in MVD stream.
 ===============
 */
 static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
@@ -288,18 +279,14 @@ static void PF_cprintf(edict_t *ent, int level, const char *fmt, ...)
 		SV_ClientAddMessage(client, MSG_RELIABLE);
 	}
 
-    SV_MvdUnicast(ent, clientNum, true);
-
 	SZ_Clear(&msg_write);
 }
-
 
 /*
 ===============
 PF_centerprintf
 
 Centerprint to a single client.
-Archived in MVD stream.
 ===============
 */
 static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
@@ -334,7 +321,6 @@ static void PF_centerprintf(edict_t *ent, const char *fmt, ...)
     PF_Unicast(ent, true);
 }
 
-
 /*
 ===============
 PF_error
@@ -354,7 +340,6 @@ static q_noreturn void PF_error(const char *fmt, ...)
 	Com_Error(ERR_DROP, "Game Error: %s", msg);
 }
 
-
 /*
 =================
 PF_setmodel
@@ -364,15 +349,12 @@ Also sets mins and maxs for inline bmodels
 */
 static void PF_setmodel(edict_t *ent, const char *name)
 {
-	int         i;
-	mmodel_t    *mod;
+    mmodel_t    *mod;
 
-	if (!name)
-		Com_Error(ERR_DROP, "PF_setmodel: NULL");
+    if (!ent || !name)
+        Com_Error(ERR_DROP, "PF_setmodel: NULL");
 
-	i = PF_ModelIndex(name);
-
-	ent->s.modelindex = i;
+    ent->s.modelindex = PF_ModelIndex(name);
 
 // if it is an inline model, get the size information for it
 	if (name[0] == '*') {
@@ -381,7 +363,6 @@ static void PF_setmodel(edict_t *ent, const char *name)
 		VectorCopy(mod->maxs, ent->maxs);
 		PF_LinkEdict(ent);
 	}
-
 }
 
 /*
@@ -389,7 +370,6 @@ static void PF_setmodel(edict_t *ent, const char *name)
 PF_configstring
 
 If game is actively running, broadcasts configstring change.
-Archived in MVD stream.
 ===============
 */
 static void PF_configstring(int index, const char *val)
@@ -439,8 +419,6 @@ static void PF_configstring(int index, const char *val)
 	if (sv.state == ss_loading) {
 		return;
 	}
-
-	SV_MvdConfigstring(index, val, len);
 
 	// send the update to everyone
 	MSG_WriteByte(svc_configstring);
@@ -552,7 +530,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
         Com_Error(ERR_DROP, "%s: edict = NULL", __func__);
     if (volume < 0 || volume > 1)
         Com_Error(ERR_DROP, "%s: volume = %f", __func__, volume);
-    if (attenuation < 0 || attenuation > 255.0f / 64)
+    if (attenuation < 0 || attenuation > 4)
         Com_Error(ERR_DROP, "%s: attenuation = %f", __func__, attenuation);
     if (timeofs < 0 || timeofs > 0.255f)
         Com_Error(ERR_DROP, "%s: timeofs = %f", __func__, timeofs);
@@ -634,7 +612,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
     // decide per client if origin needs to be sent
     FOR_EACH_CLIENT(client) {
         // do not send sounds to connecting clients
-        if (client->state != cs_spawned || client->download || client->nodata) {
+        if (!CLIENT_ACTIVE(client)) {
 			continue;
 		}
 
@@ -688,9 +666,6 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 
     // clear multicast buffer
     SZ_Clear(&msg_write);
-
-	SV_MvdStartSound(ent, channel, flags, soundindex,
-                     volume * 255, attenuation * 64, timeofs * 1000);
 }
 
 static void PF_StartSound(edict_t *entity, int channel,
@@ -1021,11 +996,11 @@ void SV_InitGameProgs(void)
 
 	ge = entry(&import);
 	if (!ge) {
-		Com_Error(ERR_DROP, "Game DLL returned NULL exports");
+		Com_Error(ERR_DROP, "Game library returned NULL exports");
 	}
 
 	if (ge->apiversion != GAME_API_VERSION) {
-		Com_Error(ERR_DROP, "Game DLL is version %d, expected %d",
+		Com_Error(ERR_DROP, "Game library is version %d, expected %d",
 			ge->apiversion, GAME_API_VERSION);
 	}
 
@@ -1033,13 +1008,13 @@ void SV_InitGameProgs(void)
 	ge->Init();
 
 	// sanitize edict_size
-    if (ge->edict_size < sizeof(edict_t) || ge->edict_size > SIZE_MAX / MAX_EDICTS) {
-		Com_Error(ERR_DROP, "Game DLL returned bad size of edict_t");
-	}
+    if (ge->edict_size < sizeof(edict_t) || ge->edict_size > (unsigned)INT_MAX / MAX_EDICTS) {
+        Com_Error(ERR_DROP, "Game library returned bad size of edict_t");
+    }
 
 	// sanitize max_edicts
     if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS) {
-		Com_Error(ERR_DROP, "Game DLL returned bad number of max_edicts");
-	}
+        Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
+    }
 }
 
