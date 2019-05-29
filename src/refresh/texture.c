@@ -52,7 +52,6 @@ cvar_t *gl_intensity;
 static int GL_UpscaleLevel(int width, int height, imagetype_t type, imageflags_t flags);
 static void GL_Upload32(byte *data, int width, int height, int baselevel, imagetype_t type, imageflags_t flags);
 static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imagetype_t type, imageflags_t flags);
-static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags);
 
 typedef struct {
     const char *name;
@@ -388,6 +387,10 @@ static void GL_LightScaleTexture(byte *in, int inwidth, int inheight, imagetype_
 
 static bool GL_TextureHasAlpha(byte *data, int width, int height)
 {
+	if (!data) {
+		return true;
+	}
+
     int         i, c;
     byte        *scan;
 
@@ -461,7 +464,9 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
 
     // set colorscale and lightscale before mipmap
     comp = GL_GrayScaleTexture(data, width, height, type, flags);
-    GL_LightScaleTexture(data, width, height, type, flags);
+	if (data) {
+	    GL_LightScaleTexture(data, width, height, type, flags);
+	}
 
     if (scaled_width == width && scaled_height == height) {
         // optimized case, do nothing
@@ -498,7 +503,7 @@ static void GL_Upload32(byte *data, int width, int height, int baselevel, imaget
 
     c.texUploads++;
 
-    if (type == IT_WALL || type == IT_SKIN) {
+    if ((type == IT_WALL || type == IT_SKIN) && !(flags & IF_OLDSCHOOL)) {
         if (qglGenerateMipmap) {
             qglGenerateMipmap(GL_TEXTURE_2D);
         } else {
@@ -586,13 +591,13 @@ static void GL_Upscale32(byte *data, int width, int height, int maxlevel, imaget
     }
 }
 
-static void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
+void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
 {
 	if (type == IT_WALL || type == IT_SKIN) {
 		// Generations
 		if (flags & IF_OLDSCHOOL) {
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (flags & IF_CRISPY) ? GL_LINEAR : GL_NEAREST);
+			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (flags & IF_CRISPY) ? GL_LINEAR : GL_NEAREST);
 		} else {
 			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_min);
 			qglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
@@ -854,6 +859,37 @@ static void GL_InitDefaultTexture(void)
     ntx->th = 1;
 }
 
+static void GL_InitFramebufferTexture(void)
+{
+	GLint size = 320 * CRISPY_TEXTURE_SCALE;
+
+	GL_ForceTexture(0, TEXNUM_FRAMEBUFFER);
+	GL_Upload32(NULL, size, size, 0, IT_WALL, IF_TURBULENT | IF_OLDSCHOOL);
+	GL_SetFilterAndRepeat(IT_WALL, IF_TURBULENT | IF_OLDSCHOOL);
+
+	image_t *ntx = R_FRAMEBUFFERTEXTURE;
+	ntx->width = ntx->upload_width = size;
+	ntx->height = ntx->upload_height = size;
+	ntx->type = IT_WALL;
+	ntx->flags = IF_OLDSCHOOL | IF_TRANSPARENT;
+	ntx->texnum = TEXNUM_FRAMEBUFFER;
+	ntx->sl = 0;
+	ntx->sh = 1;
+	ntx->tl = 0;
+	ntx->th = 1;
+
+	qglGenFramebuffers(1, &ntx->frame_buffer);
+	qglBindFramebuffer(GL_FRAMEBUFFER, ntx->frame_buffer);
+
+	qglGenRenderbuffers(1, &ntx->render_buffer);
+	qglBindRenderbuffer(GL_RENDERBUFFER, ntx->render_buffer);
+	qglRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, size, size);
+	qglFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, ntx->render_buffer);
+
+	qglFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, ntx->texnum, 0);
+	qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 static void GL_InitParticleTexture(void)
 {
 	byte pixels[16 * 16 * 4];
@@ -1053,6 +1089,7 @@ void GL_InitImages(void)
 	GL_InitOldParticleTexture();
     GL_InitWhiteImage();
     GL_InitBeamTexture();
+	GL_InitFramebufferTexture();
 
     GL_ShowErrors(__func__);
 }

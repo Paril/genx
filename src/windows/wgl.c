@@ -109,15 +109,15 @@ void WGL_InitExtensions(void)
 
 #undef GPA
 
-unsigned WGL_ParseExtensionString(const char *s)
+void WGL_ParseExtensionString(const char *s)
 {
-    // must match defines in win_wgl.h!
+    // must match defines in glimp.h!
     static const char *const extnames[] = {
-        "WGL_ARB_extensions_string",
         "WGL_ARB_multisample",
         "WGL_ARB_pixel_format",
         "WGL_EXT_swap_control",
         "WGL_EXT_swap_control_tear",
+		"WGL_ARB_create_context",
         NULL
     };
 

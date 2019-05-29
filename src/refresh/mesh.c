@@ -137,18 +137,19 @@ static void tess_static_shade(const maliasmesh_t *mesh)
 
 static void tess_static_plain(const maliasmesh_t *mesh)
 {
-    maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
-    vec_t *dst_vert = tess.vertices;
-    int count = mesh->numverts;
+	maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
+	vec_t *dst_vert = tess.vertices;
+	int count = mesh->numverts;
 
-    while (count--) {
-        dst_vert[0] = src_vert->pos[0] * newscale[0] + translate[0];
-        dst_vert[1] = src_vert->pos[1] * newscale[1] + translate[1];
-        dst_vert[2] = src_vert->pos[2] * newscale[2] + translate[2];
-        dst_vert += 4;
+	while (count--)
+	{
+		dst_vert[0] = src_vert->pos[0] * newscale[0] + translate[0];
+		dst_vert[1] = src_vert->pos[1] * newscale[1] + translate[1];
+		dst_vert[2] = src_vert->pos[2] * newscale[2] + translate[2];
+		dst_vert += 4;
 
-        src_vert++;
-    }
+		src_vert++;
+	}
 }
 
 static inline vec_t *get_lerped_normal(vec_t *normal,
@@ -392,6 +393,7 @@ static void setup_color(void)
 		if (flags & RF_FROZEN) {
 			color[0] /= 3;
 			color[1] /= 3;
+			color[2] *= 3;
 		}
 
         for (i = 0; i < 3; i++) {
@@ -513,6 +515,35 @@ static void draw_shadow(maliasmesh_t *mesh)
     }
 }
 
+static image_t *image_for_mesh(maliasmesh_t *mesh)
+{
+	entity_t *ent = glr.ent;
+
+	if (ent->flags & RF_SHELL_MASK)
+		return NULL;
+
+	if (ent->skin)
+		return IMG_ForHandle(ent->skin, GAME_Q2);
+
+	if (!mesh->numskins)
+		return NULL;
+
+	if (ent->skinnum < 0 || ent->skinnum >= mesh->numskins)
+	{
+		Com_DPrintf("%s: no such skin: %d\n", "GL_DrawAliasModel", ent->skinnum);
+		return mesh->skins[0];
+	}
+
+	if (mesh->skins[ent->skinnum]->texnum == TEXNUM_DEFAULT)
+		return mesh->skins[0];
+
+	// Generations
+	if (ent->flags & RF_SKIN_ANIM)
+		ent->skinnum = (int)(glr.fd.time * 5) % mesh->numskins;
+
+	return mesh->skins[ent->skinnum];
+}
+
 static int texnum_for_mesh(maliasmesh_t *mesh)
 {
     entity_t *ent = glr.ent;
@@ -548,9 +579,6 @@ static void draw_alias_mesh(maliasmesh_t *mesh)
     // fall back to entity matrix
     GL_LoadMatrix(glr.entmatrix);
 
-    if (shadelight)
-        state |= GLS_SHADE_SMOOTH;
-
     if (glr.ent->flags & RF_TRANSLUCENT)
         state |= GLS_BLEND_BLEND;
 
@@ -576,8 +604,6 @@ static void draw_alias_mesh(maliasmesh_t *mesh)
 
     GL_TexCoordPointer(2, 0, (GLfloat *)mesh->tcoords);
 
-    GL_LockArrays(mesh->numverts);
-
     qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
                     mesh->indices);
 
@@ -585,14 +611,29 @@ static void draw_alias_mesh(maliasmesh_t *mesh)
         GL_DrawOutlines(mesh->numindices, mesh->indices);
     }
 
-    // FIXME: unlock arrays before changing matrix?
     draw_shadow(mesh);
-
-    GL_UnlockArrays();
 }
 
 // Generations
+static void draw_alias_mesh_2d(maliasmesh_t *mesh)
+{
+	(*tessfunc)(mesh);
 
+	GL_BindTexture(0, texnum_for_mesh(mesh));
+
+	image_t *img = image_for_mesh(mesh);
+
+	if (img && !(img->flags & IF_OLDSCHOOL))
+		GL_SetFilterAndRepeat(img->type, img->flags | (IF_OLDSCHOOL | IF_CRISPY));
+
+	GL_TexCoordPointer(2, 0, (GLfloat *)mesh->tcoords);
+
+	qglDrawElements(GL_TRIANGLES, mesh->numindices, QGL_INDEX_ENUM,
+					mesh->indices);
+
+	if (img && !(img->flags & IF_OLDSCHOOL))
+		GL_SetFilterAndRepeat(img->type, img->flags);
+}
 
 static void GL3_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar)
 {
@@ -627,11 +668,189 @@ static void GL3_MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear,
 	});
 }
 
+static void calc_mins_maxs(const maliasmesh_t *mesh, vec3_t mins, vec3_t maxs)
+{
+	maliasvert_t *src_vert = &mesh->verts[newframenum * mesh->numverts];
+	vec_t *dst_vert = tess.vertices;
+	int count = mesh->numverts;
+
+	while (count--)
+	{
+		vec3_t v = {
+			src_vert->pos[0] * newscale[0] + translate[0],
+			src_vert->pos[1] * newscale[1] + translate[1],
+			src_vert->pos[2] * newscale[2] + translate[2]
+		};
+
+		AddPointToBounds(v, mins, maxs);
+
+		src_vert++;
+	}
+}
+
+static void GL_DrawAliasSpriteModel(entity_t *ent, model_t *model, vec3_t origin)
+{
+	int i;
+
+	vec3_t mins, maxs;
+	ClearBounds(mins, maxs);
+
+	for (i = 0; i < model->nummeshes; i++)
+	{
+		maliasmesh_t *mesh = &model->meshes[i];
+		calc_mins_maxs(mesh, mins, maxs);
+	}
+
+	image_t *image = R_FRAMEBUFFERTEXTURE;
+
+	float w = ((maxs[0] - mins[0]) + (maxs[1] - mins[1])), h = (maxs[2] - mins[2]);
+
+	float tw = (w / image->width) / 2;
+	float yofs = 0.5 + ((mins[2] + translate[2]) / image->height);
+
+	w /= CRISPY_TEXTURE_SCALE;
+
+	const vec_t tcoords[8] = {
+		0.5 - tw, 0.5 + (-mins[2] / image->height),
+		0.5 - tw, 0.5 - (maxs[2] / image->height),
+		0.5 + tw, 0.5 + (-mins[2] / image->height),
+		0.5 + tw, 0.5 - (maxs[2] / image->height) };
+	entity_t *e = glr.ent;
+	float alpha = 1;
+	int bits = GLS_CULL_DISABLE | GLS_ALPHATEST_ENABLE;
+	vec3_t up, down, left, right;
+	vec3_t points[4];
+
+	if (ent->flags & RF_SPECTRE)
+		alpha = 0.25f;
+
+	if (alpha == 1) {
+		if (image->flags & IF_TRANSPARENT) {
+			if (image->flags & IF_PALETTED) {
+				bits |= GLS_ALPHATEST_ENABLE;
+			}
+			else {
+				bits |= GLS_BLEND_BLEND;
+			}
+		}
+	}
+	else {
+		bits |= GLS_BLEND_BLEND | GLS_DEPTHMASK_FALSE;
+	}
+
+	GL_LoadMatrix(glr.viewmatrix);
+	GL_BindTexture(0, image->texnum);
+	GL_StateBits(bits);
+	GL_ArrayBits(GLA_VERTEX | GLA_TC);
+
+	vec3_t color = { 1, 1, 1 };
+
+	if (ent->flags & RF_SPECTRE)
+		color[0] = color[1] = color[2] = 0;
+
+	GL_Color(color[0], color[1], color[2], alpha);
+
+	VectorScale(glr.viewaxis_nopitch[1], (w / 2), left);
+	VectorScale(glr.viewaxis_nopitch[1], -(w / 2), right);
+	VectorScale(glr.viewaxis_nopitch[2], mins[2] / CRISPY_TEXTURE_SCALE, down);
+	VectorScale(glr.viewaxis_nopitch[2], (h + mins[2]) / CRISPY_TEXTURE_SCALE, up);
+
+	VectorAdd3(e->origin, down, left, points[0]);
+	VectorAdd3(e->origin, up, left, points[1]);
+	VectorAdd3(e->origin, down, right, points[2]);
+	VectorAdd3(e->origin, up, right, points[3]);
+
+	GL_TexCoordPointer(2, 0, tcoords);
+	GL_VertexPointer(3, 0, &points[0][0]);
+	qglDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
+static float yaw_for_screen_position(vec3_t origin, vec3_t ent_angles)
+{
+	vec3_t diff, fwd;
+	VectorSubtract(glr.fd.vieworg, origin, diff);
+	diff[2] = 0;
+	VectorNormalize(diff);
+	vectoangles2(diff, fwd);
+	return fwd[1] - ent_angles[1];
+}
+
+static void GL_RotateFor2DEntity(float yaw)
+{
+	yaw = round(yaw / 45) * 45;
+	vec3_t angles = { yaw + 90, 0, 90 };
+	vec3_t axis[3];
+	AnglesToAxis(angles, axis);
+
+	GLfloat matrix[16];
+
+	matrix[0] = axis[0][0];
+	matrix[4] = axis[1][0];
+	matrix[8] = axis[2][0];
+	matrix[12] = R_FRAMEBUFFERTEXTURE->width / 2;
+
+	matrix[1] = -axis[0][1];
+	matrix[5] = -axis[1][1];
+	matrix[9] = -axis[2][1];
+	matrix[13] = R_FRAMEBUFFERTEXTURE->height / 2;
+
+	matrix[2] = -axis[0][2];
+	matrix[6] = -axis[1][2];
+	matrix[10] = -axis[2][2];
+	matrix[14] = 0;
+
+	matrix[3] = 0;
+	matrix[7] = 0;
+	matrix[11] = 0;
+	matrix[15] = 1;
+
+	GL_ForceMatrix(matrix);
+}
+
+static void setup_alias_mesh_2d(void)
+{
+	VectorScale(newscale, CRISPY_TEXTURE_SCALE, newscale);
+	VectorScale(translate, CRISPY_TEXTURE_SCALE, translate);
+
+	GL_SetupOrtho(0, 0, R_FRAMEBUFFERTEXTURE->width, R_FRAMEBUFFERTEXTURE->height, -256, 256);
+	GL_BeginRenderToTexture(R_FRAMEBUFFERTEXTURE->frame_buffer);
+
+	GL_BindTexture(0, TEXNUM_WHITE);
+	GL_StateBits(GLS_DEFAULT);
+
+	if (shadelight)
+	{
+		GL_ArrayBits(GLA_VERTEX | GLA_TC | GLA_COLOR);
+		GL_VertexPointer(3, VERTEX_SIZE, tess.vertices);
+		GL_ColorFloatPointer(4, VERTEX_SIZE, tess.vertices + 4);
+	}
+	else
+	{
+		GL_ArrayBits(GLA_VERTEX | GLA_TC);
+		GL_VertexPointer(3, 4, tess.vertices);
+		GL_Color(color[0], color[1], color[2], color[3]);
+	}
+
+	qglClearColor(0, 0, 0, 0);
+	qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	qglFrontFace(GL_CCW);
+}
+
+static void end_alias_mesh_2d(void)
+{
+	qglFrontFace(GL_CW);
+	qglClearColor(0, 0, 0, 1);
+	GL_EndRenderToTexture();
+	GL_Setup3D(false);
+}
+
 void GL_DrawAliasModel(model_t *model)
 {
-    entity_t *ent = glr.ent;
+	int i;
+	entity_t *ent = glr.ent;
+
     glCullResult_t cull;
-    int i;
+	bool renderAs2D = (CL_GetClientGame() == GAME_DOOM || CL_GetClientGame() == GAME_DUKE);
 
     newframenum = ent->frame;
     if (newframenum < 0 || newframenum >= model->numframes) {
@@ -648,10 +867,6 @@ void GL_DrawAliasModel(model_t *model)
 	backlerp = ent->backlerp;
     frontlerp = 1.0f - backlerp;
 
-    // optimized case
-    if (backlerp == 0)
-        oldframenum = newframenum;
-
     // interpolate origin, if necessarry
     if (ent->flags & RF_FRAMELERP)
         LerpVector2(ent->oldorigin, ent->origin,
@@ -660,15 +875,14 @@ void GL_DrawAliasModel(model_t *model)
         VectorCopy(ent->origin, origin);
 
 	// Generations
-	if ((ent->flags & RF_NOLERP) || model->nolerp) {
+	if ((ent->flags & RF_NOLERP) || model->nolerp || renderAs2D) {
 		backlerp = 0;
-
-		frontlerp = 1.0f - backlerp;
-
-		// optimized case
-		if (backlerp == 0)
-			oldframenum = newframenum;
+		frontlerp = 1;
 	}
+
+    // optimized case
+    if (backlerp == 0)
+        oldframenum = newframenum;
 
     // cull the model, setup scale and translate vectors
     if (newframenum == oldframenum)
@@ -681,7 +895,9 @@ void GL_DrawAliasModel(model_t *model)
     // setup parameters common for all meshes
     setup_color();
     setup_dotshading();
-    setup_shadow();
+
+	if (!renderAs2D)
+	    setup_shadow();
 
     // select proper tessfunc
     if (ent->flags & RF_SHELL_MASK) {
@@ -697,7 +913,13 @@ void GL_DrawAliasModel(model_t *model)
             tess_static_plain : tess_lerped_plain;
     }
 
-    GL_RotateForEntity(origin);
+	if (renderAs2D)
+		setup_alias_mesh_2d();
+
+	if (renderAs2D)
+		GL_RotateFor2DEntity(yaw_for_screen_position(origin, ent->angles));
+	else
+	    GL_RotateForEntity(origin);
 
 	if (ent->flags & RF_WEAPONMODEL) {
 		// render weapon with a different FOV (r_gunfov) so it's not distorted at high view FOV
@@ -715,8 +937,12 @@ void GL_DrawAliasModel(model_t *model)
         GL_DepthRange(0, 0.25f);
 
     // draw all the meshes
-    for (i = 0; i < model->nummeshes; i++)
-        draw_alias_mesh(&model->meshes[i]);
+    for (i = 0; i < model->nummeshes; i++) {
+		if (renderAs2D)
+			draw_alias_mesh_2d(&model->meshes[i]);
+		else
+	        draw_alias_mesh(&model->meshes[i]);
+	}
 
     if (ent->flags & RF_DEPTHHACK)
         GL_DepthRange(0, 1);
@@ -729,4 +955,105 @@ void GL_DrawAliasModel(model_t *model)
 	if (ent->flags & RF_WEAPONMODEL) {
 		GL_Frustum();
 	}
+
+	if (renderAs2D)
+	{
+		end_alias_mesh_2d();
+		GL_DrawAliasSpriteModel(ent, model, origin);
+	}
+}
+
+#define TARGA_HEADER_SIZE  18
+
+static int GL_WriteTGA(const char *filename, byte *pixels)
+{
+	qhandle_t handle;
+	FS_FOpenFile(filename, &handle, FS_MODE_WRITE);
+
+	byte header[TARGA_HEADER_SIZE], *p;
+	int i, j;
+
+	memset(&header, 0, sizeof(header));
+	header[2] = 2;        // uncompressed type
+	header[12] = R_FRAMEBUFFERTEXTURE->width & 255;
+	header[13] = R_FRAMEBUFFERTEXTURE->width >> 8;
+	header[14] = R_FRAMEBUFFERTEXTURE->height & 255;
+	header[15] = R_FRAMEBUFFERTEXTURE->height >> 8;
+	header[16] = 32;     // pixel size
+
+	FS_Write(&header, sizeof(header), handle);
+
+	int row_stride = R_FRAMEBUFFERTEXTURE->width * 4;
+
+	// swap RGB to BGR
+	for (i = 0; i < R_FRAMEBUFFERTEXTURE->height; i++)
+	{
+		p = pixels + i * row_stride;
+		for (j = 0; j < R_FRAMEBUFFERTEXTURE->width; j++)
+		{
+			byte tmp;
+
+			tmp = p[2];
+			p[2] = p[0];
+			p[0] = tmp;
+
+			p += 4;
+		}
+	}
+
+	for (i = R_FRAMEBUFFERTEXTURE->height - 1; i >= 0; i--)
+	{
+		FS_Write(pixels + i * row_stride, R_FRAMEBUFFERTEXTURE->width * 4, handle);
+	}
+
+	FS_FCloseFile(handle);
+
+	return 0;
+}
+
+void GL_OutputAliasModelAs2D(model_t *model)
+{
+	backlerp = 0;
+	frontlerp = 1;
+	shadelight = NULL;
+	tessfunc = tess_static_plain;
+	Vector4Set(color, 1, 1, 1, 1);
+
+	setup_alias_mesh_2d();
+
+	int i, x;
+
+	char buffer[MAX_QPATH];
+	Q_snprintf(buffer, sizeof(buffer), "%s/sprites/", fs_gamedir);
+	FS_CreatePath(buffer);
+
+	byte *pixels = Z_Malloc(R_FRAMEBUFFERTEXTURE->width * R_FRAMEBUFFERTEXTURE->height * 4);
+
+	for (i = 0; i < model->numframes; i++)
+	{
+		int angle = 0;
+		for (; angle < 360; angle += 45)
+		{
+			VectorCopy(model->frames[i].scale, newscale);
+			VectorCopy(model->frames[i].translate, translate);
+
+			oldframenum = newframenum = i;
+			GL_RotateFor2DEntity(angle);
+
+			for (x = 0; x < model->nummeshes; x++)
+				draw_alias_mesh_2d(&model->meshes[x]);
+
+			GL_BindTexture(0, TEXNUM_FRAMEBUFFER);
+
+			Q_snprintf(buffer, sizeof(buffer), "sprites/out_%i_%i.tga", i, angle);
+			qglGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			GL_WriteTGA(buffer, pixels);
+
+			qglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		}
+	}
+
+	Z_Free(pixels);
+
+	end_alias_mesh_2d();
 }

@@ -1725,7 +1725,9 @@ static void InitItemList()
 void Weapons_Init();
 
 const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] = {
-	{ }, // null
+	{
+		NULL
+	}, // null
 	// Q2
 	{
 		"blaster",

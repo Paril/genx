@@ -563,6 +563,9 @@ static void CL_AddPacketEntities(void)
 			}
 		}
 
+		VectorCopy(cent->mins, ent.mins);
+		VectorCopy(cent->maxs, ent.maxs);
+
 		modelentry_t *entry = NULL;
 
 		// use game of object if it's explicit

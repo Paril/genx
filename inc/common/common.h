@@ -40,7 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define COM_POSTINIT_CFG    "postinit.cfg"
 
 // Paril
-#define COM_GAME_CFG		"games.cfg"
+#define COM_PATHS_CFG		"asset_paths.cfg"
 #define COM_CONFIG_CFG      APPLICATION "config.cfg"
 
 // FIXME: rename these

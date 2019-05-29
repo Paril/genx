@@ -375,17 +375,11 @@ void SV_InitGame(void)
         Cvar_VariableInteger("deathmatch")) {
         Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
         Cvar_Set("coop", "0");
-    } else {
-		if (Cvar_VariableInteger("invasion"))
-		{
-			Cvar_Set("coop", "0");
-			Cvar_Set("deathmatch", "0");
-		}
-        else if (Cvar_VariableInteger("coop") &&
-            Cvar_VariableInteger("deathmatch")) {
-            Com_Printf("Deathmatch and Coop both set, disabling Coop\n");
-            Cvar_Set("coop", "0");
-        }
+    } else if (Cvar_VariableInteger("invasion"))
+	{
+		Cvar_Set("coop", "0");
+		Cvar_Set("deathmatch", "0");
+	}
 
     // dedicated servers can't be single player and are usually DM
     // so unless they explicity set coop, force it to deathmatch

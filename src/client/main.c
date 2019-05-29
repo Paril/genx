@@ -438,8 +438,8 @@ void CL_CheckForResend(void)
         cls.quakePort = net_qport->integer & 0xff;
         break;
     case PROTOCOL_VERSION_Q2PRO:
-		Q_snprintf(tail, sizeof(tail), " %d %d %d %d",
-			maxmsglen, net_chantype->integer, USE_ZLIB,
+		Q_snprintf(tail, sizeof(tail), " %d %d %d",
+			maxmsglen, USE_ZLIB,
 			PROTOCOL_VERSION_Q2PRO_CURRENT);
 		cls.quakePort = net_qport->integer & 0xff;
         break;
@@ -770,9 +770,6 @@ void CL_Disconnect(error_type_t type)
 
 	// stop playback and/or recording
 	CL_CleanupDemos();
-
-	// stop download
-	CL_CleanupDownloads();
 
 	CL_ClearState();
 
@@ -1117,9 +1114,6 @@ static void CL_Reconnect_f(void)
 		if (cls.demo.playback) {
 			return;
 		}
-		if (cls.download.file) {
-			return; // if we are downloading, we don't change!
-		}
 
 		Com_Printf("Reconnecting...\n");
 
@@ -1382,7 +1376,6 @@ static void CL_ConnectionlessPacket(void)
 
 	// server connection
 	if (!strcmp(c, "client_connect")) {
-        netchan_type_t type;
 		int anticheat = 0;
 		char mapname[MAX_QPATH];
 
@@ -1399,12 +1392,6 @@ static void CL_ConnectionlessPacket(void)
 			return;
 		}
 
-        if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO) {
-            type = NETCHAN_NEW;
-        } else {
-            type = NETCHAN_OLD;
-        }
-
 		mapname[0] = 0;
 
 		// parse additional parameters
@@ -1416,15 +1403,6 @@ static void CL_ConnectionlessPacket(void)
 				if (*s) {
 					anticheat = atoi(s);
 				}
-            } else if (!strncmp(s, "nc=", 3)) {
-                s += 3;
-                if (*s) {
-                    type = atoi(s);
-                    if (type != NETCHAN_OLD && type != NETCHAN_NEW) {
-                        Com_Error(ERR_DISCONNECT,
-                                  "Server returned invalid netchan type");
-                    }
-			}
             } else if (!strncmp(s, "map=", 4)) {
 				Q_strlcpy(mapname, s + 4, sizeof(mapname));
             }
@@ -1436,7 +1414,7 @@ static void CL_ConnectionlessPacket(void)
 			// this may happen after svc_reconnect
 			Netchan_Close(cls.netchan);
 		}
-        cls.netchan = Netchan_Setup(NS_CLIENT, type, &cls.serverAddress,
+        cls.netchan = Netchan_Setup(NS_CLIENT, &cls.serverAddress,
 									cls.quakePort, 1024, cls.serverProtocol);
 
 		if (anticheat >= 2) {

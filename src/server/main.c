@@ -593,7 +593,6 @@ typedef struct {
     int         challenge;
 
     int         maxlength;
-    int         nctype;
     bool    	has_zlib;
 
     int         reserved;   // hidden client slots
@@ -748,25 +747,14 @@ static bool parse_enhanced_params(conn_params_t *p)
         } else {
             p->version = PROTOCOL_VERSION_R1Q2_MINIMUM;
         }
-        p->nctype = NETCHAN_OLD;
         p->has_zlib = true;
     } else if (p->protocol == PROTOCOL_VERSION_Q2PRO) {
-        // set netchan type
-        s = Cmd_Argv(6);
-        if (*s) {
-            p->nctype = atoi(s);
-            if (p->nctype < NETCHAN_OLD || p->nctype > NETCHAN_NEW)
-                return reject("Invalid netchan type.\n");
-        } else {
-            p->nctype = NETCHAN_NEW;
-        }
-
         // set zlib
-        s = Cmd_Argv(7);
+        s = Cmd_Argv(6);
         p->has_zlib = !*s || atoi(s);
 
     // set minor protocol version
-        s = Cmd_Argv(8);
+        s = Cmd_Argv(7);
 	    if (*s) {
 	        p->version = atoi(s);
 	        clamp(p->version,
@@ -982,19 +970,10 @@ void init_pmove_and_es_flags(client_t *newcl)
 	PmoveInit(&newcl->pmp, svs.entities[newcl->number].game);
 }
 
-static void send_connect_packet(client_t *newcl, int nctype)
+static void send_connect_packet(client_t *newcl)
 {
-    const char *ncstring    = "";
-
-    if (newcl->protocol == PROTOCOL_VERSION_Q2PRO) {
-        if (nctype == NETCHAN_NEW)
-            ncstring = " nc=1";
-        else
-            ncstring = " nc=0";
-    }
-
-    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect%s map=%s",
-                      ncstring, newcl->mapname);
+    Netchan_OutOfBand(NS_SERVER, &net_from, "client_connect map=%s",
+                      newcl->mapname);
 }
 
 // converts all the extra positional parameters to `connect' command into an
@@ -1009,10 +988,10 @@ static void append_extra_userinfo(conn_params_t *params, char *userinfo)
 
     Q_snprintf(userinfo + strlen(userinfo) + 1, MAX_INFO_STRING,
                "\\challenge\\%d\\ip\\%s"
-               "\\major\\%d\\minor\\%d\\netchan\\%d"
+               "\\major\\%d\\minor\\%d"
                "\\packetlen\\%d\\qport\\%d\\zlib\\%d",
                params->challenge, userinfo_ip_string(),
-               params->protocol, params->version, params->nctype,
+               params->protocol, params->version,
                params->maxlength, params->qport, params->has_zlib);
 }
 
@@ -1092,7 +1071,7 @@ static void SVC_DirectConnect(void)
     }
 
     // setup netchan
-    newcl->netchan = Netchan_Setup(NS_SERVER, params.nctype,
+    newcl->netchan = Netchan_Setup(NS_SERVER,
                                    &net_from, params.qport,
                                    params.maxlength,
                                    params.protocol);
@@ -1102,7 +1081,7 @@ static void SVC_DirectConnect(void)
     SV_UserinfoChanged(newcl);
 
     // send the connect packet to the client
-    send_connect_packet(newcl, params.nctype);
+    send_connect_packet(newcl);
 
     SV_RateInit(&newcl->ratelimit_namechange, sv_namechange_limit->string);
 

@@ -2575,7 +2575,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 		{
 		case LAYOUT_PIC:
 			// draw a pic from a stat number
-			value = *(uint16_t *) (((void *)&cl.frame.ps.stats) + entry->pic.offset);
+			value = *(uint16_t *) (((uint8_t *)&cl.frame.ps.stats) + entry->pic.offset);
 
 			if (value <= 0 || value >= MAX_PRECACHE)
 				Com_Error(ERR_DROP, "%s: invalid pic index", __func__);
@@ -2623,7 +2623,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 		case LAYOUT_NUM:
 			// draw a number
 			{
-				void *ptr = ((void *) &cl.frame.ps.stats) + entry->num.offset;
+				void *ptr = ((uint8_t *) &cl.frame.ps.stats) + entry->num.offset;
 				
 				if (entry->num.type == LAYOUT_TYPE_UINT8)
 					value = *(uint8_t *)ptr;
@@ -2934,7 +2934,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			break;
 
 		case LAYOUT_STAT_STRING:
-			index = value = *(uint16_t *) (((void *)&cl.frame.ps.stats) + entry->stat_string.offset);
+			index = value = *(uint16_t *) (((uint8_t *)&cl.frame.ps.stats) + entry->stat_string.offset);
 
 			if (index < 0 || index >= MAX_CONFIGSTRINGS)
 				Com_Error(ERR_DROP, "%s: invalid string index", __func__);
@@ -2958,7 +2958,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			break;
 		case LAYOUT_IF:
 			{
-				void *ptr = ((void *) &cl.frame.ps.stats) + entry->if_stmt.offset;
+				void *ptr = ((uint8_t *) &cl.frame.ps.stats) + entry->if_stmt.offset;
 				
 				if (entry->if_stmt.type <= LAYOUT_TYPE_INT8)
 					value = *(uint8_t *)ptr;
@@ -2975,7 +2975,7 @@ static void SCR_ExecuteLayoutStruct(const layout_string_t *s)
 			}
 		case LAYOUT_IFBIT:
 			{
-				void *ptr = ((void *) &cl.frame.ps.stats) + entry->ifbit_stmt.offset;
+				void *ptr = ((uint8_t *) &cl.frame.ps.stats) + entry->ifbit_stmt.offset;
 				
 				if (entry->ifbit_stmt.type <= LAYOUT_TYPE_INT8)
 					value = *(uint8_t *)ptr;

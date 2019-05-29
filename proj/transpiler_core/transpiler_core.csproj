@@ -10,14 +10,14 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>portable</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx</OutputPath>
+    <OutputPath>..\..\bin\genx\</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>full</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx</OutputPath>
+    <OutputPath>..\..\bin\genx\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

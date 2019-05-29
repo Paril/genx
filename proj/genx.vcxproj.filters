@@ -127,9 +127,6 @@
     <ClCompile Include="..\src\client\demo.c">
       <Filter>Source Files\client</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\client\download.c">
-      <Filter>Source Files\client</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\client\effects.c">
       <Filter>Source Files\client</Filter>
     </ClCompile>
@@ -287,9 +284,6 @@
       <Filter>Source Files\refresh</Filter>
     </ClCompile>
     <ClCompile Include="..\src\refresh\main.c">
-      <Filter>Source Files\refresh</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\refresh\legacy.c">
       <Filter>Source Files\refresh</Filter>
     </ClCompile>
     <ClCompile Include="..\src\refresh\images.c">

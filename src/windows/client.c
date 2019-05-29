@@ -212,7 +212,6 @@ static LONG set_fullscreen_mode(void)
 
 	EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &desktop);
 
-    } else if (mode_is_sane(&desktop)) {
     if (mode_is_sane(&desktop)) {
         win.rc.width = desktop.dmPelsWidth;
         win.rc.height = desktop.dmPelsHeight;

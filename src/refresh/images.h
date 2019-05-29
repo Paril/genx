@@ -73,6 +73,7 @@ typedef struct image_s {
 	imageformat_t	original_format;
 	byte			*font_widths;
 	uint32_t		*font_x;
+	unsigned		frame_buffer, render_buffer;
 } image_t;
 
 #define MAX_RIMAGES     2048
@@ -82,7 +83,8 @@ extern int      r_numImages;
 
 extern int registration_sequence;
 
-#define R_NOTEXTURE &r_images[0]
+#define R_NOTEXTURE (&r_images[0])
+#define R_FRAMEBUFFERTEXTURE (&r_images[1])
 
 extern uint32_t d_palettes[GAME_TOTAL][256];
 

@@ -79,17 +79,17 @@ extern nav_state_t	nav_debug;
 extern cvar_t		*nav_tools;
 extern cvar_t		*nav_autodrop;
 
-void Nav_CmInit();
+void Nav_CmInit(void);
 
-void Nav_Save();
+void Nav_Save(void);
 void Nav_MapLoaded(const char *name, bsp_t *bsp);
-void Nav_MapUnloaded();
+void Nav_MapUnloaded(void);
 
-void NavStateDestroyNagivator();
+void NavStateDestroyNagivator(void);
 
-void Nav_ToggleAutoDrop();
-void Nav_ToggleAutoConnect();
-void Nav_ToggleDebug();
+void Nav_ToggleAutoDrop(void);
+void Nav_ToggleAutoConnect(void);
+void Nav_ToggleDebug(void);
 
 nav_node_t *Nav_CreateNode();
 bool Nav_ConnectNodes(nav_node_t *from, nav_node_t *to, bool two_way);

@@ -170,6 +170,7 @@ static const glsection_t sections[] = {
             QGL_FN(UseProgram),
             QGL_FN(VertexAttrib4f),
             QGL_FN(VertexAttribPointer),
+			QGL_FN(GetTexImage),
             { NULL }
         }
     },
@@ -180,6 +181,14 @@ static const glsection_t sections[] = {
         .ver_es = 20,
         .functions = (const glfunction_t []) {
             QGL_FN(GenerateMipmap),
+			QGL_FN(GenFramebuffers),
+			QGL_FN(BindFramebuffer),
+			QGL_FN(GenRenderbuffers),
+			QGL_FN(BindRenderbuffer),
+			QGL_FN(RenderbufferStorage),
+			QGL_FN(FramebufferRenderbuffer),
+			QGL_FN(FramebufferTexture),
+			QGL_FN(CheckFramebufferStatus),
             { NULL }
         }
     },
@@ -240,17 +249,7 @@ static const glsection_t sections[] = {
             QGL_FN(ProgramStringARB),
             { NULL }
         }
-    },
-
-    // GL_EXT_compiled_vertex_array
-    {
-        .extension = "GL_EXT_compiled_vertex_array",
-        .functions = (const glfunction_t []) {
-            QGL_FN(LockArraysEXT),
-            QGL_FN(UnlockArraysEXT),
-            { NULL }
-        }
-    },
+    }
 };
 
 static bool parse_version(void)

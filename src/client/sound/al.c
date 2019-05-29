@@ -142,6 +142,8 @@ sfxcache_t *AL_UploadSfx(sfx_t *s)
         qalBufferiv(name, AL_LOOP_POINTS_SOFT, points);
     }
 
+	sc->bufnum = name;
+
     return sc;
 }
 

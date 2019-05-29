@@ -505,11 +505,13 @@ void Nav_ToggleConnection(nav_node_t *first, nav_node_t *second)
 	}
 }
 
-void Nav_Save()
+void Nav_Save(void)
 {
-	FS_CreatePath("nav");
-
 	char buffer[MAX_QPATH];
+	
+	Q_snprintf(buffer, sizeof(buffer), "%s/nav/", fs_gamedir);
+	FS_CreatePath(buffer);
+
 	Q_snprintf(buffer, MAX_QPATH, "nav/%s.nod", nav_debug.mapname);
 
 	qhandle_t f;
@@ -532,7 +534,7 @@ void Nav_Save()
 	Com_Printf("Nodes saved.\n");
 }
 
-void Nav_MapUnloaded()
+void Nav_MapUnloaded(void)
 {
 	if (!nav_debug.is_running)
 		return;

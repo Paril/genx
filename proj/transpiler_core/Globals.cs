@@ -10,6 +10,7 @@ using SixLabors.Primitives;
 using PixelType = SixLabors.ImageSharp.PixelFormats.Bgra32;
 using ImageType = SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Bgra32>;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 namespace asset_transpiler
 {
@@ -206,13 +207,15 @@ namespace asset_transpiler
 
 		public static readonly GameInfo[] GameInfos = new[]
 		{
-			new GameInfo() { Path = new DirectoryInfo(Environment.CurrentDirectory).Parent.FullName + Path.DirectorySeparatorChar + "baseq2" },
-			new GameInfo() { Name = "Quake 1", ID = "quake1", ParserType = typeof(Quake), Archive = "pak0.pak", SubfolderName = "q1" },
+			new GameInfo() { Name = "Quake II", ID = "quake2", Archive = "pak0.pak", SubfolderName = "q2" },
+			new GameInfo() { Name = "Quake", ID = "quake1", ParserType = typeof(Quake), Archive = "pak0.pak", SubfolderName = "q1" },
 			new GameInfo() { Name = "Doom II", ID = "doom2", ParserType = typeof(Doom), Archive = "doom2.wad", SubfolderName = "doom" },
 			new GameInfo() { Name = "Duke Nukem 3D", ID = "duke", ParserType = typeof(Duke), Archive = "duke.grp", SubfolderName = "duke" }
 		};
 
 		public static GameInfo GetGameInfo(PaletteID game) => GameInfos[(int)game];
+
+		public static GameInfo GetGameInfo(string id) => GameInfos.Where(a => a.ID == id).First();
 
 		public static PixelType[][] _palettes = new PixelType[(int)PaletteID.Total][]
 		{

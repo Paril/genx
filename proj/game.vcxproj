@@ -9,14 +9,6 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|x64">
-      <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64">
-      <Configuration>Release</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D4DA9CCE-6640-4596-8158-01DAB8FA6306}</ProjectGuid>
@@ -27,26 +19,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141_clang_c2</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141_clang_c2</PlatformToolset>
-    <WholeProgramOptimization>false</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -61,59 +40,35 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx\</OutDir>
+    <OutDir>..\bin\genx\</OutDir>
     <TargetName>gamex86</TargetName>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>..\inc\;$(IncludePath)</IncludePath>
+    <IncludePath>.\;..\inc\;$(IncludePath)</IncludePath>
     <IntDir>$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx\</OutDir>
+    <OutDir>..\bin\genx\</OutDir>
     <TargetName>gamex86</TargetName>
     <TargetExt>.dll</TargetExt>
     <IncludePath>..\inc\;$(IncludePath)</IncludePath>
     <IntDir>$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <TargetName>gamex86</TargetName>
-    <TargetExt>.dll</TargetExt>
-    <OutDir>g:\quake2\genx\</OutDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>g:\quake2\genx\</OutDir>
-    <TargetName>gamex86</TargetName>
-    <TargetExt>.dll</TargetExt>
-  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;WIN32;USE_FPS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4018;4996;4244;4305;4838;4100</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
+      <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link />
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -125,21 +80,6 @@
       <DisableSpecificWarnings>4018;4996;4244;4305;4838</DisableSpecificWarnings>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <AdditionalOptions>-Weverything -Wno-format-security -Wno-switch -Wno-format-extra-args -Wno-sign-conversion -Wno-newline-eof -Wno-float-conversion -Wno-unused-parameter -Wno-float-equal -Wno-undef -Wno-format-nonliteral -Wno-missing-variable-declarations -Wno-missing-prototypes -Wno-switch-enum -Wno-conversion -Wno-missing-field-initializers -Wno-extended-offsetof -Wno-cast-align -Wno-gnu-zero-variadic-macro-arguments -Wno-cast-qual -Wno-bad-function-cast -Wno-date-time -Wno-gnu-empty-initializer -Wno-unused-macros -Wno-format-non-iso -Wno-double-promotion -Wno-sign-compare -Wno-covered-switch-default -Wno-assign-enum -Wno-used-but-marked-unused -Wno-pedantic -Wno-shadow -DREVISION=1 -DVERSION=1 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

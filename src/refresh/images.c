@@ -1560,7 +1560,7 @@ static void IMG_List_f(void)
     Com_Printf("------------------\n");
     texels = count = 0;
 
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = 2, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
             continue;
 
@@ -1587,7 +1587,7 @@ static image_t *alloc_image(void)
     image_t *image;
 
     // find a free image_t slot
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = 2, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
             break;
     }
@@ -2150,7 +2150,7 @@ void IMG_FreeUnused(void)
     image_t *image;
     int i, count = 0, p, g;
 
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = 2, image = r_images + i; i < r_numImages; i++, image++) {
         if (image->registration_sequence == registration_sequence) {
             continue;        // used this sequence
         }
@@ -2193,7 +2193,7 @@ void IMG_FreeAll(void)
     image_t *image;
     int i, count = 0;
 
-    for (i = 1, image = r_images + 1; i < r_numImages; i++, image++) {
+    for (i = 2, image = r_images + i; i < r_numImages; i++, image++) {
         if (!image->registration_sequence)
             continue;        // free image_t slot
         // free it
@@ -2212,7 +2212,7 @@ void IMG_FreeAll(void)
     }
 
     // &r_images[0] == R_NOTEXTURE
-    r_numImages = 1;
+    r_numImages = 2;
 
 	picscript_t *script;
 
@@ -2397,7 +2397,7 @@ void IMG_Init(void)
     }
 
     // &r_images[0] == R_NOTEXTURE
-    r_numImages = 1;
+    r_numImages = 2;
 }
 
 void IMG_Shutdown(void)

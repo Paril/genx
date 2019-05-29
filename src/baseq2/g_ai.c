@@ -373,7 +373,6 @@ void FoundTarget(edict_t *self)
 	if (self->enemy->client) {
 		level.sight_entity = self;
 		level.sight_entity_time = level.time + 100;
-		level.sight_entity->light_level = 128;
 	}
 
 	self->show_hostile = level.time + 1;        // wake up other monsters
@@ -503,10 +502,6 @@ bool FindTarget(edict_t *self)
 			return false;
 
 // this is where we would check invisibility
-
-				// is client in an spot too dark to be seen?
-		if (client->light_level <= 5)
-			return false;
 
 		if (!visible(self, client)) {
 			return false;

@@ -252,8 +252,6 @@ void Com_ParseExtensionString(const char *s, const char *const extnames[], bool 
         }
         s = p + 1;
     }
-
-    return mask;
 }
 #endif
 

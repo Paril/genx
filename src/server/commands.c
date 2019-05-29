@@ -514,11 +514,7 @@ static void dump_clients(void)
             break;
         case cs_connected:
         case cs_primed:
-            if (client->download) {
-                Com_Printf("DNLD ");
-            } else if (client->http_download) {
-                Com_Printf("HTTP ");
-            } else if (client->state == cs_connected) {
+            if (client->state == cs_connected) {
                 Com_Printf("CNCT ");
             } else {
                 Com_Printf("PRIM ");
@@ -586,10 +582,10 @@ static void dump_lag(void)
         "--- --------------- ----- ----- ---- ---- ---- --- -----\n");
 
     FOR_EACH_CLIENT(cl) {
-        Com_Printf("%3i %-15.15s %5.2f %5.2f %4d %4d %4d %3d %5.3f\n",
+        Com_Printf("%3i %-15.15s %5.2f %5.2f %4d %4d %4d %5.3f\n",
                    cl->number, cl->name, PL_S2C(cl), PL_C2S(cl),
                    cl->min_ping, AVG_PING(cl), cl->max_ping,
-                   cl->numpackets - 1, cl->timescale);
+                   cl->timescale);
     }
 }
 
@@ -602,11 +598,10 @@ static void dump_protocols(void)
         "--- --------------- ----- ----- ------ ---- ----\n");
 
     FOR_EACH_CLIENT(cl) {
-        Com_Printf("%3i %-15.15s %5d %5d %6"PRIz"  %s  %s\n",
+        Com_Printf("%3i %-15.15s %5d %5d %6"PRIz"  %s\n",
                    cl->number, cl->name, cl->protocol, cl->version,
                    cl->netchan->maxpacketlen,
-                   cl->has_zlib ? "yes" : "no ",
-                   cl->netchan->type ? "new" : "old");
+                   cl->has_zlib ? "yes" : "no ");
     }
 }
 
@@ -742,7 +737,6 @@ void SV_PrintMiscInfo(void)
                sv_client->protocol, sv_client->version);
     Com_Printf("maxmsglen            %"PRIz"\n", sv_client->netchan->maxpacketlen);
     Com_Printf("zlib support         %s\n", sv_client->has_zlib ? "yes" : "no");
-    Com_Printf("netchan type         %s\n", sv_client->netchan->type ? "new" : "old");
     Com_Printf("ping                 %d\n", sv_client->ping);
     Com_Printf("movement fps         %d\n", sv_client->moves_per_sec);
 #if USE_FPS

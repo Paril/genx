@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/nav.h"
 #include "shared/hashset.h"
 
-void Nav_ForceDrop()
+void Nav_ForceDrop(void)
 {
 	nav_node_t *closest;
 	float closest_node_dist;
@@ -49,7 +49,7 @@ void Nav_ForceDrop()
 	}
 }
 
-void Nav_Frame()
+void Nav_Frame(void)
 {
 	if (cls.state != ca_active || cls.demo.playback || sv_paused->integer)
 		return;
@@ -110,7 +110,7 @@ static inline uint32_t node_hash(uint16_t node_left, uint16_t node_right)
 	return min(node_left, node_right) | (max(node_left, node_right) << 16);
 }
 
-void Nav_AddEntities()
+void Nav_AddEntities(void)
 {
 	if (!nav_debug.debug_mode)
 		return;
@@ -238,7 +238,7 @@ void Nav_AddEntities()
 	hashset_destroy(connections_rendered);
 }
 
-void Nav_SwitchDir()
+void Nav_SwitchDir(void)
 {
 	if (nav_debug.node_selected_a == NAV_NODE_INVALID || nav_debug.node_selected_b == NAV_NODE_INVALID)
 	{
@@ -249,7 +249,7 @@ void Nav_SwitchDir()
 	Nav_ToggleConnection(&loaded_nodes[nav_debug.node_selected_a], &loaded_nodes[nav_debug.node_selected_b]);
 }
 
-void Nav_SelectLine()
+void Nav_SelectLine(void)
 {
 	trace_t trace;
 	vec3_t mins = { -4, -4, -4 }, maxs = { 4, 4, 4 };
@@ -277,7 +277,7 @@ void Nav_SelectLine()
 	}
 }
 
-void Nav_SelectNode()
+void Nav_SelectNode(void)
 {
 	float dist;
 	nav_node_t *closest = Nav_ClosestNode(cl.predicted_origin, &dist);
@@ -296,12 +296,12 @@ void Nav_SelectNode()
 	}
 }
 
-void Nav_UnselectNodes()
+void Nav_UnselectNodes(void)
 {
 	nav_debug.node_selected_a = nav_debug.node_selected_b = NAV_NODE_INVALID;
 }
 
-void Nav_TestPath()
+void Nav_TestPath(void)
 {
 	NavStateDestroyNagivator();
 	nav_debug.test_navigator = Nav_CreateNavigator();
@@ -310,7 +310,7 @@ void Nav_TestPath()
 	Nav_AStar(nav_debug.test_navigator);
 }
 
-void Nav_DeleteNodeCmd()
+void Nav_DeleteNodeCmd(void)
 {
 	char *which = Cmd_Argv(1);
 	nav_node_id *to_delete = NULL;
@@ -336,7 +336,7 @@ void Nav_DeleteNodeCmd()
 	Nav_DeleteNode(Nav_NodeIDToNode(*to_delete));
 }
 
-void Nav_MoveNodeCmd()
+void Nav_MoveNodeCmd(void)
 {
 	char *which = Cmd_Argv(1);
 	nav_node_id *to_move = NULL;
@@ -362,7 +362,7 @@ void Nav_MoveNodeCmd()
 	Nav_SetNodePosition(Nav_NodeIDToNode(*to_move), cl.predicted_origin);
 }
 
-void Nav_SpliceNode()
+void Nav_SpliceNode(void)
 {
 	if (nav_debug.node_selected_a == NAV_NODE_INVALID ||
 		nav_debug.node_selected_b == NAV_NODE_INVALID)
@@ -383,7 +383,7 @@ void Nav_SpliceNode()
 	nav_debug.node_selected_b = NAV_NODE_INVALID;
 }
 
-void Nav_SliceNode()
+void Nav_SliceNode(void)
 {
 	char *which = Cmd_Argv(1);
 	nav_node_id *to_move = NULL;
@@ -422,7 +422,7 @@ void Nav_SliceNode()
 	Nav_DeleteNode(to_slice);
 }
 
-void Nav_SetTypeCmd()
+void Nav_SetTypeCmd(void)
 {
 	char *which = Cmd_Argv(1);
 	nav_node_type_e new_type;
@@ -513,7 +513,7 @@ static void GL_WorldNode_r(mnode_t *node)
 	GL_DrawNode(node);
 }
 
-void Nav_Generate()
+void Nav_Generate(void)
 {
 	if (num_loaded_nodes) {
 		Com_WPrintf("Already have nodes loaded.\n");
@@ -523,7 +523,7 @@ void Nav_Generate()
 	GL_WorldNode_r(cl.bsp->nodes);
 }
 
-void Nav_Init()
+void Nav_Init(void)
 {
 	Com_Printf("------- Nav_Init -------\n");
 

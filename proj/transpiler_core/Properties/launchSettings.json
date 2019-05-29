@@ -2,7 +2,7 @@
   "profiles": {
     "transpiler_core": {
       "commandName": "Project",
-      "workingDirectory": "E:\\EvenMoreStore\\SteamLibrary\\Common\\Quake 2\\genx"
+      "workingDirectory": "G:\\q2pro\\gen\\bin\\genx"
     }
   }
 }

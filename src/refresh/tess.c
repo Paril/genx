@@ -60,15 +60,11 @@ void GL_Flush2D(void)
 	GL_TexCoordPointer(2, 4, tess.vertices + 2);
 	GL_ColorBytePointer(4, 0, tess.colors);
 
-	GL_LockArrays(tess.numverts);
-
 	qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
 	if (gl_showtris->integer > 1) {
         GL_DrawOutlines(tess.numindices, tess.indices);
 	}
-
-	GL_UnlockArrays();
 
     c.batchesDrawn2D++;
 
@@ -329,18 +325,10 @@ void GL_Flush3D(void)
 		GL_BindTexture(1, tess.texnum[1]);
 	}
 
-	if (gl_static.world.vertices) {
-		GL_LockArrays(tess.numverts);
-	}
-
 	qglDrawElements(GL_TRIANGLES, tess.numindices, QGL_INDEX_ENUM, tess.indices);
 
 	if (gl_showtris->integer) {
         GL_DrawOutlines(tess.numindices, tess.indices);
-	}
-
-	if (gl_static.world.vertices) {
-		GL_UnlockArrays();
 	}
 
     c.batchesDrawn++;

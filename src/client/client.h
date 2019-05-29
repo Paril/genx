@@ -243,7 +243,6 @@ typedef struct client_state_s {
     refdef_t    refdef;
     float       fov_x;      // interpolated
     float       fov_y;      // derived from fov_x assuming 4/3 aspect ratio
-    int         lightlevel;
 
     vec3_t      v_forward, v_right, v_up;    // set when refdef.angles is set
 
@@ -389,6 +388,28 @@ typedef struct client_static_s {
 
     netadr_t    recent_addr[RECENT_ADDR];
     int         recent_head;
+
+// demo recording info must be here, so it isn't cleared on level change
+    struct {
+        qhandle_t   playback;
+        qhandle_t   recording;
+        unsigned    time_start;
+        unsigned    time_frames;
+        int         last_server_frame;  // number of server frame the last svc_frame was written
+        int         frames_written;     // number of frames written to demo file
+        int         frames_dropped;     // number of svc_frames that didn't fit
+        int         others_dropped;     // number of misc svc_* messages that didn't fit
+        int         frames_read;        // number of frames read from demo file
+        int         last_snapshot;      // number of demo frame the last snapshot was saved
+        int64_t     file_size;
+        int64_t     file_offset;
+        int         file_percent;
+        sizebuf_t   buffer;
+        list_t      snapshots;
+        bool        paused;
+        bool        seeking;
+        bool        eof;
+    } demo;
 } client_static_t;
 
 extern client_static_t    cls;
@@ -613,6 +634,7 @@ void CL_UpdateBlendSetting(void);
 //
 // tent.c
 //
+
 typedef struct cl_sustain_s {
     int     id;
     int     type;
@@ -846,7 +868,7 @@ void    SCR_AddToChatHUD(const char *text);
 byte COM_BlockSequenceCRCByte(byte *base, size_t length, int sequence);
 
 // Nav stuff
-void Nav_AddEntities();
-void Nav_Frame();
-void Nav_Init();
-void Nav_Shutdown();
+void Nav_AddEntities(void);
+void Nav_Frame(void);
+void Nav_Init(void);
+void Nav_Shutdown(void);

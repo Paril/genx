@@ -410,22 +410,6 @@ static void CL_ParsePrecacheBaseline()
 {
 	byte *data = MSG_ReadData(MAX_PRECACHE_BITSET);
 	memcpy(cl.precache_bitset, data, MAX_PRECACHE_BITSET);
-
-	/*for (int i = 1; i < MAX_PRECACHE; ++i)
-	{
-		precache_type_e type = Q_GetPrecacheBitsetType(cl.precache_bitset, i);
-
-		if (!type)
-			break;
-
-		cl.precache[i].type = type;
-		
-		switch (type)
-		{
-		case PRECACHE_MODEL:
-			cl.precache[i].model = 
-		}
-	}*/
 }
 
 static void CL_ParseConfigstring(int index)

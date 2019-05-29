@@ -22,8 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 extern bool     is_quad;
 extern byte     is_silenced;
 
-const gtime_t DOOM_ANIM_TIME = 400;
-const gtime_t DOOM_ANIM_FRAC = DOOM_ANIM_TIME;
+#define DOOM_ANIM_TIME 400
+#define DOOM_ANIM_FRAC DOOM_ANIM_TIME
 
 void Weapon_Doom(edict_t *ent, int num_frames, void(*fire) (edict_t *ent, gunindex_e gun, bool first), gunindex_e gun)
 {

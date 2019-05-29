@@ -173,7 +173,7 @@ static void write_baselines(void)
 
 static void write_gamestate(void)
 {
-    entity_packed_t  *base;
+	entity_packed_t *base;
     int         i, j;
     size_t      length;
     char        *string;
@@ -198,11 +198,26 @@ static void write_gamestate(void)
 	MSG_WriteShort(MAX_CONFIGSTRINGS);   // end of configstrings
 
 	// Generations
-	byte	*precache = sv_client->precache_bitset;
+	byte *precache = sv_client->precache_bitset;
 	uint32_t length_left = MAX_PRECACHE_BITSET;
 	MSG_WriteData(precache, length_left);
 
-    SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
+    // write baselines
+    for (i = 0; i < SV_BASELINES_CHUNKS; i++) {
+        base = sv_client->baselines[i];
+        if (!base) {
+            continue;
+        }
+        for (j = 0; j < SV_BASELINES_PER_CHUNK; j++) {
+            if (base->number) {
+                write_baseline(base);
+            }
+            base++;
+        }
+    }
+    MSG_WriteShort(0);   // end of baselines
+
+	SV_ClientAddMessage(sv_client, MSG_GAMESTATE);
 }
 
 static void stuff_cmds(list_t *list)
@@ -368,12 +383,7 @@ void SV_New_f(void)
 		return;
 
     // send gamestate
-    if (sv_client->netchan->type == NETCHAN_NEW) {
-        write_gamestate();
-    } else {
-        write_configstrings();
-        write_baselines();
-    }
+    write_gamestate();
 
 	// send next command
 	SV_ClientCommand(sv_client, "precache %i\n", sv_client->spawncount);
@@ -858,7 +868,7 @@ static void SV_NewClientExecuteMove(int c)
 	usercmd_t   *lastcmd, *cmd;
 	int         lastframe;
 	int         numCmds[MAX_PACKET_FRAMES], numDups;
-	int         i, j, lightlevel;
+	int         i, j;
 	int         net_drop;
 
 	if (moveIssued) {
@@ -882,8 +892,6 @@ static void SV_NewClientExecuteMove(int c)
 		lastframe = MSG_ReadLong();
 	}
 
-	lightlevel = MSG_ReadByte();
-
 	// read all cmds
 	lastcmd = NULL;
 	for (i = 0; i <= numDups; i++) {
@@ -903,7 +911,6 @@ static void SV_NewClientExecuteMove(int c)
 			}
 			cmd = &cmds[i][j];
 			MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd, sv_client->version);
-			cmd->lightlevel = lightlevel;
 			lastcmd = cmd;
 		}
 	}

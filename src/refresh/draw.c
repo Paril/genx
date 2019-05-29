@@ -421,8 +421,8 @@ void Draw_Lightmaps(void)
 
 void Draw_Scrap(void)
 {
-    _GL_StretchPic(0, 0, 256, 256,
-		0, 0, 1, 1, U32_WHITE, TEXNUM_SCRAP, IF_PALETTED | IF_TRANSPARENT);
+    _GL_StretchPic(0, 0, R_FRAMEBUFFERTEXTURE->width, R_FRAMEBUFFERTEXTURE->height,
+		0, 0, 1, 1, U32_WHITE, TEXNUM_FRAMEBUFFER, IF_TRANSPARENT);
 }
 
 #endif

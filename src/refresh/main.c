@@ -324,7 +324,7 @@ static void GL_DrawSpriteModel(entity_t *ent, model_t *model)
     mspriteframe_t *frame = &model->spriteframes[e->frame % model->numframes];
     image_t *image = frame->image;
     float alpha = (e->flags & RF_TRANSLUCENT) ? e->alpha : 1;
-    int bits = GLS_DEPTHMASK_FALSE | GLS_CULL_DISABLE;
+    int bits = GLS_CULL_DISABLE;
     vec3_t up, down, left, right;
     vec3_t points[4];
 
@@ -521,7 +521,6 @@ static void GL_DrawDirSpriteModel(entity_t *ent, model_t *model)
 	}
 
 	GL_Color(color[0], color[1], color[2], alpha);
-
 
 	if (ent->flags & RF_NO_BILLBOARD) {
 		VectorScale(glr.entaxis[1], frame->origin_x, left);
@@ -721,7 +720,7 @@ void R_RenderFrame(refdef_t *fd)
         lm.dirty = false;
     }
 
-    GL_Setup3D();
+    GL_Setup3D(true);
 
     if (gl_cull_nodes->integer) {
         GL_SetupFrustum();
@@ -848,6 +847,14 @@ static void GL_Strings_f(void)
                gl_config.colorbits, gl_config.depthbits, gl_config.stencilbits);
 }
 
+static void GL_RenderModel_f(void)
+{
+	qhandle_t model = R_RegisterModel(Cmd_Argv(1));
+	model_t *mod = MOD_ForHandle(model, GAME_Q2);
+
+	GL_OutputAliasModelAs2D(mod);
+}
+
 static size_t GL_ViewCluster_m(char *buffer, size_t size)
 {
     return Q_scnprintf(buffer, size, "%d", glr.viewcluster1);
@@ -945,6 +952,7 @@ static void GL_Register(void)
     gl_modulate_entities_changed(NULL);
 
     Cmd_AddCommand("strings", GL_Strings_f);
+	Cmd_AddCommand("rendermodel", GL_RenderModel_f);
     Cmd_AddMacro("gl_viewcluster", GL_ViewCluster_m);
 }
 

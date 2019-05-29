@@ -28,8 +28,8 @@ void fire_doom_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, i
 extern bool     is_quad;
 extern byte     is_silenced;
 
-const gtime_t DUKE_ANIM_TIME = 400;
-const gtime_t DUKE_ANIM_FRAC = DUKE_ANIM_TIME;
+#define DUKE_ANIM_TIME 400
+#define DUKE_ANIM_FRAC DUKE_ANIM_TIME
 
 int pipe_detonator_index, foot_index;
 

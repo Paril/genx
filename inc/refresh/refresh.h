@@ -57,7 +57,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define DLIGHT_CUTOFF       64
 
 typedef struct entity_s {
-	qhandle_t	   model;          // opaque type outside refresh
+	qhandle_t	    model;          // opaque type outside refresh
 	vec3_t          angles;
 
 	/*
@@ -88,6 +88,7 @@ typedef struct entity_s {
 	// Generations
 	gametype_t		game;
 	float			scale;
+	vec3_t			mins, maxs;
 } entity_t;
 
 typedef struct dlight_s {
@@ -178,7 +179,8 @@ typedef enum {
 
 	// Paril
 	IF_DELAYED		= (1 << 9),
-	IF_OLDSCHOOL	= (1 << 10)
+	IF_OLDSCHOOL	= (1 << 10),
+	IF_CRISPY		= (1 << 11)
 } imageflags_t;
 
 typedef enum {
@@ -224,7 +226,6 @@ void    R_EndRegistration(void);
 #define R_RegisterSkin(name)    R_RegisterImage(name, IT_SKIN, IF_NONE, NULL)
 
 void    R_RenderFrame(refdef_t *fd);
-void    R_LightPoint(vec3_t origin, vec3_t light);
 
 void    R_ClearColor(void);
 void    R_SetAlpha(float clpha);

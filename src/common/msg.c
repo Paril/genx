@@ -978,7 +978,7 @@ void MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player
 
 static bool PackRLDE(const void *from, const void *to, const size_t len, void *out, int *numSpans, size_t *totalBytes)
 {
-	byte *end = out + len;
+	byte *end = (uint8_t *)out + len;
 	size_t i;
 	const byte *fromByte = from;
 	const byte *toByte = to;
@@ -1063,7 +1063,7 @@ static void WriteRLDE(const void *from, const void *to, const void *spans, const
 
 static void ReadRLDE(const void *from, void *to, const size_t len)
 {
-	byte spans[len];
+	byte spans[255];
 	byte span;
 	size_t numSpans = 0;
 
@@ -1592,9 +1592,6 @@ void MSG_ReadDeltaUsercmd(const usercmd_t *from, usercmd_t *to)
 
 // read time to run command
 	to->msec = MSG_ReadByte();
-
-// read the light level
-    to->lightlevel = MSG_ReadByte();
 }
 
 void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
@@ -1661,9 +1658,6 @@ void MSG_ReadDeltaUsercmd_Hacked(const usercmd_t *from, usercmd_t *to)
 
 // read time to run command
     to->msec = MSG_ReadByte();
-
-// read the light level
-	to->lightlevel = MSG_ReadByte();
 }
 
 int MSG_ReadBits(int bits)

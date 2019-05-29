@@ -140,22 +140,38 @@ void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat zn
     gl_static.backend.proj_matrix(matrix);
 }
 
+void GL_BeginRenderToTexture(GLuint frameBuffer)
+{
+	qglBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+}
+
+void GL_EndRenderToTexture(void)
+{
+	qglBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void GL_SetupOrtho(GLfloat x, GLfloat y, GLfloat width, GLfloat height, GLfloat zmin, GLfloat zmax)
+{
+	qglViewport(x, y, width, height);
+
+	GL_Ortho(x, width, height, y, zmin, zmax);
+	draw.scale = 1;
+
+	draw.colors[0].u32 = U32_WHITE;
+	draw.colors[1].u32 = U32_WHITE;
+
+	if (draw.scissor)
+	{
+		qglDisable(GL_SCISSOR_TEST);
+		draw.scissor = false;
+	}
+
+	gl_static.backend.view_matrix(NULL);
+}
+
 void GL_Setup2D(void)
 {
-    qglViewport(0, 0, r_config.width, r_config.height);
-
-    GL_Ortho(0, r_config.width, r_config.height, 0, -1, 1);
-    draw.scale = 1;
-
-    draw.colors[0].u32 = U32_WHITE;
-    draw.colors[1].u32 = U32_WHITE;
-
-    if (draw.scissor) {
-        qglDisable(GL_SCISSOR_TEST);
-        draw.scissor = false;
-    }
-
-    gl_static.backend.view_matrix(NULL);
+	GL_SetupOrtho(0, 0, r_config.width, r_config.height, -1, 1);
 }
 
 void GL_Frustum(void)
@@ -240,7 +256,7 @@ static void GL_RotateForViewer(void)
     GL_ForceMatrix(matrix);
 }
 
-void GL_Setup3D(void)
+void GL_Setup3D(bool clear)
 {
     qglViewport(glr.fd.x, r_config.height - (glr.fd.y + glr.fd.height),
                 glr.fd.width, glr.fd.height);
@@ -255,7 +271,8 @@ void GL_Setup3D(void)
     // enable depth writes before clearing
     GL_StateBits(GLS_DEFAULT);
 
-    qglClear(GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
+	if (clear)
+	    qglClear(GL_DEPTH_BUFFER_BIT | gl_static.stencil_buffer_bit);
 }
 
 void GL_DrawOutlines(GLsizei count, QGL_INDEX_TYPE *indices)

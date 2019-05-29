@@ -527,7 +527,6 @@ static void CL_Suspend_f(void)
 static int read_first_message(qhandle_t f)
 {
 	uint32_t    ul;
-	uint16_t    us;
 	size_t      msglen;
     int         read, type;
 
@@ -538,23 +537,11 @@ static int read_first_message(qhandle_t f)
 	}
 
 	// determine demo type
-	if (ul == MVD_MAGIC) {
-		read = FS_Read(&us, 2, f);
-		if (read != 2) {
-			return read < 0 ? read : Q_ERR_UNEXPECTED_EOF;
-		}
-		if (!us) {
-			return Q_ERR_UNEXPECTED_EOF;
-		}
-		msglen = LittleShort(us);
-		type = 1;
-    } else {
-		if (ul == (uint32_t)-1) {
-			return Q_ERR_UNEXPECTED_EOF;
-		}
-		msglen = LittleLong(ul);
-		type = 0;
+	if (ul == (uint32_t)-1) {
+		return Q_ERR_UNEXPECTED_EOF;
 	}
+	msglen = LittleLong(ul);
+	type = 0;
 
 	if (msglen < 64 || msglen > sizeof(msg_read_buffer)) {
 		return Q_ERR_INVALID_FORMAT;
@@ -661,9 +648,6 @@ static int parse_next_message(int wait)
 	if (cls.demo.recording && !cls.demo.paused && CL_FRAMESYNC) {
 		CL_WriteDemoMessage(&cls.demo.buffer);
 	}
-
-	// if running GTV server, transmit to client
-	CL_GTV_Transmit();
 
 	// save a snapshot once the full packet is parsed
 	CL_EmitDemoSnapshot();
@@ -1122,34 +1106,7 @@ demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info)
 			MSG_ReadString(string, sizeof(string));
 			parse_info_string(info, clientNum, index, string);
 		}
-
-        info->mvd = false;
-    } else {
-		if ((MSG_ReadByte() & SVCMD_MASK) != mvd_serverdata) {
-			goto fail;
-		}
-		if (MSG_ReadLong() != PROTOCOL_VERSION_MVD) {
-			goto fail;
-		}
-		MSG_ReadShort();
-		MSG_ReadLong();
-		MSG_ReadString(NULL, 0);
-		clientNum = MSG_ReadShort();
-
-		while (1) {
-			index = MSG_ReadShort();
-			if (index == MAX_CONFIGSTRINGS) {
-				break;
-			}
-			if (index < 0 || index >= MAX_CONFIGSTRINGS) {
-				goto fail;
-			}
-			MSG_ReadString(string, sizeof(string));
-			parse_info_string(info, clientNum, index, string);
-		}
-
-        info->mvd = true;
-	}
+    }
 
 	FS_FCloseFile(f);
 	return info;

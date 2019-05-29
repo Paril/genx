@@ -23,13 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/net/net.h"
 #include "common/sizebuf.h"
 
-typedef enum netchan_type_e {
-    NETCHAN_OLD,
-    NETCHAN_NEW
-} netchan_type_t;
-
 typedef struct netchan_s {
-    netchan_type_t  type;
     int         protocol;
     size_t      maxpacketlen;
 
@@ -67,13 +61,12 @@ typedef struct netchan_s {
 
 extern cvar_t       *net_qport;
 extern cvar_t       *net_maxmsglen;
-extern cvar_t       *net_chantype;
 
 void Netchan_Init(void);
 void Netchan_OutOfBand(netsrc_t sock, const netadr_t *adr,
                        const char *format, ...) q_printf(3, 4);
-netchan_t *Netchan_Setup(netsrc_t sock, netchan_type_t type,
-                         const netadr_t *adr, int qport, size_t maxpacketlen, int protocol);
+netchan_t *Netchan_Setup(netsrc_t sock, const netadr_t *adr,
+						 int qport, size_t maxpacketlen, int protocol);
 void Netchan_Close(netchan_t *netchan);
 
 #define OOB_PRINT(sock, addr, data) \

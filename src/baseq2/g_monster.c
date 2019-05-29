@@ -217,6 +217,11 @@ void M_WorldEffects(edict_t *ent)
 {
 	int     dmg;
 
+	if (gi.pointcontents(ent->s.origin) == CONTENTS_SOLID)
+	{
+		T_Damage(ent, world, world, vec3_origin, ent->s.origin, vec3_origin, 1000, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_FALLING, DT_DIRECT));
+	}
+
     if (ent->health > 0) {
         if (!(ent->flags & FL_SWIM)) {
             if (ent->waterlevel < 3) {

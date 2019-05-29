@@ -23,9 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // shared.h -- included first by ALL program modules
 //
 
-#if HAVE_CONFIG_H
 #include "config.h"
-#endif
 
 #include <math.h>
 #include <ctype.h>
@@ -992,7 +990,6 @@ typedef struct usercmd_s {
     short   angles[3];
     short   forwardmove, sidemove, upmove;
     byte    impulse;        // remove?
-    byte    lightlevel;     // light level the player is standing on
 } usercmd_t;
 
 

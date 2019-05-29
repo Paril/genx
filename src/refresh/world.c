@@ -249,17 +249,6 @@ void GL_LightPoint(vec3_t origin, vec3_t color)
     }
 }
 
-void R_LightPoint(vec3_t origin, vec3_t color)
-{
-    int i;
-
-    GL_LightPoint(origin, color);
-
-    for (i = 0; i < 3; i++) {
-        clamp(color[i], 0, 1);
-    }
-}
-
 static void GL_MarkLeaves(void)
 {
     static int lastNodesVisible;

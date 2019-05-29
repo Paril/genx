@@ -317,30 +317,6 @@ static int entitycmpfnc(const void *_a, const void *_b)
         return a->model - b->model;
 }
 
-static void V_SetLightLevel(void)
-{
-    vec3_t shadelight;
-
-    // save off light value for server to look at (BIG HACK!)
-    R_LightPoint(cl.refdef.vieworg, shadelight);
-
-    // pick the greatest component, which should be the same
-    // as the mono value returned by software
-    if (shadelight[0] > shadelight[1]) {
-        if (shadelight[0] > shadelight[2]) {
-            cl.lightlevel = 150.0f * shadelight[0];
-        } else {
-            cl.lightlevel = 150.0f * shadelight[2];
-        }
-    } else {
-        if (shadelight[1] > shadelight[2]) {
-            cl.lightlevel = 150.0f * shadelight[1];
-        } else {
-            cl.lightlevel = 150.0f * shadelight[2];
-        }
-    }
-}
-
 /*
 ====================
 V_CalcFov
@@ -451,8 +427,6 @@ void V_RenderView(void)
     if (cl_stats->integer)
         Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
 #endif
-
-    V_SetLightLevel();
 }
 
 

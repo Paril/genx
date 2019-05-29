@@ -2869,6 +2869,12 @@ static void setup_game_paths(void)
 {
     searchpath_t *path;
 
+	cvar_t *q2_path = Cvar_Get("path_quake2", "", 0);
+
+	if (q2_path->string[0]) {
+		add_game_dir(FS_PATH_ANY, "%s", q2_path->string);
+	}
+
     if (fs_game->string[0]) {
         // add system path first
         add_game_dir(FS_PATH_GAME, "%s/%s", sys_basedir->string, fs_game->string);
@@ -3011,6 +3017,8 @@ static void fs_game_changed(cvar_t *self)
         // start up with baseq2 by default
         setup_base_paths();
 
+		Com_AddConfigFile(COM_PATHS_CFG, 0);
+
         // check for game override
         setup_game_paths();
 
@@ -3025,7 +3033,8 @@ static void fs_game_changed(cvar_t *self)
     // this assumes user prefers to do configuration via autoexec.cfg and doesn't
     // want settings and binds messed up whenever gamedir changes after startup.
     if (!FS_FileExistsEx(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_BASE)) {
-        Com_AddConfigFile(COM_DEFAULT_CFG, FS_PATH_GAME);
+		Com_AddConfigFile(COM_PATHS_CFG, FS_PATH_GAME);
+		Com_AddConfigFile(COM_DEFAULT_CFG, FS_PATH_GAME);
         Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME);
     }
 

@@ -44,7 +44,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
 
 #define MAX_PROGRAMS    64
-#define NUM_TEXNUMS     7 // Generations
+#define NUM_TEXNUMS     8 // Generations
 
 typedef struct {
     const char *name;
@@ -416,10 +416,9 @@ typedef enum {
     GLS_LIGHTMAP_ENABLE     = (1 <<  9),
     GLS_WARP_ENABLE         = (1 << 10),
     GLS_INTENSITY_ENABLE    = (1 << 11),
-    GLS_SHADE_SMOOTH        = (1 << 12),
 
 	// Generations
-	GLS_BLEND_INVERT		= (1 << 13)
+	GLS_BLEND_INVERT		= (1 << 12)
 } glStateBits_t;
 
 #define GLS_BLEND_MASK \
@@ -483,20 +482,6 @@ static inline void GL_ArrayBits(GLbitfield bits)
     }
 }
 
-static inline void GL_LockArrays(GLsizei count)
-{
-    if (qglLockArraysEXT) {
-        qglLockArraysEXT(0, count);
-    }
-}
-
-static inline void GL_UnlockArrays(void)
-{
-    if (qglUnlockArraysEXT) {
-        qglUnlockArraysEXT();
-    }
-}
-
 static inline void GL_ForceMatrix(const GLfloat *matrix)
 {
     gl_static.backend.view_matrix(matrix);
@@ -536,13 +521,17 @@ static inline void GL_DepthRange(GLfloat n, GLfloat f)
 #define GL_Reflect              gl_static.backend.reflect
 
 void GL_ForceTexture(GLuint tmu, GLuint texnum);
+void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags);
 void GL_BindTexture(GLuint tmu, GLuint texnum);
 void GL_CommonStateBits(GLbitfield bits);
 void GL_DrawOutlines(GLsizei count, QGL_INDEX_TYPE *indices);
 void GL_Ortho(GLfloat xmin, GLfloat xmax, GLfloat ymin, GLfloat ymax, GLfloat znear, GLfloat zfar);
 void GL_Frustum(void);
 void GL_Setup2D(void);
-void GL_Setup3D(void);
+void GL_Setup3D(bool clear);
+void GL_BeginRenderToTexture(GLuint frameBuffer);
+void GL_EndRenderToTexture(void);
+void GL_SetupOrtho(GLfloat x, GLfloat y, GLfloat width, GLfloat height, GLfloat zmin, GLfloat zmax);
 void GL_ClearState(void);
 void GL_InitState(void);
 void GL_ShutdownState(void);
@@ -584,6 +573,7 @@ void GL_Blend(void);
 #define TEXNUM_WHITE       gl_static.texnums[4]
 #define TEXNUM_BLACK       gl_static.texnums[5]
 #define TEXNUM_PARTICLE_Q1 gl_static.texnums[6]
+#define TEXNUM_FRAMEBUFFER gl_static.texnums[7]
 
 #define SCRAP_BLOCK_WIDTH       256
 #define SCRAP_BLOCK_HEIGHT      256
@@ -595,12 +585,13 @@ void GL_ShutdownImages(void);
 
 extern cvar_t *gl_intensity;
 
+#define CRISPY_TEXTURE_SCALE 0.1
 
 /*
  * gl_tess.c
  *
  */
-#define TESS_MAX_VERTICES   4096
+#define TESS_MAX_VERTICES   8192
 #define TESS_MAX_INDICES    (3 * TESS_MAX_VERTICES)
 
 typedef struct {
@@ -652,6 +643,7 @@ void R_SetSky(const char *name, float rotate, vec3_t axis);
  *
  */
 void GL_DrawAliasModel(model_t *model);
+void GL_OutputAliasModelAs2D(model_t *model);
 
 /*
  * hq2x.c

@@ -1447,9 +1447,6 @@ struct edict_s {
 	vec3_t      move_origin;
 	vec3_t      move_angles;
 
-	// move this to clientinfo?
-	int         light_level;
-
 	int         style;          // also used as areaportal number
 
 	gitem_t     *item, *real_item;          // for bonus items
