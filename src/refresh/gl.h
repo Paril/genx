@@ -26,7 +26,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/video.h"
 #include "client/client.h"
 #include "refresh/refresh.h"
-#include "system/hunk.h"
 #include "images.h"
 #include "qgl.h"
 
@@ -74,7 +73,7 @@ typedef struct {
     glbackend_t     backend;
     struct {
         bsp_t       *cache;
-        memhunk_t   hunk;
+        void		*memory;
         vec_t       *vertices;
         GLuint      bufnum;
         vec_t       size;
@@ -336,24 +335,28 @@ typedef struct model_s {
 
     char name[MAX_QPATH];
     int registration_sequence;
-    memhunk_t hunk;
-
-    // alias models
-    int numframes;
-    struct maliasframe_s *frames;
-    int nummeshes;
-    struct maliasmesh_s *meshes;
+	mem_chunk_t memory;
 
 	// Generations
 	bool nolerp;
-
-    // sprite models
+	uint16_t numdirs;
+	int numframes;
 	float radius;
-	int numdirs;
 
-    mspriteframe_t 		*spriteframes;
-	mspritedirframes_t	*spritedirframes;
-	mweaponscript_t		*weaponscript;
+    // alias models
+	union
+	{
+		struct
+		{
+			struct maliasframe_s *frames;
+			int nummeshes;
+			struct maliasmesh_s *meshes;
+		};
+
+		mspriteframe_t 		*spriteframes;
+		mspritedirframes_t	*spritedirframes;
+		mweaponscript_t		*weaponscript;
+	};
 } model_t;
 
 // xyz[3] | color[1]  | st[2]    | lmst[2]
@@ -585,7 +588,7 @@ void GL_ShutdownImages(void);
 
 extern cvar_t *gl_intensity;
 
-#define CRISPY_TEXTURE_SCALE 0.1
+#define CRISPY_TEXTURE_SCALE 1
 
 /*
  * gl_tess.c

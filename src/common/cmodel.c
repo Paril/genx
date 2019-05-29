@@ -25,7 +25,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/math.h"
 #include "common/zone.h"
-#include "system/hunk.h"
 
 mtexinfo_t nulltexinfo;
 

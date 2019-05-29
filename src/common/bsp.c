@@ -29,7 +29,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/math.h"
 #include "common/utils.h"
 #include "common/mdfour.h"
-#include "system/hunk.h"
 #include "common/nav.h"
 
 extern mtexinfo_t nulltexinfo;
@@ -45,7 +44,7 @@ static cvar_t *map_visibility_patch;
 */
 
 #define ALLOC(size) \
-    Hunk_Alloc(&bsp->hunk, size)
+    Z_ChunkAlloc(&bsp->memory, size)
 
 #define LOAD(func) \
     static int BSP_Load##func(bsp_t *bsp, void *base, size_t count)
@@ -806,8 +805,8 @@ static void BSP_List_f(void)
 
     LIST_FOR_EACH(bsp_t, bsp, &bsp_cache, entry) {
         Com_Printf("%8"PRIz" : %s (%d refs)\n",
-                   bsp->hunk.mapped, bsp->name, bsp->refcount);
-        bytes += bsp->hunk.mapped;
+                   bsp->memory.allocated, bsp->name, bsp->refcount);
+        bytes += bsp->memory.allocated;
     }
     Com_Printf("Total resident: %"PRIz"\n", bytes);
 }
@@ -936,7 +935,7 @@ void BSP_Free(bsp_t *bsp)
         Com_Error(ERR_FATAL, "%s: negative refcount", __func__);
     }
     if (--bsp->refcount == 0) {
-        Hunk_Free(&bsp->hunk);
+        Z_ChunkFree(&bsp->memory);
         List_Remove(&bsp->entry);
         Z_Free(bsp);
     }
@@ -971,7 +970,6 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         return Q_ERR_NOENT;
 
     if ((bsp = BSP_Find(name)) != NULL) {
-        Com_PageInMemory(bsp->hunk.base, bsp->hunk.cursize);
         bsp->refcount++;
         *bsp_p = bsp;
         return Q_ERR_SUCCESS;
@@ -997,7 +995,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     }
 
     // byte swap and validate all lumps
-    memsize = 0;
+    memsize = 1; // 1 because of entity string taking up + 1
     for (info = bsp_lumps; info->load; info++) {
         ofs = LittleLong(header->lumps[info->lump].fileofs);
         len = LittleLong(header->lumps[info->lump].filelen);
@@ -1022,14 +1020,13 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         memsize += count * info->memsize;
     }
 
-    // load into hunk
+    // load into memory
     len = strlen(name);
-    bsp = Z_Mallocz(sizeof(*bsp) + len);
+    bsp = Z_TagMallocz(sizeof(*bsp) + len, TAG_BSP);
     memcpy(bsp->name, name, len + 1);
     bsp->refcount = 1;
 
-    // add an extra page for cacheline alignment overhead
-    Hunk_Begin(&bsp->hunk, memsize + 4096);
+	Z_TagChunkCreate(TAG_BSP, &bsp->memory, memsize);
 
     // calculate the checksum
     bsp->checksum = Com_BlockChecksum(buf, filelen);
@@ -1052,8 +1049,6 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
         goto fail1;
     }
 
-    Hunk_End(&bsp->hunk);
-
     List_Append(&bsp_cache, &bsp->entry);
 
     FS_FreeFile(buf);
@@ -1064,7 +1059,7 @@ int BSP_Load(const char *name, bsp_t **bsp_p)
     return Q_ERR_SUCCESS;
 
 fail1:
-    Hunk_Free(&bsp->hunk);
+    Z_ChunkFree(&bsp->memory);
     Z_Free(bsp);
 fail2:
     FS_FreeFile(buf);

@@ -809,7 +809,7 @@ void GL_FreeWorld(void)
     BSP_Free(gl_static.world.cache);
 
     if (gl_static.world.vertices) {
-        Hunk_Free(&gl_static.world.hunk);
+        Z_Free(gl_static.world.memory);
     } else if (qglDeleteBuffers) {
         qglDeleteBuffers(1, &gl_static.world.bufnum);
     }
@@ -887,10 +887,7 @@ void GL_LoadWorld(const char *name)
     if (create_surface_vbo(size)) {
         Com_DPrintf("%s: %"PRIz" bytes of vertex data as VBO\n", __func__, size);
     } else {
-        Hunk_Begin(&gl_static.world.hunk, size);
-        gl_static.world.vertices = Hunk_Alloc(&gl_static.world.hunk, size);
-        Hunk_End(&gl_static.world.hunk);
-
+        gl_static.world.vertices = Z_TagMalloc(size, TAG_RENDERER);
         Com_DPrintf("%s: %"PRIz" bytes of vertex data on hunk\n", __func__, size);
     }
 

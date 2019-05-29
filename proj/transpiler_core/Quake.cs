@@ -251,16 +251,19 @@ namespace asset_transpiler
 
 				bw.Write(Encoding.ASCII.GetBytes("Q1BM"));
 
-				// Write textures first
-				bw.Write((byte)textureSize[0]);
-				bw.Write((byte)textureSize[1]);
-
+				// Header
 				int num_frames = 0;
 
 				foreach (var texture in textures)
 					num_frames = Math.Max(num_frames, texture.Frames.Count);
 
 				bw.Write((byte)num_frames);
+				bw.Write((byte)_verts.Count);
+				bw.Write((byte)faces.Length);
+
+				// Write textures first
+				bw.Write((byte)textureSize[0]);
+				bw.Write((byte)textureSize[1]);
 
 				// Compile texture data
 				byte[] textureBuffer = new byte[textureSize[0] * textureSize[1]];
@@ -282,7 +285,6 @@ namespace asset_transpiler
 
 				// Write geometry data
 				// Vertices
-				bw.Write((byte)_verts.Count);
 
 				foreach (var vert in _verts)
 				{
@@ -295,8 +297,6 @@ namespace asset_transpiler
 				}
 
 				// Faces
-				bw.Write((byte)faces.Length);
-
 				foreach (var face in faces)
 				{
 					bw.Write(face.VertIndexes[2]);

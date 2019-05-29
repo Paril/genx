@@ -32,7 +32,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef int (*mod_load_t) (model_t *, const void *, size_t);
 
-#define MOD_Malloc(size)    Hunk_Alloc(&model->hunk, size)
+#define MOD_Malloc(size)    Z_TagMalloc(size, TAG_MODEL)
 
 #if MAX_ALIAS_VERTS > TESS_MAX_VERTICES
 #error TESS_MAX_VERTICES
@@ -291,9 +291,9 @@ static void MOD_List_f(void)
         if (!model->type) {
             continue;
         }
-        Com_Printf("%c %8"PRIz" : %s\n", types[model->type],
-                   model->hunk.mapped, model->name);
-        bytes += model->hunk.mapped;
+        Com_Printf("%c alloc %8"PRIz" used %8"PRIz" : %s\n", types[model->type],
+                   model->memory.allocated, model->memory.used, model->name);
+        bytes += model->memory.allocated;
         count++;
     }
     Com_Printf("Total models: %d (out of %d slots)\n", count, r_numModels);
@@ -309,12 +309,9 @@ void MOD_FreeUnused(void)
         if (!model->type) {
             continue;
         }
-        if (model->registration_sequence == registration_sequence) {
-            // make sure it is paged in
-            Com_PageInMemory(model->hunk.base, model->hunk.cursize);
-        } else {
+        if (model->registration_sequence != registration_sequence) {
             // don't need this model
-            Hunk_Free(&model->hunk);
+            Z_ChunkFree(&model->memory);
             memset(model, 0, sizeof(*model));
         }
     }
@@ -333,7 +330,7 @@ void MOD_FreeAll(void)
             continue;
         }
 
-        Hunk_Free(&model->hunk);
+		Z_ChunkFree(&model->memory);
         memset(model, 0, sizeof(*model));
     }
 
@@ -417,10 +414,10 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
     if (sizeof(dsp2header_t) + sizeof(dsp2frame_t) * header.numframes > length)
         return Q_ERR_BAD_EXTENT;
 
-    Hunk_Begin(&model->hunk, 0x10000);
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, sizeof(mspriteframe_t) * header.numframes);
     model->type = MOD_SPRITE;
 
-    model->spriteframes = MOD_Malloc(sizeof(mspriteframe_t) * header.numframes);
+    model->spriteframes = Z_ChunkAlloc(&model->memory, model->memory.allocated);
     model->numframes = header.numframes;
 
     src_frame = (dsp2frame_t *)((byte *)rawdata + sizeof(dsp2header_t));
@@ -443,8 +440,6 @@ static int MOD_LoadSP2(model_t *model, const void *rawdata, size_t length)
         src_frame++;
         dst_frame++;
     }
-
-	Hunk_End(&model->hunk);
 
 	// calculate clip bounds
 	vec3_t mins, maxs;
@@ -504,10 +499,10 @@ static int MOD_LoadSPR(model_t *model, const void *rawdata, size_t length)
 		return Q_ERR_SUCCESS;
 	}
 
-    Hunk_Begin(&model->hunk, 0x10000);
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, sizeof(mspriteframe_t) * header.numframes);
 	model->type = MOD_SPRITE;
 
-	model->spriteframes = MOD_Malloc(sizeof(mspriteframe_t) * header.numframes);
+	model->spriteframes = Z_ChunkAlloc(&model->memory, model->memory.allocated);
 	model->numframes = header.numframes;
 
 	byte *frame_ptr = (byte*)rawdata + sizeof(dsprheader_t);
@@ -594,11 +589,10 @@ static int MOD_LoadSPR(model_t *model, const void *rawdata, size_t length)
 	}
 
 	model->radius = RadiusFromBounds(mins, maxs);
-	
-    Hunk_End(&model->hunk);
+
 	return Q_ERR_SUCCESS;
 fail:
-    Hunk_Free(&model->hunk);
+    Z_ChunkFree(&model->memory);
     return ret;
 }
 
@@ -634,14 +628,14 @@ static int MOD_LoadD2S(model_t *model, const void *rawdata, size_t length)
 	byte num_frames = *ptr++;
 	byte num_dirs = *ptr++;
 	
-    Hunk_Begin(&model->hunk, 0x10000);
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, (sizeof(mspritedirframes_t) + (sizeof(mspritedirframe_t) * num_dirs)) * num_frames);
 
-	mspritedirframes_t *frames = model->spritedirframes = MOD_Malloc(sizeof(mspritedirframes_t) * num_frames);
+	mspritedirframes_t *frames = model->spritedirframes = Z_ChunkAlloc(&model->memory, sizeof(mspritedirframes_t) * num_frames);
 
 	for (int i = 0; i < num_frames; ++i)
 	{
 		mspritedirframes_t *frame = &frames[i];
-		mspritedirframe_t *dirs = MOD_Malloc(sizeof(mspritedirframe_t) * num_dirs);
+		mspritedirframe_t *dirs = Z_ChunkAlloc(&model->memory, sizeof(mspritedirframe_t) * num_dirs);
 
 		frame->directions = dirs;
 
@@ -693,8 +687,6 @@ static int MOD_LoadD2S(model_t *model, const void *rawdata, size_t length)
 
 	Z_Free(offsets);
 	Z_Free(images);
-
-    Hunk_End(&model->hunk);
 
 	return Q_ERR_SUCCESS;
 }
@@ -866,21 +858,25 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
         return Q_ERR_TOO_MANY;
     }
 
-    Hunk_Begin(&model->hunk, 0x400000);
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, sizeof(maliasmesh_t) +
+					 (header.num_frames * sizeof(maliasframe_t)) +
+					 (numverts * header.num_frames * sizeof(maliasvert_t)) +
+					 (numverts * sizeof(maliastc_t)) +
+					 (numindices * sizeof(QGL_INDEX_TYPE)));
     model->type = MOD_ALIAS;
     model->nummeshes = 1;
     model->numframes = header.num_frames;
-    model->meshes = MOD_Malloc(sizeof(maliasmesh_t));
-    model->frames = MOD_Malloc(header.num_frames * sizeof(maliasframe_t));
+    model->meshes = Z_ChunkAlloc(&model->memory, sizeof(maliasmesh_t));
+    model->frames = Z_ChunkAlloc(&model->memory, header.num_frames * sizeof(maliasframe_t));
 
     dst_mesh = model->meshes;
     dst_mesh->numtris = numindices / 3;
     dst_mesh->numindices = numindices;
     dst_mesh->numverts = numverts;
     dst_mesh->numskins = header.num_skins;
-    dst_mesh->verts = MOD_Malloc(numverts * header.num_frames * sizeof(maliasvert_t));
-    dst_mesh->tcoords = MOD_Malloc(numverts * sizeof(maliastc_t));
-    dst_mesh->indices = MOD_Malloc(numindices * sizeof(QGL_INDEX_TYPE));
+    dst_mesh->verts = Z_ChunkAlloc(&model->memory, numverts * header.num_frames * sizeof(maliasvert_t));
+    dst_mesh->tcoords = Z_ChunkAlloc(&model->memory, numverts * sizeof(maliastc_t));
+    dst_mesh->indices = Z_ChunkAlloc(&model->memory, numindices * sizeof(QGL_INDEX_TYPE));
 
     if (dst_mesh->numtris != header.num_tris) {
         Com_DPrintf("%s has %d bad triangles\n", model->name, header.num_tris - dst_mesh->numtris);
@@ -968,14 +964,14 @@ static int MOD_LoadMD2(model_t *model, const void *rawdata, size_t length)
         dst_frame++;
     }
 
-    Hunk_End(&model->hunk);
     return Q_ERR_SUCCESS;
 
 fail:
-    Hunk_Free(&model->hunk);
+    Z_ChunkFree(&model->memory);
     return ret;
 }
 
+#if MDX
 static int MOD_ValidateMDX(dmdxheader_t *header, size_t length)
 {
     size_t end;
@@ -1272,6 +1268,7 @@ fail:
     Hunk_Free(&model->hunk);
     return ret;
 }
+#endif
 
 #if USE_MD3
 static int MOD_LoadMD3Mesh(model_t *model, maliasmesh_t *mesh,
@@ -1601,8 +1598,8 @@ qhandle_t R_RegisterModel(const char *name)
 		load = MOD_LoadSP2;
 	else if (!Q_stricmp(extension, "d2s") || !Q_stricmp(extension, "dns"))
 		load = MOD_LoadD2S;
-	else if (!Q_stricmp(extension, "mdx"))
-		load = MOD_LoadMDX;
+	//else if (!Q_stricmp(extension, "mdx"))
+	//	load = MOD_LoadMDX;
 	else if (!Q_stricmp(extension, "wsc"))
 		load = MOD_LoadWSC;
 	else
@@ -1702,32 +1699,39 @@ void MOD_Shutdown(void)
 void MOD_AddIDToName(const char *filename, int id, char *buffer, size_t buffer_len);
 
 // Paril
+// FIXME: I think I'd like to replace this with a more standard format. OBJ maybe?
 int MOD_LoadQ1M(model_t *model, const void *rawdata, size_t length)
 {
-	byte		*ptr = (byte*)rawdata + 4;
+	byte	*ptr = (byte*)rawdata + 4;
 
-	int			texture_width = *ptr++;
-	int			texture_height = *ptr++;
-	int			texture_frames = *ptr++;
+	int		texture_width = *ptr++;
+	int		texture_height = *ptr++;
+	int		texture_frames = *ptr++;
+	int		num_verts = *ptr++;
+	int		num_faces = *ptr++;
+	int		num_indices = num_faces * 6;
 
-	char		skinname[MAX_QPATH];
+	char	skinname[MAX_QPATH];
 
-	Hunk_Begin(&model->hunk, 0x10000);
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, sizeof(maliasmesh_t) + sizeof(maliasframe_t) +
+					(num_verts * sizeof(maliasvert_t)) +
+					(num_verts * sizeof(maliastc_t)) +
+					 num_indices * sizeof(QGL_INDEX_TYPE));
 	model->type = MOD_ALIAS;
 	model->nummeshes = 1;
 	model->numframes = 1;
 
-    model->meshes = MOD_Malloc(sizeof(maliasmesh_t));
-    model->frames = MOD_Malloc(model->numframes * sizeof(maliasframe_t));
+    model->meshes = Z_ChunkAlloc(&model->memory, sizeof(maliasmesh_t));
+    model->frames = Z_ChunkAlloc(&model->memory, model->numframes * sizeof(maliasframe_t));
 
 	maliasmesh_t *dst_mesh = model->meshes;
+
+	byte *pic = (byte*)IMG_AllocPixels(texture_width * texture_height * 4);
 
 	for (int i = 0; i < texture_frames; ++i)
 	{
 		MOD_AddIDToName(model->name, i, skinname, MAX_QPATH);
 		dst_mesh->skins[i] = IMG_Find(skinname, IT_SKIN, IF_DELAYED | IF_OLDSCHOOL);
-
-		byte *pic = (byte*)IMG_AllocPixels(texture_width * texture_height * 4);
 
 		dst_mesh->skins[i]->upload_width = dst_mesh->skins[i]->width = texture_width;
 		dst_mesh->skins[i]->upload_height = dst_mesh->skins[i]->height = texture_height;
@@ -1735,18 +1739,16 @@ int MOD_LoadQ1M(model_t *model, const void *rawdata, size_t length)
 
 		IMG_Load(dst_mesh->skins[i], pic);
 
-		IMG_FreePixels(pic);
-
 		ptr += texture_width * texture_height;
 	}
 
+	IMG_FreePixels(pic);
+
 	dst_mesh->numskins = texture_frames;
 
-	int num_verts = *ptr++;
-
 	dst_mesh->numverts = num_verts;
-	dst_mesh->verts = MOD_Malloc(num_verts * sizeof(maliasvert_t));
-	dst_mesh->tcoords = MOD_Malloc(num_verts * sizeof(maliastc_t));
+	dst_mesh->verts = Z_ChunkAlloc(&model->memory, num_verts * sizeof(maliasvert_t));
+	dst_mesh->tcoords = Z_ChunkAlloc(&model->memory, num_verts * sizeof(maliastc_t));
 
 	maliasframe_t *frame = model->frames;
 	ClearBounds(frame->bounds[0], frame->bounds[1]);
@@ -1774,12 +1776,9 @@ int MOD_LoadQ1M(model_t *model, const void *rawdata, size_t length)
 			dst_mesh->tcoords[i].st[x] = *ptr++ * ((x == 0) ? inv_w : inv_h);
 	}
 
-	int num_faces = *ptr++;
-	int num_indices = num_faces * 6;
-
 	dst_mesh->numtris = num_indices / 3;
 	dst_mesh->numindices = num_indices;
-	dst_mesh->indices = MOD_Malloc(num_indices * sizeof(QGL_INDEX_TYPE));
+	dst_mesh->indices = Z_ChunkAlloc(&model->memory, num_indices * sizeof(QGL_INDEX_TYPE));
 
 	for (int i = 0; i < num_indices; ++i)
 		dst_mesh->indices[i] = *ptr++;
@@ -1788,7 +1787,6 @@ int MOD_LoadQ1M(model_t *model, const void *rawdata, size_t length)
 	VectorSet(frame->scale, 1, 1, 1);
 	VectorSet(frame->translate, 0, 0, 0);
 
-	Hunk_End(&model->hunk);
 	return Q_ERR_SUCCESS;
 }
 
@@ -1890,6 +1888,8 @@ int MOD_LoadMDL(model_t *model, const void *rawdata, size_t length)
 	// skins
 	ptr = (byte*)rawdata + sizeof(dmdlheader_t);
 
+	pic = (byte*)IMG_AllocPixels(header.skinwidth * header.skinheight * 4);
+
 	for (i = 0; i < header.num_skins; ++i)
 	{
 		src_skin = (dmdlskin_t*)ptr;
@@ -1902,18 +1902,16 @@ int MOD_LoadMDL(model_t *model, const void *rawdata, size_t length)
 
 		ptr += sizeof(dmdlskin_t);
 
-		pic = (byte*)IMG_AllocPixels(header.skinwidth * header.skinheight * 4);
-
 		skins[i]->upload_width = skins[i]->width = header.skinwidth;
 		skins[i]->upload_height = skins[i]->height = header.skinheight;
 		skins[i]->flags |= IMG_Unpack8((uint32_t *)pic, ptr, header.skinwidth, header.skinheight, d_palettes[GAME_Q1]);
 
 		IMG_Load(skins[i], pic);
 
-		IMG_FreePixels(pic);
-
 		ptr += header.skinwidth * header.skinheight;
 	}
+
+	IMG_FreePixels(pic);
 
 	src_tc = (dmdltexcoord_t*)ptr;
 
@@ -1983,20 +1981,17 @@ int MOD_LoadMDL(model_t *model, const void *rawdata, size_t length)
 
 	header.num_frames = real_num_frames;
 
-	/*model->size = sizeof(maliasmesh_t) +
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, sizeof(maliasmesh_t) +
 		(header.num_frames * sizeof(maliasframe_t)) +
 		(num_real_verts * header.num_frames * sizeof(maliasvert_t)) +
 		(num_real_verts * sizeof(maliastc_t)) +
-		(header.num_tris * 3 * sizeof(QGL_INDEX_TYPE));
-	model->buffer = MOD_Malloc(model->size);*/
-
-	Hunk_Begin(&model->hunk, 0x100000);
+		(header.num_tris * 3 * sizeof(QGL_INDEX_TYPE)));
 
 	model->type = MOD_ALIAS;
 	model->nummeshes = 1;
 	model->numframes = header.num_frames;
-	model->meshes = MOD_Malloc(sizeof(maliasmesh_t));
-	model->frames = MOD_Malloc(header.num_frames * sizeof(maliasframe_t));
+	model->meshes = Z_ChunkAlloc(&model->memory, sizeof(maliasmesh_t));
+	model->frames = Z_ChunkAlloc(&model->memory, header.num_frames * sizeof(maliasframe_t));
 	model->nolerp = true;
 
 	dst_mesh = model->meshes;
@@ -2005,9 +2000,9 @@ int MOD_LoadMDL(model_t *model, const void *rawdata, size_t length)
 	dst_mesh->numverts = num_real_verts;
 	dst_mesh->numskins = header.num_skins;
 
-	dst_mesh->verts = MOD_Malloc(num_real_verts * header.num_frames * sizeof(maliasvert_t));
-	dst_mesh->tcoords = MOD_Malloc(num_real_verts * sizeof(maliastc_t));
-	dst_mesh->indices = MOD_Malloc(header.num_tris * 3 * sizeof(QGL_INDEX_TYPE));
+	dst_mesh->verts = Z_ChunkAlloc(&model->memory, num_real_verts * header.num_frames * sizeof(maliasvert_t));
+	dst_mesh->tcoords = Z_ChunkAlloc(&model->memory, num_real_verts * sizeof(maliastc_t));
+	dst_mesh->indices = Z_ChunkAlloc(&model->memory, header.num_tris * 3 * sizeof(QGL_INDEX_TYPE));
 
 	for (i = 0; i < header.num_skins; ++i)
 		dst_mesh->skins[i] = skins[i];
@@ -2110,8 +2105,6 @@ int MOD_LoadMDL(model_t *model, const void *rawdata, size_t length)
 			}
 		}
 	}
-
-	Hunk_End(&model->hunk);
 
 	return Q_ERR_SUCCESS;
 }
@@ -2321,12 +2314,7 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 
 	const char *num_searcher = file;
 
-	Hunk_Begin(&model->hunk, 0x1000);
-
-	model->weaponscript = MOD_Malloc(sizeof(mweaponscript_t));
-
-	mweaponscript_t *script_ptr = model->weaponscript;
-	script_ptr->num_frames = script_ptr->num_sprites = script_ptr->num_anim_frames = 0;
+	int num_frames = 0, num_sprites = 0, num_anim_frames = 0;
 
 	while (true)
 	{
@@ -2336,9 +2324,9 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 			break;
 
 		if (Q_stricmp(token, "{") == 0)
-			script_ptr->num_frames++;
+			num_frames++;
 		else if (Q_stricmp(token, "load_sprite") == 0)
-			script_ptr->num_sprites++;
+			num_sprites++;
 		else if (Q_stricmp(token, "animations") == 0)
 		{
 			token = COM_Parse(&num_searcher);
@@ -2351,19 +2339,27 @@ static int MOD_LoadWSC(model_t *model, const void *rawdata, size_t length)
 				if (!token || !anim_searcher)
 					break;
 
-				script_ptr->num_anim_frames++;
+				num_anim_frames++;
 			}
 		}
 	}
 
-	script_ptr->sprites = MOD_Malloc(sizeof(mweaponscript_sprite_t) * script_ptr->num_sprites);
-	script_ptr->frames = MOD_Malloc(sizeof(mweaponscript_frame_t) * script_ptr->num_frames);
-	script_ptr->anim_frames = MOD_Malloc(sizeof(int) * script_ptr->num_anim_frames);
+	Z_TagChunkCreate(TAG_MODEL, &model->memory, sizeof(mweaponscript_t) +
+					(sizeof(mweaponscript_sprite_t) * num_sprites) +
+					((sizeof(mweaponscript_frame_t) + (sizeof(mweaponscript_frame_draw_t) * num_sprites)) * num_frames) +
+					(sizeof(int) * num_anim_frames));
+	mweaponscript_t *script_ptr = model->weaponscript = Z_ChunkAlloc(&model->memory, sizeof(mweaponscript_t));
+
+	script_ptr->num_frames = num_frames;
+	script_ptr->num_sprites = num_sprites;
+	script_ptr->num_anim_frames = num_anim_frames;
+
+	script_ptr->sprites = Z_ChunkAlloc(&model->memory, sizeof(mweaponscript_sprite_t) * script_ptr->num_sprites);
+	script_ptr->frames = Z_ChunkAlloc(&model->memory, sizeof(mweaponscript_frame_t) * script_ptr->num_frames);
+	script_ptr->anim_frames = Z_ChunkAlloc(&model->memory, sizeof(int) * script_ptr->num_anim_frames);
 
 	for (int i = 0; i < script_ptr->num_frames; ++i)
-		script_ptr->frames[i].draws = MOD_Malloc(sizeof(mweaponscript_frame_draw_t) * script_ptr->num_sprites);
-
-	Hunk_End(&model->hunk);
+		script_ptr->frames[i].draws = Z_ChunkAlloc(&model->memory, sizeof(mweaponscript_frame_draw_t) * script_ptr->num_sprites);
 
 	int cur_sprite = 0;
 	int cur_frame = 0;

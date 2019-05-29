@@ -327,22 +327,6 @@ bool Com_ParseTimespec(const char *s, int *frames)
 }
 #endif
 
-/*
-===============
-Com_PageInMemory
-
-===============
-*/
-int    paged_total;
-
-void Com_PageInMemory(void *buffer, size_t size)
-{
-    int        i;
-
-    for (i = size - 1; i > 0; i -= 4096)
-        paged_total += ((byte *)buffer)[i];
-}
-
 size_t Com_FormatTime(char *buffer, size_t size, time_t t)
 {
     int     sec, min, hour, day;

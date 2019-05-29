@@ -21,7 +21,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define Z_Malloc(size)          Z_TagMalloc(size, TAG_GENERAL)
 #define Z_Mallocz(size)         Z_TagMallocz(size, TAG_GENERAL)
-#define Z_Reserve(size)         Z_TagReserve(size, TAG_GENERAL)
 #define Z_CopyString(string)    Z_TagCopyString(string, TAG_GENERAL)
 #define Z_CopyStruct(ptr)       memcpy(Z_Malloc(sizeof(*ptr)), ptr, sizeof(*ptr))
 
@@ -66,5 +65,18 @@ char    *Z_ReservedCopyString(const char *in) q_malloc;
 
 // may return pointer to static memory
 char    *Z_CvarCopyString(const char *in);
+
+typedef struct
+{
+	void		*memory;
+	size_t		allocated, used;
+} mem_chunk_t;
+
+void	Z_TagChunkCreate(memtag_t tag, mem_chunk_t *chunk, size_t size);
+void	Z_ChunkFree(mem_chunk_t *chunk);
+void	*Z_ChunkAlloc(mem_chunk_t *chunk, size_t size);
+
+#define Z_ChunkCreate(c, s)	Z_TagChunkCreate(TAG_GENERAL, c, s)
+
 
 #endif // ZONE_H

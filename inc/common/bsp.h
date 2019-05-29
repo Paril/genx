@@ -22,8 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "shared/list.h"
 #include "common/error.h"
-#include "system/hunk.h"
 #include "format/bsp.h"
+#include "zone.h"
 
 // maximum size of a PVS row, in bytes
 #define VIS_MAX_BYTES   (MAX_MAP_LEAFS >> 3)
@@ -186,12 +186,12 @@ typedef struct mmodel_s {
 } mmodel_t;
 
 typedef struct bsp_s {
-    list_t      entry;
-    int         refcount;
+    list_t			entry;
+    int				refcount;
 
-    unsigned    checksum;
+    unsigned		checksum;
 
-    memhunk_t   hunk;
+	mem_chunk_t		memory;
 
     int             numbrushsides;
     mbrushside_t    *brushsides;

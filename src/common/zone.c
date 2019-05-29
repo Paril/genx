@@ -306,55 +306,6 @@ void *Z_TagMallocz(size_t size, memtag_t tag)
     return memset(Z_TagMalloc(size, tag), 0, size);
 }
 
-static byte     *z_reserved_data;
-static size_t   z_reserved_inuse;
-static size_t   z_reserved_total;
-
-void Z_TagReserve(size_t size, memtag_t tag)
-{
-    z_reserved_data = Z_TagMalloc(size, tag);
-	z_reserved_total = size;
-	z_reserved_inuse = 0;
-}
-
-void *Z_ReservedAlloc(size_t size)
-{
-	void *ptr;
-
-	if (!size) {
-		return NULL;
-	}
-
-	if (size > z_reserved_total - z_reserved_inuse) {
-        Com_Error(ERR_FATAL, "%s: couldn't allocate %"PRIz" bytes", __func__, size);
-	}
-
-	ptr = z_reserved_data + z_reserved_inuse;
-	z_reserved_inuse += size;
-
-	return ptr;
-}
-
-void *Z_ReservedAllocz(size_t size)
-{
-	if (!size) {
-		return NULL;
-	}
-	return memset(Z_ReservedAlloc(size), 0, size);
-}
-
-char *Z_ReservedCopyString(const char *in)
-{
-	size_t len;
-
-	if (!in) {
-		return NULL;
-	}
-
-	len = strlen(in) + 1;
-    return memcpy(Z_ReservedAlloc(len), in, len);
-}
-
 /*
 ========================
 Z_Init
@@ -423,4 +374,27 @@ char *Z_CvarCopyString(const char *in)
     z = &z_static[i];
     Z_CountAlloc(&z->z);
 	return z->data;
+}
+
+
+void	Z_TagChunkCreate(memtag_t tag, mem_chunk_t *chunk, size_t size)
+{
+	chunk->memory = Z_TagMallocz(size, tag);
+	chunk->allocated = size;
+	chunk->used = 0;
+}
+
+void	Z_ChunkFree(mem_chunk_t *chunk)
+{
+	Z_Free(chunk->memory);
+}
+
+void	*Z_ChunkAlloc(mem_chunk_t *chunk, size_t size)
+{
+	if (chunk->used + size > chunk->allocated)
+		Com_Error(ERR_FATAL, "%s: buffer overrun", __func__);
+
+	void *ptr = (byte *)chunk->memory + chunk->used;
+	chunk->used += size;
+	return ptr;
 }

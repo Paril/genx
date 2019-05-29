@@ -217,9 +217,6 @@
     <ClCompile Include="..\src\windows\wgl.c">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\windows\hunk.c">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\windows\system.c">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
@@ -400,9 +397,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\inc\common\fifo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\system\hunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\inc\client\input.h">

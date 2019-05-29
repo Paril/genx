@@ -209,7 +209,6 @@
     <ClCompile Include="..\src\shared\shared.c" />
     <ClCompile Include="..\src\windows\client.c" />
     <ClCompile Include="..\src\windows\glimp.c" />
-    <ClCompile Include="..\src\windows\hunk.c" />
     <ClCompile Include="..\src\windows\system.c" />
     <ClCompile Include="..\src\windows\wgl.c" />
   </ItemGroup>
@@ -265,7 +264,6 @@
     <ClInclude Include="..\inc\shared\list.h" />
     <ClInclude Include="..\inc\shared\platform.h" />
     <ClInclude Include="..\inc\shared\shared.h" />
-    <ClInclude Include="..\inc\system\hunk.h" />
     <ClInclude Include="..\inc\system\system.h" />
     <ClInclude Include="..\src\client\client.h" />
     <ClInclude Include="..\src\client\sound\qal\dynamic.h" />

@@ -52,8 +52,6 @@ size_t Com_TimeDiffLong(char *buffer, size_t size, time_t *p, time_t now);
 size_t Com_FormatSize(char *dest, size_t destsize, int64_t bytes);
 size_t Com_FormatSizeLong(char *dest, size_t destsize, int64_t bytes);
 
-void Com_PageInMemory(void *buffer, size_t size);
-
 color_index_t Com_ParseColor(const char *s, color_index_t last);
 
 #if USE_REF
