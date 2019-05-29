@@ -10,7 +10,8 @@ static int sound_gib;
 static int sound_shoot;
 static int sound_claw;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -57,7 +58,8 @@ void troo_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_action, 1, ATTN_NORM, 0);
 }
 
-mframe_t troo_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t troo_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -75,7 +77,8 @@ void troo_stand(edict_t *self)
 #define MOVE_SPEED 9.3f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t troo_frames_run1[FRAME_COUNT(run)] = {
+mframe_t troo_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  troo_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  troo_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  troo_idle, frames_run2 },
@@ -92,7 +95,8 @@ void troo_run(edict_t *self)
 	self->monsterinfo.currentmove = &troo_run1;
 }
 
-mframe_t troo_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t troo_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -115,7 +119,8 @@ void troo_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t troo_frames_gib1[FRAME_COUNT(gib)] = {
+mframe_t troo_frames_gib1[FRAME_COUNT(gib)] =
+{
 	{ ai_move, 0,  NULL, frames_gib1 },
 	{ ai_move, 0,  NULL, frames_gib1 },
 	{ ai_move, 0,  NULL, frames_gib2 },
@@ -135,7 +140,8 @@ mframe_t troo_frames_gib1[FRAME_COUNT(gib)] = {
 };
 mmove_t troo_gib1 = { frames_gib_start, frames_gib_end, troo_frames_gib1, troo_dead };
 
-mframe_t troo_frames_die1[FRAME_COUNT(die)] = {
+mframe_t troo_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death2 },
 	{ ai_move, 0,  NULL, frames_death3 },
@@ -161,12 +167,13 @@ void troo_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	{
 		switch (Q_rand() % 2)
 		{
-		case 0:
-			gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
-			break;
-		case 1:
-			gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
-			break;
+			case 0:
+				gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+				break;
+
+			case 1:
+				gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
+				break;
 		}
 
 		self->monsterinfo.currentmove = &troo_die1;
@@ -177,7 +184,8 @@ void troo_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.linkentity(self);
 }
 
-mframe_t troo_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t troo_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
 };
@@ -228,7 +236,8 @@ void doom_imp_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface
 	if (other == ent->owner)
 		return;
 
-	if (surf && (surf->flags & SURF_SKY)) {
+	if (surf && (surf->flags & SURF_SKY))
+	{
 		G_FreeEdict(ent);
 		return;
 	}
@@ -241,19 +250,16 @@ void doom_imp_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_DOOM_IMP_BOOM);
 	gi.WritePosition(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
-
 	G_FreeEdict(ent);
 }
 
 void fire_doom_imp_ball(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed)
 {
 	edict_t *rocket;
-
 	rocket = G_Spawn();
 	VectorCopy(start, rocket->s.origin);
 	VectorCopy(dir, rocket->movedir);
@@ -273,9 +279,7 @@ void fire_doom_imp_ball(edict_t *self, vec3_t start, vec3_t dir, int damage, int
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
 	rocket->dmg = damage;
-
 	rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, rocket, MD_NONE, DT_DIRECT);
-
 	gi.linkentity(rocket);
 }
 
@@ -291,7 +295,6 @@ void troo_fire_gun(edict_t *self)
 	}
 
 	gi.sound(self, CHAN_WEAPON, sound_shoot, 1, ATTN_NORM, 0);
-
 	vec3_t org, v_forward, v_right;
 	AngleVectors(self->s.angles, v_forward, v_right, NULL);
 
@@ -299,19 +302,17 @@ void troo_fire_gun(edict_t *self)
 		org[i] = self->s.origin[i] + v_forward[i] * 0 + v_right[i] * 0;
 
 	org[2] += 16;
-
 	vec3_t dir;
-
 	vec3_t enemy_org;
 	VectorCopy(self->enemy->s.origin, enemy_org);
 	enemy_org[2] += self->enemy->viewheight;
-
 	VectorSubtract(enemy_org, org, dir);
 	VectorNormalize(dir);
 	fire_doom_imp_ball(self, org, dir, Doom_MissileDamageRandomizer(3), 350);
 }
 
-mframe_t troo_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t troo_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  troo_fire_gun, frames_attack2 },
@@ -330,12 +331,13 @@ void troo_sight(edict_t *self, edict_t *other)
 {
 	switch (Q_rand() % 2)
 	{
-	case 0:
-		gi.sound(self, CHAN_VOICE, sound_alert1, 1, ATTN_NORM, 0);
-		break;
-	case 1:
-		gi.sound(self, CHAN_VOICE, sound_alert2, 1, ATTN_NORM, 0);
-		break;
+		case 0:
+			gi.sound(self, CHAN_VOICE, sound_alert1, 1, ATTN_NORM, 0);
+			break;
+
+		case 1:
+			gi.sound(self, CHAN_VOICE, sound_alert2, 1, ATTN_NORM, 0);
+			break;
 	}
 }
 
@@ -354,7 +356,6 @@ void doom_monster_troo(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_gib = gi.soundindex("doom/SLOP.wav");
 	sound_alert1 = gi.soundindex("doom/BGSIT1.wav");
 	sound_alert2 = gi.soundindex("doom/BGSIT2.wav");
@@ -362,19 +363,14 @@ void doom_monster_troo(edict_t *self)
 	sound_pain = gi.soundindex("doom/POPAIN.wav");
 	sound_death1 = gi.soundindex("doom/BGDTH1.wav");
 	sound_death2 = gi.soundindex("doom/BGDTH2.wav");
-
 	sound_shoot = gi.soundindex("doom/FIRSHT.wav");
 	sound_claw = gi.soundindex("doom/CLAW.wav");
-
 	VectorSet(self->mins, -20, -20, -4);
 	VectorSet(self->maxs, 20, 20, 52);
-
 	self->s.modelindex = gi.modelindex("sprites/doom/TROO.d2s");
 	self->health = 60;
 	self->dmg = 0;
-
 	self->gib_health = -self->health;
-
 	self->monsterinfo.stand = troo_stand;
 	self->monsterinfo.walk = troo_walk;
 	self->monsterinfo.run = troo_run;
@@ -385,11 +381,8 @@ void doom_monster_troo(edict_t *self)
 	self->monsterinfo.melee = troo_attack;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &troo_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

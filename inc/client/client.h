@@ -31,32 +31,36 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_LOCAL_SERVERS   16
 #define MAX_STATUS_PLAYERS  64
 
-typedef struct {
-    char name[MAX_CLIENT_NAME];
-    int ping;
-    int score;
+typedef struct
+{
+	char name[MAX_CLIENT_NAME];
+	int ping;
+	int score;
 } playerStatus_t;
 
-typedef struct {
-    char infostring[MAX_INFO_STRING];
-    playerStatus_t players[MAX_STATUS_PLAYERS];
-    int numPlayers;
+typedef struct
+{
+	char infostring[MAX_INFO_STRING];
+	playerStatus_t players[MAX_STATUS_PLAYERS];
+	int numPlayers;
 } serverStatus_t;
 
-typedef struct {
-    char map[MAX_QPATH];
-    char pov[MAX_CLIENT_NAME];
+typedef struct
+{
+	char map[MAX_QPATH];
+	char pov[MAX_CLIENT_NAME];
 } demoInfo_t;
 
-typedef enum {
-    ACT_MINIMIZED,
-    ACT_RESTORED,
-    ACT_ACTIVATED
+typedef enum
+{
+	ACT_MINIMIZED,
+	ACT_RESTORED,
+	ACT_ACTIVATED
 } active_t;
 
 bool CL_ProcessEvents(void);
 #if USE_ICMP
-void CL_ErrorEvent(netadr_t *from);
+	void CL_ErrorEvent(netadr_t *from);
 #endif
 void CL_Init(void);
 void CL_Disconnect(error_type_t type);
@@ -122,7 +126,8 @@ bool SCR_ParseColor(const char *s, color_t *color);
 
 float V_CalcFov(float fov_x, float width, float height);
 
-enum {
+enum
+{
 	MODELHANDLE_EMPTY,
 
 	MODELHANDLE_BSP,
@@ -130,7 +135,8 @@ enum {
 	MODELHANDLE_GAMED
 };
 
-typedef struct {
+typedef struct
+{
 	uint32_t	type : 3;
 	uint32_t	id : 29;
 } modelhandle_t;

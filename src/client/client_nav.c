@@ -25,7 +25,6 @@ void Nav_ForceDrop(void)
 {
 	nav_node_t *closest;
 	float closest_node_dist;
-
 	closest = Nav_ClosestNode(cl.predicted_origin, &closest_node_dist);
 
 	if (closest && closest_node_dist < 24)
@@ -37,7 +36,6 @@ void Nav_ForceDrop(void)
 	else
 	{
 		Com_Printf("Dropped node\n");
-
 		nav_node_t *new_node = Nav_CreateNode();
 		VectorCopy(cl.predicted_origin, new_node->position);
 		new_node->leaf = BSP_PointLeaf(cl.bsp->nodes, new_node->position);
@@ -53,6 +51,7 @@ void Nav_Frame(void)
 {
 	if (cls.state != ca_active || cls.demo.playback || sv_paused->integer)
 		return;
+
 	if (!nav_debug.is_running)
 		return;
 
@@ -76,7 +75,6 @@ void Nav_Frame(void)
 		if (closest && nav_debug.node_selected_a != NAV_NODE_INVALID && dist_to_last > 24 && closest_node_dist < 24 && closest != Nav_NodeIDToNode(nav_debug.node_selected_a))
 		{
 			Com_Printf("Touched old node\n");
-
 			Nav_ConnectNodes(Nav_NodeIDToNode(nav_debug.node_selected_a), closest, true);
 			nav_debug.node_selected_a = Nav_NodeToNodeID(closest);
 		}
@@ -116,15 +114,12 @@ void Nav_AddEntities(void)
 		return;
 
 	mleaf_t *leaf = BSP_PointLeaf(cl.bsp->nodes, cl.predicted_origin);
-
 	entity_t ent;
 	memset(&ent, 0, sizeof(ent));
 	ent.scale = 1;
 	ent.game = GAME_Q2;
-
 	nav_node_id selected_node_min = min(nav_debug.node_selected_a, nav_debug.node_selected_b);
 	nav_node_id selected_node_max = max(nav_debug.node_selected_a, nav_debug.node_selected_b);
-
 	hashset_t connections_rendered = hashset_create();
 
 	for (uint32_t i = 0; i < num_loaded_nodes; ++i)
@@ -137,15 +132,17 @@ void Nav_AddEntities(void)
 
 		switch (loaded_nodes[i].type)
 		{
-		case NAV_NODE_NORMAL:
-			ent.model = R_RegisterModel("models/objects/grenade2/tris.md2");
-			break;
-		case NAV_NODE_JUMP:
-			ent.model = R_RegisterModel("models/objects/gibs/sm_meat/tris.md2");
-			break;
-		case NAV_NODE_PLATFORM:
-			ent.model = R_RegisterModel("models/objects/gibs/sm_metal/tris.md2");
-			break;
+			case NAV_NODE_NORMAL:
+				ent.model = R_RegisterModel("models/objects/grenade2/tris.md2");
+				break;
+
+			case NAV_NODE_JUMP:
+				ent.model = R_RegisterModel("models/objects/gibs/sm_meat/tris.md2");
+				break;
+
+			case NAV_NODE_PLATFORM:
+				ent.model = R_RegisterModel("models/objects/gibs/sm_metal/tris.md2");
+				break;
 		}
 
 		if (nav_debug.test_navigator)
@@ -163,7 +160,6 @@ void Nav_AddEntities(void)
 		}
 
 		ent.frame = 0;
-
 		VectorCopy(loaded_nodes[i].position, ent.origin);
 
 		if (nav_debug.node_selected_a == i || nav_debug.node_selected_b == i)
@@ -171,7 +167,6 @@ void Nav_AddEntities(void)
 			ent.flags |= ((nav_debug.node_selected_a == i) ? RF_SHELL_GREEN : RF_SHELL_BLUE);
 			ent.alpha = 0.30;
 			V_AddEntity(&ent);
-
 			ent.flags = RF_TRANSLUCENT;
 		}
 
@@ -181,23 +176,18 @@ void Nav_AddEntities(void)
 		{
 			nav_node_id connection_id = loaded_nodes[i].connections[c];
 			nav_node_t *connection = Nav_NodeIDToNode(connection_id);
-
 			//if (!Nav_LeavesConnected(leaf, connection->leaf, DVIS_PVS))
 			//	continue;
-
 			VectorCopy(connection->position, ent.oldorigin);
 			ent.alpha = (nav_debug.node_selected_a == i || nav_debug.node_selected_a == connection_id) ? 1.0f : 0.25f;
-
 			uint32_t connection_hash = node_hash(i, connection_id);
 
 			//if (!Nav_NodeConnectedTo(connection, &loaded_nodes[i], false) || i < connection_id)
-			if (!hashset_is_member(connections_rendered, (void*)(connection_hash + 2)))
+			if (!hashset_is_member(connections_rendered, (void *)(connection_hash + 2)))
 			{
-				hashset_add(connections_rendered, (void*)(connection_hash + 2));
-
+				hashset_add(connections_rendered, (void *)(connection_hash + 2));
 				color_t laser_color = { 0 };
 				laser_color.u8[3] = (int)(ent.alpha * 255);
-
 				ent.frame = 1;
 				ent.flags = RF_TRANSLUCENT | RF_BEAM;
 
@@ -219,16 +209,13 @@ void Nav_AddEntities(void)
 				vec3_t sub;
 				VectorSubtract(ent.oldorigin, ent.origin, sub);
 				float len = VectorNormalize(sub);
-
 				VectorMA(ent.origin, (len / 1000) * (cls.realtime % 1000), sub, ent.origin);
 				ent.flags = RF_TRANSLUCENT;
 				ent.skinnum = 0;
 				ent.frame = 0;
 				ent.model = R_RegisterModel("%e_rocket");
 				vectoangles2(sub, ent.angles);
-
 				V_AddEntity(&ent);
-
 				VectorCopy(loaded_nodes[i].position, ent.origin);
 				VectorClear(ent.angles);
 			}
@@ -255,7 +242,6 @@ void Nav_SelectLine(void)
 	vec3_t mins = { -4, -4, -4 }, maxs = { 4, 4, 4 };
 	VectorAdd(cl.predicted_origin, mins, mins);
 	VectorAdd(cl.predicted_origin, maxs, maxs);
-
 	mnode_t *headnode = CM_HeadnodeForBox(mins, maxs, CONTENTS_SOLID);
 
 	for (uint32_t i = 0; i < num_loaded_nodes; ++i)
@@ -264,7 +250,6 @@ void Nav_SelectLine(void)
 		{
 			nav_node_id connection_id = loaded_nodes[i].connections[c];
 			nav_node_t *connection = Nav_NodeIDToNode(connection_id);
-
 			CM_BoxTrace(&trace, loaded_nodes[i].position, connection->position, vec3_origin, vec3_origin, headnode, CONTENTS_SOLID);
 
 			if (trace.fraction < 1.0)
@@ -374,11 +359,9 @@ void Nav_SpliceNode(void)
 	nav_node_t *new_node = Nav_CreateNode();
 	VectorCopy(cl.predicted_origin, new_node->position);
 	new_node->leaf = BSP_PointLeaf(cl.bsp->nodes, new_node->position);
-
 	Nav_UnconnectNodes(Nav_NodeIDToNode(nav_debug.node_selected_a), Nav_NodeIDToNode(nav_debug.node_selected_b), true);
 	Nav_ConnectNodes(Nav_NodeIDToNode(nav_debug.node_selected_a), new_node, true);
 	Nav_ConnectNodes(Nav_NodeIDToNode(nav_debug.node_selected_b), new_node, true);
-
 	nav_debug.node_selected_a = Nav_NodeToNodeID(new_node);
 	nav_debug.node_selected_b = NAV_NODE_INVALID;
 }
@@ -417,7 +400,6 @@ void Nav_SliceNode(void)
 			Nav_ConnectNodes(Nav_NodeIDToNode(to_slice->connections[i]), Nav_NodeIDToNode(to_slice->connections[x]), true);
 
 	// TODO: connect inbound-only nodes
-
 	// delete the main node now that we're done with inter-connections
 	Nav_DeleteNode(to_slice);
 }
@@ -453,53 +435,49 @@ void Nav_SetTypeCmd(void)
 void CalculateCentroid(const msurfedge_t *firstsurfedge, const int32_t numsurfedges, vec3_t out)
 {
 	vec3_t s = { 0, 0, 0 };
-    vec_t areaTotal = 0.0f;
-
+	vec_t areaTotal = 0.0f;
 	vec_t *p1 = VERTEX_OF(0);
 	vec_t *p2 = VERTEX_OF(1);
 
-    for (int32_t i = 2; i < numsurfedges; i++)
-    {
-        vec_t *p3 = VERTEX_OF(i);
-        vec3_t edge1;
+	for (int32_t i = 2; i < numsurfedges; i++)
+	{
+		vec_t *p3 = VERTEX_OF(i);
+		vec3_t edge1;
 		VectorSubtract(p3, p1, edge1);
-        vec3_t edge2;
+		vec3_t edge2;
 		VectorSubtract(p3, p2, edge2);
-
-        vec3_t crossProduct;
+		vec3_t crossProduct;
 		CrossProduct(edge1, edge2, crossProduct);
-        vec_t area = VectorLength(crossProduct) / 2;
-
-        s[0] += area * (p1[0] + p2[0] + p3[0])/3;
-        s[1] += area * (p1[1] + p2[1] + p3[1])/3;
-        s[2] += area * (p1[2] + p2[2] + p3[2])/3;
-
-        areaTotal += area;
-        p2 = p3;
-    }
+		vec_t area = VectorLength(crossProduct) / 2;
+		s[0] += area * (p1[0] + p2[0] + p3[0]) / 3;
+		s[1] += area * (p1[1] + p2[1] + p3[1]) / 3;
+		s[2] += area * (p1[2] + p2[2] + p3[2]) / 3;
+		areaTotal += area;
+		p2 = p3;
+	}
 
 	VectorScale(s, 1.0 / areaTotal, out);
 }
 
 static inline void GL_DrawNode(mnode_t *node)
 {
-    mface_t *face, *last = node->firstface + node->numfaces;
+	mface_t *face, *last = node->firstface + node->numfaces;
 
-    for (face = node->firstface; face < last; face++) {
+	for (face = node->firstface; face < last; face++)
+	{
 		if (face->plane->normal[2] != 1.0)
 			continue;
+
 		if (face->drawflags & DSURF_PLANEBACK)
 			continue;
-		
+
 		vec3_t center;
 		CalculateCentroid(face->firstsurfedge, face->numsurfedges, center);
-
 		VectorMA(center, 16.0, face->plane->normal, center);
-
 		nav_node_t *new_node = Nav_CreateNode();
 		VectorCopy(center, new_node->position);
 		new_node->leaf = BSP_PointLeaf(cl.bsp->nodes, new_node->position);
-    }
+	}
 }
 
 static void GL_WorldNode_r(mnode_t *node)
@@ -507,15 +485,15 @@ static void GL_WorldNode_r(mnode_t *node)
 	if (!node || !node->plane)
 		return;
 
-    GL_WorldNode_r(node->children[0]);
-    GL_WorldNode_r(node->children[1]);
-
+	GL_WorldNode_r(node->children[0]);
+	GL_WorldNode_r(node->children[1]);
 	GL_DrawNode(node);
 }
 
 void Nav_Generate(void)
 {
-	if (num_loaded_nodes) {
+	if (num_loaded_nodes)
+	{
 		Com_WPrintf("Already have nodes loaded.\n");
 		return;
 	}
@@ -526,7 +504,6 @@ void Nav_Generate(void)
 void Nav_Init(void)
 {
 	Com_Printf("------- Nav_Init -------\n");
-
 	Cmd_AddCommand("nav_path_test", Nav_TestPath);
 	Cmd_AddCommand("nav_node_drop", Nav_ForceDrop);
 	Cmd_AddCommand("nav_line_select", Nav_SelectLine);

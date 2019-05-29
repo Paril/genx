@@ -35,9 +35,9 @@ IF_Init
 */
 void IF_Init(inputField_t *field, size_t visibleChars, size_t maxChars)
 {
-    memset(field, 0, sizeof(*field));
-    field->maxChars = min(maxChars, sizeof(field->text) - 1);
-    field->visibleChars = min(visibleChars, field->maxChars);
+	memset(field, 0, sizeof(*field));
+	field->maxChars = min(maxChars, sizeof(field->text) - 1);
+	field->visibleChars = min(visibleChars, field->maxChars);
 }
 
 /*
@@ -47,8 +47,8 @@ IF_Clear
 */
 void IF_Clear(inputField_t *field)
 {
-    memset(field->text, 0, sizeof(field->text));
-    field->cursorPos = 0;
+	memset(field->text, 0, sizeof(field->text));
+	field->cursorPos = 0;
 }
 
 /*
@@ -58,13 +58,16 @@ IF_Replace
 */
 void IF_Replace(inputField_t *field, const char *text)
 {
-    if (field->maxChars && text) {
-        size_t len = Q_strlcpy(field->text, text, field->maxChars + 1);
-        field->cursorPos = min(len, field->maxChars - 1);
-    } else {
-        field->text[0] = 0;
-        field->cursorPos = 0;
-    }
+	if (field->maxChars && text)
+	{
+		size_t len = Q_strlcpy(field->text, text, field->maxChars + 1);
+		field->cursorPos = min(len, field->maxChars - 1);
+	}
+	else
+	{
+		field->text[0] = 0;
+		field->cursorPos = 0;
+	}
 }
 
 #if USE_CLIENT
@@ -76,120 +79,134 @@ IF_KeyEvent
 */
 bool IF_KeyEvent(inputField_t *field, int key)
 {
-    if (!field->maxChars) {
-        return false;
-    }
-    if (field->cursorPos >= field->maxChars) {
-        Com_Error(ERR_FATAL, "%s: bad cursorPos", __func__);
-    }
+	if (!field->maxChars)
+		return false;
 
-    if (key == K_DEL) {
-        if (field->text[field->cursorPos]) {
-            memmove(field->text + field->cursorPos,
-                    field->text + field->cursorPos + 1,
-                    sizeof(field->text) - field->cursorPos - 1);
-        }
-        return true;
-    }
+	if (field->cursorPos >= field->maxChars)
+		Com_Error(ERR_FATAL, "%s: bad cursorPos", __func__);
 
-    if (key == K_BACKSPACE || (key == 'h' && Key_IsDown(K_CTRL))) {
-        if (field->cursorPos > 0) {
-            memmove(field->text + field->cursorPos - 1,
-                    field->text + field->cursorPos,
-                    sizeof(field->text) - field->cursorPos);
-            field->cursorPos--;
-        }
-        return true;
-    }
+	if (key == K_DEL)
+	{
+		if (field->text[field->cursorPos])
+		{
+			memmove(field->text + field->cursorPos,
+				field->text + field->cursorPos + 1,
+				sizeof(field->text) - field->cursorPos - 1);
+		}
 
-    if (key == 'w' && Key_IsDown(K_CTRL)) {
-        size_t oldpos = field->cursorPos;
+		return true;
+	}
 
-        // kill trailing whitespace
-        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32) {
-            field->cursorPos--;
-        }
+	if (key == K_BACKSPACE || (key == 'h' && Key_IsDown(K_CTRL)))
+	{
+		if (field->cursorPos > 0)
+		{
+			memmove(field->text + field->cursorPos - 1,
+				field->text + field->cursorPos,
+				sizeof(field->text) - field->cursorPos);
+			field->cursorPos--;
+		}
 
-        // kill this word
-        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] > 32) {
-            field->cursorPos--;
-        }
-        memmove(field->text + field->cursorPos, field->text + oldpos,
-                sizeof(field->text) - oldpos);
-        return true;
-    }
+		return true;
+	}
 
-    if (key == 'u' && Key_IsDown(K_CTRL)) {
-        memmove(field->text, field->text + field->cursorPos,
-                sizeof(field->text) - field->cursorPos);
-        field->cursorPos = 0;
-        return true;
-    }
+	if (key == 'w' && Key_IsDown(K_CTRL))
+	{
+		size_t oldpos = field->cursorPos;
 
-    if (key == 'k' && Key_IsDown(K_CTRL)) {
-        field->text[field->cursorPos] = 0;
-        return true;
-    }
+		// kill trailing whitespace
+		while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32)
+			field->cursorPos--;
 
-    if (key == 'c' && Key_IsDown(K_CTRL)) {
-        VID_SetClipboardData(field->text);
-        return true;
-    }
+		// kill this word
+		while (field->cursorPos > 0 && field->text[field->cursorPos - 1] > 32)
+			field->cursorPos--;
 
-    if (key == K_LEFTARROW || (key == 'b' && Key_IsDown(K_CTRL))) {
-        if (field->cursorPos > 0) {
-            field->cursorPos--;
-        }
-        return true;
-    }
+		memmove(field->text + field->cursorPos, field->text + oldpos,
+			sizeof(field->text) - oldpos);
+		return true;
+	}
 
-    if (key == K_RIGHTARROW || (key == 'f' && Key_IsDown(K_CTRL))) {
-        if (field->text[field->cursorPos]) {
-            field->cursorPos++;
-        }
-        goto check;
-    }
+	if (key == 'u' && Key_IsDown(K_CTRL))
+	{
+		memmove(field->text, field->text + field->cursorPos,
+			sizeof(field->text) - field->cursorPos);
+		field->cursorPos = 0;
+		return true;
+	}
 
-    if (key == 'b' && Key_IsDown(K_ALT)) {
-        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32) {
-            field->cursorPos--;
-        }
-        while (field->cursorPos > 0 && field->text[field->cursorPos - 1] > 32) {
-            field->cursorPos--;
-        }
-        return true;
-    }
+	if (key == 'k' && Key_IsDown(K_CTRL))
+	{
+		field->text[field->cursorPos] = 0;
+		return true;
+	}
 
-    if (key == 'f' && Key_IsDown(K_ALT)) {
-        while (field->text[field->cursorPos] && field->text[field->cursorPos] <= 32) {
-            field->cursorPos++;
-        }
-        while (field->text[field->cursorPos] > 32) {
-            field->cursorPos++;
-        }
-        goto check;
-    }
+	if (key == 'c' && Key_IsDown(K_CTRL))
+	{
+		VID_SetClipboardData(field->text);
+		return true;
+	}
 
-    if (key == K_HOME || (key == 'a' && Key_IsDown(K_CTRL))) {
-        field->cursorPos = 0;
-        return true;
-    }
+	if (key == K_LEFTARROW || (key == 'b' && Key_IsDown(K_CTRL)))
+	{
+		if (field->cursorPos > 0)
+			field->cursorPos--;
 
-    if (key == K_END || (key == 'e' && Key_IsDown(K_CTRL))) {
-        field->cursorPos = strlen(field->text);
-        goto check;
-    }
+		return true;
+	}
 
-    if (key == K_INS) {
-        Key_SetOverstrikeMode(Key_GetOverstrikeMode() ^ 1);
-        return true;
-    }
+	if (key == K_RIGHTARROW || (key == 'f' && Key_IsDown(K_CTRL)))
+	{
+		if (field->text[field->cursorPos])
+			field->cursorPos++;
 
-    return false;
+		goto check;
+	}
 
+	if (key == 'b' && Key_IsDown(K_ALT))
+	{
+		while (field->cursorPos > 0 && field->text[field->cursorPos - 1] <= 32)
+			field->cursorPos--;
+
+		while (field->cursorPos > 0 && field->text[field->cursorPos - 1] > 32)
+			field->cursorPos--;
+
+		return true;
+	}
+
+	if (key == 'f' && Key_IsDown(K_ALT))
+	{
+		while (field->text[field->cursorPos] && field->text[field->cursorPos] <= 32)
+			field->cursorPos++;
+
+		while (field->text[field->cursorPos] > 32)
+			field->cursorPos++;
+
+		goto check;
+	}
+
+	if (key == K_HOME || (key == 'a' && Key_IsDown(K_CTRL)))
+	{
+		field->cursorPos = 0;
+		return true;
+	}
+
+	if (key == K_END || (key == 'e' && Key_IsDown(K_CTRL)))
+	{
+		field->cursorPos = strlen(field->text);
+		goto check;
+	}
+
+	if (key == K_INS)
+	{
+		Key_SetOverstrikeMode(Key_GetOverstrikeMode() ^ 1);
+		return true;
+	}
+
+	return false;
 check:
-    field->cursorPos = min(field->cursorPos, field->maxChars - 1);
-    return true;
+	field->cursorPos = min(field->cursorPos, field->maxChars - 1);
+	return true;
 }
 
 /*
@@ -199,37 +216,38 @@ IF_CharEvent
 */
 bool IF_CharEvent(inputField_t *field, int key)
 {
-    if (!field->maxChars) {
-        return false;
-    }
-    if (field->cursorPos >= field->maxChars) {
-        Com_Error(ERR_FATAL, "%s: bad cursorPos", __func__);
-    }
+	if (!field->maxChars)
+		return false;
 
-    if (key < 32 || key > 127) {
-        return false;   // non printable
-    }
+	if (field->cursorPos >= field->maxChars)
+		Com_Error(ERR_FATAL, "%s: bad cursorPos", __func__);
 
-    if (field->cursorPos == field->maxChars - 1) {
-        // buffer limit was reached, just replace the last character
-        field->text[field->cursorPos] = key;
-        return true;
-    }
+	if (key < 32 || key > 127)
+	{
+		return false;   // non printable
+	}
 
-    if (Key_GetOverstrikeMode()) {
-        // replace the character at cursor and advance
-        field->text[field->cursorPos++] = key;
-        return true;
-    }
+	if (field->cursorPos == field->maxChars - 1)
+	{
+		// buffer limit was reached, just replace the last character
+		field->text[field->cursorPos] = key;
+		return true;
+	}
 
-    // insert new character at cursor position
-    memmove(field->text + field->cursorPos + 1,
-            field->text + field->cursorPos,
-            sizeof(field->text) - field->cursorPos - 1);
-    field->text[field->cursorPos++] = key;
-    field->text[field->maxChars] = 0;
+	if (Key_GetOverstrikeMode())
+	{
+		// replace the character at cursor and advance
+		field->text[field->cursorPos++] = key;
+		return true;
+	}
 
-    return true;
+	// insert new character at cursor position
+	memmove(field->text + field->cursorPos + 1,
+		field->text + field->cursorPos,
+		sizeof(field->text) - field->cursorPos - 1);
+	field->text[field->cursorPos++] = key;
+	field->text[field->maxChars] = 0;
+	return true;
 }
 
 /*
@@ -242,37 +260,38 @@ Returns x offset of the rightmost character drawn.
 */
 int IF_Draw(inputField_t *field, int x, int y, int flags, qhandle_t font, gametype_t game)
 {
-    char *text = field->text;
-    size_t cursorPos = field->cursorPos;
-    size_t offset = 0;
-    int ret;
+	char *text = field->text;
+	size_t cursorPos = field->cursorPos;
+	size_t offset = 0;
+	int ret;
 
-    if (!field->maxChars || !field->visibleChars) {
-        return 0;
-    }
+	if (!field->maxChars || !field->visibleChars)
+		return 0;
 
-    if (cursorPos >= field->maxChars) {
-        Com_Error(ERR_FATAL, "%s: bad cursorPos", __func__);
-    }
+	if (cursorPos >= field->maxChars)
+		Com_Error(ERR_FATAL, "%s: bad cursorPos", __func__);
 
-    // scroll horizontally
-    if (cursorPos >= field->visibleChars) {
-        cursorPos = field->visibleChars - 1;
-        offset = field->cursorPos - cursorPos;
-    }
+	// scroll horizontally
+	if (cursorPos >= field->visibleChars)
+	{
+		cursorPos = field->visibleChars - 1;
+		offset = field->cursorPos - cursorPos;
+	}
 
-    // draw text
-    ret = R_DrawString(x, y, flags, field->visibleChars, text + offset, font, CL_GetClientGame());
+	// draw text
+	ret = R_DrawString(x, y, flags, field->visibleChars, text + offset, font, CL_GetClientGame());
 
-    if (flags & UI_DRAWCURSOR) {
-        // draw blinking cursor
-        if ((com_localTime >> 8) & 1) {
-            int c = Key_GetOverstrikeMode() ? 11 : '_';
-            R_DrawChar(ret, y, flags, c, font, CL_GetClientGame());
-        }
-    }
+	if (flags & UI_DRAWCURSOR)
+	{
+		// draw blinking cursor
+		if ((com_localTime >> 8) & 1)
+		{
+			int c = Key_GetOverstrikeMode() ? 11 : '_';
+			R_DrawChar(ret, y, flags, c, font, CL_GetClientGame());
+		}
+	}
 
-    return ret;
+	return ret;
 }
 
 #endif

@@ -25,12 +25,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #if USE_CLIENT
-#include "client/client.h"
-#include "client/input.h"
-#include "client/keys.h"
-#include "client/ui.h"
-#include "client/video.h"
-#include "refresh/refresh.h"
+	#include "client/client.h"
+	#include "client/input.h"
+	#include "client/keys.h"
+	#include "client/ui.h"
+	#include "client/video.h"
+	#include "refresh/refresh.h"
 #endif
 #include "system/system.h"
 
@@ -38,7 +38,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <windows.h>
 
 #ifndef STATIC
-#define STATIC static
+	#define STATIC static
 #endif
 
 #if USE_CLIENT
@@ -49,46 +49,49 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MOUSE_BUTTONS   5
 
-typedef struct {
-    HWND    wnd;
-    HDC     dc;
+typedef struct
+{
+	HWND    wnd;
+	HDC     dc;
 
-    DEVMODE  dm;
+	DEVMODE  dm;
 
-    DWORD   lastMsgTime;
-    HHOOK   kbdHook;
+	DWORD   lastMsgTime;
+	HHOOK   kbdHook;
 
-    vidFlags_t flags;
+	vidFlags_t flags;
 
-    SHORT   gamma_cust[3][256];
-    SHORT   gamma_orig[3][256];
+	SHORT   gamma_cust[3][256];
+	SHORT   gamma_orig[3][256];
 
-    // x and y specify position of non-client area on the screen
-    // width and height specify size of client area
-    vrect_t rc;
+	// x and y specify position of non-client area on the screen
+	// width and height specify size of client area
+	vrect_t rc;
 
-    // rectangle of client area in screen coordinates
-    RECT    screen_rc;
+	// rectangle of client area in screen coordinates
+	RECT    screen_rc;
 
-    // center of client area in screen coordinates
-    int     center_x, center_y;
+	// center of client area in screen coordinates
+	int     center_x, center_y;
 
-    bool    alttab_disabled;
-    int         mode_changed;
+	bool    alttab_disabled;
+	int         mode_changed;
 
-    struct {
-        enum {
-            WIN_MOUSE_DISABLED,
-            WIN_MOUSE_LEGACY,
-            WIN_MOUSE_RAW
-        } initialized;
-        bool        grabbed;
-        int         state;
-        bool        parmsvalid;
-        bool        restoreparms;
-        int         originalparms[3];
-        int         mx, my;
-    } mouse;
+	struct
+	{
+		enum
+		{
+			WIN_MOUSE_DISABLED,
+			WIN_MOUSE_LEGACY,
+			WIN_MOUSE_RAW
+		} initialized;
+		bool        grabbed;
+		int         state;
+		bool        parmsvalid;
+		bool        restoreparms;
+		int         originalparms[3];
+		int         mx, my;
+	} mouse;
 } win_state_t;
 
 extern win_state_t      win;
@@ -103,8 +106,8 @@ void Win_ModeChanged(void);
 extern HINSTANCE                    hGlobalInstance;
 
 #if !_DEBUG
-extern HANDLE                       mainProcessThread;
-extern LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
+	extern HANDLE                       mainProcessThread;
+	extern LPTOP_LEVEL_EXCEPTION_FILTER prevExceptionFilter;
 
-LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS);
+	LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS);
 #endif

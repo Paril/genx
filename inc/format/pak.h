@@ -31,15 +31,17 @@ The .pak files are just a linear collapse of a directory tree
 
 #define MAX_FILES_IN_PACK    4096
 
-typedef struct {
-    char        name[56];
-    uint32_t    filepos, filelen;
+typedef struct
+{
+	char        name[56];
+	uint32_t    filepos, filelen;
 } dpackfile_t;
 
-typedef struct {
-    uint32_t    ident;        // == IDPAKHEADER
-    uint32_t    dirofs;
-    uint32_t    dirlen;
+typedef struct
+{
+	uint32_t    ident;        // == IDPAKHEADER
+	uint32_t    dirofs;
+	uint32_t    dirlen;
 } dpackheader_t;
 
 #endif // FORMAT_PAK_H

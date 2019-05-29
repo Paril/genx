@@ -45,43 +45,46 @@ typedef dmd2trivertx_t dmdxtrivertx_t;
 
 #define MDX_MAX_FRAMESIZE	MD2_MAX_FRAMESIZE
 
-typedef struct {
-   maliastc_t st;
-   int vertexIndex;
+typedef struct
+{
+	maliastc_t st;
+	int vertexIndex;
 } dmdxglcmd_t;
 
-typedef struct {
-   int num_verts;
-   int sub_object;
+typedef struct
+{
+	int num_verts;
+	int sub_object;
 } dmdxglcmds_t;
 
-typedef struct dmdxheader_s {
-    uint32_t        ident;
-    uint32_t        version;
+typedef struct dmdxheader_s
+{
+	uint32_t        ident;
+	uint32_t        version;
 
-    uint32_t        skinwidth;
-    uint32_t        skinheight;
-    uint32_t        framesize;      // byte size of each frame
+	uint32_t        skinwidth;
+	uint32_t        skinheight;
+	uint32_t        framesize;      // byte size of each frame
 
-    uint32_t        num_skins;
-    uint32_t        num_xyz;
-    uint32_t        num_tris;
-    uint32_t        num_glcmds;
-    uint32_t        num_frames;
+	uint32_t        num_skins;
+	uint32_t        num_xyz;
+	uint32_t        num_tris;
+	uint32_t        num_glcmds;
+	uint32_t        num_frames;
 	uint32_t		num_sfx_defines;
 	uint32_t		num_sfx_entries;
 	uint32_t		num_sub_objects;
 
-    uint32_t        ofs_skins;      // each skin is a MAX_SKINNAME string
-    uint32_t        ofs_tris;       // offset for dtriangles
-    uint32_t        ofs_frames;     // offset for first frame
-    uint32_t        ofs_glcmds;
-    uint32_t        ofs_vertex_info;
-    uint32_t        ofs_sfx_defines;
-    uint32_t        ofs_sfx_entries;
-    uint32_t        ofs_bbox_frames;
-    uint32_t        ofs_unknown;
-    uint32_t        ofs_end;        // end of file
+	uint32_t        ofs_skins;      // each skin is a MAX_SKINNAME string
+	uint32_t        ofs_tris;       // offset for dtriangles
+	uint32_t        ofs_frames;     // offset for first frame
+	uint32_t        ofs_glcmds;
+	uint32_t        ofs_vertex_info;
+	uint32_t        ofs_sfx_defines;
+	uint32_t        ofs_sfx_entries;
+	uint32_t        ofs_bbox_frames;
+	uint32_t        ofs_unknown;
+	uint32_t        ofs_end;        // end of file
 } dmdxheader_t;
 
 #endif // FORMAT_MDX_H

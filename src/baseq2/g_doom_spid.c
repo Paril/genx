@@ -6,7 +6,8 @@ static int sound_action;
 static int sound_pain;
 static int sound_death;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -52,7 +53,8 @@ void spid_idle(edict_t *self)
 	}
 }
 
-mframe_t spid_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t spid_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -70,7 +72,8 @@ void spid_stand(edict_t *self)
 #define MOVE_SPEED 14.0f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t spid_frames_run1[FRAME_COUNT(run)] = {
+mframe_t spid_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  spid_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  spid_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  spid_idle, frames_run2 },
@@ -91,7 +94,8 @@ void spid_run(edict_t *self)
 	self->monsterinfo.currentmove = &spid_run1;
 }
 
-mframe_t spid_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t spid_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -118,7 +122,8 @@ void spid_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t spid_frames_die1[FRAME_COUNT(die)] = {
+mframe_t spid_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death1 },
@@ -150,16 +155,15 @@ void spid_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &spid_die1;
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-mframe_t spid_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t spid_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
 };
@@ -189,7 +193,8 @@ void spid_fire_gun(edict_t *self)
 		self->monsterinfo.nextframe = frames_shoot_end - 1;
 }
 
-mframe_t spid_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t spid_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
@@ -225,22 +230,17 @@ void doom_monster_spid(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_alert = gi.soundindex("doom/SPISIT.wav");
 	sound_chase = gi.soundindex("doom/METAL.wav");
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/SPIDTH.wav");
-
 	VectorSet(self->mins, -128, -128, -4);
 	VectorSet(self->maxs, 128, 128, 96);
-
 	self->s.modelindex = gi.modelindex("sprites/doom/spid.d2s");
 	self->health = 3000;
 	self->mass = 1000;
-
 	self->dmg = 1;
-
 	self->monsterinfo.stand = spid_stand;
 	self->monsterinfo.walk = spid_walk;
 	self->monsterinfo.run = spid_run;
@@ -250,11 +250,8 @@ void doom_monster_spid(edict_t *self)
 	self->monsterinfo.attack = spid_attack;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &spid_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

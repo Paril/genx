@@ -7,7 +7,8 @@ static int sound_hoof;
 static int sound_pain;
 static int sound_death;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -57,7 +58,8 @@ void cybr_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_active, 1, ATTN_NORM, 0);
 }
 
-mframe_t cybr_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t cybr_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -75,7 +77,8 @@ void cybr_stand(edict_t *self)
 #define MOVE_SPEED 14.0f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t cybr_frames_run1[FRAME_COUNT(run)] = {
+mframe_t cybr_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  cybr_hoof, frames_run1 },
 	{ ai_run, MOVE_SPEED,  cybr_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  cybr_idle, frames_run2 },
@@ -92,7 +95,8 @@ void cybr_run(edict_t *self)
 	self->monsterinfo.currentmove = &cybr_run1;
 }
 
-mframe_t cybr_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t cybr_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  cybr_hoof, frames_run1 },
 	{ ai_walk, WALK_SPEED,  cybr_idle, frames_run1 },
 	{ ai_walk, WALK_SPEED,  cybr_idle, frames_run2 },
@@ -115,7 +119,8 @@ void cybr_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t cybr_frames_die1[FRAME_COUNT(die)] = {
+mframe_t cybr_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death1 },
@@ -145,16 +150,15 @@ void cybr_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &cybr_die1;
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-mframe_t cybr_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t cybr_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
 };
@@ -183,20 +187,16 @@ void cybr_fire_gun(edict_t *self)
 	gi.WriteShort(self - g_edicts);
 	gi.WriteByte(MZ_ROCKET);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
-
 	vec3_t start, forward, right, offset;
-
 	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);
 	VectorNormalize(forward);
-
 	VectorSet(offset, 0, 0, self->viewheight);
-
 	G_ProjectSource(self->s.origin, offset, forward, right, start);
-
 	fire_doom_rocket(self, start, forward, Doom_MissileDamageRandomizer(20), 128, 650);
 }
 
-mframe_t cybr_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t cybr_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
@@ -243,23 +243,18 @@ void doom_monster_cybr(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	
 	sound_active = gi.soundindex("doom/DMACT.wav");
 	sound_alert = gi.soundindex("doom/CYBSIT.wav");
 	sound_metal = gi.soundindex("doom/METAL.wav");
 	sound_hoof = gi.soundindex("doom/HOOF.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/CYBDTH.wav");
-
 	VectorSet(self->mins, -20, -20, -4);
 	VectorSet(self->maxs, 20, 20, 106);
-
 	self->s.modelindex = gi.modelindex("sprites/doom/cybr.d2s");
 	self->health = 4000;
 	self->mass = 1000;
-
 	self->dmg = 1;
-
 	self->monsterinfo.stand = cybr_stand;
 	self->monsterinfo.walk = cybr_walk;
 	self->monsterinfo.run = cybr_run;
@@ -269,11 +264,8 @@ void doom_monster_cybr(edict_t *self)
 	self->monsterinfo.attack = cybr_attack;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &cybr_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

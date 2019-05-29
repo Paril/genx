@@ -1,17 +1,20 @@
 #include "g_local.h"
 
-typedef enum {
+typedef enum
+{
 	WAVE_INIT,
 	WAVE_SPAWNING,
 	WAVE_COOLDOWN
 } wave_state_e;
 
-typedef struct {
+typedef struct
+{
 	uint32_t			wave_id;
 	float				chance;
 } wave_monster_entry_chances_t;
 
-typedef struct {
+typedef struct
+{
 	entitytype_e					entity;
 	const char						*chancesString;
 
@@ -19,7 +22,7 @@ typedef struct {
 	uint32_t						count;
 } wave_monster_entry_t;
 
-wave_monster_entry_t wave_monster_entries[] = 
+wave_monster_entry_t wave_monster_entries[] =
 {
 	{ ET_MONSTER_SOLDIER_LIGHT,	"1	50%		5	25%" },
 	{ ET_MONSTER_SOLDIER,		"1	5%		5	50%" },
@@ -55,25 +58,23 @@ static void Init_WaveMonsterEntries()
 				percents++;
 		}
 
-		entry->chances = (wave_monster_entry_chances_t*)gi.TagMalloc(sizeof(*entry->chances) * percents, TAG_GAME);
+		entry->chances = (wave_monster_entry_chances_t *)gi.TagMalloc(sizeof(*entry->chances) * percents, TAG_GAME);
 		entry->count = percents;
-
 		const char *buffer = entry->chancesString;
 
 		for (uint32_t x = 0; x < percents; ++x)
 		{
 			wave_monster_entry_chances_t *chance = &entry->chances[x];
-
 			char *token = COM_Parse(&buffer);
 			chance->wave_id = atoi(token);
-
 			token = COM_Parse(&buffer);
 			chance->chance = atof(token);
 		}
 	}
 }
 
-typedef struct {
+typedef struct
+{
 	entitytype_e		id;
 	float				chance;
 	float				probability;
@@ -85,7 +86,8 @@ typedef struct {
 
 #define total_monsters_in_table MONSTER_SIZE(Q2) + MONSTER_SIZE(Q1) + MONSTER_SIZE(DOOM)
 
-struct {
+struct
+{
 	wave_state_e		wave_state;
 	gtime_t				next_monster_spawn;
 
@@ -129,7 +131,6 @@ float Wave_GetChanceValue(uint32_t wave_id, wave_monster_entry_chances_t *closes
 
 	uint32_t low_wave = closest_lower_wave->wave_id;
 	uint32_t next_wave = closest_next_wave->wave_id;
-
 	float distance_to_next = (float)(wave_id - low_wave) / (float)(next_wave - low_wave);
 	return LerpFloat(closest_lower_wave->chance, closest_next_wave->chance, distance_to_next);
 }
@@ -166,21 +167,16 @@ void Wave_CalculateSpawnableMonsters(uint32_t wave_id)
 	}
 
 	wave_globals.num_spawnable_monsters = spawnable_ptr - wave_globals.spawnable_monsters;
-
 	float probability = 0;
-
 	qsort(wave_globals.spawnable_monsters, wave_globals.num_spawnable_monsters, sizeof(wave_globals.spawnable_monsters[0]), CompareSpawnable);
-
 	static char buffer[1024];
-	
 	buffer[0] = 0;
 	Q_snprintf(buffer, sizeof(buffer), "Monsters in this wave: ");
 
 	for (uint32_t i = 0; i < wave_globals.num_spawnable_monsters; ++i)
 	{
-		wave_globals.spawnable_monsters[i].chance /= total_chance;		
+		wave_globals.spawnable_monsters[i].chance /= total_chance;
 		wave_globals.spawnable_monsters[i].probability = (probability += wave_globals.spawnable_monsters[i].chance);
-
 		Q_snprintf(buffer, sizeof(buffer), "%s%s%i: %.2f%%", buffer, i == 0 ? "" : ", ", wave_globals.spawnable_monsters[i].id, (float)(wave_globals.spawnable_monsters[i].chance * 100));
 	}
 
@@ -221,22 +217,22 @@ edict_t *SelectMonsterSpawnPoint(void)
 	edict_t *spot;
 	int     count = 0;
 	int     selection;
-
 	spot = NULL;
 
-	while ((spot = G_FindByType(spot, ET_INFO_PLAYER_DEATHMATCH)) != NULL) {
+	while ((spot = G_FindByType(spot, ET_INFO_PLAYER_DEATHMATCH)) != NULL)
 		count++;
-	}
 
 	if (!count)
 		return NULL;
 
 	selection = rand() % count;
-
 	spot = NULL;
-	do {
+
+	do
+	{
 		spot = G_FindByType(spot, ET_INFO_PLAYER_DEATHMATCH);
-	} while (selection--);
+	}
+	while (selection--);
 
 	return spot;
 }
@@ -245,7 +241,6 @@ void Wave_Begin()
 {
 	gi.positioned_sound(vec3_origin, world, CHAN_AUTO, wave_noise, 1, ATTN_NONE, 0);
 	wave_globals.wave_number++;
-
 	Wave_CalculateSpawnableMonsters(wave_globals.wave_number);
 
 	for (int i = 0; i < game.maxclients; ++i)
@@ -258,7 +253,6 @@ void Wave_Begin()
 
 	wave_globals.next_monster_spawn = level.time + 3000;
 	wave_globals.num_monsters_to_spawn = 20;
-	
 	wave_globals.wave_state = WAVE_SPAWNING;
 	List_Init(&wave_globals.monsters_list);
 }
@@ -277,22 +271,18 @@ void Wave_SpawnMonster()
 {
 	edict_t *point = SelectMonsterSpawnPoint();
 	edict_t *client_to_fetch = level.sight_client;
-
 	edict_t *s = G_Spawn();
 	VectorCopy(point->s.origin, s->s.origin);
 	s->s.origin[2] += 16;
 	VectorCopy(point->s.angles, s->s.angles);
-
 	ED_CallSpawnByType(s, Wave_PickSpawnableMonster());
 	gi.linkentity(s);
-
 	s->enemy = client_to_fetch;
 
 	if (s->enemy)
 		FoundTarget(s);
 
 	List_Append(&wave_globals.monsters_list, &s->monsterinfo.wave_entry);
-
 	wave_globals.num_monsters_to_spawn--;
 	wave_globals.num_monsters_left++;
 }
@@ -301,31 +291,9 @@ void Wave_Frame()
 {
 	switch (wave_globals.wave_state)
 	{
-	case WAVE_INIT:
-		if (wave_globals.next_monster_spawn < level.time)
-		{
-			wave_globals.next_monster_spawn = level.time + 10000;
-
-			for (int i = 0; i < game.maxclients; ++i)
+		case WAVE_INIT:
+			if (wave_globals.next_monster_spawn < level.time)
 			{
-				edict_t *player = &g_edicts[i + 1];
-
-				if (player->inuse && player->client->pers.connected)
-					gi.centerprintf(player, "Type \"wave_start\" to start the game.\n");
-			}
-		}
-		break;
-	case WAVE_SPAWNING:
-		if (wave_globals.next_monster_spawn < level.time)
-		{
-			if (wave_globals.num_monsters_to_spawn)
-			{
-				Wave_SpawnMonster();
-				wave_globals.next_monster_spawn = level.time + 100;
-			}
-			else if (!wave_globals.num_monsters_left)
-			{
-				wave_globals.wave_state = WAVE_COOLDOWN;
 				wave_globals.next_monster_spawn = level.time + 10000;
 
 				for (int i = 0; i < game.maxclients; ++i)
@@ -333,22 +301,48 @@ void Wave_Frame()
 					edict_t *player = &g_edicts[i + 1];
 
 					if (player->inuse && player->client->pers.connected)
-						gi.centerprintf(player, "Wave complete! 10 second cooldown.\n");
-				}
-
-				edict_t *cur, *next;
-
-				LIST_FOR_EACH_SAFE(edict_t, cur, next, &wave_globals.monsters_list, monsterinfo.wave_entry)
-				{
-					G_FreeEdict(cur);
+						gi.centerprintf(player, "Type \"wave_start\" to start the game.\n");
 				}
 			}
-		}
-		break;
-	case WAVE_COOLDOWN:
-		if (wave_globals.next_monster_spawn < level.time)
-			Wave_Begin();
-		break;
+
+			break;
+
+		case WAVE_SPAWNING:
+			if (wave_globals.next_monster_spawn < level.time)
+			{
+				if (wave_globals.num_monsters_to_spawn)
+				{
+					Wave_SpawnMonster();
+					wave_globals.next_monster_spawn = level.time + 100;
+				}
+				else if (!wave_globals.num_monsters_left)
+				{
+					wave_globals.wave_state = WAVE_COOLDOWN;
+					wave_globals.next_monster_spawn = level.time + 10000;
+
+					for (int i = 0; i < game.maxclients; ++i)
+					{
+						edict_t *player = &g_edicts[i + 1];
+
+						if (player->inuse && player->client->pers.connected)
+							gi.centerprintf(player, "Wave complete! 10 second cooldown.\n");
+					}
+
+					edict_t *cur, *next;
+					LIST_FOR_EACH_SAFE(edict_t, cur, next, &wave_globals.monsters_list, monsterinfo.wave_entry)
+					{
+						G_FreeEdict(cur);
+					}
+				}
+			}
+
+			break;
+
+		case WAVE_COOLDOWN:
+			if (wave_globals.next_monster_spawn < level.time)
+				Wave_Begin();
+
+			break;
 	}
 }
 

@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 
 #if _WIN32
-#define strdup _strdup
+	#define strdup _strdup
 #endif
 
 game_locals_t   game;
@@ -105,10 +105,9 @@ void G_RunFrame(void);
 
 void ShutdownGame(void)
 {
-    gi.dprintf("==== ShutdownGame ====\n");
-
-    gi.FreeTags(TAG_LEVEL);
-    gi.FreeTags(TAG_GAME);
+	gi.dprintf("==== ShutdownGame ====\n");
+	gi.FreeTags(TAG_LEVEL);
+	gi.FreeTags(TAG_GAME);
 }
 
 void Wave_Init();
@@ -124,105 +123,82 @@ is loaded.
 */
 void InitGame(void)
 {
-    gi.dprintf("==== InitGame ====\n");
-
-    gun_x = gi.cvar("gun_x", "0", 0);
-    gun_y = gi.cvar("gun_y", "0", 0);
-    gun_z = gi.cvar("gun_z", "0", 0);
-
-    //FIXME: sv_ prefix is wrong for these
-    sv_rollspeed = gi.cvar("sv_rollspeed", "200", 0);
-    sv_rollangle = gi.cvar("sv_rollangle", "2", 0);
-    sv_maxvelocity = gi.cvar("sv_maxvelocity", "2000", 0);
-    sv_gravity = gi.cvar("sv_gravity", "800", 0);
-
-    // noset vars
-    dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
-
-    // latched vars
-    sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
-    gi.cvar("gamename", GAMEVERSION , CVAR_SERVERINFO | CVAR_LATCH);
-    gi.cvar("gamedate", __DATE__ , CVAR_SERVERINFO | CVAR_LATCH);
-
-    maxclients = gi.cvar("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
-    maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
-    deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
-    coop = gi.cvar("coop", "0", CVAR_LATCH);
+	gi.dprintf("==== InitGame ====\n");
+	gun_x = gi.cvar("gun_x", "0", 0);
+	gun_y = gi.cvar("gun_y", "0", 0);
+	gun_z = gi.cvar("gun_z", "0", 0);
+	//FIXME: sv_ prefix is wrong for these
+	sv_rollspeed = gi.cvar("sv_rollspeed", "200", 0);
+	sv_rollangle = gi.cvar("sv_rollangle", "2", 0);
+	sv_maxvelocity = gi.cvar("sv_maxvelocity", "2000", 0);
+	sv_gravity = gi.cvar("sv_gravity", "800", 0);
+	// noset vars
+	dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
+	// latched vars
+	sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
+	gi.cvar("gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH);
+	gi.cvar("gamedate", __DATE__, CVAR_SERVERINFO | CVAR_LATCH);
+	maxclients = gi.cvar("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
+	maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
+	deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
+	coop = gi.cvar("coop", "0", CVAR_LATCH);
 	invasion = gi.cvar("invasion", "0", CVAR_LATCH);
-    skill = gi.cvar("skill", "1", CVAR_LATCH);
-    maxentities = gi.cvar("maxentities", "1024", CVAR_LATCH);
-
-    // change anytime vars
-    dmflags = gi.cvar("dmflags", "0", CVAR_SERVERINFO);
-    fraglimit = gi.cvar("fraglimit", "0", CVAR_SERVERINFO);
-    timelimit = gi.cvar("timelimit", "0", CVAR_SERVERINFO);
-    password = gi.cvar("password", "", CVAR_USERINFO);
-    spectator_password = gi.cvar("spectator_password", "", CVAR_USERINFO);
-    needpass = gi.cvar("needpass", "0", CVAR_SERVERINFO);
-    filterban = gi.cvar("filterban", "1", 0);
-
-    g_select_empty = gi.cvar("g_select_empty", "0", CVAR_ARCHIVE);
-
-    run_pitch = gi.cvar("run_pitch", "0.002", 0);
-    run_roll = gi.cvar("run_roll", "0.005", 0);
-    bob_up  = gi.cvar("bob_up", "0.005", 0);
-    bob_pitch = gi.cvar("bob_pitch", "0.002", 0);
-    bob_roll = gi.cvar("bob_roll", "0.002", 0);
-
-    // flood control
-    flood_msgs = gi.cvar("flood_msgs", "4", 0);
-    flood_persecond = gi.cvar("flood_persecond", "4", 0);
-    flood_waitdelay = gi.cvar("flood_waitdelay", "10", 0);
-
-    // dm map list
-    sv_maplist = gi.cvar("sv_maplist", "", 0);
-
-    // obtain server features
-    sv_features = gi.cvar("sv_features", NULL, 0);
-
-    // export our own features
-    gi.cvar_forceset("g_features", va("%d", G_FEATURES));
-
-    // items
-    InitItems();
-
-    game.helpmessage1[0] = 0;
-    game.helpmessage2[0] = 0;
-
-    // initialize all entities for this game
-    game.maxentities = maxentities->value;
-    g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
-    globals.edicts = g_edicts;
-    globals.max_edicts = game.maxentities;
-
-    // initialize all clients for this game
-    game.maxclients = maxclients->value;
-    game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
-    globals.num_edicts = game.maxclients + 1;
-
+	skill = gi.cvar("skill", "1", CVAR_LATCH);
+	maxentities = gi.cvar("maxentities", "1024", CVAR_LATCH);
+	// change anytime vars
+	dmflags = gi.cvar("dmflags", "0", CVAR_SERVERINFO);
+	fraglimit = gi.cvar("fraglimit", "0", CVAR_SERVERINFO);
+	timelimit = gi.cvar("timelimit", "0", CVAR_SERVERINFO);
+	password = gi.cvar("password", "", CVAR_USERINFO);
+	spectator_password = gi.cvar("spectator_password", "", CVAR_USERINFO);
+	needpass = gi.cvar("needpass", "0", CVAR_SERVERINFO);
+	filterban = gi.cvar("filterban", "1", 0);
+	g_select_empty = gi.cvar("g_select_empty", "0", CVAR_ARCHIVE);
+	run_pitch = gi.cvar("run_pitch", "0.002", 0);
+	run_roll = gi.cvar("run_roll", "0.005", 0);
+	bob_up  = gi.cvar("bob_up", "0.005", 0);
+	bob_pitch = gi.cvar("bob_pitch", "0.002", 0);
+	bob_roll = gi.cvar("bob_roll", "0.002", 0);
+	// flood control
+	flood_msgs = gi.cvar("flood_msgs", "4", 0);
+	flood_persecond = gi.cvar("flood_persecond", "4", 0);
+	flood_waitdelay = gi.cvar("flood_waitdelay", "10", 0);
+	// dm map list
+	sv_maplist = gi.cvar("sv_maplist", "", 0);
+	// obtain server features
+	sv_features = gi.cvar("sv_features", NULL, 0);
+	// export our own features
+	gi.cvar_forceset("g_features", va("%d", G_FEATURES));
+	// items
+	InitItems();
+	game.helpmessage1[0] = 0;
+	game.helpmessage2[0] = 0;
+	// initialize all entities for this game
+	game.maxentities = maxentities->value;
+	g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	globals.edicts = g_edicts;
+	globals.max_edicts = game.maxentities;
+	// initialize all clients for this game
+	game.maxclients = maxclients->value;
+	game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	globals.num_edicts = game.maxclients + 1;
 	AI_Init();//JABot
-
 #if USE_FPS
 	cvar_t *sv_fps = gi.cvar("sv_fps", "", 0);
-
 	int framediv;
-
 #if (G_FEATURES & GMF_VARIABLE_FPS)
-		framediv = sv_fps->integer / BASE_FRAMERATE;
+	framediv = sv_fps->integer / BASE_FRAMERATE;
 #else
-		framediv = 1;
+	framediv = 1;
 #endif
-
 	clamp(framediv, 1, MAX_FRAMEDIV);
-
 	game.framerate = framediv * BASE_FRAMERATE;
 	game.frametime = BASE_FRAMETIME / framediv;
 	game.framediv = framediv;
 	game.frameseconds = BASE_FRAMETIME_1000 / framediv;
 #endif
-
 	game.random_seed = time(NULL);
-	
+
 	if (invasion->integer)
 		Wave_Init();
 }
@@ -239,63 +215,51 @@ and global variables
 q_exported game_export_t *GetGameAPI(game_import_t *import)
 {
 	srand(time(NULL));
-
-    gi = *import;
-
-    globals.apiversion = GAME_API_VERSION;
-    globals.Init = InitGame;
-    globals.Shutdown = ShutdownGame;
-    globals.SpawnEntities = SpawnEntities;
-
-    globals.WriteGame = WriteGame;
-    globals.ReadGame = ReadGame;
-    globals.WriteLevel = WriteLevel;
-    globals.ReadLevel = ReadLevel;
-
-    globals.ClientThink = ClientThink;
-    globals.ClientConnect = ClientConnect;
-    globals.ClientUserinfoChanged = ClientUserinfoChanged;
-    globals.ClientDisconnect = ClientDisconnect;
-    globals.ClientBegin = ClientBegin;
-    globals.ClientCommand = ClientCommand;
-
-    globals.RunFrame = G_RunFrame;
-
-    globals.ServerCommand = ServerCommand;
-
-    globals.edict_size = sizeof(edict_t);
-
-    return &globals;
+	gi = *import;
+	globals.apiversion = GAME_API_VERSION;
+	globals.Init = InitGame;
+	globals.Shutdown = ShutdownGame;
+	globals.SpawnEntities = SpawnEntities;
+	globals.WriteGame = WriteGame;
+	globals.ReadGame = ReadGame;
+	globals.WriteLevel = WriteLevel;
+	globals.ReadLevel = ReadLevel;
+	globals.ClientThink = ClientThink;
+	globals.ClientConnect = ClientConnect;
+	globals.ClientUserinfoChanged = ClientUserinfoChanged;
+	globals.ClientDisconnect = ClientDisconnect;
+	globals.ClientBegin = ClientBegin;
+	globals.ClientCommand = ClientCommand;
+	globals.RunFrame = G_RunFrame;
+	globals.ServerCommand = ServerCommand;
+	globals.edict_size = sizeof(edict_t);
+	return &globals;
 }
 
 #ifndef GAME_HARD_LINKED
 // this is only here so the functions in q_shared.c can link
 void Com_LPrintf(print_type_t type, const char *fmt, ...)
 {
-    va_list     argptr;
-    char        text[MAX_STRING_CHARS];
+	va_list     argptr;
+	char        text[MAX_STRING_CHARS];
 
-    if (type == PRINT_DEVELOPER) {
-        return;
-    }
+	if (type == PRINT_DEVELOPER)
+		return;
 
-    va_start(argptr, fmt);
-    Q_vsnprintf(text, sizeof(text), fmt, argptr);
-    va_end(argptr);
-
-    gi.dprintf("%s", text);
+	va_start(argptr, fmt);
+	Q_vsnprintf(text, sizeof(text), fmt, argptr);
+	va_end(argptr);
+	gi.dprintf("%s", text);
 }
 
 void Com_Error(error_type_t type, const char *fmt, ...)
 {
-    va_list     argptr;
-    char        text[MAX_STRING_CHARS];
-
-    va_start(argptr, fmt);
-    Q_vsnprintf(text, sizeof(text), fmt, argptr);
-    va_end(argptr);
-
-    gi.error("%s", text);
+	va_list     argptr;
+	char        text[MAX_STRING_CHARS];
+	va_start(argptr, fmt);
+	Q_vsnprintf(text, sizeof(text), fmt, argptr);
+	va_end(argptr);
+	gi.error("%s", text);
 }
 #endif
 
@@ -309,18 +273,20 @@ ClientEndServerFrames
 */
 void ClientEndServerFrames(void)
 {
-    int     i;
-    edict_t *ent;
+	int     i;
+	edict_t *ent;
 
-    // calc the player views now that all pushing
-    // and damage has been added
-    for (i = 0 ; i < maxclients->value ; i++) {
-        ent = g_edicts + 1 + i;
-        if (!ent->inuse || !ent->client || !ent->client->pers.connected)
-            continue;
-        ClientEndServerFrame(ent);
-    }
+	// calc the player views now that all pushing
+	// and damage has been added
+	for (i = 0 ; i < maxclients->value ; i++)
+	{
+		ent = g_edicts + 1 + i;
 
+		if (!ent->inuse || !ent->client || !ent->client->pers.connected)
+			continue;
+
+		ClientEndServerFrame(ent);
+	}
 }
 
 /*
@@ -332,13 +298,12 @@ Returns the created target changelevel
 */
 edict_t *CreateTargetChangeLevel(char *map)
 {
-    edict_t *ent;
-
-    ent = G_Spawn();
-    ent->entitytype = ET_TARGET_CHANGELEVEL;
-    Q_snprintf(level.nextmap, sizeof(level.nextmap), "%s", map);
-    ent->map = level.nextmap;
-    return ent;
+	edict_t *ent;
+	ent = G_Spawn();
+	ent->entitytype = ET_TARGET_CHANGELEVEL;
+	Q_snprintf(level.nextmap, sizeof(level.nextmap), "%s", map);
+	ent->map = level.nextmap;
+	return ent;
 }
 
 /*
@@ -350,54 +315,70 @@ The timelimit or fraglimit has been exceeded
 */
 void EndDMLevel(void)
 {
-    edict_t     *ent;
-    char *s, *t, *f;
-    static const char *seps = " ,\n\r";
+	edict_t     *ent;
+	char *s, *t, *f;
+	static const char *seps = " ,\n\r";
 
-    // stay on same level flag
-    if ((int)dmflags->value & DF_SAME_LEVEL) {
-        BeginIntermission(CreateTargetChangeLevel(level.mapname));
-        return;
-    }
+	// stay on same level flag
+	if ((int)dmflags->value & DF_SAME_LEVEL)
+	{
+		BeginIntermission(CreateTargetChangeLevel(level.mapname));
+		return;
+	}
 
-    // see if it's in the map list
-    if (*sv_maplist->string) {
-        s = strdup(sv_maplist->string);
-        f = NULL;
-        t = strtok(s, seps);
-        while (t != NULL) {
-            if (Q_stricmp(t, level.mapname) == 0) {
-                // it's in the list, go to the next one
-                t = strtok(NULL, seps);
-                if (t == NULL) { // end of list, go to first one
-                    if (f == NULL) // there isn't a first one, same level
-                        BeginIntermission(CreateTargetChangeLevel(level.mapname));
-                    else
-                        BeginIntermission(CreateTargetChangeLevel(f));
-                } else
-                    BeginIntermission(CreateTargetChangeLevel(t));
-                free(s);
-                return;
-            }
-            if (!f)
-                f = t;
-            t = strtok(NULL, seps);
-        }
-        free(s);
-    }
+	// see if it's in the map list
+	if (*sv_maplist->string)
+	{
+		s = strdup(sv_maplist->string);
+		f = NULL;
+		t = strtok(s, seps);
 
-    if (level.nextmap[0]) // go to a specific map
-        BeginIntermission(CreateTargetChangeLevel(level.nextmap));
-    else {  // search for a changelevel
-        ent = G_FindByType(NULL, ET_TARGET_CHANGELEVEL);
-        if (!ent) {
-            // the map designer didn't include a changelevel,
-            // so create a fake ent that goes back to the same level
-            BeginIntermission(CreateTargetChangeLevel(level.mapname));
-            return;
-        }
-        BeginIntermission(ent);
-    }
+		while (t != NULL)
+		{
+			if (Q_stricmp(t, level.mapname) == 0)
+			{
+				// it's in the list, go to the next one
+				t = strtok(NULL, seps);
+
+				if (t == NULL)   // end of list, go to first one
+				{
+					if (f == NULL) // there isn't a first one, same level
+						BeginIntermission(CreateTargetChangeLevel(level.mapname));
+					else
+						BeginIntermission(CreateTargetChangeLevel(f));
+				}
+				else
+					BeginIntermission(CreateTargetChangeLevel(t));
+
+				free(s);
+				return;
+			}
+
+			if (!f)
+				f = t;
+
+			t = strtok(NULL, seps);
+		}
+
+		free(s);
+	}
+
+	if (level.nextmap[0]) // go to a specific map
+		BeginIntermission(CreateTargetChangeLevel(level.nextmap));
+	else    // search for a changelevel
+	{
+		ent = G_FindByType(NULL, ET_TARGET_CHANGELEVEL);
+
+		if (!ent)
+		{
+			// the map designer didn't include a changelevel,
+			// so create a fake ent that goes back to the same level
+			BeginIntermission(CreateTargetChangeLevel(level.mapname));
+			return;
+		}
+
+		BeginIntermission(ent);
+	}
 }
 
 
@@ -408,22 +389,23 @@ CheckNeedPass
 */
 void CheckNeedPass(void)
 {
-    int need;
+	int need;
 
-    // if password or spectator_password has changed, update needpass
-    // as needed
-    if (password->modified || spectator_password->modified) {
-        password->modified = spectator_password->modified = false;
+	// if password or spectator_password has changed, update needpass
+	// as needed
+	if (password->modified || spectator_password->modified)
+	{
+		password->modified = spectator_password->modified = false;
+		need = 0;
 
-        need = 0;
+		if (*password->string && Q_stricmp(password->string, "none"))
+			need |= 1;
 
-        if (*password->string && Q_stricmp(password->string, "none"))
-            need |= 1;
-        if (*spectator_password->string && Q_stricmp(spectator_password->string, "none"))
-            need |= 2;
+		if (*spectator_password->string && Q_stricmp(spectator_password->string, "none"))
+			need |= 2;
 
-        gi.cvar_set("needpass", va("%d", need));
-    }
+		gi.cvar_set("needpass", va("%d", need));
+	}
 }
 
 /*
@@ -433,36 +415,42 @@ CheckDMRules
 */
 void CheckDMRules(void)
 {
-    int         i;
-    gclient_t   *cl;
+	int         i;
+	gclient_t   *cl;
 
-    if (level.intermissiontime)
-        return;
+	if (level.intermissiontime)
+		return;
 
-    if (!deathmatch->value)
-        return;
+	if (!deathmatch->value)
+		return;
 
-    if (timelimit->value) {
-        if (level.time >= timelimit->value * 60) {
-            gi.bprintf(PRINT_HIGH, "Timelimit hit.\n");
-            EndDMLevel();
-            return;
-        }
-    }
+	if (timelimit->value)
+	{
+		if (level.time >= timelimit->value * 60)
+		{
+			gi.bprintf(PRINT_HIGH, "Timelimit hit.\n");
+			EndDMLevel();
+			return;
+		}
+	}
 
-    if (fraglimit->value) {
-        for (i = 0 ; i < maxclients->value ; i++) {
-            cl = game.clients + i;
-            if (!g_edicts[i + 1].inuse)
-                continue;
+	if (fraglimit->value)
+	{
+		for (i = 0 ; i < maxclients->value ; i++)
+		{
+			cl = game.clients + i;
 
-            if (cl->resp.score >= fraglimit->value) {
-                gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
-                EndDMLevel();
-                return;
-            }
-        }
-    }
+			if (!g_edicts[i + 1].inuse)
+				continue;
+
+			if (cl->resp.score >= fraglimit->value)
+			{
+				gi.bprintf(PRINT_HIGH, "Fraglimit hit.\n");
+				EndDMLevel();
+				return;
+			}
+		}
+	}
 }
 
 
@@ -473,30 +461,30 @@ ExitLevel
 */
 void ExitLevel(void)
 {
-    int     i;
-    edict_t *ent;
-    char    command [256];
-
+	int     i;
+	edict_t *ent;
+	char    command [256];
 	//JABot[start] (Disconnect all bots before changing map)
 	BOT_RemoveBot("all");
 	//[end]
+	Q_snprintf(command, sizeof(command), "gamemap \"%s\"\n", level.changemap);
+	gi.AddCommandString(command);
+	level.changemap = NULL;
+	level.exitintermission = 0;
+	level.intermissiontime = 0;
+	ClientEndServerFrames();
 
-    Q_snprintf(command, sizeof(command), "gamemap \"%s\"\n", level.changemap);
-    gi.AddCommandString(command);
-    level.changemap = NULL;
-    level.exitintermission = 0;
-    level.intermissiontime = 0;
-    ClientEndServerFrames();
+	// clear some things before going to next level
+	for (i = 0 ; i < maxclients->value ; i++)
+	{
+		ent = g_edicts + 1 + i;
 
-    // clear some things before going to next level
-    for (i = 0 ; i < maxclients->value ; i++) {
-        ent = g_edicts + 1 + i;
-        if (!ent->inuse)
-            continue;
-        if (ent->health > ent->client->pers.max_health)
-            ent->health = ent->client->pers.max_health;
-    }
+		if (!ent->inuse)
+			continue;
 
+		if (ent->health > ent->client->pers.max_health)
+			ent->health = ent->client->pers.max_health;
+	}
 }
 
 /*
@@ -511,70 +499,71 @@ void Wave_Frame();
 
 void G_RunFrame(void)
 {
-    int     i;
-    edict_t *ent;
+	int     i;
+	edict_t *ent;
+	level.framenum++;
+	level.time += game.frametime;
+	// choose a client for monsters to target this frame
+	AI_SetSightClient();
 
-    level.framenum++;
-    level.time += game.frametime;
+	// exit intermissions
 
-    // choose a client for monsters to target this frame
-    AI_SetSightClient();
+	if (level.exitintermission)
+	{
+		ExitLevel();
+		return;
+	}
 
-    // exit intermissions
+	//
+	// treat each object in turn
+	// even the world gets a chance to think
+	//
+	ent = &g_edicts[0];
 
-    if (level.exitintermission) {
-        ExitLevel();
-        return;
-    }
+	for (i = 0 ; i < globals.num_edicts ; i++, ent++)
+	{
+		if (!ent->inuse)
+			continue;
 
-    //
-    // treat each object in turn
-    // even the world gets a chance to think
-    //
-    ent = &g_edicts[0];
-    for (i = 0 ; i < globals.num_edicts ; i++, ent++) {
-        if (!ent->inuse)
-            continue;
-
-        level.current_entity = ent;
+		level.current_entity = ent;
 
 		if (!(ent->s.renderfx & (RF_PROJECTILE | RF_BEAM)))
 			VectorCopy(ent->s.origin, ent->s.old_origin);
 
-        // if the ground entity moved, make sure we are still on it
-        if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount)) {
-            ent->groundentity = NULL;
-            if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->svflags & SVF_MONSTER)) {
-                M_CheckGround(ent);
-            }
-        }
+		// if the ground entity moved, make sure we are still on it
+		if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount))
+		{
+			ent->groundentity = NULL;
 
-        if (i > 0 && i <= maxclients->value) {
-            ClientBeginServerFrame(ent);
+			if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->svflags & SVF_MONSTER))
+				M_CheckGround(ent);
+		}
+
+		if (i > 0 && i <= maxclients->value)
+		{
+			ClientBeginServerFrame(ent);
+
 			//JABot[start]
 			if (!ent->ai) //jabot092(2)
-						  //[end]
-            continue;
-        }
+				//[end]
+				continue;
+		}
 
-        G_RunEntity(ent);
+		G_RunEntity(ent);
 
 		if (ent->s.renderfx & RF_PROJECTILE)
 			VectorCopy(ent->velocity, ent->s.old_origin);
-    }
+	}
 
-    // see if it is time to end a deathmatch
-    CheckDMRules();
-
-    // see if needpass needs updated
-    CheckNeedPass();
-
-    // build the playerstate_t structures for all players
-    ClientEndServerFrames();
-
+	// see if it is time to end a deathmatch
+	CheckDMRules();
+	// see if needpass needs updated
+	CheckNeedPass();
+	// build the playerstate_t structures for all players
+	ClientEndServerFrames();
 	//JABot[start]
 	AITools_Frame();	//give think time to AI debug tools
-						//[end]
+	//[end]
 
 	if (invasion->integer)
 		Wave_Frame();

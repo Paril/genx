@@ -5,7 +5,8 @@ static int sound_pain;
 static int sound_death;
 static int sound_shoot;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 3,
 	frames_run_start,
@@ -40,7 +41,8 @@ void skul_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_action, 1, ATTN_NORM, 0);
 }
 
-mframe_t skul_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t skul_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run2 },
@@ -56,7 +58,8 @@ void skul_stand(edict_t *self)
 #define MOVE_SPEED 4.67f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t skul_frames_run1[FRAME_COUNT(run)] = {
+mframe_t skul_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  skul_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  skul_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  skul_idle, frames_run2 },
@@ -69,7 +72,8 @@ void skul_run(edict_t *self)
 	self->monsterinfo.currentmove = &skul_run1;
 }
 
-mframe_t skul_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t skul_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -86,7 +90,8 @@ void ai_nop(edict_t *self, float dist)
 {
 }
 
-mframe_t skul_frames_die1[FRAME_COUNT(die)] = {
+mframe_t skul_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_nop, 0,  NULL, frames_death1 },
 	{ ai_nop, 0,  NULL, frames_death1 },
 	{ ai_nop, 0,  NULL, frames_death2 },
@@ -117,10 +122,8 @@ void skul_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &skul_die1;
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	self->svflags |= SVF_DEADMONSTER;
@@ -128,7 +131,8 @@ void skul_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.linkentity(self);
 }
 
-mframe_t skul_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t skul_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
 };
@@ -140,7 +144,6 @@ void skul_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &skul_pain1;
-
 	self->monsterinfo.pausetime = 0;
 	self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
 	self->monsterinfo.nextframe = 0;
@@ -160,7 +163,6 @@ bool skul_would_hit(edict_t *self)
 	VectorSubtract(self->dest1, self->s.origin, dir);
 	VectorNormalize(dir);
 	VectorScale(dir, 275 * 2.5f, vel);
-
 	VectorMA(self->s.origin, game.frameseconds, vel, end);
 	trace_t tr = gi.trace(self->s.origin, self->mins, self->maxs, end, self, MASK_SHOT);
 
@@ -215,7 +217,6 @@ void skul_wait(edict_t *self)
 		self->dest1[2] += self->enemy->viewheight;
 		//self->enemy = NULL;
 		//self->movetarget = self->goalentity = NULL;
-
 		gi.sound(self, CHAN_WEAPON, sound_shoot, 1, ATTN_NORM, 0);
 		self->monsterinfo.pausetime = level.time + 300;
 	}
@@ -223,7 +224,6 @@ void skul_wait(edict_t *self)
 	if (level.time >= self->monsterinfo.pausetime)
 	{
 		self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
-
 		self->accel = 0;
 		self->movetype = MOVETYPE_FLYMISSILE;
 		self->touch = skul_touch;
@@ -234,7 +234,8 @@ void skul_wait(edict_t *self)
 		self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-mframe_t skul_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t skul_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  skul_wait, frames_attack1 },
 	{ ai_nop, 0,  NULL, frames_attack2 },
 	{ ai_nop, 0,  NULL, frames_attack1 },
@@ -264,21 +265,17 @@ void doom_monster_skul(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/FIRXPL.wav");
 	sound_shoot = gi.soundindex("doom/SKLATK.wav");
-
 	VectorSet(self->mins, -16, -16, -4);
 	VectorSet(self->maxs, 16, 16, 52);
-
 	self->s.modelindex = gi.modelindex("sprites/doom/skul.d2s");
 	self->health = 100;
 	self->dmg = 0;
 	self->mass = 50;
 	self->s.renderfx |= RF_FULLBRIGHT;
-
 	self->monsterinfo.stand = skul_stand;
 	self->monsterinfo.walk = skul_walk;
 	self->monsterinfo.run = skul_run;
@@ -287,11 +284,8 @@ void doom_monster_skul(edict_t *self)
 	self->monsterinfo.attack = skul_attack;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &skul_stand1;
 	self->monsterinfo.scale = 1;
-
 	flymonster_start(self);
 }

@@ -29,175 +29,181 @@ PLAYER MODELS
 
 static bool IconOfSkinExists(char *skin, char **pcxfiles, int npcxfiles)
 {
-    int i;
-    char scratch[MAX_OSPATH];
+	int i;
+	char scratch[MAX_OSPATH];
+	COM_StripExtension(scratch, skin, sizeof(scratch));
+	Q_strlcat(scratch, "_i.pcx", sizeof(scratch));
 
-    COM_StripExtension(scratch, skin, sizeof(scratch));
-    Q_strlcat(scratch, "_i.pcx", sizeof(scratch));
+	for (i = 0; i < npcxfiles; i++)
+	{
+		if (strcmp(pcxfiles[i], scratch) == 0)
+			return true;
+	}
 
-    for (i = 0; i < npcxfiles; i++) {
-        if (strcmp(pcxfiles[i], scratch) == 0)
-            return true;
-    }
-
-    return false;
+	return false;
 }
 
 static int pmicmpfnc(const void *_a, const void *_b)
 {
-    const playerModelInfo_t *a = (const playerModelInfo_t *)_a;
-    const playerModelInfo_t *b = (const playerModelInfo_t *)_b;
+	const playerModelInfo_t *a = (const playerModelInfo_t *)_a;
+	const playerModelInfo_t *b = (const playerModelInfo_t *)_b;
 
-    /*
-    ** sort by male, female, then alphabetical
-    */
-    if (strcmp(a->directory, "male") == 0)
-        return -1;
-    else if (strcmp(b->directory, "male") == 0)
-        return 1;
+	/*
+	** sort by male, female, then alphabetical
+	*/
+	if (strcmp(a->directory, "male") == 0)
+		return -1;
+	else if (strcmp(b->directory, "male") == 0)
+		return 1;
 
-    if (strcmp(a->directory, "female") == 0)
-        return -1;
-    else if (strcmp(b->directory, "female") == 0)
-        return 1;
+	if (strcmp(a->directory, "female") == 0)
+		return -1;
+	else if (strcmp(b->directory, "female") == 0)
+		return 1;
 
-    return strcmp(a->directory, b->directory);
+	return strcmp(a->directory, b->directory);
 }
 
 void PlayerModel_Load(void)
 {
-    char scratch[MAX_QPATH];
-    size_t len;
-    int ndirs = 0;
-    char *dirnames[MAX_PLAYERMODELS];
-    int i, j;
-    char **list;
-    char *s, *p;
-    int numFiles;
-    playerModelInfo_t *pmi;
+	char scratch[MAX_QPATH];
+	size_t len;
+	int ndirs = 0;
+	char *dirnames[MAX_PLAYERMODELS];
+	int i, j;
+	char **list;
+	char *s, *p;
+	int numFiles;
+	playerModelInfo_t *pmi;
+	uis.numPlayerModels = 0;
 
-    uis.numPlayerModels = 0;
+	// get a list of directories
+	if (!(list = (char **)FS_ListFiles(NULL, "players/*/tris.md2", FS_SEARCH_BYFILTER | FS_SEARCH_SAVEPATH, &numFiles)))
+		return;
 
-    // get a list of directories
-    if (!(list = (char **)FS_ListFiles(NULL, "players/*/tris.md2", FS_SEARCH_BYFILTER | FS_SEARCH_SAVEPATH, &numFiles))) {
-        return;
-    }
+	for (i = 0; i < numFiles; i++)
+	{
+		len = Q_strlcpy(scratch, list[i], sizeof(scratch));
 
-    for (i = 0; i < numFiles; i++) {
-        len = Q_strlcpy(scratch, list[i], sizeof(scratch));
-        if (len >= sizeof(scratch))
-            continue;
+		if (len >= sizeof(scratch))
+			continue;
 
-        // make short name for the model
-        if (!(s = strchr(scratch, '/')))
-            continue;
-        s++;
+		// make short name for the model
+		if (!(s = strchr(scratch, '/')))
+			continue;
 
-        if (!(p = strchr(s, '/')))
-            continue;
-        *p = 0;
+		s++;
 
-        for (j = 0; j < ndirs; j++) {
-            if (!strcmp(dirnames[j], s)) {
-                break;
-            }
-        }
+		if (!(p = strchr(s, '/')))
+			continue;
 
-        if (j != ndirs) {
-            continue;
-        }
+		*p = 0;
 
-        dirnames[ndirs++] = UI_CopyString(s);
-        if (ndirs == MAX_PLAYERMODELS) {
-            break;
-        }
-    }
+		for (j = 0; j < ndirs; j++)
+		{
+			if (!strcmp(dirnames[j], s))
+				break;
+		}
 
-    FS_FreeList((void **)list);
+		if (j != ndirs)
+			continue;
 
-    if (!ndirs) {
-        return;
-    }
+		dirnames[ndirs++] = UI_CopyString(s);
 
-    // go through the subdirectories
-    for (i = 0; i < ndirs; i++) {
-        int k, l;
-        char **pcxnames;
-        char **skinnames;
-        int npcxfiles;
-        int nskins = 0;
+		if (ndirs == MAX_PLAYERMODELS)
+			break;
+	}
 
-        // verify the existence of tris.md2
-        Q_concat(scratch, sizeof(scratch), "players/", dirnames[i], "/tris.md2", NULL);
-        if (!FS_FileExists(scratch)) {
-            goto skip;
-        }
+	FS_FreeList((void **)list);
 
-        // verify the existence of at least one pcx skin
-        Q_concat(scratch, sizeof(scratch), "players/", dirnames[i], NULL);
-        pcxnames = (char **)FS_ListFiles(scratch, ".pcx", 0, &npcxfiles);
-        if (!pcxnames) {
-            goto skip;
-        }
+	if (!ndirs)
+		return;
 
-        // count valid skins, which consist of a skin with a matching "_i" icon
-        for (k = 0; k < npcxfiles; k++) {
-            if (!strstr(pcxnames[k], "_i.pcx")) {
-                if (IconOfSkinExists(pcxnames[k], pcxnames, npcxfiles)) {
-                    nskins++;
-                }
-            }
-        }
+	// go through the subdirectories
+	for (i = 0; i < ndirs; i++)
+	{
+		int k, l;
+		char **pcxnames;
+		char **skinnames;
+		int npcxfiles;
+		int nskins = 0;
+		// verify the existence of tris.md2
+		Q_concat(scratch, sizeof(scratch), "players/", dirnames[i], "/tris.md2", NULL);
 
-        if (!nskins) {
-            FS_FreeList((void **)pcxnames);
-            goto skip;
-        }
+		if (!FS_FileExists(scratch))
+			goto skip;
 
-        skinnames = UI_Malloc(sizeof(char *) * (nskins + 1));
-        skinnames[nskins] = NULL;
+		// verify the existence of at least one pcx skin
+		Q_concat(scratch, sizeof(scratch), "players/", dirnames[i], NULL);
+		pcxnames = (char **)FS_ListFiles(scratch, ".pcx", 0, &npcxfiles);
 
-        // copy the valid skins
-        for (l = 0, k = 0; k < npcxfiles; k++) {
-            if (!strstr(pcxnames[k], "_i.pcx")) {
-                if (IconOfSkinExists(pcxnames[k], pcxnames, npcxfiles)) {
-                    COM_StripExtension(scratch, pcxnames[k], sizeof(scratch));
-                    skinnames[l++] = UI_CopyString(scratch);
-                }
-            }
-        }
+		if (!pcxnames)
+			goto skip;
 
-        FS_FreeList((void **)pcxnames);
+		// count valid skins, which consist of a skin with a matching "_i" icon
+		for (k = 0; k < npcxfiles; k++)
+		{
+			if (!strstr(pcxnames[k], "_i.pcx"))
+			{
+				if (IconOfSkinExists(pcxnames[k], pcxnames, npcxfiles))
+					nskins++;
+			}
+		}
 
-        // at this point we have a valid player model
-        pmi = &uis.pmi[uis.numPlayerModels++];
-        pmi->nskins = nskins;
-        pmi->skindisplaynames = skinnames;
-        pmi->directory = dirnames[i];
-        continue;
+		if (!nskins)
+		{
+			FS_FreeList((void **)pcxnames);
+			goto skip;
+		}
 
+		skinnames = UI_Malloc(sizeof(char *) * (nskins + 1));
+		skinnames[nskins] = NULL;
+
+		// copy the valid skins
+		for (l = 0, k = 0; k < npcxfiles; k++)
+		{
+			if (!strstr(pcxnames[k], "_i.pcx"))
+			{
+				if (IconOfSkinExists(pcxnames[k], pcxnames, npcxfiles))
+				{
+					COM_StripExtension(scratch, pcxnames[k], sizeof(scratch));
+					skinnames[l++] = UI_CopyString(scratch);
+				}
+			}
+		}
+
+		FS_FreeList((void **)pcxnames);
+		// at this point we have a valid player model
+		pmi = &uis.pmi[uis.numPlayerModels++];
+		pmi->nskins = nskins;
+		pmi->skindisplaynames = skinnames;
+		pmi->directory = dirnames[i];
+		continue;
 skip:
-        Z_Free(dirnames[i]);
-    }
+		Z_Free(dirnames[i]);
+	}
 
-    qsort(uis.pmi, uis.numPlayerModels, sizeof(uis.pmi[0]), pmicmpfnc);
+	qsort(uis.pmi, uis.numPlayerModels, sizeof(uis.pmi[0]), pmicmpfnc);
 }
 
 void PlayerModel_Free(void)
 {
-    playerModelInfo_t *pmi;
-    int i, j;
+	playerModelInfo_t *pmi;
+	int i, j;
 
-    for (i = 0, pmi = uis.pmi; i < uis.numPlayerModels; i++, pmi++) {
-        if (pmi->skindisplaynames) {
-            for (j = 0; j < pmi->nskins; j++) {
-                Z_Free(pmi->skindisplaynames[j]);
-            }
-            Z_Free(pmi->skindisplaynames);
-        }
-        Z_Free(pmi->directory);
-        memset(pmi, 0, sizeof(*pmi));
-    }
+	for (i = 0, pmi = uis.pmi; i < uis.numPlayerModels; i++, pmi++)
+	{
+		if (pmi->skindisplaynames)
+		{
+			for (j = 0; j < pmi->nskins; j++)
+				Z_Free(pmi->skindisplaynames[j]);
 
-    uis.numPlayerModels = 0;
+			Z_Free(pmi->skindisplaynames);
+		}
+
+		Z_Free(pmi->directory);
+		memset(pmi, 0, sizeof(*pmi));
+	}
+
+	uis.numPlayerModels = 0;
 }

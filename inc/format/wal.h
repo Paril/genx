@@ -29,14 +29,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define    MIPLEVELS    4
 
-typedef struct {
-    char        name[32];
-    uint32_t    width, height;
-    uint32_t    offsets[MIPLEVELS];     // four mip maps stored
-    char        animname[32];           // next frame in animation chain
-    uint32_t    flags;
-    uint32_t    contents;
-    uint32_t    value;
+typedef struct
+{
+	char        name[32];
+	uint32_t    width, height;
+	uint32_t    offsets[MIPLEVELS];     // four mip maps stored
+	char        animname[32];           // next frame in animation chain
+	uint32_t    flags;
+	uint32_t    contents;
+	uint32_t    value;
 } miptex_t;
 
 #endif // FORMAT_WAL_H

@@ -1,6 +1,7 @@
 #define MAX_MODEL_SCRIPTS 256
 
-typedef struct {
+typedef struct
+{
 	char		path[MAX_QPATH];
 
 	bool			loaded;
@@ -14,7 +15,8 @@ typedef struct {
 	int				frame;
 } modelentry_t;
 
-typedef struct {
+typedef struct
+{
 	char			name[MAX_QPATH];
 	modelentry_t	entries[GAME_TOTAL];
 } modelscript_t;

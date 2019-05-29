@@ -34,12 +34,12 @@ static cvar_t   *cl_add_entities;
 static cvar_t   *cl_add_blend;
 
 #ifdef _DEBUG
-static cvar_t   *cl_testparticles;
-static cvar_t   *cl_testentities;
-static cvar_t   *cl_testlights;
-static cvar_t   *cl_testblend;
+	static cvar_t   *cl_testparticles;
+	static cvar_t   *cl_testentities;
+	static cvar_t   *cl_testlights;
+	static cvar_t   *cl_testblend;
 
-static cvar_t   *cl_stats;
+	static cvar_t   *cl_stats;
 #endif
 
 static cvar_t   *cl_adjustfov;
@@ -64,9 +64,9 @@ Specifies the model that will be used as the world
 */
 static void V_ClearScene(void)
 {
-    r_numdlights = 0;
-    r_numentities = 0;
-    r_numparticles = 0;
+	r_numdlights = 0;
+	r_numentities = 0;
+	r_numparticles = 0;
 }
 
 
@@ -78,10 +78,10 @@ V_AddEntity
 */
 void V_AddEntity(entity_t *ent)
 {
-    if (r_numentities >= MAX_ENTITIES)
-        return;
+	if (r_numentities >= MAX_ENTITIES)
+		return;
 
-    r_entities[r_numentities++] = *ent;
+	r_entities[r_numentities++] = *ent;
 }
 
 
@@ -93,9 +93,10 @@ V_AddParticle
 */
 void V_AddParticle(particle_t *p)
 {
-    if (r_numparticles >= MAX_PARTICLES)
-        return;
-    r_particles[r_numparticles++] = *p;
+	if (r_numparticles >= MAX_PARTICLES)
+		return;
+
+	r_particles[r_numparticles++] = *p;
 }
 
 /*
@@ -106,16 +107,17 @@ V_AddLight
 */
 void V_AddLight(vec3_t org, float intensity, float r, float g, float b)
 {
-    dlight_t    *dl;
+	dlight_t    *dl;
 
-    if (r_numdlights >= MAX_DLIGHTS)
-        return;
-    dl = &r_dlights[r_numdlights++];
-    VectorCopy(org, dl->origin);
-    dl->intensity = intensity;
-    dl->color[0] = r;
-    dl->color[1] = g;
-    dl->color[2] = b;
+	if (r_numdlights >= MAX_DLIGHTS)
+		return;
+
+	dl = &r_dlights[r_numdlights++];
+	VectorCopy(org, dl->origin);
+	dl->intensity = intensity;
+	dl->color[0] = r;
+	dl->color[1] = g;
+	dl->color[2] = b;
 }
 
 /*
@@ -126,17 +128,17 @@ V_AddLightStyle
 */
 void V_AddLightStyle(int style, vec4_t value)
 {
-    lightstyle_t    *ls;
+	lightstyle_t    *ls;
 
-    if (style < 0 || style >= MAX_LIGHTSTYLES)
-        Com_Error(ERR_DROP, "Bad light style %i", style);
-    ls = &r_lightstyles[style];
+	if (style < 0 || style >= MAX_LIGHTSTYLES)
+		Com_Error(ERR_DROP, "Bad light style %i", style);
 
-    //ls->white = r+g+b;
-    ls->rgb[0] = value[0];
-    ls->rgb[1] = value[1];
-    ls->rgb[2] = value[2];
-    ls->white = value[3];
+	ls = &r_lightstyles[style];
+	//ls->white = r+g+b;
+	ls->rgb[0] = value[0];
+	ls->rgb[1] = value[1];
+	ls->rgb[2] = value[2];
+	ls->white = value[3];
 }
 
 #ifdef _DEBUG
@@ -150,24 +152,25 @@ If cl_testparticles is set, create 4096 particles in the view
 */
 static void V_TestParticles(void)
 {
-    particle_t  *p;
-    int         i, j;
-    float       d, r, u;
+	particle_t  *p;
+	int         i, j;
+	float       d, r, u;
+	r_numparticles = MAX_PARTICLES;
 
-    r_numparticles = MAX_PARTICLES;
-    for (i = 0; i < r_numparticles; i++) {
-        d = i * 0.25f;
-        r = 4 * ((i & 7) - 3.5f);
-        u = 4 * (((i >> 3) & 7) - 3.5f);
-        p = &r_particles[i];
+	for (i = 0; i < r_numparticles; i++)
+	{
+		d = i * 0.25f;
+		r = 4 * ((i & 7) - 3.5f);
+		u = 4 * (((i >> 3) & 7) - 3.5f);
+		p = &r_particles[i];
 
-        for (j = 0; j < 3; j++)
-            p->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * d +
-                           cl.v_right[j] * r + cl.v_up[j] * u;
+		for (j = 0; j < 3; j++)
+			p->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * d +
+				cl.v_right[j] * r + cl.v_up[j] * u;
 
-        p->color = 8;
-        p->alpha = 1;
-    }
+		p->color = 8;
+		p->alpha = 1;
+	}
 }
 
 /*
@@ -179,26 +182,25 @@ If cl_testentities is set, create 32 player models
 */
 static void V_TestEntities(void)
 {
-    int         i, j;
-    float       f, r;
-    entity_t    *ent;
+	int         i, j;
+	float       f, r;
+	entity_t    *ent;
+	r_numentities = 32;
+	memset(r_entities, 0, sizeof(r_entities));
 
-    r_numentities = 32;
-    memset(r_entities, 0, sizeof(r_entities));
+	for (i = 0; i < r_numentities; i++)
+	{
+		ent = &r_entities[i];
+		r = 64 * ((i % 4) - 1.5f);
+		f = 64 * (i / 4) + 128;
 
-    for (i = 0; i < r_numentities; i++) {
-        ent = &r_entities[i];
+		for (j = 0; j < 3; j++)
+			ent->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f +
+				cl.v_right[j] * r;
 
-        r = 64 * ((i % 4) - 1.5f);
-        f = 64 * (i / 4) + 128;
-
-        for (j = 0; j < 3; j++)
-            ent->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f +
-                             cl.v_right[j] * r;
-
-        ent->model = cl.baseclientinfo.model;
-        ent->skin = cl.baseclientinfo.skin;
-    }
+		ent->model = cl.baseclientinfo.model;
+		ent->skin = cl.baseclientinfo.skin;
+	}
 }
 
 /*
@@ -210,40 +212,43 @@ If cl_testlights is set, create 32 lights models
 */
 static void V_TestLights(void)
 {
-    int         i, j;
-    float       f, r;
-    dlight_t    *dl;
+	int         i, j;
+	float       f, r;
+	dlight_t    *dl;
 
-    if (cl_testlights->integer != 1) {
-        dl = &r_dlights[0];
-        r_numdlights = 1;
+	if (cl_testlights->integer != 1)
+	{
+		dl = &r_dlights[0];
+		r_numdlights = 1;
+		VectorMA(cl.refdef.vieworg, 256, cl.v_forward, dl->origin);
 
-        VectorMA(cl.refdef.vieworg, 256, cl.v_forward, dl->origin);
-        if (cl_testlights->integer == -1)
-            VectorSet(dl->color, -1, -1, -1);
-        else
-            VectorSet(dl->color, 1, 1, 1);
-        dl->intensity = 256;
-        return;
-    }
+		if (cl_testlights->integer == -1)
+			VectorSet(dl->color, -1, -1, -1);
+		else
+			VectorSet(dl->color, 1, 1, 1);
 
-    r_numdlights = 32;
-    memset(r_dlights, 0, sizeof(r_dlights));
+		dl->intensity = 256;
+		return;
+	}
 
-    for (i = 0; i < r_numdlights; i++) {
-        dl = &r_dlights[i];
+	r_numdlights = 32;
+	memset(r_dlights, 0, sizeof(r_dlights));
 
-        r = 64 * ((i % 4) - 1.5f);
-        f = 64 * (i / 4) + 128;
+	for (i = 0; i < r_numdlights; i++)
+	{
+		dl = &r_dlights[i];
+		r = 64 * ((i % 4) - 1.5f);
+		f = 64 * (i / 4) + 128;
 
-        for (j = 0; j < 3; j++)
-            dl->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f +
-                            cl.v_right[j] * r;
-        dl->color[0] = ((i % 6) + 1) & 1;
-        dl->color[1] = (((i % 6) + 1) & 2) >> 1;
-        dl->color[2] = (((i % 6) + 1) & 4) >> 2;
-        dl->intensity = 200;
-    }
+		for (j = 0; j < 3; j++)
+			dl->origin[j] = cl.refdef.vieworg[j] + cl.v_forward[j] * f +
+				cl.v_right[j] * r;
+
+		dl->color[0] = ((i % 6) + 1) & 1;
+		dl->color[1] = (((i % 6) + 1) & 2) >> 1;
+		dl->color[2] = (((i % 6) + 1) & 4) >> 2;
+		dl->intensity = 200;
+	}
 }
 
 #endif
@@ -252,17 +257,16 @@ static void V_TestLights(void)
 
 void CL_UpdateBlendSetting(void)
 {
-    if (cls.state < ca_connected) {
-        return;
-    }
-    if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2) {
-        return;
-    }
+	if (cls.state < ca_connected)
+		return;
 
-    MSG_WriteByte(clc_setting);
-    MSG_WriteShort(CLS_NOBLEND);
-    MSG_WriteShort(!cl_add_blend->integer);
-    MSG_FlushTo(&cls.netchan->message);
+	if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2)
+		return;
+
+	MSG_WriteByte(clc_setting);
+	MSG_WriteShort(CLS_NOBLEND);
+	MSG_WriteShort(!cl_add_blend->integer);
+	MSG_FlushTo(&cls.netchan->message);
 }
 
 //============================================================================
@@ -270,37 +274,40 @@ void CL_UpdateBlendSetting(void)
 // gun frame debugging functions
 static void V_Gun_Next_f(void)
 {
-    gun_frame++;
-    Com_Printf("frame %i\n", gun_frame);
+	gun_frame++;
+	Com_Printf("frame %i\n", gun_frame);
 }
 
 static void V_Gun_Prev_f(void)
 {
-    gun_frame--;
-    if (gun_frame < 0)
-        gun_frame = 0;
-    Com_Printf("frame %i\n", gun_frame);
+	gun_frame--;
+
+	if (gun_frame < 0)
+		gun_frame = 0;
+
+	Com_Printf("frame %i\n", gun_frame);
 }
 
 static void V_Gun_Model_f(void)
 {
-    char    name[MAX_QPATH];
+	char    name[MAX_QPATH];
 
-    if (Cmd_Argc() != 2) {
+	if (Cmd_Argc() != 2)
+	{
 		gun_model = 0;
-        return;
-    }
-    Q_concat(name, sizeof(name), "models/", Cmd_Argv(1), "/tris.md2", NULL);
-    gun_model = R_RegisterModel(name);
+		return;
+	}
+
+	Q_concat(name, sizeof(name), "models/", Cmd_Argv(1), "/tris.md2", NULL);
+	gun_model = R_RegisterModel(name);
 }
 
 //============================================================================
 
 static int entitycmpfnc(const void *_a, const void *_b)
 {
-    const entity_t *a = (const entity_t *)_a;
-    const entity_t *b = (const entity_t *)_b;
-
+	const entity_t *a = (const entity_t *)_a;
+	const entity_t *b = (const entity_t *)_b;
 	// Generations
 	float l_dist = Distance(cl.refdef.vieworg, a->origin);
 	float r_dist = Distance(cl.refdef.vieworg, b->origin);
@@ -310,11 +317,11 @@ static int entitycmpfnc(const void *_a, const void *_b)
 	else if (r_dist > r_dist)
 		return 1;
 
-    // all other models are sorted by model then skin
-    if (a->model == b->model)
-        return a->skin - b->skin;
-    else
-        return a->model - b->model;
+	// all other models are sorted by model then skin
+	if (a->model == b->model)
+		return a->skin - b->skin;
+	else
+		return a->model - b->model;
 }
 
 /*
@@ -324,18 +331,16 @@ V_CalcFov
 */
 float V_CalcFov(float fov_x, float width, float height)
 {
-    float    a;
-    float    x;
+	float    a;
+	float    x;
 
-    if (fov_x < 1 || fov_x > 179)
-        Com_Error(ERR_DROP, "%s: bad fov: %f", __func__, fov_x);
+	if (fov_x < 1 || fov_x > 179)
+		Com_Error(ERR_DROP, "%s: bad fov: %f", __func__, fov_x);
 
-    x = width / tan(fov_x * (M_PI / 360));
-
-    a = atan(height / x);
-    a = a * (360 / M_PI);
-
-    return a;
+	x = width / tan(fov_x * (M_PI / 360));
+	a = atan(height / x);
+	a = a * (360 / M_PI);
+	return a;
 }
 
 /*
@@ -346,86 +351,95 @@ V_RenderView
 */
 void V_RenderView(void)
 {
-    // an invalid frame will just use the exact previous refdef
-    // we can't use the old frame if the video mode has changed, though...
-    if (cl.frame.valid) {
-        V_ClearScene();
-
-        // build a refresh entity list and calc cl.sim*
-        // this also calls CL_CalcViewValues which loads
-        // v_forward, etc.
-        CL_AddEntities();
-
+	// an invalid frame will just use the exact previous refdef
+	// we can't use the old frame if the video mode has changed, though...
+	if (cl.frame.valid)
+	{
+		V_ClearScene();
+		// build a refresh entity list and calc cl.sim*
+		// this also calls CL_CalcViewValues which loads
+		// v_forward, etc.
+		CL_AddEntities();
 #ifdef _DEBUG
-        if (cl_testparticles->integer)
-            V_TestParticles();
-        if (cl_testentities->integer)
-            V_TestEntities();
-        if (cl_testlights->integer)
-            V_TestLights();
-        if (cl_testblend->integer) {
-            cl.refdef.blend[0] = 1;
-            cl.refdef.blend[1] = 0.5f;
-            cl.refdef.blend[2] = 0.25f;
-            cl.refdef.blend[3] = 0.5f;
-        }
+
+		if (cl_testparticles->integer)
+			V_TestParticles();
+
+		if (cl_testentities->integer)
+			V_TestEntities();
+
+		if (cl_testlights->integer)
+			V_TestLights();
+
+		if (cl_testblend->integer)
+		{
+			cl.refdef.blend[0] = 1;
+			cl.refdef.blend[1] = 0.5f;
+			cl.refdef.blend[2] = 0.25f;
+			cl.refdef.blend[3] = 0.5f;
+		}
+
 #endif
+		// never let it sit exactly on a node line, because a water plane can
+		// dissapear when viewed with the eye exactly on it.
+		// the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
+		cl.refdef.vieworg[0] += 1.0f / 16;
+		cl.refdef.vieworg[1] += 1.0f / 16;
+		cl.refdef.vieworg[2] += 1.0f / 16;
+		cl.refdef.x = scr_vrect.x;
+		cl.refdef.y = scr_vrect.y;
+		cl.refdef.width = scr_vrect.width;
+		cl.refdef.height = scr_vrect.height;
 
-        // never let it sit exactly on a node line, because a water plane can
-        // dissapear when viewed with the eye exactly on it.
-        // the server protocol only specifies to 1/8 pixel, so add 1/16 in each axis
-        cl.refdef.vieworg[0] += 1.0f / 16;
-        cl.refdef.vieworg[1] += 1.0f / 16;
-        cl.refdef.vieworg[2] += 1.0f / 16;
+		// adjust for non-4/3 screens
+		if (cl_adjustfov->integer)
+		{
+			cl.refdef.fov_y = cl.fov_y;
+			cl.refdef.fov_x = V_CalcFov(cl.refdef.fov_y, cl.refdef.height, cl.refdef.width);
+		}
+		else
+		{
+			cl.refdef.fov_x = cl.fov_x;
+			cl.refdef.fov_y = V_CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
+		}
 
-        cl.refdef.x = scr_vrect.x;
-        cl.refdef.y = scr_vrect.y;
-        cl.refdef.width = scr_vrect.width;
-        cl.refdef.height = scr_vrect.height;
+		cl.refdef.time = cl.time * 0.001f;
 
-        // adjust for non-4/3 screens
-        if (cl_adjustfov->integer) {
-            cl.refdef.fov_y = cl.fov_y;
-            cl.refdef.fov_x = V_CalcFov(cl.refdef.fov_y, cl.refdef.height, cl.refdef.width);
-        } else {
-            cl.refdef.fov_x = cl.fov_x;
-            cl.refdef.fov_y = V_CalcFov(cl.refdef.fov_x, cl.refdef.width, cl.refdef.height);
-        }
+		if (cl.frame.areabytes)
+			cl.refdef.areabits = cl.frame.areabits;
+		else
+			cl.refdef.areabits = NULL;
 
-        cl.refdef.time = cl.time * 0.001f;
+		if (!cl_add_entities->integer)
+			r_numentities = 0;
 
-        if (cl.frame.areabytes) {
-            cl.refdef.areabits = cl.frame.areabits;
-        } else {
-            cl.refdef.areabits = NULL;
-        }
+		if (!cl_add_particles->integer)
+			r_numparticles = 0;
 
-        if (!cl_add_entities->integer)
-            r_numentities = 0;
-        if (!cl_add_particles->integer)
-            r_numparticles = 0;
-        if (!cl_add_lights->integer)
-            r_numdlights = 0;
-        if (!cl_add_blend->integer)
-            Vector4Clear(cl.refdef.blend);
+		if (!cl_add_lights->integer)
+			r_numdlights = 0;
 
-        cl.refdef.num_entities = r_numentities;
-        cl.refdef.entities = r_entities;
-        cl.refdef.num_particles = r_numparticles;
-        cl.refdef.particles = r_particles;
-        cl.refdef.num_dlights = r_numdlights;
-        cl.refdef.dlights = r_dlights;
-        cl.refdef.lightstyles = r_lightstyles;
-        cl.refdef.rdflags = cl.frame.ps.rdflags;
+		if (!cl_add_blend->integer)
+			Vector4Clear(cl.refdef.blend);
 
-        // sort entities for better cache locality
+		cl.refdef.num_entities = r_numentities;
+		cl.refdef.entities = r_entities;
+		cl.refdef.num_particles = r_numparticles;
+		cl.refdef.particles = r_particles;
+		cl.refdef.num_dlights = r_numdlights;
+		cl.refdef.dlights = r_dlights;
+		cl.refdef.lightstyles = r_lightstyles;
+		cl.refdef.rdflags = cl.frame.ps.rdflags;
+		// sort entities for better cache locality
 		qsort(cl.refdef.entities, cl.refdef.num_entities, sizeof(cl.refdef.entities[0]), entitycmpfnc);
-    }
+	}
 
-    R_RenderFrame(&cl.refdef);
+	R_RenderFrame(&cl.refdef);
 #ifdef _DEBUG
-    if (cl_stats->integer)
-        Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
+
+	if (cl_stats->integer)
+		Com_Printf("ent:%i  lt:%i  part:%i\n", r_numentities, r_numdlights, r_numparticles);
+
 #endif
 }
 
@@ -437,22 +451,23 @@ V_Viewpos_f
 */
 static void V_Viewpos_f(void)
 {
-    Com_Printf("(%.f %.f %.f) : %.f\n", cl.refdef.vieworg[0],
-               cl.refdef.vieworg[1], cl.refdef.vieworg[2],
-               cl.refdef.viewangles[YAW]);
+	Com_Printf("(%.f %.f %.f) : %.f\n", cl.refdef.vieworg[0],
+		cl.refdef.vieworg[1], cl.refdef.vieworg[2],
+		cl.refdef.viewangles[YAW]);
 }
 
-static const cmdreg_t v_cmds[] = {
-    { "gun_next", V_Gun_Next_f },
-    { "gun_prev", V_Gun_Prev_f },
-    { "gun_model", V_Gun_Model_f },
-    { "viewpos", V_Viewpos_f },
-    { NULL }
+static const cmdreg_t v_cmds[] =
+{
+	{ "gun_next", V_Gun_Next_f },
+	{ "gun_prev", V_Gun_Prev_f },
+	{ "gun_model", V_Gun_Model_f },
+	{ "viewpos", V_Viewpos_f },
+	{ NULL }
 };
 
 static void cl_add_blend_changed(cvar_t *self)
 {
-    CL_UpdateBlendSetting();
+	CL_UpdateBlendSetting();
 }
 
 /*
@@ -462,26 +477,23 @@ V_Init
 */
 void V_Init(void)
 {
-    Cmd_Register(v_cmds);
-
+	Cmd_Register(v_cmds);
 #ifdef _DEBUG
-    cl_testblend = Cvar_Get("cl_testblend", "0", 0);
-    cl_testparticles = Cvar_Get("cl_testparticles", "0", 0);
-    cl_testentities = Cvar_Get("cl_testentities", "0", 0);
-    cl_testlights = Cvar_Get("cl_testlights", "0", CVAR_CHEAT);
-    cl_stats = Cvar_Get("cl_stats", "0", 0);
+	cl_testblend = Cvar_Get("cl_testblend", "0", 0);
+	cl_testparticles = Cvar_Get("cl_testparticles", "0", 0);
+	cl_testentities = Cvar_Get("cl_testentities", "0", 0);
+	cl_testlights = Cvar_Get("cl_testlights", "0", CVAR_CHEAT);
+	cl_stats = Cvar_Get("cl_stats", "0", 0);
 #endif
-
-    cl_add_lights = Cvar_Get("cl_lights", "1", 0);
-    cl_add_particles = Cvar_Get("cl_particles", "1", 0);
-    cl_add_entities = Cvar_Get("cl_entities", "1", 0);
-    cl_add_blend = Cvar_Get("cl_blend", "1", 0);
-    cl_add_blend->changed = cl_add_blend_changed;
-
-    cl_adjustfov = Cvar_Get("cl_adjustfov", "0", 0);
+	cl_add_lights = Cvar_Get("cl_lights", "1", 0);
+	cl_add_particles = Cvar_Get("cl_particles", "1", 0);
+	cl_add_entities = Cvar_Get("cl_entities", "1", 0);
+	cl_add_blend = Cvar_Get("cl_blend", "1", 0);
+	cl_add_blend->changed = cl_add_blend_changed;
+	cl_adjustfov = Cvar_Get("cl_adjustfov", "0", 0);
 }
 
 void V_Shutdown(void)
 {
-    Cmd_Deregister(v_cmds);
+	Cmd_Deregister(v_cmds);
 }

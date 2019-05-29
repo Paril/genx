@@ -1,6 +1,7 @@
 #include "g_local.h"
 
-enum {
+enum
+{
 	attack1, attack2, attack3, attack4, attack5, attack6,
 	attack7, attack8, attack9, attack10, attack11, attack12, attack13,
 	attack14, attack15, attack16, attack17, attack18,
@@ -17,7 +18,8 @@ enum {
 	pain9
 };
 
-mframe_t f_frames_stand1[] = {
+mframe_t f_frames_stand1[] =
+{
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
@@ -45,7 +47,8 @@ void f_stand(edict_t *self)
 	self->monsterinfo.currentmove = &f_stand1;
 }
 
-mframe_t f_frames_walk1[] = {
+mframe_t f_frames_walk1[] =
+{
 	{ ai_walk, 8,   NULL },
 	{ ai_walk, 8,   NULL },
 	{ ai_walk, 8,   NULL },
@@ -91,7 +94,8 @@ void fish_run_skip(edict_t *self)
 	self->s.frame++;
 }
 
-mframe_t f_frames_run1[] = {
+mframe_t f_frames_run1[] =
+{
 	{ ai_run, 12,   fish_run_skip },
 	{ ai_run, 12,   fish_run_skip },
 	{ ai_run, 12,   fish_run_skip },
@@ -121,19 +125,20 @@ void fish_melee(edict_t *self)
 {
 	if (!self->enemy)
 		return;		// removed before stroke
-	
+
 	vec3_t delta;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
 
 	if (VectorLength(delta) > 60)
 		return;
-		
-	gi.sound (self, CHAN_VOICE, sound_bite, 1, ATTN_NORM, 0);
+
+	gi.sound(self, CHAN_VOICE, sound_bite, 1, ATTN_NORM, 0);
 	float ldmg = (random() + random()) * 3;
-	T_Damage (self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ldmg, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, MakeGenericMeansOfDeath(self, MD_MELEE, DT_DIRECT));
+	T_Damage(self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ldmg, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, MakeGenericMeansOfDeath(self, MD_MELEE, DT_DIRECT));
 }
 
-mframe_t f_frames_attack1[] = {
+mframe_t f_frames_attack1[] =
+{
 	{ ai_charge, 10,   fish_run_skip },
 	{ ai_charge, 10,   fish_run_skip },
 	{ ai_charge, 10,   fish_melee },
@@ -170,7 +175,8 @@ void fish_dead(edict_t *self)
 	gi.linkentity(self);
 }
 
-mframe_t f_frames_death1[] = {
+mframe_t f_frames_death1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -203,7 +209,8 @@ void f_death(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, v
 	self->monsterinfo.currentmove = &f_death1;
 }
 
-mframe_t f_frames_pain1[] = {
+mframe_t f_frames_pain1[] =
+{
 	{ ai_move, 0,    NULL },
 	{ ai_move, -6,   NULL },
 	{ ai_move, -6,   NULL },
@@ -234,31 +241,24 @@ void q1_monster_fish(edict_t *self)
 	}
 
 	gi.modelindex("models/q1/fish.mdl");
-
 	sound_death = gi.soundindex("q1/fish/death.wav");
 	sound_bite = gi.soundindex("q1/fish/bite.wav");
 	sound_idle = gi.soundindex("q1/fish/idle.wav");
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
-	gi.setmodel (self, "models/q1/fish.mdl");
-
+	gi.setmodel(self, "models/q1/fish.mdl");
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 24);
 	self->health = 25;
-	
 	self->monsterinfo.stand = f_stand;
 	self->monsterinfo.walk = f_walk;
 	self->monsterinfo.run = f_run;
 	self->die = f_death;
 	self->pain = f_pain;
 	self->monsterinfo.melee = f_attack;
-
 	self->monsterinfo.currentmove = &f_stand1;
 	self->monsterinfo.scale = 1;
-	
-	swimmonster_start (self);
+	swimmonster_start(self);
 	gi.linkentity(self);
 }
 

@@ -29,15 +29,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define USE_64BIT_TIME 1
 
 #if USE_64BIT_TIME
-typedef uint64_t		gtime_t;
+	typedef uint64_t		gtime_t;
 
-#define GTIME_MAX		UINT64_MAX
-#define GTIME_MIN		0ul
+	#define GTIME_MAX		UINT64_MAX
+	#define GTIME_MIN		0ul
 #else
-typedef uint32_t		gtime_t;
+	typedef uint32_t		gtime_t;
 
-#define GTIME_MAX		UINT32_MAX
-#define GTIME_MIN		0u
+	#define GTIME_MAX		UINT32_MAX
+	#define GTIME_MIN		0u
 #endif
 
 static inline gtime_t time_diff(gtime_t l, gtime_t r)
@@ -285,13 +285,15 @@ typedef enum
 
 #define BODY_QUEUE_SIZE     8
 
-typedef enum {
+typedef enum
+{
 	DAMAGE_NO,
 	DAMAGE_YES,         // will take damage if hit
 	DAMAGE_AIM          // auto targeting recognizes this
 } damage_t;
 
-typedef enum {
+typedef enum
+{
 	WEAPON_READY,
 	WEAPON_ACTIVATING,
 	WEAPON_DROPPING,
@@ -399,7 +401,8 @@ typedef enum
 
 
 
-typedef struct {
+typedef struct
+{
 	int     base_count;
 	int     max_count;
 	float   normal_protection;
@@ -441,7 +444,8 @@ typedef void (*item_use_func)(edict_t *ent, gitem_t *item);
 typedef void (*item_drop_func)(edict_t *ent, gitem_t *item);
 typedef void (*weapon_think_func)(edict_t *ent, gunindex_e gun);
 
-typedef struct gitem_s {
+typedef struct gitem_s
+{
 	const char        *classname; // spawning name
 	item_pickup_func  pickup;
 	item_use_func     use;
@@ -469,7 +473,8 @@ typedef struct gitem_s {
 	list_t		      hashEntry;
 } gitem_t;
 
-typedef struct {
+typedef struct
+{
 	gitem_armor_t	*old_armor;
 	itemid_e		old_armor_index;
 	int				old_armor_count;
@@ -479,7 +484,8 @@ typedef struct {
 	int				new_armor_count;
 } pickup_armor_t;
 
-typedef struct {
+typedef struct
+{
 	itemid_e	item_redirects[ITI_TOTAL];
 
 	int			item_starts[ITI_TOTAL];
@@ -498,11 +504,13 @@ extern game_iteminfo_t game_iteminfos[GAME_TOTAL];
 #define GameTypeGame(e)	(&game_iteminfos[e])
 #define EntityGame(e)	GameTypeGame(e->s.game)
 
-typedef struct {
+typedef struct
+{
 	itemid_e	weapons[ITI_WEAPONS_END - ITI_WEAPONS_START + 1];
 } game_weaponmap_list_t;
 
-typedef struct {
+typedef struct
+{
 	game_weaponmap_list_t	to[GAME_TOTAL];
 } game_weaponmap_t;
 
@@ -524,9 +532,10 @@ void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots);
 // it should be initialized at dll load time, and read/written to
 // the server.ssv file for savegames
 //
-typedef struct {
+typedef struct
+{
 	int         helpchanged;    // flash F1 icon if non 0, play sound
-								// and increment only if 1, 2, or 3
+	// and increment only if 1, 2, or 3
 
 	char        helpmessage1[512];
 	char        helpmessage2[512];
@@ -562,7 +571,8 @@ typedef struct {
 // this structure is cleared as each map is entered
 // it is read/written to the level.sav file for savegames
 //
-typedef struct  {
+typedef struct
+{
 	int         framenum;
 	gtime_t     time;
 
@@ -610,7 +620,8 @@ typedef struct  {
 // spawn_temp_t is only used to hold entity field values that
 // can be set from the editor, but aren't actualy present
 // in edict_t during gameplay
-typedef struct {
+typedef struct
+{
 	// world vars
 	char        *sky;
 	float       skyrotate;
@@ -634,14 +645,16 @@ typedef struct {
 	char		classname[MAX_TOKEN_CHARS];
 } spawn_temp_t;
 
-typedef enum {
+typedef enum
+{
 	STATE_TOP,
 	STATE_BOTTOM,
 	STATE_UP,
 	STATE_DOWN
 } movestate_e;
 
-typedef struct {
+typedef struct
+{
 	// fixed data
 	vec3_t      start_origin;
 	vec3_t      start_angles;
@@ -667,40 +680,43 @@ typedef struct {
 	float       next_speed;
 	float       remaining_distance;
 	float       decel_distance;
-	void		(*endfunc)(edict_t *);
+	void	(*endfunc)(edict_t *);
 } moveinfo_t;
 
 
-typedef struct {
+typedef struct
+{
 	void	(*aifunc)(edict_t *self, float dist);
 	float   dist;
 	void	(*thinkfunc)(edict_t *self);
 	int		real_frame;
 } mframe_t;
 
-typedef struct {
+typedef struct
+{
 	int         firstframe;
 	int         lastframe;
 	mframe_t    *frame;
-	void		(*endfunc)(edict_t *self);
+	void	(*endfunc)(edict_t *self);
 } mmove_t;
 
-typedef struct {
+typedef struct
+{
 	mmove_t     *currentmove;
 	int         aiflags;
 	int         nextframe;
 	float       scale;
 
-	void		(*stand)(edict_t *self);
-	void		(*idle)(edict_t *self);
-	void		(*search)(edict_t *self);
-	void		(*walk)(edict_t *self);
-	void		(*run)(edict_t *self);
-	void		(*dodge)(edict_t *self, edict_t *other, float eta);
-	void		(*attack)(edict_t *self);
-	void		(*melee)(edict_t *self);
-	void		(*sight)(edict_t *self, edict_t *other);
-	bool		(*checkattack)(edict_t *self);
+	void	(*stand)(edict_t *self);
+	void	(*idle)(edict_t *self);
+	void	(*search)(edict_t *self);
+	void	(*walk)(edict_t *self);
+	void	(*run)(edict_t *self);
+	void	(*dodge)(edict_t *self, edict_t *other, float eta);
+	void	(*attack)(edict_t *self);
+	void	(*melee)(edict_t *self);
+	void	(*sight)(edict_t *self, edict_t *other);
+	bool	(*checkattack)(edict_t *self);
 
 	gtime_t     pausetime;
 	gtime_t     attack_finished;
@@ -731,14 +747,16 @@ extern  int sm_meat_index;
 extern  int snd_fry;
 
 // Generations
-typedef enum {
+typedef enum
+{
 	DT_DIRECT, // Damage done directly. May not have a different inflictor entity (hitscan weapons).
 	DT_INDIRECT, // Indirect damage done by the inflictor.
 	DT_EFFECT,
 	DT_LASER
 } damageType_e;
 
-typedef enum {
+typedef enum
+{
 	MD_NONE,
 	MD_WEAPON,
 
@@ -753,12 +771,13 @@ typedef enum {
 	MD_SLIME,
 	MD_LAVA,
 
-	MD_MEANS_MASK = (1<<8) - 1,
-	MD_FRIENDLY_FIRE = 1<<8,
-	MD_HELD = 1<<9
+	MD_MEANS_MASK = (1 << 8) - 1,
+	MD_FRIENDLY_FIRE = 1 << 8,
+	MD_HELD = 1 << 9
 } meansOfDeath_e;
 
-typedef struct {
+typedef struct
+{
 	// Type of damage
 	damageType_e	damage_type;
 
@@ -858,12 +877,13 @@ extern	cvar_t	*invasion;
 // fields are needed for spawning from the entity string
 // and saving / loading games
 //
-typedef enum {
+typedef enum
+{
 	F_BAD,
 	F_BYTE,
 	F_SHORT,
 	F_INT,
-    F_BOOL,
+	F_BOOL,
 	F_FLOAT,
 	F_LSTRING,          // string on disk, pointer in memory, TAG_LEVEL
 	F_GSTRING,          // string on disk, pointer in memory, TAG_GAME
@@ -943,20 +963,21 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2);
 bool CanDamage(edict_t *targ, edict_t *inflictor);
 
 // damage flags
-enum {
+enum
+{
 	DAMAGE_NONE				= 0,
-	DAMAGE_RADIUS			= 1<<0,  // damage was indirect
-	DAMAGE_NO_ARMOR			= 1<<1,  // armour does not protect from this damage
-	DAMAGE_ENERGY			= 1<<2,  // damage is from an energy based weapon
-	DAMAGE_NO_KNOCKBACK		= 1<<3,  // do not affect velocity, just view angles
-	DAMAGE_BULLET			= 1<<4,  // damage is from a bullet (used for ricochets)
-	DAMAGE_NO_PROTECTION	= 1<<5,  // armor, shields, invulnerability, and godmode have no effect
+	DAMAGE_RADIUS			= 1 << 0, // damage was indirect
+	DAMAGE_NO_ARMOR			= 1 << 1, // armour does not protect from this damage
+	DAMAGE_ENERGY			= 1 << 2, // damage is from an energy based weapon
+	DAMAGE_NO_KNOCKBACK		= 1 << 3, // do not affect velocity, just view angles
+	DAMAGE_BULLET			= 1 << 4, // damage is from a bullet (used for ricochets)
+	DAMAGE_NO_PROTECTION	= 1 << 5, // armor, shields, invulnerability, and godmode have no effect
 
 	// Paril
-	DAMAGE_NO_PARTICLES		= 1<<6,
-	DAMAGE_Q1				= 1<<7,
-	DAMAGE_PARTICLES_ONLY	= 1<<8,
-	DAMAGE_DUKE				= 1<<9
+	DAMAGE_NO_PARTICLES		= 1 << 6,
+	DAMAGE_Q1				= 1 << 7,
+	DAMAGE_PARTICLES_ONLY	= 1 << 8,
+	DAMAGE_DUKE				= 1 << 9
 };
 
 void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, meansOfDeath_t mod);
@@ -1125,11 +1146,12 @@ void Weapon_Duke_Run(edict_t *ent, gunindex_e gun);
 //============================================================================
 
 #ifndef NO_BOTS
-#include "ai\ai.h"//JABot
+	#include "ai\ai.h"//JABot
 #endif
 
 // client_t->anim_priority
-enum {
+enum
+{
 	ANIM_BASIC,       // stand / run
 	ANIM_WAVE,
 	ANIM_JUMP,
@@ -1137,19 +1159,20 @@ enum {
 	ANIM_ATTACK,
 	ANIM_DEATH,
 
-	ANIM_REVERSE    = 1<<3
+	ANIM_REVERSE    = 1 << 3
 };
 
 // client data that stays across multiple level loads
-typedef struct {
+typedef struct
+{
 	char        userinfo[MAX_INFO_STRING];
 	char        netname[16];
 	int         hand;
 
 	bool        connected;  // a loadgame will leave valid entities that
-							// just don't have a connection yet
+	// just don't have a connection yet
 
-							// values saved and restored from edicts when changing levels
+	// values saved and restored from edicts when changing levels
 	int         health;
 	int         max_health;
 	int			savedFlags;
@@ -1176,7 +1199,8 @@ typedef struct {
 } client_persistant_t;
 
 // client data that stays across deathmatch respawns
-typedef struct {
+typedef struct
+{
 	client_persistant_t coop_respawn;   // what to set client->pers to on a respawn
 	gtime_t     entertime;         // level.time the client entered the game
 	int         score;              // frags, etc
@@ -1189,25 +1213,26 @@ typedef struct {
 
 // this structure is cleared on each PutClientInServer(),
 // except for 'client->pers'
-struct gclient_s {
-    // known to server
-    player_state_t  ps;             // communicated by server to clients
-    int             ping;
+struct gclient_s
+{
+	// known to server
+	player_state_t  ps;             // communicated by server to clients
+	int             ping;
 
-    // private to game
-    client_persistant_t pers;
-    client_respawn_t    resp;
-    pmove_state_t       old_pmove;  // for detecting out-of-pmove changes
+	// private to game
+	client_persistant_t pers;
+	client_respawn_t    resp;
+	pmove_state_t       old_pmove;  // for detecting out-of-pmove changes
 
-    bool        showscores;         // set layout stat
-    bool        showinventory;      // set layout stat
-    bool        showhelp;
-    bool        showhelpicon;
+	bool        showscores;         // set layout stat
+	bool        showinventory;      // set layout stat
+	bool        showhelp;
+	bool        showhelpicon;
 
-    int         ammo_index;
+	int         ammo_index;
 
-    int         buttons;
-    int         oldbuttons;
+	int         buttons;
+	int         oldbuttons;
 	int         latched_buttons;
 
 	bool	    weapon_thunk;
@@ -1249,7 +1274,7 @@ struct gclient_s {
 	int         old_waterlevel;
 	int         breather_sound;
 
-									// animation vars
+	// animation vars
 	int         anim_end;
 	int			anim_priority;
 	bool	    anim_duck;
@@ -1292,36 +1317,37 @@ struct gclient_s {
 };
 
 
-struct edict_s {
-    entity_state_t  s;
-    struct gclient_s    *client;    // NULL if not a player
-                                    // the server expects the first part
-                                    // of gclient_s to be a player_state_t
-                                    // but the rest of it is opaque
+struct edict_s
+{
+	entity_state_t  s;
+	struct gclient_s    *client;    // NULL if not a player
+	// the server expects the first part
+	// of gclient_s to be a player_state_t
+	// but the rest of it is opaque
 
-    qboolean    inuse;
-    int         linkcount;
+	qboolean    inuse;
+	int         linkcount;
 
-    // FIXME: move these fields to a server private sv_entity_t
-    list_t      area;               // linked to a division node or leaf
+	// FIXME: move these fields to a server private sv_entity_t
+	list_t      area;               // linked to a division node or leaf
 
-    int         num_clusters;       // if -1, use headnode instead
-    int         clusternums[MAX_ENT_CLUSTERS];
-    int         headnode;           // unused if num_clusters != -1
-    int         areanum, areanum2;
+	int         num_clusters;       // if -1, use headnode instead
+	int         clusternums[MAX_ENT_CLUSTERS];
+	int         headnode;           // unused if num_clusters != -1
+	int         areanum, areanum2;
 
-    //================================
+	//================================
 
-    int         svflags;
-    vec3_t      mins, maxs;
-    vec3_t      absmin, absmax, size;
-    solid_t     solid;
-    int         clipmask;
-    edict_t     *owner;
+	int         svflags;
+	vec3_t      mins, maxs;
+	vec3_t      absmin, absmax, size;
+	solid_t     solid;
+	int         clipmask;
+	edict_t     *owner;
 
 
-    // DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
-    // EXPECTS THE FIELDS IN THAT ORDER!
+	// DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
+	// EXPECTS THE FIELDS IN THAT ORDER!
 
 	//================================
 	movetype_t         movetype;
@@ -1330,9 +1356,9 @@ struct edict_s {
 	char        *model;
 	gtime_t     freetime;           // sv.time when the object was freed
 
-									//
-									// only used locally in game, not by server
-									//
+	//
+	// only used locally in game, not by server
+	//
 	char        *message;
 	entitytype_e	entitytype;
 	int         spawnflags;
@@ -1358,7 +1384,7 @@ struct edict_s {
 	int         mass;
 	gtime_t     air_finished;
 	float       gravity;        // per entity gravity multiplier (1.0 is normal)
-								// use for lowgrav artifact, flares
+	// use for lowgrav artifact, flares
 
 	edict_t     *goalentity;
 	edict_t     *movetarget;
@@ -1392,7 +1418,8 @@ struct edict_s {
 	char        *map;           // target_changelevel
 
 	int         radius_dmg;
-	union {
+	union
+	{
 		int         dmg;
 		itemid_e	weapon_id;
 	};
@@ -1416,13 +1443,16 @@ struct edict_s {
 	edict_t     *teamchain;
 	edict_t     *teammaster;
 
-	union {
-		struct {
+	union
+	{
+		struct
+		{
 			edict_t     *mynoise;       // can go in client only
 			edict_t     *mynoise2;
 		};
 
-		struct {
+		struct
+		{
 			edict_t *entity_next;
 			edict_t *entity_prev;
 		};
@@ -1451,7 +1481,7 @@ struct edict_s {
 
 	gitem_t     *item, *real_item;          // for bonus items
 
-											// common data blocks
+	// common data blocks
 	moveinfo_t      moveinfo;
 	monsterinfo_t   monsterinfo;
 
@@ -1502,19 +1532,28 @@ static inline bool G_FlashyFrame(gtime_t time_left)
 // Means of death from non-client/non-monster stuff
 static inline meansOfDeath_t MakeGenericMeansOfDeath(edict_t *inflictor, meansOfDeath_e damage_means, damageType_e damage_type)
 {
-	return (meansOfDeath_t) { damage_type, inflictor, inflictor->entitytype, inflictor->s.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time };
+	return (meansOfDeath_t)
+	{
+		damage_type, inflictor, inflictor->entitytype, inflictor->s.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time
+	};
 }
 
 // Means of death from client/monster from a non-weapon
 static inline meansOfDeath_t MakeAttackerMeansOfDeath(edict_t *attacker, edict_t *inflictor, meansOfDeath_e damage_means, damageType_e damage_type)
 {
-	return (meansOfDeath_t) { damage_type, attacker, attacker->entitytype, attacker->s.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time };
+	return (meansOfDeath_t)
+	{
+		damage_type, attacker, attacker->entitytype, attacker->s.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time
+	};
 }
 
 // Means of death from client/monster from a non-weapon
 static inline meansOfDeath_t MakeWeaponMeansOfDeath(edict_t *attacker, itemid_e weapon, edict_t *inflictor, damageType_e damage_type)
 {
-	return (meansOfDeath_t) { damage_type, attacker, attacker->entitytype, attacker->s.game, level.time + 10000, weapon, inflictor, MD_WEAPON, level.time };
+	return (meansOfDeath_t)
+	{
+		damage_type, attacker, attacker->entitytype, attacker->s.game, level.time + 10000, weapon, inflictor, MD_WEAPON, level.time
+	};
 }
 
 // Quick for blank stuff (platforms, etc)

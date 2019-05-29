@@ -34,52 +34,60 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 	vec3_t  dest;
 	trace_t trace;
 
-// bmodels need special checking because their origin is 0,0,0
-	if (targ->movetype == MOVETYPE_PUSH) {
+	// bmodels need special checking because their origin is 0,0,0
+	if (targ->movetype == MOVETYPE_PUSH)
+	{
 		VectorAdd(targ->absmin, targ->absmax, dest);
-        VectorScale(dest, 0.5f, dest);
+		VectorScale(dest, 0.5f, dest);
 		trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-        if (trace.fraction == 1.0f)
-            return true;
+
+		if (trace.fraction == 1.0f)
+			return true;
+
 		if (trace.ent == targ)
-            return true;
-        return false;
+			return true;
+
+		return false;
 	}
 
 	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, MASK_SOLID);
-    if (trace.fraction == 1.0f)
-        return true;
+
+	if (trace.fraction == 1.0f)
+		return true;
 
 	VectorCopy(targ->s.origin, dest);
-    dest[0] += 15.0f;
-    dest[1] += 15.0f;
+	dest[0] += 15.0f;
+	dest[1] += 15.0f;
 	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-    if (trace.fraction == 1.0f)
-        return true;
+
+	if (trace.fraction == 1.0f)
+		return true;
 
 	VectorCopy(targ->s.origin, dest);
-    dest[0] += 15.0f;
-    dest[1] -= 15.0f;
+	dest[0] += 15.0f;
+	dest[1] -= 15.0f;
 	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-    if (trace.fraction == 1.0f)
-        return true;
+
+	if (trace.fraction == 1.0f)
+		return true;
 
 	VectorCopy(targ->s.origin, dest);
-    dest[0] -= 15.0f;
-    dest[1] += 15.0f;
+	dest[0] -= 15.0f;
+	dest[1] += 15.0f;
 	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-    if (trace.fraction == 1.0f)
-        return true;
+
+	if (trace.fraction == 1.0f)
+		return true;
 
 	VectorCopy(targ->s.origin, dest);
-    dest[0] -= 15.0f;
-    dest[1] -= 15.0f;
+	dest[0] -= 15.0f;
+	dest[1] -= 15.0f;
 	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
-    if (trace.fraction == 1.0f)
-        return true;
 
+	if (trace.fraction == 1.0f)
+		return true;
 
-    return false;
+	return false;
 }
 
 
@@ -111,7 +119,7 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 			if (!(targ->monsterinfo.aiflags & AI_GOOD_GUY))
 			{
 				level.killed_monsters++;
-				
+
 				// medics won't heal monsters that they kill themselves
 				if (attacker->entitytype == ET_MONSTER_MEDIC)
 					targ->owner = attacker;
@@ -148,7 +156,6 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 		gi.WriteByte(TE_DUKE_GLASS);
 		gi.WritePosition(targ->s.origin);
 		gi.multicast(targ->s.origin, MULTICAST_PVS);
-
 		G_FreeEdict(targ);
 	}
 	else
@@ -165,9 +172,10 @@ static void SpawnDamage(int type, vec3_t origin, vec3_t normal, int damage)
 {
 	if (damage > 255)
 		damage = 255;
+
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(type);
-//  gi.WriteByte (damage);
+	//  gi.WriteByte (damage);
 	gi.WritePosition(origin);
 	gi.WriteDir(normal);
 	gi.multicast(origin, MULTICAST_PVS);
@@ -216,13 +224,15 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 	if (dflags & DAMAGE_NO_ARMOR)
 		return 0;
 
-	if (client) {
+	if (client)
+	{
 		power_armor_type = PowerArmorType(ent);
-		if (power_armor_type != POWER_ARMOR_NONE) {
+
+		if (power_armor_type != POWER_ARMOR_NONE)
 			power = floorf(AMMO_PER_POWER_ARMOR_ABSORB * client->pers.ammo);
-		}
 	}
-	else if (ent->svflags & SVF_MONSTER) {
+	else if (ent->svflags & SVF_MONSTER)
+	{
 		power_armor_type = ent->monsterinfo.power_armor_type;
 		power = ent->monsterinfo.power_armor_power;
 	}
@@ -231,47 +241,52 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 
 	if (power_armor_type == POWER_ARMOR_NONE)
 		return 0;
+
 	if (!power)
 		return 0;
 
-	if (power_armor_type == POWER_ARMOR_SCREEN) {
+	if (power_armor_type == POWER_ARMOR_SCREEN)
+	{
 		vec3_t      vec;
 		float       dot;
 		vec3_t      forward;
-
 		// only works if damage point is in front
 		AngleVectors(ent->s.angles, forward, NULL, NULL);
 		VectorSubtract(point, ent->s.origin, vec);
 		VectorNormalize(vec);
 		dot = DotProduct(vec, forward);
-        if (dot <= 0.3f)
+
+		if (dot <= 0.3f)
 			return 0;
 
 		damagePerCell = 1;
 		pa_te_type = TE_SCREEN_SPARKS;
 		damage = damage / 3;
 	}
-	else {
+	else
+	{
 		damagePerCell = 2;
 		pa_te_type = TE_SHIELD_SPARKS;
 		damage = (2 * damage) / 3;
 	}
 
 	save = power * damagePerCell;
+
 	if (!save)
 		return 0;
+
 	if (save > damage)
 		save = damage;
 
 	SpawnDamage(pa_te_type, point, normal, save);
 	ent->powerarmor_time = level.time + 200;
-
 	power_used = save / damagePerCell;
 
 	if (client)
 		client->pers.ammo = max(0, client->pers.ammo - (power_used * AMMO_PER_POWER_ARMOR_ABSORB));
 	else
 		ent->monsterinfo.power_armor_power -= power_used;
+
 	return save;
 }
 
@@ -293,6 +308,7 @@ static int CheckArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int
 		return 0;
 
 	itemid_e index = ArmorIndex(ent);
+
 	if (!index)
 		return 0;
 
@@ -312,7 +328,6 @@ static int CheckArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int
 
 	client->pers.inventory[index] -= save;
 	SpawnDamage(te_sparks, point, normal, save);
-
 	return save;
 }
 
@@ -326,7 +341,8 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 
 	// if we are a good guy monster and our attacker is a player
 	// or another good guy, do not get mad at them
-	if (targ->monsterinfo.aiflags & AI_GOOD_GUY) {
+	if (targ->monsterinfo.aiflags & AI_GOOD_GUY)
+	{
 		if (attacker->client || (attacker->monsterinfo.aiflags & AI_GOOD_GUY))
 			return;
 	}
@@ -334,21 +350,28 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 	// we now know that we are not both good guys
 
 	// if attacker is a client, get mad at them because he's good and we're not
-	if (attacker->client) {
+	if (attacker->client)
+	{
 		targ->monsterinfo.aiflags &= ~AI_SOUND_TARGET;
 
 		// this can only happen in coop (both new and old enemies are clients)
 		// only switch if can't see the current enemy
-		if (targ->enemy && targ->enemy->client) {
-			if (visible(targ, targ->enemy)) {
+		if (targ->enemy && targ->enemy->client)
+		{
+			if (visible(targ, targ->enemy))
+			{
 				targ->oldenemy = attacker;
 				return;
 			}
+
 			targ->oldenemy = targ->enemy;
 		}
+
 		targ->enemy = attacker;
+
 		if (!(targ->monsterinfo.aiflags & AI_DUCKED))
 			FoundTarget(targ);
+
 		return;
 	}
 
@@ -360,26 +383,35 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 		attacker->entitytype != ET_MONSTER_TANK_COMMANDER &&
 		attacker->entitytype != ET_MONSTER_SUPERTANK &&
 		attacker->entitytype != ET_MONSTER_MAKRON &&
-		attacker->entitytype != ET_MONSTER_JORG) {
+		attacker->entitytype != ET_MONSTER_JORG)
+	{
 		if (targ->enemy && targ->enemy->client)
 			targ->oldenemy = targ->enemy;
+
 		targ->enemy = attacker;
+
 		if (!(targ->monsterinfo.aiflags & AI_DUCKED))
 			FoundTarget(targ);
 	}
 	// if they *meant* to shoot us, then shoot back
-	else if (attacker->enemy == targ) {
+	else if (attacker->enemy == targ)
+	{
 		if (targ->enemy && targ->enemy->client)
 			targ->oldenemy = targ->enemy;
+
 		targ->enemy = attacker;
+
 		if (!(targ->monsterinfo.aiflags & AI_DUCKED))
 			FoundTarget(targ);
 	}
 	// otherwise get mad at whoever they are mad at (help our buddy) unless it is us!
-	else if (attacker->enemy && attacker->enemy != targ) {
+	else if (attacker->enemy && attacker->enemy != targ)
+	{
 		if (targ->enemy && targ->enemy->client)
 			targ->oldenemy = targ->enemy;
+
 		targ->enemy = attacker->enemy;
+
 		if (!(targ->monsterinfo.aiflags & AI_DUCKED))
 			FoundTarget(targ);
 	}
@@ -397,10 +429,12 @@ void Q1_SpawnBlood(vec3_t org, vec3_t vel, int damage)
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_Q1_BLOOD);
 	gi.WritePosition(org);
+
 	if (vel)
 		gi.WritePosition(vel);
 	else
 		gi.WritePosition(vec3_origin);
+
 	gi.WriteByte((byte)min((byte)255, (byte)damage));
 	gi.multicast(org, MULTICAST_PVS);
 }
@@ -460,6 +494,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
 	if (skill->value == 0 && deathmatch->value == 0 && targ->client)
 	{
 		damage *= 0.5f;
+
 		if (!damage)
 			damage = 1;
 	}
@@ -489,15 +524,14 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
 			// inflict thrust and push the victim out of reach,
 			// thus kick away unless using the chainsaw.
 			if (inflictor && (!attacker
-				|| !attacker->client
-				|| attacker->client->pers.weapon != GetItemByIndex(ITI_DOOM_CHAINSAW)))
+					|| !attacker->client
+					|| attacker->client->pers.weapon != GetItemByIndex(ITI_DOOM_CHAINSAW)))
 			{
 				vec3_t ang;
 				VectorAdd(inflictor->absmin, inflictor->absmax, ang);
 				VectorScale(ang, 0.5f, ang);
 				VectorSubtract(targ->s.origin, ang, ang);
 				VectorNormalize(ang);
-
 				float thrust = damage/* *(FRACUNIT >> 3) */ * 100 / targ->mass;
 
 				// make fall forwards sometimes
@@ -574,10 +608,8 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
 
 	psave = CheckPowerArmor(targ, point, normal, take, dflags);
 	take -= psave;
-
 	asave = CheckArmor(targ, point, normal, take, te_sparks, dflags);
 	take -= asave;
-
 	//treat cheat/powerup savings the same as armor
 	asave += save;
 
@@ -611,12 +643,10 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
 				vec3_t diff = { targ->s.origin[0] - attacker->s.origin[0], targ->s.origin[1] - attacker->s.origin[1], 0 };
 				VectorNormalize(diff);
 				vectoangles2(diff, diff);
-
 				/*gi.WriteByte(svc_temp_entity);
 				gi.WriteByte(TE_DAMAGE_DIRECTION);
 				gi.WriteAngle(diff[1]);
 				gi.unicast(targ, qtrue);*/
-
 				targ->client->damage_dir = diff[1];
 			}
 
@@ -701,6 +731,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 	{
 		if (ent == ignore)
 			continue;
+
 		if (!ent->takedamage)
 			continue;
 

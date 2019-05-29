@@ -34,8 +34,6 @@ void    VID_Shutdown(void);
 
 void    VID_UpdateGamma(const byte *table);
 
-void    *VID_GetProcAddr(const char *sym);
-
 void    VID_BeginFrame(void);
 void    VID_EndFrame(void);
 

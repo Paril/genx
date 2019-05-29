@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -38,7 +38,7 @@ typedef struct
 	float		inventoryWeights[ITI_TOTAL];
 	float		playersWeights[MAX_EDICTS];
 	float		broam_timeouts[MAX_BOT_ROAMS];	//revisit bot roams
-	
+
 } ai_status_t;
 
 typedef struct
@@ -50,10 +50,10 @@ typedef struct
 	float		inventoryWeights[ITI_TOTAL];
 
 	//class based functions
-	void		(*UpdateStatus)(edict_t *ent);
-	void		(*RunFrame)(edict_t *ent);
-	void		(*bloquedTimeout)(edict_t *ent);
-	void		(*deadFrame)(edict_t *ent);
+	void	(*UpdateStatus)(edict_t *ent);
+	void	(*RunFrame)(edict_t *ent);
+	void	(*bloquedTimeout)(edict_t *ent);
+	void	(*deadFrame)(edict_t *ent);
 
 } ai_pers_t;
 
@@ -94,22 +94,22 @@ typedef struct
 
 // bot_cmds.c
 qboolean	BOT_Commands(edict_t *ent);
-qboolean	BOT_ServerCommand (void);
+qboolean	BOT_ServerCommand(void);
 
 // ai_main.c
 void		AI_Init(void);
 void		AI_NewMap(void);
-void		G_FreeAI( edict_t *ent );
-void		G_SpawnAI( edict_t *ent );
+void		G_FreeAI(edict_t *ent);
+void		G_SpawnAI(edict_t *ent);
 
 // ai_items.c
 void		AI_EnemyAdded(edict_t *ent);
 void		AI_EnemyRemoved(edict_t *ent);
 
 // bot_spawn.c
-void		BOT_SpawnBot (char *team, char *name, char *skin, char *userinfo);
+void		BOT_SpawnBot(char *team, char *name, char *skin, char *userinfo);
 void		BOT_RemoveBot(char *name);
-void		BOT_Respawn (edict_t *self);
+void		BOT_Respawn(edict_t *self);
 
 //bot_misc.c
 //void		AI_BotObituary (edict_t *self, edict_t *inflictor, edict_t *attacker);
@@ -122,6 +122,6 @@ void		AITools_DropNodes(edict_t *ent);
 
 // safe **cough** prints
 void		debug_printf(char *fmt, ...);
-void		safe_cprintf (edict_t *ent, int printlevel, char *fmt, ...);
-void		safe_centerprintf (edict_t *ent, char *fmt, ...);
-void		safe_bprintf (int printlevel, char *fmt, ...);
+void		safe_cprintf(edict_t *ent, int printlevel, char *fmt, ...);
+void		safe_centerprintf(edict_t *ent, char *fmt, ...);
+void		safe_bprintf(int printlevel, char *fmt, ...);

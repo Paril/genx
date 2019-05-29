@@ -8,7 +8,8 @@ OGRE
 
 #include "g_local.h"
 
-enum {
+enum
+{
 	stand1, stand2, stand3, stand4, stand5, stand6, stand7, stand8, stand9,
 
 	walk1, walk2, walk3, walk4, walk5, walk6, walk7,
@@ -52,14 +53,11 @@ enum {
 void OgreGrenadeExplode(edict_t *self)
 {
 	T_RadiusDamage(self, self->owner, 40, NULL, DAMAGE_Q1, 40, self->meansOfDeath);
-
 	gi.sound(self, CHAN_VOICE, gi.soundindex("q1/weapons/r_exp3.wav"), 1, ATTN_NORM, 0);
-
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_Q1_EXPLODE);
 	gi.WritePosition(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
-
 	G_FreeEdict(self);
 }
 
@@ -75,6 +73,7 @@ void OgreGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t
 	}
 
 	gi.sound(self, CHAN_VOICE, gi.soundindex("q1/weapons/bounce.wav"), 1, ATTN_NORM, 0);
+
 	if (VectorEmpty(self->velocity))
 		VectorClear(self->avelocity);
 }
@@ -87,9 +86,7 @@ OgreFireGrenade
 void OgreFireGrenade(edict_t *self)
 {
 	//self.effects = self.effects | EF_MUZZLEFLASH;
-
 	gi.sound(self, CHAN_VOICE, gi.soundindex("q1/weapons/grenade.wav"), 1, ATTN_NORM, 0);
-
 	edict_t *missile = G_Spawn();
 	missile->owner = self;
 	missile->movetype = MOVETYPE_BOUNCE;
@@ -100,30 +97,21 @@ void OgreFireGrenade(edict_t *self)
 	missile->entitytype = ET_GRENADE;
 	VectorClear(missile->mins);
 	VectorClear(missile->maxs);
-
-	// set missile speed	
-
+	// set missile speed
 	vec3_t dir;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
 	VectorNormalize(dir);
 	VectorScale(dir, 600, missile->velocity);
 	missile->velocity[2] = 200;
-
 	missile->avelocity[0] = missile->avelocity[1] = missile->avelocity[2] = 300;
-
 	vectoangles(missile->velocity, missile->s.angles);
-
 	missile->touch = OgreGrenadeTouch;
-
 	// set missile duration
 	missile->nextthink = level.time + 2500;
 	missile->think = OgreGrenadeExplode;
-
 	missile->s.modelindex = gi.modelindex("models/q1/grenade.mdl");
 	VectorCopy(self->s.origin, missile->s.origin);
-
 	missile->meansOfDeath = MakeAttackerMeansOfDeath(self, missile, MD_NONE, DT_DIRECT);
-
 	gi.linkentity(missile);
 }
 
@@ -142,23 +130,18 @@ void SpawnMeatSpray(edict_t *self, vec3_t org, vec3_t vel)
 	missile->owner = self;
 	missile->movetype = MOVETYPE_BOUNCE;
 	missile->solid = SOLID_NOT;
-
 	VectorCopy(vel, missile->velocity);
 	missile->velocity[2] = missile->velocity[2] + 250 + 50 * random();
-
 	VectorSet(missile->avelocity, 3000, 1000, 2000);
-
 	// set missile duration
 	missile->nextthink = level.time + 1000;
 	missile->think = G_FreeEdict;
 	missile->s.game = GAME_Q1;
 	missile->s.effects |= EF_GIB;
-
 	missile->s.modelindex = gi.modelindex("models/q1/zom_gib.mdl");
 	VectorClear(missile->mins);
 	VectorClear(missile->maxs);
 	VectorCopy(org, missile->s.origin);
-
 	gi.linkentity(missile);
 }
 
@@ -176,6 +159,7 @@ void chainsaw(edict_t *self, float side)
 
 	if (!self->enemy)
 		return;
+
 	if (!CanDamage(self->enemy, self))
 		return;
 
@@ -190,9 +174,7 @@ void chainsaw(edict_t *self, float side)
 	if (side)
 	{
 		vec3_t v_forward, v_right;
-
 		AngleVectors(self->s.angles, v_forward, v_right, NULL);
-
 		vec3_t sp;
 		VectorMA(self->s.origin, 16, v_forward, sp);
 
@@ -224,7 +206,8 @@ void ogre_idle_sound(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_ogidle, 1, ATTN_IDLE, 0);
 }
 
-mframe_t ogre_frames_stand1[] = {
+mframe_t ogre_frames_stand1[] =
+{
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
@@ -253,7 +236,8 @@ void ogre_drag(edict_t *self)
 		ogre_drag_sound(self);
 }
 
-mframe_t ogre_frames_walk1[] = {
+mframe_t ogre_frames_walk1[] =
+{
 	{ ai_walk, 3,   NULL },
 	{ ai_walk, 2,   NULL },
 	{ ai_walk, 2,   ogre_idle_sound },
@@ -284,7 +268,8 @@ void ogre_idle2_sound(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_ogidle2, 1, ATTN_IDLE, 0);
 }
 
-mframe_t ogre_frames_run1[] = {
+mframe_t ogre_frames_run1[] =
+{
 	{ ai_run, 9,   ogre_idle2_sound },
 	{ ai_run, 12,   NULL },
 	{ ai_run, 8,   NULL },
@@ -314,10 +299,12 @@ void ogre_swing_attack(edict_t *self)
 		chainsaw(self, -200);
 	else
 		chainsaw(self, 0);
+
 	self->s.angles[1] = self->s.angles[1] + random() * 25;
 }
 
-mframe_t ogre_frames_swing1[] = {
+mframe_t ogre_frames_swing1[] =
+{
 	{ ai_charge, 11,   ogre_swing_sound },
 	{ ai_charge, 1,   NULL },
 	{ ai_charge, 4,   NULL },
@@ -351,7 +338,8 @@ void ogre_smash_attack(edict_t *self)
 		self->monsterinfo.pausetime = level.time + (random() * 200);
 }
 
-mframe_t ogre_frames_smash1[] = {
+mframe_t ogre_frames_smash1[] =
+{
 	{ ai_charge, 6,   ogre_swing_sound },
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
@@ -374,7 +362,8 @@ void ogre_smash(edict_t *self)
 	self->monsterinfo.currentmove = &ogre_smash1;
 }
 
-mframe_t ogre_frames_nail1[] = {
+mframe_t ogre_frames_nail1[] =
+{
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
@@ -390,7 +379,8 @@ void ogre_nail(edict_t *self)
 	self->monsterinfo.currentmove = &ogre_nail1;
 }
 
-mframe_t ogre_frames_pain1[] = {
+mframe_t ogre_frames_pain1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -404,7 +394,8 @@ void ogre_paina(edict_t *self)
 	self->monsterinfo.currentmove = &ogre_pain1;
 }
 
-mframe_t ogre_frames_painb1[] = {
+mframe_t ogre_frames_painb1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL }
@@ -416,7 +407,8 @@ void ogre_painb(edict_t *self)
 	self->monsterinfo.currentmove = &ogre_painb1;
 }
 
-mframe_t ogre_frames_painc1[] = {
+mframe_t ogre_frames_painc1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -431,7 +423,8 @@ void ogre_painc(edict_t *self)
 	self->monsterinfo.currentmove = &ogre_painc1;
 }
 
-mframe_t ogre_frames_paind1[] = {
+mframe_t ogre_frames_paind1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, -10,   NULL },
 	{ ai_move, -9,   NULL },
@@ -456,7 +449,8 @@ void ogre_paind(edict_t *self)
 	self->monsterinfo.currentmove = &ogre_paind1;
 }
 
-mframe_t ogre_frames_paine1[] = {
+mframe_t ogre_frames_paine1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, -10,   NULL },
 	{ ai_move, -9,   NULL },
@@ -487,7 +481,6 @@ void ogre_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 		return;
 
 	gi.sound(self, CHAN_VOICE, sound_ogpain1, 1, ATTN_NORM, 0);
-
 	float r = random();
 
 	if (r < 0.25f)
@@ -534,7 +527,8 @@ void ogre_dead(edict_t *self)
 	self->nextthink = 0;
 }
 
-mframe_t ogre_frames_deatha1[] = {
+mframe_t ogre_frames_deatha1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   ogre_drop },
@@ -552,7 +546,8 @@ mframe_t ogre_frames_deatha1[] = {
 };
 mmove_t ogre_deatha1 = { death1, death14, ogre_frames_deatha1, ogre_dead };
 
-mframe_t ogre_frames_deathb1[] = {
+mframe_t ogre_frames_deathb1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 5,   NULL },
 	{ ai_move, 0,   ogre_drop },
@@ -588,7 +583,6 @@ void ogre_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-	
 	gi.sound(self, CHAN_VOICE, sound_ogdth, 1, ATTN_NORM, 0);
 
 	if (random() < 0.5f)
@@ -632,7 +626,6 @@ void q1_monster_ogre(edict_t *self)
 	gi.modelindex("models/q1/ogre.mdl");
 	gi.modelindex("models/q1/h_ogre.mdl");
 	gi.modelindex("models/q1/grenade.mdl");
-
 	sound_ogdrag = gi.soundindex("q1/ogre/ogdrag.wav");
 	sound_ogdth = gi.soundindex("q1/ogre/ogdth.wav");
 	sound_ogidle = gi.soundindex("q1/ogre/ogidle.wav");
@@ -641,17 +634,12 @@ void q1_monster_ogre(edict_t *self)
 	sound_ogsawatk = gi.soundindex("q1/ogre/ogsawatk.wav");
 	sound_ogwake = gi.soundindex("q1/ogre/ogwake.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	gi.setmodel(self, "models/q1/ogre.mdl");
-
 	VectorSet(self->mins, -32, -32, -24);
 	VectorSet(self->maxs, 32, 32, 64);
-
 	self->health = 200;
-
 	self->monsterinfo.stand = ogre_stand;
 	self->monsterinfo.walk = ogre_walk;
 	self->monsterinfo.run = ogre_run;
@@ -660,12 +648,9 @@ void q1_monster_ogre(edict_t *self)
 	self->monsterinfo.sight = ogre_sight;
 	self->pain = ogre_pain;
 	self->die = ogre_die;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &ogre_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }
 

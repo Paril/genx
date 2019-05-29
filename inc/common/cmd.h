@@ -28,23 +28,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define ALIAS_LOOP_COUNT    16
 
 // where did current command come from?
-typedef enum {
-    FROM_STUFFTEXT,
-    FROM_RCON,
-    FROM_MENU,
-    FROM_CONSOLE,
-    FROM_CMDLINE,
-    FROM_CODE
+typedef enum
+{
+	FROM_STUFFTEXT,
+	FROM_RCON,
+	FROM_MENU,
+	FROM_CONSOLE,
+	FROM_CMDLINE,
+	FROM_CODE
 } from_t;
 
-typedef struct cmdbuf_s {
-    from_t      from;
-    char        *text; // may not be NULL terminated
-    size_t      cursize;
-    size_t      maxsize;
-    int         waitCount;
-    int         aliasCount; // for detecting runaway loops
-    void        (*exec)(struct cmdbuf_s *, const char *);
+typedef struct cmdbuf_s
+{
+	from_t      from;
+	char        *text; // may not be NULL terminated
+	size_t      cursize;
+	size_t      maxsize;
+	int         waitCount;
+	int         aliasCount; // for detecting runaway loops
+	void (*exec)(struct cmdbuf_s *, const char *);
 } cmdbuf_t;
 
 // generic console buffer
@@ -84,15 +86,16 @@ Command execution takes a null terminated string, breaks it into tokens,
 then searches for a command or variable that matches the first token.
 */
 
-typedef struct genctx_s {
+typedef struct genctx_s
+{
 	const char  *partial;
 	size_t length;
 	int argnum;
 	char **matches;
 	int count, size;
 	void *data;
-    bool ignorecase;
-    bool ignoredups;
+	bool ignorecase;
+	bool ignoredups;
 } genctx_t;
 
 typedef void (*xcommand_t)(void);
@@ -100,20 +103,23 @@ typedef void (*xcommandex_t)(cmdbuf_t *);
 typedef size_t (*xmacro_t)(char *, size_t);
 typedef void (*xcompleter_t)(struct genctx_s *, int);
 
-typedef struct cmd_macro_s {
-    struct cmd_macro_s  *next, *hashNext;
-    const char          *name;
-    xmacro_t            function;
+typedef struct cmd_macro_s
+{
+	struct cmd_macro_s  *next, *hashNext;
+	const char          *name;
+	xmacro_t            function;
 } cmd_macro_t;
 
-typedef struct {
-    const char *sh, *lo, *help;
+typedef struct
+{
+	const char *sh, *lo, *help;
 } cmd_option_t;
 
-typedef struct cmdreg_s {
-    const char      *name;
-    xcommand_t      function;
-    xcompleter_t    completer;
+typedef struct cmdreg_s
+{
+	const char      *name;
+	xcommand_t      function;
+	xcompleter_t    completer;
 } cmdreg_t;
 
 void Cmd_Init(void);
@@ -189,11 +195,11 @@ void Cmd_Alias_f(void);
 void Cmd_WriteAliases(qhandle_t f);
 
 #define EXEC_TRIGGER(var) \
-    do { \
-        if ((var)->string[0]) { \
-            Cbuf_AddText(&cmd_buffer, (var)->string); \
-        } \
-    } while(0)
+	do { \
+		if ((var)->string[0]) { \
+			Cbuf_AddText(&cmd_buffer, (var)->string); \
+		} \
+	} while(0)
 
 extern int cmd_optind;
 extern char *cmd_optarg;

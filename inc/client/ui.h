@@ -22,11 +22,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/net/net.h"
 #include "client/client.h"
 
-typedef enum {
-    UIMENU_NONE,
-    UIMENU_DEFAULT,
-    UIMENU_MAIN,
-    UIMENU_GAME
+typedef enum
+{
+	UIMENU_NONE,
+	UIMENU_DEFAULT,
+	UIMENU_MAIN,
+	UIMENU_GAME
 } uiMenu_t;
 
 void        UI_Init(void);

@@ -8,7 +8,8 @@ static int sound_whoosh;
 static int sound_shoot;
 static int sound_punch;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -51,7 +52,8 @@ void skel_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_action, 1, ATTN_NORM, 0);
 }
 
-mframe_t skel_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t skel_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -69,7 +71,8 @@ void skel_stand(edict_t *self)
 #define MOVE_SPEED 17.5f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t skel_frames_run1[FRAME_COUNT(run)] = {
+mframe_t skel_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  skel_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  skel_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  skel_idle, frames_run2 },
@@ -90,7 +93,8 @@ void skel_run(edict_t *self)
 	self->monsterinfo.currentmove = &skel_run1;
 }
 
-mframe_t skel_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t skel_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -117,7 +121,8 @@ void skel_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t skel_frames_die1[FRAME_COUNT(die)] = {
+mframe_t skel_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death1 },
@@ -138,17 +143,16 @@ void skel_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
 	// check for gib
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &skel_die1;
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-mframe_t skel_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t skel_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain },
@@ -181,7 +185,8 @@ void skel_melee_hit(edict_t *self)
 	T_Damage(self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ((Q_rand() % 10) + 1) * 6, 0, DAMAGE_NO_PARTICLES, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 }
 
-mframe_t skel_frames_melee1[FRAME_COUNT(punch)] = {
+mframe_t skel_frames_melee1[FRAME_COUNT(punch)] =
+{
 	{ ai_charge, 0,  NULL, frames_punch1 },
 	{ ai_charge, 0,  NULL, frames_punch2 },
 	{ ai_charge, 0,  skel_melee_hit, frames_punch3 },
@@ -202,7 +207,8 @@ void doom_skel_missile_touch(edict_t *ent, edict_t *other, cplane_t *plane, csur
 	if (other == ent->owner)
 		return;
 
-	if (surf && (surf->flags & SURF_SKY)) {
+	if (surf && (surf->flags & SURF_SKY))
+	{
 		G_FreeEdict(ent);
 		return;
 	}
@@ -215,12 +221,10 @@ void doom_skel_missile_touch(edict_t *ent, edict_t *other, cplane_t *plane, csur
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_DOOM_FBXP_BOOM);
 	gi.WritePosition(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
-
 	G_FreeEdict(ent);
 }
 
@@ -231,31 +235,25 @@ void doom_skel_think(edict_t *self)
 
 	vec3_t ideal_angle;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, ideal_angle);
-
 	VectorNormalize(ideal_angle);
 	vectoangles2(ideal_angle, ideal_angle);
-
 	vec3_t cur_angle;
 	float speed = VectorNormalize2(self->velocity, cur_angle);
 	vectoangles2(cur_angle, cur_angle);
-
 	LerpAngles(cur_angle, ideal_angle, 0.25f, ideal_angle);
 	AngleVectors(ideal_angle, self->velocity, NULL, NULL);
 	vectoangles(self->velocity, self->s.angles);
 	VectorScale(self->velocity, speed, self->velocity);
-
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_DOOM_PUFF);
 	gi.WritePosition(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PHS);
-
 	self->nextthink = level.time + 100;
 }
 
 void fire_doom_skel_missile(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed)
 {
 	edict_t *rocket;
-
 	rocket = G_Spawn();
 	VectorCopy(start, rocket->s.origin);
 	VectorCopy(dir, rocket->movedir);
@@ -276,16 +274,13 @@ void fire_doom_skel_missile(edict_t *self, vec3_t start, vec3_t dir, int damage,
 	rocket->nextthink = level.time + 100;
 	rocket->think = doom_skel_think;
 	rocket->dmg = damage;
-
 	rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT);
-
 	gi.linkentity(rocket);
 }
 
 void skel_fire_gun(edict_t *self)
 {
 	gi.sound(self, CHAN_WEAPON, sound_shoot, 1, ATTN_NORM, 0);
-
 	vec3_t org, v_forward, v_right;
 	AngleVectors(self->s.angles, v_forward, v_right, NULL);
 
@@ -293,19 +288,17 @@ void skel_fire_gun(edict_t *self)
 		org[i] = self->s.origin[i] + v_forward[i] * 0 + v_right[i] * 0;
 
 	org[2] += 16 + 16;
-
 	vec3_t dir;
-
 	vec3_t enemy_org;
 	VectorCopy(self->enemy->s.origin, enemy_org);
 	enemy_org[2] += self->enemy->viewheight;
-
 	VectorSubtract(enemy_org, org, dir);
 	VectorNormalize(dir);
 	fire_doom_skel_missile(self, org, dir, Doom_MissileDamageRandomizer(10), 350);
 }
 
-mframe_t skel_frames_fire1[FRAME_COUNT(missile)] = {
+mframe_t skel_frames_fire1[FRAME_COUNT(missile)] =
+{
 	{ ai_charge, 0,  skel_fire_gun, frames_missile1 },
 	{ ai_charge, 0,  NULL, frames_missile1 },
 	{ ai_charge, 0,  NULL, frames_missile2 },
@@ -341,22 +334,17 @@ void doom_monster_skel(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_alert = gi.soundindex("doom/SKESIT.wav");
 	sound_action = gi.soundindex("doom/SKEACT.wav");
 	sound_pain = gi.soundindex("doom/POPAIN.wav");
 	sound_death = gi.soundindex("doom/SKEDTH.wav");
-
 	sound_whoosh = gi.soundindex("doom/SKESWG.wav");
 	sound_shoot = gi.soundindex("doom/SKEATK.wav");
 	sound_punch = gi.soundindex("doom/SKEPCH.wav");
-
 	VectorSet(self->mins, -20, -20, -4);
 	VectorSet(self->maxs, 20, 20, 52);
-
 	self->s.modelindex = gi.modelindex("sprites/doom/skel.d2s");
 	self->health = 300;
-
 	self->monsterinfo.stand = skel_stand;
 	self->monsterinfo.walk = skel_walk;
 	self->monsterinfo.run = skel_run;
@@ -367,11 +355,8 @@ void doom_monster_skel(edict_t *self)
 	self->monsterinfo.melee = skel_melee;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &skel_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

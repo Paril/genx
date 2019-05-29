@@ -41,28 +41,30 @@ int BoxOnPlaneSide(vec3_t emins, vec3_t emaxs, cplane_t *p);
 
 static inline int BoxOnPlaneSideFast(vec3_t emins, vec3_t emaxs, cplane_t *p)
 {
-    // fast axial cases
-    if (p->type < 3) {
-        if (p->dist <= emins[p->type])
-            return BOX_INFRONT;
-        if (p->dist >= emaxs[p->type])
-            return BOX_BEHIND;
-        return BOX_INTERSECTS;
-    }
+	// fast axial cases
+	if (p->type < 3)
+	{
+		if (p->dist <= emins[p->type])
+			return BOX_INFRONT;
 
-    // slow generic case
-    return BoxOnPlaneSide(emins, emaxs, p);
+		if (p->dist >= emaxs[p->type])
+			return BOX_BEHIND;
+
+		return BOX_INTERSECTS;
+	}
+
+	// slow generic case
+	return BoxOnPlaneSide(emins, emaxs, p);
 }
 
 static inline vec_t PlaneDiffFast(vec3_t v, cplane_t *p)
 {
-    // fast axial cases
-    if (p->type < 3) {
-        return v[p->type] - p->dist;
-    }
+	// fast axial cases
+	if (p->type < 3)
+		return v[p->type] - p->dist;
 
-    // slow generic case
-    return PlaneDiff(v, p);
+	// slow generic case
+	return PlaneDiff(v, p);
 }
 
 void SetupRotationMatrix(vec3_t matrix[3], const vec3_t dir, float degrees);

@@ -1,11 +1,11 @@
 #pragma once
 
 #ifdef _WIN64
-typedef __int64 ssize_t;
-#define SSIZE_MAX _I64_MAX
+	typedef __int64 ssize_t;
+	#define SSIZE_MAX _I64_MAX
 #else
-typedef __int32 ssize_t;
-#define SSIZE_MAX _I32_MAX
+	typedef __int32 ssize_t;
+	#define SSIZE_MAX _I32_MAX
 #endif
 
 #define _S(x) #x
@@ -17,16 +17,16 @@ typedef __int32 ssize_t;
 #define CPUSTRING "x86"
 
 #if _DEBUG
-#define BUILDSTRING "Debug"
+	#define BUILDSTRING "Debug"
 #else
-#define BUILDSTRING "Release"
+	#define BUILDSTRING "Release"
 #endif
 
 #define Q2GAME "baseq2"
 #define BASEGAME "genx"
 #define DEFGAME BASEGAME
 #define VID_REF "gl"
-#define VID_GEOMETRY "640x480" 
+#define VID_GEOMETRY "640x480"
 
 #define USE_PNG 1
 #define USE_SERVER 1

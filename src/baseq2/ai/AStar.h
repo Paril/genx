@@ -1,7 +1,7 @@
 
 //==========================================
-// 
-// 
+//
+//
 //==========================================
 
 typedef struct astarpath_s
@@ -11,12 +11,12 @@ typedef struct astarpath_s
 	int originNode;
 	int goalNode;
 
-}astarpath_t;
+} astarpath_t;
 
 //	A* PROPS
 //===========================================
-int	AStar_nodeIsInClosed( int node );
-int	AStar_nodeIsInOpen( int node );
-int	AStar_nodeIsInPath( int node );
+int	AStar_nodeIsInClosed(int node);
+int	AStar_nodeIsInOpen(int node);
+int	AStar_nodeIsInPath(int node);
 //===========================================
-int AStar_GetPath( int origin, int goal, int movetypes, struct astarpath_s *path );
+int AStar_GetPath(int origin, int goal, int movetypes, struct astarpath_s *path);

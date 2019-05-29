@@ -19,10 +19,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef MDFOUR_H
 #define MDFOUR_H
 
-typedef struct mdfour {
-    uint32_t A, B, C, D;
-    uint32_t count;
-    uint8_t block[64];
+typedef struct mdfour
+{
+	uint32_t A, B, C, D;
+	uint32_t count;
+	uint8_t block[64];
 } mdfour_t;
 
 void mdfour_begin(struct mdfour *md);

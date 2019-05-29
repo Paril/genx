@@ -17,23 +17,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 //
-// win_glimp.h
+// glimp.h
 //
 
-#include <GL/gl.h>
-#include <GL/wglext.h>
+#include "../refresh/gl.h"
+#include "glad_wgl.h"
 
-typedef struct {
-    HGLRC       hGLRC;          // handle to GL rendering context
-    HINSTANCE   hinstOpenGL;    // handle to GL library
-    GLenum      drawbuffer;
-    struct {
-		bool multisample;
-		bool pixel_format;
-		bool swap_control;
-		bool swap_control_tear;
-		bool create_context;
-	} extensions;
+typedef struct
+{
+	HGLRC       hGLRC;          // handle to GL rendering context
+	HINSTANCE   hinstOpenGL;    // handle to GL library
+	GLenum      drawbuffer;
 } glwstate_t;
 
 extern glwstate_t glw;

@@ -23,7 +23,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/cvar.h"
 #include "common/files.h"
 #if USE_REF
-#include "client/video.h"
+	#include "client/video.h"
 #endif
 #include "system/system.h"
 #include "tty.h"
@@ -40,11 +40,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <errno.h>
 
 #if USE_CLIENT
-#include <pthread.h>
+	#include <pthread.h>
 #endif
 
 #if USE_SDL
-#include <SDL.h>
+	#include <SDL.h>
 #endif
 
 cvar_t  *sys_basedir;
@@ -75,87 +75,100 @@ static asyncwork_t *done_head;
 
 static void append_work(asyncwork_t **head, asyncwork_t *work)
 {
-    asyncwork_t *c, **p;
-    for (p = head, c = *head; c; p = &c->next, c = c->next);
-    work->next = NULL;
-    *p = work;
+	asyncwork_t *c, **p;
+
+	for (p = head, c = *head; c; p = &c->next, c = c->next);
+
+	work->next = NULL;
+	*p = work;
 }
 
 static void complete_work(void)
 {
-    asyncwork_t *work, *next;
+	asyncwork_t *work, *next;
 
-    if (!work_initialized)
-        return;
-    if (pthread_mutex_trylock(&work_lock))
-        return;
-    if (q_unlikely(done_head)) {
-        for (work = done_head; work; work = next) {
-            next = work->next;
-            if (work->done_cb)
-                work->done_cb(work->cb_arg);
-            Z_Free(work);
-        }
-        done_head = NULL;
-    }
-    pthread_mutex_unlock(&work_lock);
+	if (!work_initialized)
+		return;
+
+	if (pthread_mutex_trylock(&work_lock))
+		return;
+
+	if (q_unlikely(done_head))
+	{
+		for (work = done_head; work; work = next)
+		{
+			next = work->next;
+
+			if (work->done_cb)
+				work->done_cb(work->cb_arg);
+
+			Z_Free(work);
+		}
+
+		done_head = NULL;
+	}
+
+	pthread_mutex_unlock(&work_lock);
 }
 
 static void *thread_func(void *arg)
 {
-    pthread_mutex_lock(&work_lock);
-    while (1) {
-        while (!pend_head && !work_terminate)
-            pthread_cond_wait(&work_cond, &work_lock);
+	pthread_mutex_lock(&work_lock);
 
-        asyncwork_t *work = pend_head;
-        if (!work)
-            break;
-        pend_head = work->next;
+	while (1)
+	{
+		while (!pend_head && !work_terminate)
+			pthread_cond_wait(&work_cond, &work_lock);
 
-        pthread_mutex_unlock(&work_lock);
-        work->work_cb(work->cb_arg);
-        pthread_mutex_lock(&work_lock);
+		asyncwork_t *work = pend_head;
 
-        append_work(&done_head, work);
-    }
-    pthread_mutex_unlock(&work_lock);
+		if (!work)
+			break;
 
-    return NULL;
+		pend_head = work->next;
+		pthread_mutex_unlock(&work_lock);
+		work->work_cb(work->cb_arg);
+		pthread_mutex_lock(&work_lock);
+		append_work(&done_head, work);
+	}
+
+	pthread_mutex_unlock(&work_lock);
+	return NULL;
 }
 
 static void shutdown_work(void)
 {
-    if (!work_initialized)
-        return;
+	if (!work_initialized)
+		return;
 
-    pthread_mutex_lock(&work_lock);
-    work_terminate = true;
-    pthread_cond_signal(&work_cond);
-    pthread_mutex_unlock(&work_lock);
-
-    pthread_join(work_thread, NULL);
-    complete_work();
-
-    pthread_mutex_destroy(&work_lock);
-    pthread_cond_destroy(&work_cond);
-    work_initialized = false;
+	pthread_mutex_lock(&work_lock);
+	work_terminate = true;
+	pthread_cond_signal(&work_cond);
+	pthread_mutex_unlock(&work_lock);
+	pthread_join(work_thread, NULL);
+	complete_work();
+	pthread_mutex_destroy(&work_lock);
+	pthread_cond_destroy(&work_cond);
+	work_initialized = false;
 }
 
 void Sys_QueueAsyncWork(asyncwork_t *work)
 {
-    if (!work_initialized) {
-        pthread_mutex_init(&work_lock, NULL);
-        pthread_cond_init(&work_cond, NULL);
-        if (pthread_create(&work_thread, NULL, thread_func, NULL))
-            Sys_Error("Couldn't create async work thread");
-        work_initialized = true;
-    }
+	if (!work_initialized)
+	{
+		pthread_mutex_init(&work_lock, NULL);
+		pthread_cond_init(&work_cond, NULL);
 
-    pthread_mutex_lock(&work_lock);
-    append_work(&pend_head, Z_CopyStruct(work));
-    pthread_cond_signal(&work_cond);
-    pthread_mutex_unlock(&work_lock);
+		if (pthread_create(&work_thread, NULL, thread_func, NULL))
+			Sys_Error("Couldn't create async work thread");
+
+		work_initialized = true;
+	}
+
+	pthread_mutex_lock(&work_lock);
+	append_work(&pend_head, Z_CopyStruct(work));
+	pthread_cond_signal(&work_cond);
+	pthread_mutex_unlock(&work_lock);
 }
 
 #else
@@ -173,14 +186,14 @@ GENERAL ROUTINES
 
 void Sys_DebugBreak(void)
 {
-    raise(SIGTRAP);
+	raise(SIGTRAP);
 }
 
 unsigned Sys_Milliseconds(void)
 {
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec * 1000UL + ts.tv_nsec / 1000000UL;
+	struct timespec ts;
+	(void)clock_gettime(CLOCK_MONOTONIC, &ts);
+	return ts.tv_sec * 1000UL + ts.tv_nsec / 1000000UL;
 }
 
 /*
@@ -192,77 +205,72 @@ This function never returns.
 */
 void Sys_Quit(void)
 {
-    shutdown_work();
-    tty_shutdown_input();
+	shutdown_work();
+	tty_shutdown_input();
 #if USE_SDL
-    SDL_Quit();
+	SDL_Quit();
 #endif
-    exit(EXIT_SUCCESS);
+	exit(EXIT_SUCCESS);
 }
 
 #define SYS_SITE_CFG    "/etc/default/q2pro"
 
 void Sys_AddDefaultConfig(void)
 {
-    FILE *fp;
-    size_t len;
+	FILE *fp;
+	size_t len;
+	fp = fopen(SYS_SITE_CFG, "r");
 
-    fp = fopen(SYS_SITE_CFG, "r");
-    if (!fp) {
-        return;
-    }
+	if (!fp)
+		return;
 
-    len = fread(cmd_buffer.text, 1, cmd_buffer.maxsize - 1, fp);
-    fclose(fp);
+	len = fread(cmd_buffer.text, 1, cmd_buffer.maxsize - 1, fp);
+	fclose(fp);
+	cmd_buffer.text[len] = 0;
+	cmd_buffer.cursize = COM_Compress(cmd_buffer.text);
 
-    cmd_buffer.text[len] = 0;
-    cmd_buffer.cursize = COM_Compress(cmd_buffer.text);
-    if (cmd_buffer.cursize) {
-        Com_Printf("Execing %s\n", SYS_SITE_CFG);
-        Cbuf_Execute(&cmd_buffer);
-    }
+	if (cmd_buffer.cursize)
+	{
+		Com_Printf("Execing %s\n", SYS_SITE_CFG);
+		Cbuf_Execute(&cmd_buffer);
+	}
 }
 
 void Sys_Sleep(int msec)
 {
-    struct timespec req;
-
-    req.tv_sec = msec / 1000;
-    req.tv_nsec = (msec % 1000) * 1000000;
-    nanosleep(&req, NULL);
+	struct timespec req;
+	req.tv_sec = msec / 1000;
+	req.tv_nsec = (msec % 1000) * 1000000;
+	nanosleep(&req, NULL);
 }
 
 #if USE_AC_CLIENT
 bool Sys_GetAntiCheatAPI(void)
 {
-    Sys_Sleep(1500);
-    return false;
+	Sys_Sleep(1500);
+	return false;
 }
 #endif
 
 static void hup_handler(int signum)
 {
-    flush_logs = true;
+	flush_logs = true;
 }
 
 static void term_handler(int signum)
 {
-    Com_Printf("%s\n", strsignal(signum));
-
-    terminate = true;
+	Com_Printf("%s\n", strsignal(signum));
+	terminate = true;
 }
 
 static void kill_handler(int signum)
 {
-    tty_shutdown_input();
-
+	tty_shutdown_input();
 #if USE_CLIENT && USE_REF && !USE_X11
-    VID_FatalShutdown();
+	VID_FatalShutdown();
 #endif
-
-    fprintf(stderr, "%s\n", strsignal(signum));
-
-    exit(EXIT_FAILURE);
+	fprintf(stderr, "%s\n", strsignal(signum));
+	exit(EXIT_FAILURE);
 }
 
 /*
@@ -272,51 +280,51 @@ Sys_Init
 */
 void Sys_Init(void)
 {
-    char    *homedir;
-    cvar_t  *sys_parachute;
+	char    *homedir;
+	cvar_t  *sys_parachute;
+	signal(SIGTERM, term_handler);
+	signal(SIGINT, term_handler);
+	signal(SIGTTIN, SIG_IGN);
+	signal(SIGTTOU, SIG_IGN);
+	signal(SIGPIPE, SIG_IGN);
+	signal(SIGUSR1, hup_handler);
+	// basedir <path>
+	// allows the game to run from outside the data tree
+	sys_basedir = Cvar_Get("basedir", DATADIR, CVAR_NOSET);
 
-    signal(SIGTERM, term_handler);
-    signal(SIGINT, term_handler);
-    signal(SIGTTIN, SIG_IGN);
-    signal(SIGTTOU, SIG_IGN);
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGUSR1, hup_handler);
+	// homedir <path>
+	// specifies per-user writable directory for demos, screenshots, etc
+	if (HOMEDIR[0] == '~')
+	{
+		char *s = getenv("HOME");
 
-    // basedir <path>
-    // allows the game to run from outside the data tree
-    sys_basedir = Cvar_Get("basedir", DATADIR, CVAR_NOSET);
+		if (s && *s)
+			homedir = va("%s%s", s, HOMEDIR + 1);
+		else
+			homedir = "";
+	}
+	else
+		homedir = HOMEDIR;
 
-    // homedir <path>
-    // specifies per-user writable directory for demos, screenshots, etc
-    if (HOMEDIR[0] == '~') {
-        char *s = getenv("HOME");
-        if (s && *s) {
-            homedir = va("%s%s", s, HOMEDIR + 1);
-        } else {
-            homedir = "";
-        }
-    } else {
-        homedir = HOMEDIR;
-    }
-    sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
-    sys_libdir = Cvar_Get("libdir", LIBDIR, CVAR_NOSET);
-    sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
+	sys_homedir = Cvar_Get("homedir", homedir, CVAR_NOSET);
+	sys_libdir = Cvar_Get("libdir", LIBDIR, CVAR_NOSET);
+	sys_forcegamelib = Cvar_Get("sys_forcegamelib", "", CVAR_NOSET);
 
-    if (tty_init_input()) {
-        signal(SIGHUP, term_handler);
-    } else if (COM_DEDICATED) {
-        signal(SIGHUP, hup_handler);
-    }
+	if (tty_init_input())
+		signal(SIGHUP, term_handler);
+	else if (COM_DEDICATED)
+		signal(SIGHUP, hup_handler);
 
-    sys_parachute = Cvar_Get("sys_parachute", "1", CVAR_NOSET);
+	sys_parachute = Cvar_Get("sys_parachute", "1", CVAR_NOSET);
 
-    if (sys_parachute->integer) {
-        // perform some cleanup when crashing
-        signal(SIGSEGV, kill_handler);
-        signal(SIGILL, kill_handler);
-        signal(SIGFPE, kill_handler);
-        signal(SIGTRAP, kill_handler);
-    }
+	if (sys_parachute->integer)
+	{
+		// perform some cleanup when crashing
+		signal(SIGSEGV, kill_handler);
+		signal(SIGILL, kill_handler);
+		signal(SIGFPE, kill_handler);
+		signal(SIGTRAP, kill_handler);
+	}
 }
 
 /*
@@ -326,24 +334,20 @@ Sys_Error
 */
 void Sys_Error(const char *error, ...)
 {
-    va_list     argptr;
-    char        text[MAXERRORMSG];
-
-    tty_shutdown_input();
-
+	va_list     argptr;
+	char        text[MAXERRORMSG];
+	tty_shutdown_input();
 #if USE_CLIENT && USE_REF
-    VID_FatalShutdown();
+	VID_FatalShutdown();
 #endif
-
-    va_start(argptr, error);
-    Q_vsnprintf(text, sizeof(text), error, argptr);
-    va_end(argptr);
-
-    fprintf(stderr,
-            "********************\n"
-            "FATAL: %s\n"
-            "********************\n", text);
-    exit(EXIT_FAILURE);
+	va_start(argptr, error);
+	Q_vsnprintf(text, sizeof(text), error, argptr);
+	va_end(argptr);
+	fprintf(stderr,
+		"********************\n"
+		"FATAL: %s\n"
+		"********************\n", text);
+	exit(EXIT_FAILURE);
 }
 
 /*
@@ -361,9 +365,8 @@ Sys_FreeLibrary
 */
 void Sys_FreeLibrary(void *handle)
 {
-    if (handle && dlclose(handle)) {
-        Com_Error(ERR_FATAL, "dlclose failed on %p: %s", handle, dlerror());
-    }
+	if (handle && dlclose(handle))
+		Com_Error(ERR_FATAL, "dlclose failed on %p: %s", handle, dlerror());
 }
 
 /*
@@ -373,43 +376,46 @@ Sys_LoadLibrary
 */
 void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
 {
-    void    *module, *entry;
+	void    *module, *entry;
+	*handle = NULL;
+	dlerror();
+	module = dlopen(path, RTLD_LAZY);
 
-    *handle = NULL;
+	if (!module)
+	{
+		Com_SetLastError(dlerror());
+		return NULL;
+	}
 
-    dlerror();
-    module = dlopen(path, RTLD_LAZY);
-    if (!module) {
-        Com_SetLastError(dlerror());
-        return NULL;
-    }
+	if (sym)
+	{
+		dlerror();
+		entry = dlsym(module, sym);
 
-    if (sym) {
-        dlerror();
-        entry = dlsym(module, sym);
-        if (!entry) {
-            Com_SetLastError(dlerror());
-            dlclose(module);
-            return NULL;
-        }
-    } else {
-        entry = NULL;
-    }
+		if (!entry)
+		{
+			Com_SetLastError(dlerror());
+			dlclose(module);
+			return NULL;
+		}
+	}
+	else
+		entry = NULL;
 
-    *handle = module;
-    return entry;
+	*handle = module;
+	return entry;
 }
 
 void *Sys_GetProcAddress(void *handle, const char *sym)
 {
-    void    *entry;
+	void    *entry;
+	dlerror();
+	entry = dlsym(handle, sym);
 
-    dlerror();
-    entry = dlsym(handle, sym);
-    if (!entry)
-        Com_SetLastError(dlerror());
+	if (!entry)
+		Com_SetLastError(dlerror());
 
-    return entry;
+	return entry;
 }
 
 /*
@@ -427,114 +433,116 @@ Sys_ListFiles_r
 */
 void Sys_ListFiles_r(listfiles_t *list, const char *path, int depth)
 {
-    struct dirent *ent;
-    DIR *dir;
-    struct stat st;
-    char fullpath[MAX_OSPATH];
-    char *name;
-    size_t len;
-    void *info;
+	struct dirent *ent;
+	DIR *dir;
+	struct stat st;
+	char fullpath[MAX_OSPATH];
+	char *name;
+	size_t len;
+	void *info;
 
-    if ((dir = opendir(path)) == NULL) {
-        return;
-    }
+	if ((dir = opendir(path)) == NULL)
+		return;
 
-    while ((ent = readdir(dir)) != NULL) {
-        if (ent->d_name[0] == '.') {
-            continue; // ignore dotfiles
-        }
+	while ((ent = readdir(dir)) != NULL)
+	{
+		if (ent->d_name[0] == '.')
+		{
+			continue; // ignore dotfiles
+		}
 
-        len = Q_concat(fullpath, sizeof(fullpath),
-                       path, "/", ent->d_name, NULL);
-        if (len >= sizeof(fullpath)) {
-            continue;
-        }
+		len = Q_concat(fullpath, sizeof(fullpath),
+				path, "/", ent->d_name, NULL);
 
-        st.st_mode = 0;
+		if (len >= sizeof(fullpath))
+			continue;
 
+		st.st_mode = 0;
 #ifdef _DIRENT_HAVE_D_TYPE
-        // try to avoid stat() if possible
-        if (!(list->flags & FS_SEARCH_EXTRAINFO)
-            && ent->d_type != DT_UNKNOWN
-            && ent->d_type != DT_LNK) {
-            st.st_mode = DTTOIF(ent->d_type);
-        }
+
+		// try to avoid stat() if possible
+		if (!(list->flags & FS_SEARCH_EXTRAINFO)
+			&& ent->d_type != DT_UNKNOWN
+			&& ent->d_type != DT_LNK)
+			st.st_mode = DTTOIF(ent->d_type);
+
 #endif
 
-        if (st.st_mode == 0 && stat(fullpath, &st) == -1) {
-            continue;
-        }
+		if (st.st_mode == 0 && stat(fullpath, &st) == -1)
+			continue;
 
-        // pattern search implies recursive search
-        if ((list->flags & FS_SEARCH_BYFILTER) &&
-            S_ISDIR(st.st_mode) && depth < MAX_LISTED_DEPTH) {
-            Sys_ListFiles_r(list, fullpath, depth + 1);
+		// pattern search implies recursive search
+		if ((list->flags & FS_SEARCH_BYFILTER) &&
+			S_ISDIR(st.st_mode) && depth < MAX_LISTED_DEPTH)
+		{
+			Sys_ListFiles_r(list, fullpath, depth + 1);
 
-            // re-check count
-            if (list->count >= MAX_LISTED_FILES) {
-                break;
-            }
-        }
+			// re-check count
+			if (list->count >= MAX_LISTED_FILES)
+				break;
+		}
 
-        // check type
-        if (list->flags & FS_SEARCH_DIRSONLY) {
-            if (!S_ISDIR(st.st_mode)) {
-                continue;
-            }
-        } else {
-            if (!S_ISREG(st.st_mode)) {
-                continue;
-            }
-        }
+		// check type
+		if (list->flags & FS_SEARCH_DIRSONLY)
+		{
+			if (!S_ISDIR(st.st_mode))
+				continue;
+		}
+		else
+		{
+			if (!S_ISREG(st.st_mode))
+				continue;
+		}
 
-        // check filter
-        if (list->filter) {
-            if (list->flags & FS_SEARCH_BYFILTER) {
-                if (!FS_WildCmp(list->filter, fullpath + list->baselen)) {
-                    continue;
-                }
-            } else {
-                if (!FS_ExtCmp(list->filter, ent->d_name)) {
-                    continue;
-                }
-            }
-        }
+		// check filter
+		if (list->filter)
+		{
+			if (list->flags & FS_SEARCH_BYFILTER)
+			{
+				if (!FS_WildCmp(list->filter, fullpath + list->baselen))
+					continue;
+			}
+			else
+			{
+				if (!FS_ExtCmp(list->filter, ent->d_name))
+					continue;
+			}
+		}
 
-        // strip path
-        if (list->flags & FS_SEARCH_SAVEPATH) {
-            name = fullpath + list->baselen;
-        } else {
-            name = ent->d_name;
-        }
+		// strip path
+		if (list->flags & FS_SEARCH_SAVEPATH)
+			name = fullpath + list->baselen;
+		else
+			name = ent->d_name;
 
-        // strip extension
-        if (list->flags & FS_SEARCH_STRIPEXT) {
-            *COM_FileExtension(name) = 0;
+		// strip extension
+		if (list->flags & FS_SEARCH_STRIPEXT)
+		{
+			*COM_FileExtension(name) = 0;
 
-            if (!*name) {
-                continue;
-            }
-        }
+			if (!*name)
+				continue;
+		}
 
-        // copy info off
-        if (list->flags & FS_SEARCH_EXTRAINFO) {
-            info = FS_CopyInfo(name,
-                               st.st_size,
-                               st.st_ctime,
-                               st.st_mtime);
-        } else {
-            info = FS_CopyString(name);
-        }
+		// copy info off
+		if (list->flags & FS_SEARCH_EXTRAINFO)
+		{
+			info = FS_CopyInfo(name,
+					st.st_size,
+					st.st_ctime,
+					st.st_mtime);
+		}
+		else
+			info = FS_CopyString(name);
 
-        list->files = FS_ReallocList(list->files, list->count + 1);
-        list->files[list->count++] = info;
+		list->files = FS_ReallocList(list->files, list->count + 1);
+		list->files[list->count++] = info;
 
-        if (list->count >= MAX_LISTED_FILES) {
-            break;
-        }
-    }
+		if (list->count >= MAX_LISTED_FILES)
+			break;
+	}
 
-    closedir(dir);
+	closedir(dir);
 }
 
 /*
@@ -544,33 +552,43 @@ main
 */
 int main(int argc, char **argv)
 {
-    if (argc > 1) {
-        if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version")) {
-            fprintf(stderr, "%s\n", com_version_string);
-            return EXIT_SUCCESS;
-        }
-        if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
-            fprintf(stderr, "Usage: %s [+command arguments] [...]\n", argv[0]);
-            return EXIT_SUCCESS;
-        }
-    }
+	if (argc > 1)
+	{
+		if (!strcmp(argv[1], "-v") || !strcmp(argv[1], "--version"))
+		{
+			fprintf(stderr, "%s\n", com_version_string);
+			return EXIT_SUCCESS;
+		}
 
-    if (!getuid() || !geteuid()) {
-        fprintf(stderr, "You can not run " PRODUCT " as superuser "
-                "for security reasons!\n");
-        return EXIT_FAILURE;
-    }
+		if (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))
+		{
+			fprintf(stderr, "Usage: %s [+command arguments] [...]\n", argv[0]);
+			return EXIT_SUCCESS;
+		}
+	}
 
-    Qcommon_Init(argc, argv);
-    while (!terminate) {
-        complete_work();
-        if (flush_logs) {
-            Com_FlushLogs();
-            flush_logs = false;
-        }
-        Qcommon_Frame();
-    }
+	if (!getuid() || !geteuid())
+	{
+		fprintf(stderr, "You can not run " PRODUCT " as superuser "
+			"for security reasons!\n");
+		return EXIT_FAILURE;
+	}
 
-    Com_Quit(NULL, ERR_DISCONNECT);
-    return EXIT_FAILURE; // never gets here
+	Qcommon_Init(argc, argv);
+
+	while (!terminate)
+	{
+		complete_work();
+
+		if (flush_logs)
+		{
+			Com_FlushLogs();
+			flush_logs = false;
+		}
+
+		Qcommon_Frame();
+	}
+
+	Com_Quit(NULL, ERR_DISCONNECT);
+	return EXIT_FAILURE; // never gets here
 }

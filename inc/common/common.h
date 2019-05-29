@@ -29,9 +29,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PRODUCT         "GenerationsX"
 
 #if USE_CLIENT
-#define APPLICATION     "genx"
+	#define APPLICATION     "genx"
 #else
-#define APPLICATION     "genxded"
+	#define APPLICATION     "genxded"
 #endif
 
 #define COM_DEFAULT_CFG     "default.cfg"
@@ -55,24 +55,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define STRINGIFY2(x)   #x
 #define STRINGIFY(x)    STRINGIFY2(x)
 
-typedef struct {
-    const char *name;
-    void (* const func)(void);
+typedef struct
+{
+	const char *name;
+	void (* const func)(void);
 } ucmd_t;
 
 static inline const ucmd_t *Com_Find(const ucmd_t *u, const char *c)
 {
-    for (; u->name; u++) {
-        if (!strcmp(c, u->name)) {
-            return u;
-        }
-    }
-    return NULL;
+	for (; u->name; u++)
+	{
+		if (!strcmp(c, u->name))
+			return u;
+	}
+
+	return NULL;
 }
 
-typedef struct string_entry_s {
-    struct string_entry_s *next;
-    char string[1];
+typedef struct string_entry_s
+{
+	struct string_entry_s *next;
+	char string[1];
 } string_entry_t;
 
 typedef void (*rdflush_t)(int target, char *buffer, size_t len);
@@ -83,7 +86,7 @@ void        Com_EndRedirect(void);
 void        Com_AbortFunc(void (*func)(void *), void *arg);
 
 #ifdef _WIN32
-void        Com_AbortFrame(void);
+	void        Com_AbortFrame(void);
 #endif
 
 char        *Com_GetLastError(void);
@@ -96,7 +99,7 @@ void        Com_SetColor(color_index_t color);
 void        Com_Address_g(genctx_t *ctx);
 void        Com_Generic_c(genctx_t *ctx, int argnum);
 #if USE_CLIENT
-void        Com_Color_g(genctx_t *ctx);
+	void        Com_Color_g(genctx_t *ctx);
 #endif
 
 size_t      Com_FormatLocalTime(char *buffer, size_t size, const char *fmt);
@@ -106,30 +109,30 @@ size_t      Com_Uptime_m(char *buffer, size_t size);
 size_t      Com_UptimeLong_m(char *buffer, size_t size);
 
 #ifndef _WIN32
-void        Com_FlushLogs(void);
+	void        Com_FlushLogs(void);
 #endif
 
 void        Com_AddConfigFile(const char *name, unsigned flags);
 
 #if USE_CLIENT
-#define COM_DEDICATED   (dedicated->integer != 0)
+	#define COM_DEDICATED   (dedicated->integer != 0)
 #else
-#define COM_DEDICATED   1
+	#define COM_DEDICATED   1
 #endif
 
 #ifdef _DEBUG
 #define Com_DPrintf(...) \
-    if (developer && developer->integer > 0) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+	if (developer && developer->integer > 0) \
+		Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
 #define Com_DDPrintf(...) \
-    if (developer && developer->integer > 1) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+	if (developer && developer->integer > 1) \
+		Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
 #define Com_DDDPrintf(...) \
-    if (developer && developer->integer > 2) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+	if (developer && developer->integer > 2) \
+		Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
 #define Com_DDDDPrintf(...) \
-    if (developer && developer->integer > 3) \
-        Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
+	if (developer && developer->integer > 3) \
+		Com_LPrintf(PRINT_DEVELOPER, __VA_ARGS__)
 #else
 #define Com_DPrintf(...) ((void)0)
 #define Com_DDPrintf(...) ((void)0)
@@ -140,17 +143,17 @@ void        Com_AddConfigFile(const char *name, unsigned flags);
 extern cvar_t  *z_perturb;
 
 #ifdef _DEBUG
-extern cvar_t   *developer;
+	extern cvar_t   *developer;
 #endif
 extern cvar_t   *dedicated;
 #if USE_CLIENT
-extern cvar_t   *host_speeds;
+	extern cvar_t   *host_speeds;
 #endif
 extern cvar_t   *com_version;
 
 #if USE_CLIENT
-extern cvar_t   *cl_running;
-extern cvar_t   *cl_paused;
+	extern cvar_t   *cl_running;
+	extern cvar_t   *cl_paused;
 #endif
 extern cvar_t   *sv_running;
 extern cvar_t   *sv_paused;
@@ -160,11 +163,11 @@ extern cvar_t   *com_sleep;
 extern cvar_t   *rcon_password;
 
 #if USE_CLIENT
-// host_speeds times
-extern unsigned     time_before_game;
-extern unsigned     time_after_game;
-extern unsigned     time_before_ref;
-extern unsigned     time_after_ref;
+	// host_speeds times
+	extern unsigned     time_before_game;
+	extern unsigned     time_after_game;
+	extern unsigned     time_before_ref;
+	extern unsigned     time_after_ref;
 #endif
 
 extern const char   com_version_string[];

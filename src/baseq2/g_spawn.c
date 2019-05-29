@@ -20,14 +20,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 typedef void (*spawnfunc_t)(edict_t *ent);
 
-typedef struct {
+typedef struct
+{
 	char		*name;
-    spawnfunc_t	spawn;
+	spawnfunc_t	spawn;
 } spawn_func_t;
 
-typedef struct {
+typedef struct
+{
 	char    *name;
-    unsigned ofs;
+	unsigned ofs;
 	fieldtype_t type;
 	size_t  len;
 } spawn_field_t;
@@ -172,159 +174,161 @@ void doom_monster_boss(edict_t *self);
 void doom_monster_spid(edict_t *self);
 void doom_monster_cybr(edict_t *self);
 
-typedef struct {
+typedef struct
+{
 	const char			*classname;
 	const entitytype_e	entityid;
 
 	list_t				hashEntry;
 } classname_to_entitytype_t;
 
-static classname_to_entitytype_t classname_to_entitytype[] = {
-		{ "info_player_start",			ET_INFO_PLAYER_START },
-		{ "info_player_deathmatch",		ET_INFO_PLAYER_DEATHMATCH },
-		{ "info_player_coop",			ET_INFO_PLAYER_COOP },
-		{ "info_player_intermission",	ET_INFO_PLAYER_INTERMISSION },
+static classname_to_entitytype_t classname_to_entitytype[] =
+{
+	{ "info_player_start",			ET_INFO_PLAYER_START },
+	{ "info_player_deathmatch",		ET_INFO_PLAYER_DEATHMATCH },
+	{ "info_player_coop",			ET_INFO_PLAYER_COOP },
+	{ "info_player_intermission",	ET_INFO_PLAYER_INTERMISSION },
 
-		{ "func_plat",					ET_FUNC_PLAT },
-		{ "func_button",				ET_FUNC_BUTTON },
-		{ "func_door",					ET_FUNC_DOOR },
-		{ "func_door_secret",			ET_FUNC_DOOR_SECRET },
-		{ "func_door_rotating",			ET_FUNC_DOOR_ROTATING },
-		{ "func_rotating",				ET_FUNC_ROTATING },
-		{ "func_train",					ET_FUNC_TRAIN },
-		{ "func_water",					ET_FUNC_WATER },
-		{ "func_conveyor",				ET_FUNC_CONVEYOR },
-		{ "func_areaportal",			ET_FUNC_AREAPORTAL },
-		{ "func_clock",					ET_FUNC_CLOCK },
-		{ "func_wall",					ET_FUNC_WALL },
-		{ "func_object",				ET_FUNC_OBJECT },
-		{ "func_timer",					ET_FUNC_TIMER },
-		{ "func_explosive",				ET_FUNC_EXPLOSIVE },
-		{ "func_killbox",				ET_FUNC_KILLBOX },
+	{ "func_plat",					ET_FUNC_PLAT },
+	{ "func_button",				ET_FUNC_BUTTON },
+	{ "func_door",					ET_FUNC_DOOR },
+	{ "func_door_secret",			ET_FUNC_DOOR_SECRET },
+	{ "func_door_rotating",			ET_FUNC_DOOR_ROTATING },
+	{ "func_rotating",				ET_FUNC_ROTATING },
+	{ "func_train",					ET_FUNC_TRAIN },
+	{ "func_water",					ET_FUNC_WATER },
+	{ "func_conveyor",				ET_FUNC_CONVEYOR },
+	{ "func_areaportal",			ET_FUNC_AREAPORTAL },
+	{ "func_clock",					ET_FUNC_CLOCK },
+	{ "func_wall",					ET_FUNC_WALL },
+	{ "func_object",				ET_FUNC_OBJECT },
+	{ "func_timer",					ET_FUNC_TIMER },
+	{ "func_explosive",				ET_FUNC_EXPLOSIVE },
+	{ "func_killbox",				ET_FUNC_KILLBOX },
 
-		{ "trigger_always",				ET_TRIGGER_ALWAYS },
-		{ "trigger_once",				ET_TRIGGER_ONCE },
-		{ "trigger_multiple",			ET_TRIGGER_MULTIPLE },
-		{ "trigger_relay",				ET_TRIGGER_RELAY},
-		{ "trigger_push",				ET_TRIGGER_PUSH },
-		{ "trigger_hurt",				ET_TRIGGER_HURT },
-		{ "trigger_key",				ET_TRIGGER_KEY },
-		{ "trigger_counter",			ET_TRIGGER_COUNTER },
-		{ "trigger_elevator",			ET_TRIGGER_ELEVATOR },
-		{ "trigger_gravity",			ET_TRIGGER_GRAVITY },
-		{ "trigger_monsterjump",		ET_TRIGGER_MONSTERJUMP },
+	{ "trigger_always",				ET_TRIGGER_ALWAYS },
+	{ "trigger_once",				ET_TRIGGER_ONCE },
+	{ "trigger_multiple",			ET_TRIGGER_MULTIPLE },
+	{ "trigger_relay",				ET_TRIGGER_RELAY},
+	{ "trigger_push",				ET_TRIGGER_PUSH },
+	{ "trigger_hurt",				ET_TRIGGER_HURT },
+	{ "trigger_key",				ET_TRIGGER_KEY },
+	{ "trigger_counter",			ET_TRIGGER_COUNTER },
+	{ "trigger_elevator",			ET_TRIGGER_ELEVATOR },
+	{ "trigger_gravity",			ET_TRIGGER_GRAVITY },
+	{ "trigger_monsterjump",		ET_TRIGGER_MONSTERJUMP },
 
-		{ "target_temp_entity",			ET_TARGET_TEMP_ENTITY },
-		{ "target_speaker",				ET_TARGET_SPEAKER },
-		{ "target_explosion",			ET_TARGET_EXPLOSION },
-		{ "target_changelevel",			ET_TARGET_CHANGELEVEL },
-		{ "target_secret",				ET_TARGET_SECRET },
-		{ "target_goal",				ET_TARGET_GOAL },
-		{ "target_splash",				ET_TARGET_SPLASH },
-		{ "target_spawner",				ET_TARGET_SPAWNER },
-		{ "target_blaster",				ET_TARGET_BLASTER },
-		{ "target_crosslevel_trigger",	ET_TARGET_CROSSLEVEL_TRIGGER },
-		{ "target_crosslevel_target",	ET_TARGET_CROSSLEVEL_TARGET },
-		{ "target_laser",				ET_TARGET_LASER },
-		{ "target_help",				ET_TARGET_HELP },
-		{ "target_actor",				ET_TARGET_ACTOR },
-		{ "target_lightramp",			ET_TARGET_LIGHTRAMP },
-		{ "target_earthquake",			ET_TARGET_EARTHQUAKE },
-		{ "target_character",			ET_TARGET_CHARACTER },
-		{ "target_string",				ET_TARGET_STRING },
+	{ "target_temp_entity",			ET_TARGET_TEMP_ENTITY },
+	{ "target_speaker",				ET_TARGET_SPEAKER },
+	{ "target_explosion",			ET_TARGET_EXPLOSION },
+	{ "target_changelevel",			ET_TARGET_CHANGELEVEL },
+	{ "target_secret",				ET_TARGET_SECRET },
+	{ "target_goal",				ET_TARGET_GOAL },
+	{ "target_splash",				ET_TARGET_SPLASH },
+	{ "target_spawner",				ET_TARGET_SPAWNER },
+	{ "target_blaster",				ET_TARGET_BLASTER },
+	{ "target_crosslevel_trigger",	ET_TARGET_CROSSLEVEL_TRIGGER },
+	{ "target_crosslevel_target",	ET_TARGET_CROSSLEVEL_TARGET },
+	{ "target_laser",				ET_TARGET_LASER },
+	{ "target_help",				ET_TARGET_HELP },
+	{ "target_actor",				ET_TARGET_ACTOR },
+	{ "target_lightramp",			ET_TARGET_LIGHTRAMP },
+	{ "target_earthquake",			ET_TARGET_EARTHQUAKE },
+	{ "target_character",			ET_TARGET_CHARACTER },
+	{ "target_string",				ET_TARGET_STRING },
 
-		{ "worldspawn",					ET_WORLDSPAWN },
+	{ "worldspawn",					ET_WORLDSPAWN },
 
-		{ "light",						ET_LIGHT },
-		{ "light_mine1",				ET_LIGHT_MINE1 },
-		{ "light_mine2",				ET_LIGHT_MINE2 },
-		{ "info_null",					ET_INFO_NULL },
-		{ "func_group",					ET_FUNC_GROUP },
-		{ "info_notnull",				ET_INFO_NOTNULL },
-		{ "path_corner",				ET_PATH_CORNER },
-		{ "point_combat",				ET_POINT_COMBAT },
+	{ "light",						ET_LIGHT },
+	{ "light_mine1",				ET_LIGHT_MINE1 },
+	{ "light_mine2",				ET_LIGHT_MINE2 },
+	{ "info_null",					ET_INFO_NULL },
+	{ "func_group",					ET_FUNC_GROUP },
+	{ "info_notnull",				ET_INFO_NOTNULL },
+	{ "path_corner",				ET_PATH_CORNER },
+	{ "point_combat",				ET_POINT_COMBAT },
 
-		{ "misc_explobox",				ET_MISC_EXPLOBOX },
-		{ "misc_banner",				ET_MISC_BANNER },
-		{ "misc_satellite_dish",		ET_MISC_SATELLITE_DISH },
-		{ "misc_actor",					ET_MISC_ACTOR },
-		{ "misc_gib_arm",				ET_MISC_GIB_ARM },
-		{ "misc_gib_leg",				ET_MISC_GIB_LEG },
-		{ "misc_gib_head",				ET_MISC_GIB_HEAD },
-		{ "misc_insane",				ET_MISC_INSANE },
-		{ "misc_deadsoldier",			ET_MISC_DEADSOLDIER },
-		{ "misc_viper",					ET_MISC_VIPER },
-		{ "misc_viper_bomb",			ET_MISC_VIPER_BOMB },
-		{ "misc_bigviper",				ET_MISC_BIGVIPER },
-		{ "misc_strogg_ship",			ET_MISC_STROGG_SHIP },
-		{ "misc_teleporter"	,			ET_MISC_TELEPORTER },
-		{ "misc_teleporter_dest",		ET_MISC_TELEPORTER_DEST },
-		{ "misc_blackhole",				ET_MISC_BLACKHOLE },
-		{ "misc_eastertank",			ET_MISC_EASTERTANK },
-		{ "misc_easterchick",			ET_MISC_EASTERCHICK },
-		{ "misc_easterchick2",			ET_MISC_EASTERCHICK2 },
+	{ "misc_explobox",				ET_MISC_EXPLOBOX },
+	{ "misc_banner",				ET_MISC_BANNER },
+	{ "misc_satellite_dish",		ET_MISC_SATELLITE_DISH },
+	{ "misc_actor",					ET_MISC_ACTOR },
+	{ "misc_gib_arm",				ET_MISC_GIB_ARM },
+	{ "misc_gib_leg",				ET_MISC_GIB_LEG },
+	{ "misc_gib_head",				ET_MISC_GIB_HEAD },
+	{ "misc_insane",				ET_MISC_INSANE },
+	{ "misc_deadsoldier",			ET_MISC_DEADSOLDIER },
+	{ "misc_viper",					ET_MISC_VIPER },
+	{ "misc_viper_bomb",			ET_MISC_VIPER_BOMB },
+	{ "misc_bigviper",				ET_MISC_BIGVIPER },
+	{ "misc_strogg_ship",			ET_MISC_STROGG_SHIP },
+	{ "misc_teleporter"	,			ET_MISC_TELEPORTER },
+	{ "misc_teleporter_dest",		ET_MISC_TELEPORTER_DEST },
+	{ "misc_blackhole",				ET_MISC_BLACKHOLE },
+	{ "misc_eastertank",			ET_MISC_EASTERTANK },
+	{ "misc_easterchick",			ET_MISC_EASTERCHICK },
+	{ "misc_easterchick2",			ET_MISC_EASTERCHICK2 },
 
-		{ "monster_berserk",			ET_MONSTER_BERSERK },
-		{ "monster_gladiator",			ET_MONSTER_GLADIATOR },
-		{ "monster_gunner",				ET_MONSTER_GUNNER },
-		{ "monster_infantry",			ET_MONSTER_INFANTRY },
-		{ "monster_soldier_light",		ET_MONSTER_SOLDIER_LIGHT },
-		{ "monster_soldier",			ET_MONSTER_SOLDIER },
-		{ "monster_soldier_ss",			ET_MONSTER_SOLDIER_SS },
-		{ "monster_tank",				ET_MONSTER_TANK },
-		{ "monster_tank_commander",		ET_MONSTER_TANK_COMMANDER },
-		{ "monster_medic",				ET_MONSTER_MEDIC },
-		{ "monster_flipper",			ET_MONSTER_FLIPPER },
-		{ "monster_chick",				ET_MONSTER_CHICK },
-		{ "monster_parasite",			ET_MONSTER_PARASITE },
-		{ "monster_flyer",				ET_MONSTER_FLYER },
-		{ "monster_brain",				ET_MONSTER_BRAIN },
-		{ "monster_floater",			ET_MONSTER_FLOATER },
-		{ "monster_hover",				ET_MONSTER_HOVER },
-		{ "monster_mutant",				ET_MONSTER_MUTANT },
-		{ "monster_supertank",			ET_MONSTER_SUPERTANK },
-		{ "monster_boss2",				ET_MONSTER_BOSS2 },
-		{ "monster_boss3_stand",		ET_MONSTER_BOSS3_STAND },
-		{ "monster_jorg",				ET_MONSTER_JORG },
+	{ "monster_berserk",			ET_MONSTER_BERSERK },
+	{ "monster_gladiator",			ET_MONSTER_GLADIATOR },
+	{ "monster_gunner",				ET_MONSTER_GUNNER },
+	{ "monster_infantry",			ET_MONSTER_INFANTRY },
+	{ "monster_soldier_light",		ET_MONSTER_SOLDIER_LIGHT },
+	{ "monster_soldier",			ET_MONSTER_SOLDIER },
+	{ "monster_soldier_ss",			ET_MONSTER_SOLDIER_SS },
+	{ "monster_tank",				ET_MONSTER_TANK },
+	{ "monster_tank_commander",		ET_MONSTER_TANK_COMMANDER },
+	{ "monster_medic",				ET_MONSTER_MEDIC },
+	{ "monster_flipper",			ET_MONSTER_FLIPPER },
+	{ "monster_chick",				ET_MONSTER_CHICK },
+	{ "monster_parasite",			ET_MONSTER_PARASITE },
+	{ "monster_flyer",				ET_MONSTER_FLYER },
+	{ "monster_brain",				ET_MONSTER_BRAIN },
+	{ "monster_floater",			ET_MONSTER_FLOATER },
+	{ "monster_hover",				ET_MONSTER_HOVER },
+	{ "monster_mutant",				ET_MONSTER_MUTANT },
+	{ "monster_supertank",			ET_MONSTER_SUPERTANK },
+	{ "monster_boss2",				ET_MONSTER_BOSS2 },
+	{ "monster_boss3_stand",		ET_MONSTER_BOSS3_STAND },
+	{ "monster_jorg",				ET_MONSTER_JORG },
 
-		{ "monster_commander_body",		ET_MONSTER_COMMANDER_BODY },
+	{ "monster_commander_body",		ET_MONSTER_COMMANDER_BODY },
 
-		{ "turret_breach",				ET_TURRET_BREACH },
-		{ "turret_base",				ET_TURRET_BASE },
-		{ "turret_driver",				ET_TURRET_DRIVER },
+	{ "turret_breach",				ET_TURRET_BREACH },
+	{ "turret_base",				ET_TURRET_BASE },
+	{ "turret_driver",				ET_TURRET_DRIVER },
 
-		// Q1
-		{ "monster_army",				ET_Q1_MONSTER_ARMY },
-		{ "monster_dog",				ET_Q1_MONSTER_DOG },
-		{ "monster_ogre",				ET_Q1_MONSTER_OGRE },
-		{ "monster_ogre_marksman",		ET_Q1_MONSTER_OGRE_MARKSMAN },
-		{ "monster_knight",				ET_Q1_MONSTER_KNIGHT },
-		{ "monster_zombie",				ET_Q1_MONSTER_ZOMBIE },
-		{ "monster_wizard",				ET_Q1_MONSTER_WIZARD },
-		{ "monster_demon1",				ET_Q1_MONSTER_DEMON },
-		{ "monster_shambler",			ET_Q1_MONSTER_SHAMBLER },
-		{ "monster_enforcer",			ET_Q1_MONSTER_ENFORCER },
-		{ "monster_hell_knight",		ET_Q1_MONSTER_HELL_KNIGHT },
-		{ "monster_shalrath",			ET_Q1_MONSTER_SHALRATH },
-		{ "monster_tarbaby",			ET_Q1_MONSTER_TARBABY },
-		{ "monster_fish",				ET_Q1_MONSTER_FISH },
+	// Q1
+	{ "monster_army",				ET_Q1_MONSTER_ARMY },
+	{ "monster_dog",				ET_Q1_MONSTER_DOG },
+	{ "monster_ogre",				ET_Q1_MONSTER_OGRE },
+	{ "monster_ogre_marksman",		ET_Q1_MONSTER_OGRE_MARKSMAN },
+	{ "monster_knight",				ET_Q1_MONSTER_KNIGHT },
+	{ "monster_zombie",				ET_Q1_MONSTER_ZOMBIE },
+	{ "monster_wizard",				ET_Q1_MONSTER_WIZARD },
+	{ "monster_demon1",				ET_Q1_MONSTER_DEMON },
+	{ "monster_shambler",			ET_Q1_MONSTER_SHAMBLER },
+	{ "monster_enforcer",			ET_Q1_MONSTER_ENFORCER },
+	{ "monster_hell_knight",		ET_Q1_MONSTER_HELL_KNIGHT },
+	{ "monster_shalrath",			ET_Q1_MONSTER_SHALRATH },
+	{ "monster_tarbaby",			ET_Q1_MONSTER_TARBABY },
+	{ "monster_fish",				ET_Q1_MONSTER_FISH },
 
-		// Doom
-		{ "monster_poss",				ET_DOOM_MONSTER_POSS },
-		{ "monster_spos",				ET_DOOM_MONSTER_SPOS },
-		{ "monster_troo",				ET_DOOM_MONSTER_TROO },
-		{ "monster_sarg",				ET_DOOM_MONSTER_SARG },
-		{ "monster_cpos",				ET_DOOM_MONSTER_CPOS },
-		{ "monster_head",				ET_DOOM_MONSTER_HEAD },
-		{ "monster_skul",				ET_DOOM_MONSTER_SKUL },
-		{ "monster_pain",				ET_DOOM_MONSTER_PAIN },
-		{ "monster_spectre",			ET_DOOM_MONSTER_SPECTRE },
-		{ "monster_bspi",				ET_DOOM_MONSTER_BSPI },
-		{ "monster_skel",				ET_DOOM_MONSTER_SKEL },
-		{ "monster_baron",				ET_DOOM_MONSTER_BOSS },
-		{ "monster_bos2",				ET_DOOM_MONSTER_BOS2 },
-		{ "monster_spid",				ET_DOOM_MONSTER_SPID },
-		{ "monster_cybr",				ET_DOOM_MONSTER_CYBR }
+	// Doom
+	{ "monster_poss",				ET_DOOM_MONSTER_POSS },
+	{ "monster_spos",				ET_DOOM_MONSTER_SPOS },
+	{ "monster_troo",				ET_DOOM_MONSTER_TROO },
+	{ "monster_sarg",				ET_DOOM_MONSTER_SARG },
+	{ "monster_cpos",				ET_DOOM_MONSTER_CPOS },
+	{ "monster_head",				ET_DOOM_MONSTER_HEAD },
+	{ "monster_skul",				ET_DOOM_MONSTER_SKUL },
+	{ "monster_pain",				ET_DOOM_MONSTER_PAIN },
+	{ "monster_spectre",			ET_DOOM_MONSTER_SPECTRE },
+	{ "monster_bspi",				ET_DOOM_MONSTER_BSPI },
+	{ "monster_skel",				ET_DOOM_MONSTER_SKEL },
+	{ "monster_baron",				ET_DOOM_MONSTER_BOSS },
+	{ "monster_bos2",				ET_DOOM_MONSTER_BOS2 },
+	{ "monster_spid",				ET_DOOM_MONSTER_SPID },
+	{ "monster_cybr",				ET_DOOM_MONSTER_CYBR }
 };
 
 /*
@@ -335,9 +339,10 @@ Com_HashString
 unsigned Com_MyHashString(const char *s, unsigned size)
 {
 	unsigned hash, c;
-
 	hash = 0;
-	while (*s) {
+
+	while (*s)
+	{
 		c = *s++;
 		hash = c + (hash << 6) + (hash << 16) - hash;
 	}
@@ -360,6 +365,7 @@ static void init_classname_to_entitytype_hashes()
 
 	for (i = 0; i < CLASSHASH_SIZE; i++)
 		List_Init(&classname_to_entitytype_hash[i]);
+
 	for (i = 0; i < ITEMHASH_SIZE; i++)
 		List_Init(&gitem_hash[i]);
 
@@ -391,7 +397,6 @@ static entitytype_e get_entitytype_from_classname(const char *classname)
 {
 	uint32_t hash = HASH_FUNC(classname, CLASSHASH_SIZE);
 	classname_to_entitytype_t *entry;
-
 	LIST_FOR_EACH(classname_to_entitytype_t, entry, &classname_to_entitytype_hash[hash], hashEntry)
 	{
 		++num_strcmps;
@@ -400,15 +405,12 @@ static entitytype_e get_entitytype_from_classname(const char *classname)
 		{
 			cache_hits++;
 			num_old_strcmps += (entry - classname_to_entitytype);
-
 			return entry->entityid;
 		}
 
 		cache_misses++;
 	}
-
 	num_old_strcmps += ENTITY_NUM;
-
 	return ET_NULL;
 }
 
@@ -416,7 +418,6 @@ static itemid_e get_item_from_classname(const char *classname)
 {
 	uint32_t hash = HASH_FUNC(classname, ITEMHASH_SIZE);
 	gitem_t *entry;
-
 	LIST_FOR_EACH(gitem_t, entry, &gitem_hash[hash], hashEntry)
 	{
 		++num_strcmps;
@@ -425,19 +426,17 @@ static itemid_e get_item_from_classname(const char *classname)
 		{
 			cache_hits++;
 			num_old_strcmps += (entry - itemlist);
-
 			return GetIndexByItem(entry);
 		}
 
 		cache_misses++;
 	}
-
 	num_old_strcmps += ITI_TOTAL;
-
 	return ITI_NULL;
 }
 
-typedef struct {
+typedef struct
+{
 	entitytype_e	entityid;
 	spawnfunc_t		func;
 } entitytype_func_t;
@@ -596,7 +595,8 @@ static const entitytype_func_t doom_entitytype_funcs[] =
 	{ ET_DOOM_MONSTER_CYBR, doom_monster_cybr }
 };
 
-typedef struct {
+typedef struct
+{
 	spawnfunc_t		funcs[ENTITYTYPE_SPAWNABLE_COUNT];
 } game_spawn_func_list_t;
 
@@ -605,6 +605,7 @@ static game_spawn_func_list_t game_spawn_func_list[GAME_TOTAL];
 static void init_game_spawn_func_list(const entitytype_func_t *funcs, const size_t funccount, game_spawn_func_list_t *list)
 {
 	size_t i;
+
 	for (i = 0; i < funccount; ++i)
 		list->funcs[funcs[i].entityid] = funcs[i].func;
 }
@@ -620,6 +621,7 @@ static spawnfunc_t get_func_from_entitytype(entitytype_e id, gametype_t *game_pt
 {
 	// go through all types
 	gametype_t gametype;
+
 	for (gametype = GAME_Q2; gametype < GAME_TOTAL; ++gametype)
 	{
 		spawnfunc_t func = game_spawn_func_list[gametype].funcs[id];
@@ -634,7 +636,8 @@ static spawnfunc_t get_func_from_entitytype(entitytype_e id, gametype_t *game_pt
 	return NULL;
 }
 
-static const spawn_field_t spawn_fields[] = {
+static const spawn_field_t spawn_fields[] =
+{
 	{"model", FOFS(model), F_LSTRING},
 	{"spawnflags", FOFS(spawnflags), F_INT},
 	{"speed", FOFS(speed), F_FLOAT},
@@ -672,7 +675,8 @@ static const spawn_field_t spawn_fields[] = {
 };
 
 // temp spawn vars -- only valid when the spawn function is called
-static const spawn_field_t temp_fields[] = {
+static const spawn_field_t temp_fields[] =
+{
 	{"lip", STOFS(lip), F_INT},
 	{"distance", STOFS(distance), F_INT},
 	{"height", STOFS(height), F_INT},
@@ -707,7 +711,8 @@ Finds the spawn function for the entity and calls it
 
 bool randomize_enemies = false;
 
-typedef struct {
+typedef struct
+{
 	entitytype_e	root;
 	entitytype_e	replacements[8];
 } enemyrandomize_t;
@@ -814,6 +819,7 @@ enemyrandomize_t enemy_randomizations[] =
 entitytype_e randomize_monster(entitytype_e monster)
 {
 	size_t i;
+
 	for (i = 0; i < q_countof(enemy_randomizations); ++i)
 	{
 		enemyrandomize_t *randomize = &enemy_randomizations[i];
@@ -875,7 +881,7 @@ void ED_CallSpawn(edict_t *ent)
 		if (ED_CallSpawnByType(ent, type))
 			return;
 	}
-	
+
 	if (!Q_strncasecmp(spawnTemp.classname, "weapon_", 7))
 	{
 		SP_weapon(ent);
@@ -899,21 +905,22 @@ static char *ED_NewString(const char *string)
 {
 	char    *newb, *new_p;
 	int     i, l;
-
 	l = strlen(string) + 1;
-
 	newb = gi.TagMalloc(l, TAG_LEVEL);
-
 	new_p = newb;
 
-    for (i = 0 ; i < l ; i++) {
-		if (string[i] == '\\' && i < l - 1) {
+	for (i = 0 ; i < l ; i++)
+	{
+		if (string[i] == '\\' && i < l - 1)
+		{
 			i++;
+
 			if (string[i] == 'n')
 				*new_p++ = '\n';
 			else
 				*new_p++ = '\\';
-        } else
+		}
+		else
 			*new_p++ = string[i];
 	}
 
@@ -937,51 +944,65 @@ static bool ED_ParseField(const spawn_field_t *fields, const char *key, const ch
 	float   v;
 	vec3_t  vec;
 
-	for (f = fields ; f->name ; f++) {
-		if (!Q_stricmp(f->name, key)) {
+	for (f = fields ; f->name ; f++)
+	{
+		if (!Q_stricmp(f->name, key))
+		{
 			// found it
-			switch (f->type) {
-			case F_LSTRING:
-				*(char **)(b + f->ofs) = ED_NewString(value);
-				break;
-			case F_VECTOR:
-				if (sscanf(value, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3) {
-					gi.dprintf("%s: couldn't parse '%s'\n", __func__, key);
-					VectorClear(vec);
-				}
-				((float *)(b + f->ofs))[0] = vec[0];
-				((float *)(b + f->ofs))[1] = vec[1];
-				((float *)(b + f->ofs))[2] = vec[2];
-				break;
-			case F_INT:
-				*(int *)(b + f->ofs) = atoi(value);
-				break;
-			case F_FLOAT:
-				*(float *)(b + f->ofs) = atof(value);
-				break;
-			case F_ANGLEHACK:
-				v = atof(value);
-				((float *)(b + f->ofs))[0] = 0;
-				((float *)(b + f->ofs))[1] = v;
-				((float *)(b + f->ofs))[2] = 0;
-				break;
-			case F_IGNORE:
-				break;
-			case F_ZSTRING:
-				if (strlen(value) >= f->len)
-					gi.error("%s: key '%s' out of bounds", __func__, key);
+			switch (f->type)
+			{
+				case F_LSTRING:
+					*(char **)(b + f->ofs) = ED_NewString(value);
+					break;
 
-				{
-					char *ptr = (char *)(b + f->ofs);
-					Q_snprintf(ptr, f->len, "%s", value);
-				}
-				break;
-			default:
-				break;
+				case F_VECTOR:
+					if (sscanf(value, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3)
+					{
+						gi.dprintf("%s: couldn't parse '%s'\n", __func__, key);
+						VectorClear(vec);
+					}
+
+					((float *)(b + f->ofs))[0] = vec[0];
+					((float *)(b + f->ofs))[1] = vec[1];
+					((float *)(b + f->ofs))[2] = vec[2];
+					break;
+
+				case F_INT:
+					*(int *)(b + f->ofs) = atoi(value);
+					break;
+
+				case F_FLOAT:
+					*(float *)(b + f->ofs) = atof(value);
+					break;
+
+				case F_ANGLEHACK:
+					v = atof(value);
+					((float *)(b + f->ofs))[0] = 0;
+					((float *)(b + f->ofs))[1] = v;
+					((float *)(b + f->ofs))[2] = 0;
+					break;
+
+				case F_IGNORE:
+					break;
+
+				case F_ZSTRING:
+					if (strlen(value) >= f->len)
+						gi.error("%s: key '%s' out of bounds", __func__, key);
+
+					{
+						char *ptr = (char *)(b + f->ofs);
+						Q_snprintf(ptr, f->len, "%s", value);
+					}
+					break;
+
+				default:
+					break;
 			}
+
 			return true;
 		}
 	}
+
 	return false;
 }
 
@@ -997,21 +1018,24 @@ void ED_ParseEdict(const char **data, edict_t *ent)
 {
 	bool        init;
 	char        *key, *value;
-
 	init = false;
 	memset(&spawnTemp, 0, sizeof(spawnTemp));
 
-// go through all the dictionary pairs
-	while (1) {
+	// go through all the dictionary pairs
+	while (1)
+	{
 		// parse key
 		key = COM_Parse(data);
+
 		if (key[0] == '}')
 			break;
+
 		if (!*data)
 			gi.error("%s: EOF without closing brace", __func__);
 
 		// parse value
 		value = COM_Parse(data);
+
 		if (!*data)
 			gi.error("%s: EOF without closing brace", __func__);
 
@@ -1025,10 +1049,10 @@ void ED_ParseEdict(const char **data, edict_t *ent)
 		if (key[0] == '_')
 			continue;
 
-		if (!ED_ParseField(spawn_fields, key, value, (byte *)ent)) {
-			if (!ED_ParseField(temp_fields, key, value, (byte *)&spawnTemp)) {
+		if (!ED_ParseField(spawn_fields, key, value, (byte *)ent))
+		{
+			if (!ED_ParseField(temp_fields, key, value, (byte *)&spawnTemp))
 				gi.dprintf("%s: %s is not a field\n", __func__, key);
-			}
 		}
 	}
 
@@ -1052,28 +1076,38 @@ void G_FindTeams(void)
 	edict_t *e, *e2, *chain;
 	int     i, j;
 	int     c, c2;
-
 	c = 0;
 	c2 = 0;
-    for (i = 1, e = g_edicts + i ; i < globals.num_edicts ; i++, e++) {
+
+	for (i = 1, e = g_edicts + i ; i < globals.num_edicts ; i++, e++)
+	{
 		if (!e->inuse)
 			continue;
+
 		if (!e->team)
 			continue;
+
 		if (e->flags & FL_TEAMSLAVE)
 			continue;
+
 		chain = e;
 		e->teammaster = e;
 		c++;
 		c2++;
-        for (j = i + 1, e2 = e + 1 ; j < globals.num_edicts ; j++, e2++) {
+
+		for (j = i + 1, e2 = e + 1 ; j < globals.num_edicts ; j++, e2++)
+		{
 			if (!e2->inuse)
 				continue;
+
 			if (!e2->team)
 				continue;
+
 			if (e2->flags & FL_TEAMSLAVE)
 				continue;
-			if (!strcmp(e->team, e2->team)) {
+
+			if (!strcmp(e->team, e2->team))
+			{
 				c2++;
 				chain->teamchain = e2;
 				e2->teammaster = e;
@@ -1099,38 +1133,34 @@ parsing textual entity definitions out of an ent file.
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint)
 {
 	Q_srand(game.random_seed);
-
 	randomize_enemies = true;
-
 	init_classname_to_entitytype_hashes();
 	init_game_spawn_func_lists();
-
 	edict_t     *ent;
 	int         inhibit;
 	char        *com_token;
 	int         i;
 	float       skill_level;
-
 	skill_level = floorf(skill->value);
+
 	if (skill_level < 0)
 		skill_level = 0;
+
 	if (skill_level > 3)
 		skill_level = 3;
+
 	if (skill->value != skill_level)
 		gi.cvar_forceset("skill", va("%f", skill_level));
 
 	SaveClientData();
-
 	gi.FreeTags(TAG_LEVEL);
-
 	memset(&level, 0, sizeof(level));
 	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
-
 	Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
 	Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
 
 	// set client fields on player ents
-    for (i = 0 ; i < game.maxclients ; i++)
+	for (i = 0 ; i < game.maxclients ; i++)
 		g_edicts[i + 1].client = game.clients + i;
 
 	ent = NULL;
@@ -1139,12 +1169,15 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 	if (!level.spawn_rand)
 		level.spawn_rand = time(NULL);
 
-// parse ents
-	while (1) {
+	// parse ents
+	while (1)
+	{
 		// parse the opening brace
 		com_token = COM_Parse(&entities);
+
 		if (!entities)
 			break;
+
 		if (com_token[0] != '{')
 			gi.error("ED_LoadFromFile: found %s when expecting {", com_token);
 
@@ -1152,6 +1185,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 			ent = g_edicts;
 		else
 			ent = G_Spawn();
+
 		ED_ParseEdict(&entities, ent);
 
 		// yet another map hack
@@ -1159,19 +1193,25 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 			ent->spawnflags &= ~SPAWNFLAG_NOT_HARD;
 
 		// remove things (except the world) from different skill levels or deathmatch
-		if (ent != g_edicts) {
-			if (deathmatch->value) {
-				if (ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH) {
+		if (ent != g_edicts)
+		{
+			if (deathmatch->value)
+			{
+				if (ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH)
+				{
 					G_FreeEdict(ent);
 					inhibit++;
 					continue;
 				}
-            } else {
+			}
+			else
+			{
 				if ( /* ((coop->value) && (ent->spawnflags & SPAWNFLAG_NOT_COOP)) || */
 					((skill->value == 0) && (ent->spawnflags & SPAWNFLAG_NOT_EASY)) ||
 					((skill->value == 1) && (ent->spawnflags & SPAWNFLAG_NOT_MEDIUM)) ||
 					(((skill->value == 2) || (skill->value == 3)) && (ent->spawnflags & SPAWNFLAG_NOT_HARD))
-					) {
+				)
+				{
 					G_FreeEdict(ent);
 					inhibit++;
 					continue;
@@ -1186,21 +1226,21 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
 	randomize_enemies = false;
 	gi.dprintf("%i entities inhibited\n", inhibit);
-
 #ifdef DEBUG
 	i = 1;
 	ent = EDICT_NUM(i);
-	while (i < globals.num_edicts) {
+
+	while (i < globals.num_edicts)
+	{
 		if (ent->inuse != 0 || ent->inuse != 1)
 			Com_DPrintf("Invalid entity %d\n", i);
+
 		i++, ent++;
 	}
+
 #endif
-
 	G_FindTeams();
-
 	AI_NewMap();//JABot
-
 	Spawn_Weapons();
 }
 
@@ -1220,7 +1260,8 @@ static void SetItemNames(void)
 	int     i;
 	gitem_t *it;
 
-    for (i = 0 ; i < game.num_items ; i++) {
+	for (i = 0 ; i < game.num_items ; i++)
+	{
 		it = &itemlist[i];
 		gi.configstring(CS_ITEMS + i, it->pickup_name);
 	}
@@ -1243,12 +1284,9 @@ void SP_worldspawn(edict_t *ent)
 	ent->solid = SOLID_BSP;
 	ent->inuse = true;          // since the world doesn't use G_Spawn()
 	ent->s.modelindex = 1;      // world model is always index 1
-
 	//---------------
-
 	// reserve some spots for dead player bodies for coop / deathmatch
 	InitBodyQue();
-
 	SetItemNames();
 
 	if (spawnTemp.nextmap)
@@ -1256,10 +1294,12 @@ void SP_worldspawn(edict_t *ent)
 
 	// make some data visible to the server
 
-	if (ent->message && ent->message[0]) {
+	if (ent->message && ent->message[0])
+	{
 		gi.configstring(CS_NAME, ent->message);
 		Q_strlcpy(level.level_name, ent->message, sizeof(level.level_name));
-    } else
+	}
+	else
 		Q_strlcpy(level.level_name, level.mapname, sizeof(level.level_name));
 
 	if (spawnTemp.sky && spawnTemp.sky[0])
@@ -1268,12 +1308,9 @@ void SP_worldspawn(edict_t *ent)
 		gi.configstring(CS_SKY, "unit1_");
 
 	gi.configstring(CS_SKYROTATE, va("%f", spawnTemp.skyrotate));
-
 	gi.configstring(CS_SKYAXIS, va("%f %f %f",
-								   spawnTemp.skyaxis[0], spawnTemp.skyaxis[1], spawnTemp.skyaxis[2]));
-
+			spawnTemp.skyaxis[0], spawnTemp.skyaxis[1], spawnTemp.skyaxis[2]));
 	gi.configstring(CS_CDTRACK, va("%i", ent->sounds));
-
 	gi.configstring(CS_MAXCLIENTS, va("%i", (int)(maxclients->value)));
 
 	// status bar program
@@ -1287,8 +1324,6 @@ void SP_worldspawn(edict_t *ent)
 		gi.configstring(CS_GAMEMODE, "singleplayer");
 
 	//---------------
-
-
 	// help icon for statusbar
 	gi.imageindex("i_help");
 	level.pic_health = gi.imageindex("i_health");
@@ -1301,18 +1336,13 @@ void SP_worldspawn(edict_t *ent)
 		gi.cvar_set("sv_gravity", spawnTemp.gravity);
 
 	snd_fry = gi.soundindex("player/fry.wav");  // standing in lava / slime
-
 	gi.soundindex("player/lava1.wav");
 	gi.soundindex("player/lava2.wav");
-
 	gi.soundindex("misc/pc_up.wav");
 	gi.soundindex("misc/talk1.wav");
-
 	gi.soundindex("misc/udeath.wav");
-
 	// gibs
 	gi.soundindex("items/respawn1.wav");
-
 	// sexed sounds
 	gi.soundindex("*death1.wav");
 	gi.soundindex("*death2.wav");
@@ -1331,38 +1361,30 @@ void SP_worldspawn(edict_t *ent)
 	gi.soundindex("*pain75_2.wav");
 	gi.soundindex("*pain100_1.wav");
 	gi.soundindex("*pain100_2.wav");
-
 	// sexed models
 	// THIS ORDER MUST MATCH THE DEFINES IN g_local.h
 	// you can add more, max 15
 	itemid_e item;
+
 	for (item = ITI_WEAPONS_START; item <= ITI_WEAPONS_END; item++)
 		gi.modelindex(GetItemByIndex(item)->weapmodel);
 
 	//-------------------
-
 	gi.soundindex("player/gasp1.wav");      // gasping for air
 	gi.soundindex("player/gasp2.wav");      // head breaking surface, not gasping
-
 	gi.soundindex("player/watr_in.wav");    // feet hitting water
 	gi.soundindex("player/watr_out.wav");   // feet leaving water
-
 	gi.soundindex("player/watr_un.wav");    // head going underwater
-
 	gi.soundindex("player/u_breath1.wav");
 	gi.soundindex("player/u_breath2.wav");
-
 	gi.soundindex("items/pkup.wav");        // bonus item pickup
 	gi.soundindex("world/land.wav");        // landing thud
 	gi.soundindex("misc/h2ohit1.wav");      // landing splash
-
 	gi.soundindex("items/damage.wav");
 	gi.soundindex("items/protect.wav");
 	gi.soundindex("items/protect4.wav");
 	gi.soundindex("weapons/noammo.wav");
-
 	gi.soundindex("infantry/inflies1.wav");
-
 	sm_meat_index = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
 	gi.modelindex("models/objects/gibs/arm/tris.md2");
 	gi.modelindex("models/objects/gibs/bone/tris.md2");
@@ -1370,49 +1392,34 @@ void SP_worldspawn(edict_t *ent)
 	gi.modelindex("models/objects/gibs/chest/tris.md2");
 	gi.modelindex("models/objects/gibs/skull/tris.md2");
 	gi.modelindex("models/objects/gibs/head2/tris.md2");
-
-//
-// Setup light animation tables. 'a' is total darkness, 'z' is doublebright.
-//
-
-		// 0 normal
+	//
+	// Setup light animation tables. 'a' is total darkness, 'z' is doublebright.
+	//
+	// 0 normal
 	gi.configstring(CS_LIGHTS + 0, "m");
-
 	// 1 FLICKER (first variety)
 	gi.configstring(CS_LIGHTS + 1, "mmnmmommommnonmmonqnmmo");
-
 	// 2 SLOW STRONG PULSE
 	gi.configstring(CS_LIGHTS + 2, "abcdefghijklmnopqrstuvwxyzyxwvutsrqponmlkjihgfedcba");
-
 	// 3 CANDLE (first variety)
 	gi.configstring(CS_LIGHTS + 3, "mmmmmaaaaammmmmaaaaaabcdefgabcdefg");
-
 	// 4 FAST STROBE
 	gi.configstring(CS_LIGHTS + 4, "mamamamamama");
-
 	// 5 GENTLE PULSE 1
 	gi.configstring(CS_LIGHTS + 5, "jklmnopqrstuvwxyzyxwvutsrqponmlkj");
-
 	// 6 FLICKER (second variety)
 	gi.configstring(CS_LIGHTS + 6, "nmonqnmomnmomomno");
-
 	// 7 CANDLE (second variety)
 	gi.configstring(CS_LIGHTS + 7, "mmmaaaabcdefgmmmmaaaammmaamm");
-
 	// 8 CANDLE (third variety)
 	gi.configstring(CS_LIGHTS + 8, "mmmaaammmaaammmabcdefaaaammmmabcdefmmmaaaa");
-
 	// 9 SLOW STROBE (fourth variety)
 	gi.configstring(CS_LIGHTS + 9, "aaaaaaaazzzzzzzz");
-
 	// 10 FLUORESCENT FLICKER
 	gi.configstring(CS_LIGHTS + 10, "mmamammmmammamamaaamammma");
-
 	// 11 SLOW PULSE NOT FADE TO BLACK
 	gi.configstring(CS_LIGHTS + 11, "abcdefghijklmnopqrrqponmlkjihgfedcba");
-
 	// styles 32-62 are assigned by the light program for switchable lights
-
 	// 63 testing
 	gi.configstring(CS_LIGHTS + 63, "a");
 

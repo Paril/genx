@@ -21,26 +21,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static char *ClientTeam(edict_t *ent)
 {
-    char        *p;
-    static char value[512];
+	char        *p;
+	static char value[512];
+	value[0] = 0;
 
-    value[0] = 0;
+	if (!ent->client)
+		return value;
 
-    if (!ent->client)
-        return value;
+	strcpy(value, Info_ValueForKey(ent->client->pers.userinfo, "skin"));
+	p = strchr(value, '/');
 
-    strcpy(value, Info_ValueForKey(ent->client->pers.userinfo, "skin"));
-    p = strchr(value, '/');
-    if (!p)
-        return value;
+	if (!p)
+		return value;
 
-    if ((int)(dmflags->value) & DF_MODELTEAMS) {
-        *p = 0;
-        return value;
-    }
+	if ((int)(dmflags->value) & DF_MODELTEAMS)
+	{
+		*p = 0;
+		return value;
+	}
 
-    // if ((int)(dmflags->value) & DF_SKINTEAMS)
-    return ++p;
+	// if ((int)(dmflags->value) & DF_SKINTEAMS)
+	return ++p;
 }
 
 bool OnSameTeam(edict_t *ent1, edict_t *ent2)
@@ -56,93 +57,103 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2)
 		return false;
 	}
 
-    char    ent1Team [512];
-    char    ent2Team [512];
+	char    ent1Team [512];
+	char    ent2Team [512];
 
-    if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
-        return false;
+	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
+		return false;
 
-    strcpy(ent1Team, ClientTeam(ent1));
-    strcpy(ent2Team, ClientTeam(ent2));
+	strcpy(ent1Team, ClientTeam(ent1));
+	strcpy(ent2Team, ClientTeam(ent2));
 
-    if (strcmp(ent1Team, ent2Team) == 0)
-        return true;
-    return false;
+	if (strcmp(ent1Team, ent2Team) == 0)
+		return true;
+
+	return false;
 }
 
 
 static void SelectNextItem(edict_t *ent, int itflags)
 {
-    gclient_t   *cl;
-    itemid_e    i, index;
-    gitem_t     *it;
+	gclient_t   *cl;
+	itemid_e    i, index;
+	gitem_t     *it;
+	cl = ent->client;
 
-    cl = ent->client;
+	if (cl->chase_target)
+	{
+		ChaseNext(ent);
+		return;
+	}
 
-    if (cl->chase_target) {
-        ChaseNext(ent);
-        return;
-    }
+	// scan  for the next valid one
+	for (i = ITI_FIRST; i <= ITI_TOTAL; i++)
+	{
+		index = (itemid_e)((cl->pers.selected_item + i) % ITI_TOTAL);
 
-    // scan  for the next valid one
-    for (i = ITI_FIRST; i <= ITI_TOTAL; i++) {
-        index = (itemid_e)((cl->pers.selected_item + i) % ITI_TOTAL);
-        if (!cl->pers.inventory[index])
-            continue;
-        it = &itemlist[index];
-        if (!it->use)
-            continue;
-        if (!(it->flags & itflags))
-            continue;
+		if (!cl->pers.inventory[index])
+			continue;
 
-        cl->pers.selected_item = index;
-        return;
-    }
+		it = &itemlist[index];
 
-    cl->pers.selected_item = ITI_NULL;
+		if (!it->use)
+			continue;
+
+		if (!(it->flags & itflags))
+			continue;
+
+		cl->pers.selected_item = index;
+		return;
+	}
+
+	cl->pers.selected_item = ITI_NULL;
 }
 
 static void SelectPrevItem(edict_t *ent, int itflags)
 {
-    gclient_t   *cl;
+	gclient_t   *cl;
 	itemid_e    i, index;
-    gitem_t     *it;
+	gitem_t     *it;
+	cl = ent->client;
 
-    cl = ent->client;
+	if (cl->chase_target)
+	{
+		ChasePrev(ent);
+		return;
+	}
 
-    if (cl->chase_target) {
-        ChasePrev(ent);
-        return;
-    }
+	// scan  for the next valid one
+	for (i = ITI_FIRST; i <= ITI_TOTAL; i++)
+	{
+		index = (itemid_e)((cl->pers.selected_item + ITI_TOTAL - i) % ITI_TOTAL);
 
-    // scan  for the next valid one
-    for (i = ITI_FIRST; i <= ITI_TOTAL; i++) {
-        index = (itemid_e)((cl->pers.selected_item + ITI_TOTAL - i) % ITI_TOTAL);
-        if (!cl->pers.inventory[index])
-            continue;
-        it = &itemlist[index];
-        if (!it->use)
-            continue;
-        if (!(it->flags & itflags))
-            continue;
+		if (!cl->pers.inventory[index])
+			continue;
 
-        cl->pers.selected_item = index;
-        return;
-    }
+		it = &itemlist[index];
 
-    cl->pers.selected_item = ITI_NULL;
+		if (!it->use)
+			continue;
+
+		if (!(it->flags & itflags))
+			continue;
+
+		cl->pers.selected_item = index;
+		return;
+	}
+
+	cl->pers.selected_item = ITI_NULL;
 }
 
 void ValidateSelectedItem(edict_t *ent)
 {
-    gclient_t   *cl;
+	gclient_t   *cl;
+	cl = ent->client;
 
-    cl = ent->client;
+	if (cl->pers.inventory[cl->pers.selected_item])
+		return;     // valid
 
-    if (cl->pers.inventory[cl->pers.selected_item])
-        return;     // valid
-
-    SelectNextItem(ent, -1);
+	SelectNextItem(ent, -1);
 }
 
 
@@ -154,24 +165,22 @@ static edict_t *last_spawn;
 
 static void Cmd_Spawn_f(edict_t *ent)
 {
-	if (deathmatch->value && !sv_cheats->value) {
+	if (deathmatch->value && !sv_cheats->value)
+	{
 		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
 		return;
 	}
 
 	vec3_t fwd, ang = { 0, ent->client->v_angle[1], 0 };
 	AngleVectors(ang, fwd, NULL, NULL);
-
 	edict_t *s = G_Spawn();
 	VectorMA(ent->s.origin, 128, fwd, s->s.origin);
 	s->s.origin[2] += 3;
 	VectorClear(s->s.angles);
 	s->s.angles[1] = ang[1];
 	Q_snprintf(spawnTemp.classname, sizeof(spawnTemp.classname), "%s", gi.args());
-
 	ED_CallSpawn(s);
 	gi.linkentity(s);
-
 	last_spawn = s;
 }
 
@@ -195,121 +204,146 @@ Give items to a client
 */
 static void Cmd_Give_f(edict_t *ent)
 {
-    char        *name;
-    gitem_t     *it;
-    int         index;
-    int         i;
-    bool        give_all;
-    edict_t     *it_ent;
+	char        *name;
+	gitem_t     *it;
+	int         index;
+	int         i;
+	bool        give_all;
+	edict_t     *it_ent;
 
-    if (deathmatch->value && !sv_cheats->value) {
-        gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
-        return;
-    }
-
-    name = gi.args();
-
-    if (Q_stricmp(name, "all") == 0)
-        give_all = true;
-    else
-        give_all = false;
-
-    if (give_all || Q_stricmp(gi.argv(1), "health") == 0) {
-        if (gi.argc() == 3)
-            ent->health = atoi(gi.argv(2));
-        else
-            ent->health = ent->max_health;
-        if (!give_all)
-            return;
-    }
-
-    if (give_all || Q_stricmp(name, "weapons") == 0) {
-        for (i = 0 ; i < game.num_items ; i++) {
-            it = itemlist + i;
-            if (!it->pickup)
-                continue;
-            if (!(it->flags & IT_WEAPON))
-                continue;
-            ent->client->pers.inventory[i] += 1;
-        }
-        if (!give_all)
-            return;
-    }
-
-    if (give_all || Q_stricmp(name, "ammo") == 0) {
-        Add_Ammo(ent, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), ITI_NULL, false);
-
-        if (!give_all)
-            return;
-    }
-
-    if (give_all || Q_stricmp(name, "armor") == 0) {
-        gitem_armor_t   *info;
-
-        ent->client->pers.inventory[ITI_JACKET_ARMOR] = 0;
-        ent->client->pers.inventory[ITI_BODY_ARMOR] = 0;
-
-		info = &game_iteminfos[ent->s.game].armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR];
-        ent->client->pers.inventory[ITI_BODY_ARMOR] = info->max_count;
-
-        if (!give_all)
-            return;
-    }
-
-    if (ent->s.game == GAME_Q2 && (give_all || Q_stricmp(name, "Power Shield") == 0))
+	if (deathmatch->value && !sv_cheats->value)
 	{
-        it = GetItemByIndex(ITI_POWER_SHIELD);
-        it_ent = G_Spawn();
-        SpawnItem(it_ent, it);
-        Touch_Item(it_ent, ent, NULL, NULL);
-        if (it_ent->inuse)
-            G_FreeEdict(it_ent);
+		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+		return;
+	}
 
-        if (!give_all)
-            return;
-    }
+	name = gi.args();
 
-    if (give_all) {
-        for (i = 0 ; i < game.num_items ; i++) {
-            it = itemlist + i;
-            if (!it->pickup)
-                continue;
-            if (it->flags & (IT_ARMOR | IT_WEAPON | IT_AMMO))
-                continue;
-            ent->client->pers.inventory[i] = 1;
-        }
-        return;
-    }
+	if (Q_stricmp(name, "all") == 0)
+		give_all = true;
+	else
+		give_all = false;
 
-    it = FindItem(name);
-    if (!it) {
-        name = gi.argv(1);
-        it = FindItem(name);
-        if (!it) {
-            gi.cprintf(ent, PRINT_HIGH, "unknown item\n");
-            return;
-        }
-    }
+	if (give_all || Q_stricmp(gi.argv(1), "health") == 0)
+	{
+		if (gi.argc() == 3)
+			ent->health = atoi(gi.argv(2));
+		else
+			ent->health = ent->max_health;
 
-    if (!it->pickup) {
-        gi.cprintf(ent, PRINT_HIGH, "non-pickup item\n");
-        return;
-    }
+		if (!give_all)
+			return;
+	}
 
-    index = ITEM_INDEX(it);
+	if (give_all || Q_stricmp(name, "weapons") == 0)
+	{
+		for (i = 0 ; i < game.num_items ; i++)
+		{
+			it = itemlist + i;
 
-    if (it->flags & IT_AMMO) {
-        /*if (gi.argc() == 3)
-            ent->client->pers.inventory[index] = atoi(gi.argv(2));
-        else
-            ent->client->pers.inventory[index] += game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];*/
-    } else {
-        it_ent = G_Spawn();
-        SpawnItem(it_ent, it);
-        Touch_Item(it_ent, ent, NULL, NULL);
-        if (it_ent->inuse)
-            G_FreeEdict(it_ent);
-    }
+			if (!it->pickup)
+				continue;
+
+			if (!(it->flags & IT_WEAPON))
+				continue;
+
+			ent->client->pers.inventory[i] += 1;
+		}
+
+		if (!give_all)
+			return;
+	}
+
+	if (give_all || Q_stricmp(name, "ammo") == 0)
+	{
+		Add_Ammo(ent, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), ITI_NULL, false);
+
+		if (!give_all)
+			return;
+	}
+
+	if (give_all || Q_stricmp(name, "armor") == 0)
+	{
+		gitem_armor_t   *info;
+		ent->client->pers.inventory[ITI_JACKET_ARMOR] = 0;
+		ent->client->pers.inventory[ITI_BODY_ARMOR] = 0;
+		info = &game_iteminfos[ent->s.game].armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR];
+		ent->client->pers.inventory[ITI_BODY_ARMOR] = info->max_count;
+
+		if (!give_all)
+			return;
+	}
+
+	if (ent->s.game == GAME_Q2 && (give_all || Q_stricmp(name, "Power Shield") == 0))
+	{
+		it = GetItemByIndex(ITI_POWER_SHIELD);
+		it_ent = G_Spawn();
+		SpawnItem(it_ent, it);
+		Touch_Item(it_ent, ent, NULL, NULL);
+
+		if (it_ent->inuse)
+			G_FreeEdict(it_ent);
+
+		if (!give_all)
+			return;
+	}
+
+	if (give_all)
+	{
+		for (i = 0 ; i < game.num_items ; i++)
+		{
+			it = itemlist + i;
+
+			if (!it->pickup)
+				continue;
+
+			if (it->flags & (IT_ARMOR | IT_WEAPON | IT_AMMO))
+				continue;
+
+			ent->client->pers.inventory[i] = 1;
+		}
+
+		return;
+	}
+
+	it = FindItem(name);
+
+	if (!it)
+	{
+		name = gi.argv(1);
+		it = FindItem(name);
+
+		if (!it)
+		{
+			gi.cprintf(ent, PRINT_HIGH, "unknown item\n");
+			return;
+		}
+	}
+
+	if (!it->pickup)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "non-pickup item\n");
+		return;
+	}
+
+	index = ITEM_INDEX(it);
+
+	if (it->flags & IT_AMMO)
+	{
+		/*if (gi.argc() == 3)
+		    ent->client->pers.inventory[index] = atoi(gi.argv(2));
+		else
+		    ent->client->pers.inventory[index] += game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];*/
+	}
+	else
+	{
+		it_ent = G_Spawn();
+		SpawnItem(it_ent, it);
+		Touch_Item(it_ent, ent, NULL, NULL);
+
+		if (it_ent->inuse)
+			G_FreeEdict(it_ent);
+	}
 }
 
 
@@ -324,20 +358,22 @@ argv(0) god
 */
 static void Cmd_God_f(edict_t *ent)
 {
-    char    *msg;
+	char    *msg;
 
-    if (deathmatch->value && !sv_cheats->value) {
-        gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
-        return;
-    }
+	if (deathmatch->value && !sv_cheats->value)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+		return;
+	}
 
-    ent->flags ^= FL_GODMODE;
-    if (!(ent->flags & FL_GODMODE))
-        msg = "godmode OFF\n";
-    else
-        msg = "godmode ON\n";
+	ent->flags ^= FL_GODMODE;
 
-    gi.cprintf(ent, PRINT_HIGH, msg);
+	if (!(ent->flags & FL_GODMODE))
+		msg = "godmode OFF\n";
+	else
+		msg = "godmode ON\n";
+
+	gi.cprintf(ent, PRINT_HIGH, msg);
 }
 
 
@@ -352,20 +388,22 @@ argv(0) notarget
 */
 static void Cmd_Notarget_f(edict_t *ent)
 {
-    char    *msg;
+	char    *msg;
 
-    if (deathmatch->value && !sv_cheats->value) {
-        gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
-        return;
-    }
+	if (deathmatch->value && !sv_cheats->value)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+		return;
+	}
 
-    ent->flags ^= FL_NOTARGET;
-    if (!(ent->flags & FL_NOTARGET))
-        msg = "notarget OFF\n";
-    else
-        msg = "notarget ON\n";
+	ent->flags ^= FL_NOTARGET;
 
-    gi.cprintf(ent, PRINT_HIGH, msg);
+	if (!(ent->flags & FL_NOTARGET))
+		msg = "notarget OFF\n";
+	else
+		msg = "notarget ON\n";
+
+	gi.cprintf(ent, PRINT_HIGH, msg);
 }
 
 
@@ -378,22 +416,26 @@ argv(0) noclip
 */
 static void Cmd_Noclip_f(edict_t *ent)
 {
-    char    *msg;
+	char    *msg;
 
-    if (deathmatch->value && !sv_cheats->value) {
-        gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
-        return;
-    }
+	if (deathmatch->value && !sv_cheats->value)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+		return;
+	}
 
-    if (ent->movetype == MOVETYPE_NOCLIP) {
-        ent->movetype = MOVETYPE_WALK;
-        msg = "noclip OFF\n";
-    } else {
-        ent->movetype = MOVETYPE_NOCLIP;
-        msg = "noclip ON\n";
-    }
+	if (ent->movetype == MOVETYPE_NOCLIP)
+	{
+		ent->movetype = MOVETYPE_WALK;
+		msg = "noclip OFF\n";
+	}
+	else
+	{
+		ent->movetype = MOVETYPE_NOCLIP;
+		msg = "noclip ON\n";
+	}
 
-    gi.cprintf(ent, PRINT_HIGH, msg);
+	gi.cprintf(ent, PRINT_HIGH, msg);
 }
 
 
@@ -406,18 +448,17 @@ Use an inventory item
 */
 static void Cmd_Use_f(edict_t *ent)
 {
-    int         index;
-    gitem_t     *it;
-    char        *s;
+	int         index;
+	gitem_t     *it;
+	char        *s;
+	s = gi.args();
+	it = FindItem(s);
 
-    s = gi.args();
-    it = FindItem(s);
-    
 	if (!it)
 	{
-        gi.cprintf(ent, PRINT_HIGH, "unknown item: %s\n", s);
-        return;
-    }
+		gi.cprintf(ent, PRINT_HIGH, "unknown item: %s\n", s);
+		return;
+	}
 
 	gitem_t *real_it = ResolveInventoryItem(ent, it);
 
@@ -429,20 +470,21 @@ static void Cmd_Use_f(edict_t *ent)
 		it = real_it;
 	}
 
-    if (!it->use)
+	if (!it->use)
 	{
-        gi.cprintf(ent, PRINT_HIGH, "Item is not usable.\n");
-        return;
-    }
+		gi.cprintf(ent, PRINT_HIGH, "Item is not usable.\n");
+		return;
+	}
 
-    index = ITEM_INDEX(it);
-    if (!ent->client->pers.inventory[index] && game_iteminfos[GAME_DUKE].ammo_usages[index] != 0)
+	index = ITEM_INDEX(it);
+
+	if (!ent->client->pers.inventory[index] && game_iteminfos[GAME_DUKE].ammo_usages[index] != 0)
 	{
-        gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
-        return;
-    }
+		gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
+		return;
+	}
 
-    it->use(ent, it);
+	it->use(ent, it);
 }
 
 
@@ -455,27 +497,33 @@ Drop an inventory item
 */
 static void Cmd_Drop_f(edict_t *ent)
 {
-    int         index;
-    gitem_t     *it;
-    char        *s;
+	int         index;
+	gitem_t     *it;
+	char        *s;
+	s = gi.args();
+	it = FindItem(s);
 
-    s = gi.args();
-    it = FindItem(s);
-    if (!it) {
-        gi.cprintf(ent, PRINT_HIGH, "unknown item: %s\n", s);
-        return;
-    }
-    if (!it->drop) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not dropable.\n");
-        return;
-    }
-    index = ITEM_INDEX(it);
-    if (!ent->client->pers.inventory[index]) {
-        gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
-        return;
-    }
+	if (!it)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "unknown item: %s\n", s);
+		return;
+	}
 
-    it->drop(ent, it);
+	if (!it->drop)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Item is not dropable.\n");
+		return;
+	}
+
+	index = ITEM_INDEX(it);
+
+	if (!ent->client->pers.inventory[index])
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
+		return;
+	}
+
+	it->drop(ent, it);
 }
 
 
@@ -486,27 +534,25 @@ Cmd_Inven_f
 */
 static void Cmd_Inven_f(edict_t *ent)
 {
-    gclient_t   *cl;
+	gclient_t   *cl;
 	itemid_e	i;
+	cl = ent->client;
+	cl->showscores = false;
+	cl->showhelp = false;
 
-    cl = ent->client;
+	if (cl->showinventory)
+	{
+		cl->showinventory = false;
+		return;
+	}
 
-    cl->showscores = false;
-    cl->showhelp = false;
+	cl->showinventory = true;
+	gi.WriteByte(svc_inventory);
 
-    if (cl->showinventory) {
-        cl->showinventory = false;
-        return;
-    }
-
-    cl->showinventory = true;
-
-    gi.WriteByte(svc_inventory);
-
-    for (i = ITI_NULL; i < ITI_TOTAL; i++)
+	for (i = ITI_NULL; i < ITI_TOTAL; i++)
 		gi.WriteShort(cl->pers.inventory[i]);
 
-    gi.unicast(ent, true);
+	gi.unicast(ent, true);
 }
 
 /*
@@ -516,21 +562,24 @@ Cmd_InvUse_f
 */
 static void Cmd_InvUse_f(edict_t *ent)
 {
-    gitem_t     *it;
+	gitem_t     *it;
+	ValidateSelectedItem(ent);
 
-    ValidateSelectedItem(ent);
+	if (ent->client->pers.selected_item == ITI_NULL)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "No item to use.\n");
+		return;
+	}
 
-    if (ent->client->pers.selected_item == ITI_NULL) {
-        gi.cprintf(ent, PRINT_HIGH, "No item to use.\n");
-        return;
-    }
+	it = &itemlist[ent->client->pers.selected_item];
 
-    it = &itemlist[ent->client->pers.selected_item];
-    if (!it->use) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not usable.\n");
-        return;
-    }
-    it->use(ent, it);
+	if (!it->use)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Item is not usable.\n");
+		return;
+	}
+
+	it->use(ent, it);
 }
 
 /*
@@ -540,32 +589,38 @@ Cmd_WeapPrev_f
 */
 static void Cmd_WeapPrev_f(edict_t *ent)
 {
-    gclient_t   *cl;
-    int         i, index;
-    gitem_t     *it;
-    int         selected_weapon;
+	gclient_t   *cl;
+	int         i, index;
+	gitem_t     *it;
+	int         selected_weapon;
+	cl = ent->client;
 
-    cl = ent->client;
+	if (!cl->pers.weapon)
+		return;
 
-    if (!cl->pers.weapon)
-        return;
+	selected_weapon = ITEM_INDEX(cl->pers.weapon);
 
-    selected_weapon = ITEM_INDEX(cl->pers.weapon);
+	// scan  for the next valid one
+	for (i = 1 ; i <= ITI_TOTAL; i++)
+	{
+		index = (selected_weapon + i) % ITI_TOTAL;
 
-    // scan  for the next valid one
-    for (i = 1 ; i <= ITI_TOTAL; i++) {
-        index = (selected_weapon + i) % ITI_TOTAL;
-        if (!cl->pers.inventory[index])
-            continue;
-        it = &itemlist[index];
-        if (!it->use)
-            continue;
-        if (!(it->flags & IT_WEAPON))
-            continue;
-        it->use(ent, it);
-        if (cl->pers.weapon == it)
-            return; // successful
-    }
+		if (!cl->pers.inventory[index])
+			continue;
+
+		it = &itemlist[index];
+
+		if (!it->use)
+			continue;
+
+		if (!(it->flags & IT_WEAPON))
+			continue;
+
+		it->use(ent, it);
+
+		if (cl->pers.weapon == it)
+			return; // successful
+	}
 }
 
 /*
@@ -575,32 +630,38 @@ Cmd_WeapNext_f
 */
 static void Cmd_WeapNext_f(edict_t *ent)
 {
-    gclient_t   *cl;
-    int         i, index;
-    gitem_t     *it;
-    int         selected_weapon;
+	gclient_t   *cl;
+	int         i, index;
+	gitem_t     *it;
+	int         selected_weapon;
+	cl = ent->client;
 
-    cl = ent->client;
+	if (!cl->pers.weapon)
+		return;
 
-    if (!cl->pers.weapon)
-        return;
+	selected_weapon = ITEM_INDEX(cl->pers.weapon);
 
-    selected_weapon = ITEM_INDEX(cl->pers.weapon);
+	// scan  for the next valid one
+	for (i = 1 ; i <= ITI_TOTAL; i++)
+	{
+		index = (selected_weapon + ITI_TOTAL - i) % ITI_TOTAL;
 
-    // scan  for the next valid one
-    for (i = 1 ; i <= ITI_TOTAL; i++) {
-        index = (selected_weapon + ITI_TOTAL - i) % ITI_TOTAL;
-        if (!cl->pers.inventory[index])
-            continue;
-        it = &itemlist[index];
-        if (!it->use)
-            continue;
-        if (!(it->flags & IT_WEAPON))
-            continue;
-        it->use(ent, it);
-        if (cl->pers.weapon == it)
-            return; // successful
-    }
+		if (!cl->pers.inventory[index])
+			continue;
+
+		it = &itemlist[index];
+
+		if (!it->use)
+			continue;
+
+		if (!(it->flags & IT_WEAPON))
+			continue;
+
+		it->use(ent, it);
+
+		if (cl->pers.weapon == it)
+			return; // successful
+	}
 }
 
 /*
@@ -610,24 +671,28 @@ Cmd_WeapLast_f
 */
 static void Cmd_WeapLast_f(edict_t *ent)
 {
-    gclient_t   *cl;
-    int         index;
-    gitem_t     *it;
+	gclient_t   *cl;
+	int         index;
+	gitem_t     *it;
+	cl = ent->client;
 
-    cl = ent->client;
+	if (!cl->pers.weapon || !cl->pers.lastweapon)
+		return;
 
-    if (!cl->pers.weapon || !cl->pers.lastweapon)
-        return;
+	index = ITEM_INDEX(cl->pers.lastweapon);
 
-    index = ITEM_INDEX(cl->pers.lastweapon);
-    if (!cl->pers.inventory[index])
-        return;
-    it = &itemlist[index];
-    if (!it->use)
-        return;
-    if (!(it->flags & IT_WEAPON))
-        return;
-    it->use(ent, it);
+	if (!cl->pers.inventory[index])
+		return;
+
+	it = &itemlist[index];
+
+	if (!it->use)
+		return;
+
+	if (!(it->flags & IT_WEAPON))
+		return;
+
+	it->use(ent, it);
 }
 
 /*
@@ -637,21 +702,24 @@ Cmd_InvDrop_f
 */
 static void Cmd_InvDrop_f(edict_t *ent)
 {
-    gitem_t     *it;
+	gitem_t     *it;
+	ValidateSelectedItem(ent);
 
-    ValidateSelectedItem(ent);
+	if (ent->client->pers.selected_item == ITI_NULL)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "No item to drop.\n");
+		return;
+	}
 
-    if (ent->client->pers.selected_item == ITI_NULL) {
-        gi.cprintf(ent, PRINT_HIGH, "No item to drop.\n");
-        return;
-    }
+	it = &itemlist[ent->client->pers.selected_item];
 
-    it = &itemlist[ent->client->pers.selected_item];
-    if (!it->drop) {
-        gi.cprintf(ent, PRINT_HIGH, "Item is not dropable.\n");
-        return;
-    }
-    it->drop(ent, it);
+	if (!it->drop)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "Item is not dropable.\n");
+		return;
+	}
+
+	it->drop(ent, it);
 }
 
 /*
@@ -661,10 +729,11 @@ Cmd_Kill_f
 */
 static void Cmd_Kill_f(edict_t *ent)
 {
-    if ((level.time - ent->client->respawn_time) < 5000)
-        return;
-    ent->flags &= ~FL_GODMODE;
-    ent->health = 0;
+	if ((level.time - ent->client->respawn_time) < 5000)
+		return;
+
+	ent->flags &= ~FL_GODMODE;
+	ent->health = 0;
 	ent->meansOfDeath.inflictor = ent;
 	ent->meansOfDeath.damage_means = MD_NONE;
 	ent->meansOfDeath.damage_type = DT_DIRECT;
@@ -676,7 +745,7 @@ static void Cmd_Kill_f(edict_t *ent)
 		ent->meansOfDeath.attacker_time = level.time + 10000;
 	}
 
-    player_die(ent, ent, ent, 100000, vec3_origin);
+	player_die(ent, ent, ent, 100000, vec3_origin);
 }
 
 /*
@@ -686,27 +755,27 @@ Cmd_PutAway_f
 */
 static void Cmd_PutAway_f(edict_t *ent)
 {
-    ent->client->showscores = false;
-    ent->client->showhelp = false;
-    ent->client->showinventory = false;
+	ent->client->showscores = false;
+	ent->client->showhelp = false;
+	ent->client->showinventory = false;
 }
 
 
 static int PlayerSort(void const *a, void const *b)
 {
-    int     anum, bnum;
+	int     anum, bnum;
+	anum = *(const int *)a;
+	bnum = *(const int *)b;
+	anum = game.clients[anum].ps.stats.frags;
+	bnum = game.clients[bnum].ps.stats.frags;
 
-    anum = *(const int *)a;
-    bnum = *(const int *)b;
+	if (anum < bnum)
+		return -1;
 
-    anum = game.clients[anum].ps.stats.frags;
-    bnum = game.clients[bnum].ps.stats.frags;
+	if (anum > bnum)
+		return 1;
 
-    if (anum < bnum)
-        return -1;
-    if (anum > bnum)
-        return 1;
-    return 0;
+	return 0;
 }
 
 /*
@@ -716,38 +785,42 @@ Cmd_Players_f
 */
 static void Cmd_Players_f(edict_t *ent)
 {
-    int     i;
-    int     count;
-    char    small[64];
-    char    large[1280];
-    int     index[256];
+	int     i;
+	int     count;
+	char    small[64];
+	char    large[1280];
+	int     index[256];
+	count = 0;
 
-    count = 0;
-    for (i = 0 ; i < maxclients->value ; i++)
-        if (game.clients[i].pers.connected) {
-            index[count] = i;
-            count++;
-        }
+	for (i = 0 ; i < maxclients->value ; i++)
+		if (game.clients[i].pers.connected)
+		{
+			index[count] = i;
+			count++;
+		}
 
-    // sort by frags
-    qsort(index, count, sizeof(index[0]), PlayerSort);
+	// sort by frags
+	qsort(index, count, sizeof(index[0]), PlayerSort);
+	// print information
+	large[0] = 0;
 
-    // print information
-    large[0] = 0;
+	for (i = 0 ; i < count ; i++)
+	{
+		Q_snprintf(small, sizeof(small), "%3i %s\n",
+			game.clients[index[i]].ps.stats.frags,
+			game.clients[index[i]].pers.netname);
 
-    for (i = 0 ; i < count ; i++) {
-        Q_snprintf(small, sizeof(small), "%3i %s\n",
-                   game.clients[index[i]].ps.stats.frags,
-                   game.clients[index[i]].pers.netname);
-        if (strlen(small) + strlen(large) > sizeof(large) - 100) {
-            // can't print all of them in one packet
-            strcat(large, "...\n");
-            break;
-        }
-        strcat(large, small);
-    }
+		if (strlen(small) + strlen(large) > sizeof(large) - 100)
+		{
+			// can't print all of them in one packet
+			strcat(large, "...\n");
+			break;
+		}
 
-    gi.cprintf(ent, PRINT_HIGH, "%s\n%i players\n", large, count);
+		strcat(large, small);
+	}
+
+	gi.cprintf(ent, PRINT_HIGH, "%s\n%i players\n", large, count);
 }
 
 /*
@@ -757,47 +830,51 @@ Cmd_Wave_f
 */
 static void Cmd_Wave_f(edict_t *ent)
 {
-    int     i;
+	int     i;
+	i = atoi(gi.argv(1));
 
-    i = atoi(gi.argv(1));
+	// can't wave when ducked
+	if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+		return;
 
-    // can't wave when ducked
-    if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
-        return;
+	if (ent->client->anim_priority > ANIM_WAVE)
+		return;
 
-    if (ent->client->anim_priority > ANIM_WAVE)
-        return;
+	ent->client->anim_priority = ANIM_WAVE;
 
-    ent->client->anim_priority = ANIM_WAVE;
+	switch (i)
+	{
+		case 0:
+			gi.cprintf(ent, PRINT_HIGH, "flipoff\n");
+			ent->s.frame = FRAME_flip01 - 1;
+			ent->client->anim_end = FRAME_flip12;
+			break;
 
-    switch (i) {
-    case 0:
-        gi.cprintf(ent, PRINT_HIGH, "flipoff\n");
-        ent->s.frame = FRAME_flip01 - 1;
-        ent->client->anim_end = FRAME_flip12;
-        break;
-    case 1:
-        gi.cprintf(ent, PRINT_HIGH, "salute\n");
-        ent->s.frame = FRAME_salute01 - 1;
-        ent->client->anim_end = FRAME_salute11;
-        break;
-    case 2:
-        gi.cprintf(ent, PRINT_HIGH, "taunt\n");
-        ent->s.frame = FRAME_taunt01 - 1;
-        ent->client->anim_end = FRAME_taunt17;
-        break;
-    case 3:
-        gi.cprintf(ent, PRINT_HIGH, "wave\n");
-        ent->s.frame = FRAME_wave01 - 1;
-        ent->client->anim_end = FRAME_wave11;
-        break;
-    case 4:
-    default:
-        gi.cprintf(ent, PRINT_HIGH, "point\n");
-        ent->s.frame = FRAME_point01 - 1;
-        ent->client->anim_end = FRAME_point12;
-        break;
-    }
+		case 1:
+			gi.cprintf(ent, PRINT_HIGH, "salute\n");
+			ent->s.frame = FRAME_salute01 - 1;
+			ent->client->anim_end = FRAME_salute11;
+			break;
+
+		case 2:
+			gi.cprintf(ent, PRINT_HIGH, "taunt\n");
+			ent->s.frame = FRAME_taunt01 - 1;
+			ent->client->anim_end = FRAME_taunt17;
+			break;
+
+		case 3:
+			gi.cprintf(ent, PRINT_HIGH, "wave\n");
+			ent->s.frame = FRAME_wave01 - 1;
+			ent->client->anim_end = FRAME_wave11;
+			break;
+
+		case 4:
+		default:
+			gi.cprintf(ent, PRINT_HIGH, "point\n");
+			ent->s.frame = FRAME_point01 - 1;
+			ent->client->anim_end = FRAME_point12;
+			break;
+	}
 }
 
 /*
@@ -807,111 +884,134 @@ Cmd_Say_f
 */
 static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 {
-    int     i, j;
-    edict_t *other;
-    char    *p;
-    char    text[2048];
-    gclient_t *cl;
+	int     i, j;
+	edict_t *other;
+	char    *p;
+	char    text[2048];
+	gclient_t *cl;
 
-    if (gi.argc() < 2 && !arg0)
-        return;
+	if (gi.argc() < 2 && !arg0)
+		return;
 
-    if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
-        team = false;
+	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
+		team = false;
 
-    if (team)
-        Q_snprintf(text, sizeof(text), "(%s): ", ent->client->pers.netname);
-    else
-        Q_snprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
+	if (team)
+		Q_snprintf(text, sizeof(text), "(%s): ", ent->client->pers.netname);
+	else
+		Q_snprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
 
-    if (arg0) {
-        strcat(text, gi.argv(0));
-        strcat(text, " ");
-        strcat(text, gi.args());
-    } else {
-        p = gi.args();
+	if (arg0)
+	{
+		strcat(text, gi.argv(0));
+		strcat(text, " ");
+		strcat(text, gi.args());
+	}
+	else
+	{
+		p = gi.args();
 
-        if (*p == '"') {
-            p++;
-            p[strlen(p) - 1] = 0;
-        }
-        strcat(text, p);
-    }
+		if (*p == '"')
+		{
+			p++;
+			p[strlen(p) - 1] = 0;
+		}
 
-    // don't let text be too long for malicious reasons
-    if (strlen(text) > 150)
-        text[150] = 0;
+		strcat(text, p);
+	}
 
-    strcat(text, "\n");
+	// don't let text be too long for malicious reasons
+	if (strlen(text) > 150)
+		text[150] = 0;
 
-    if (flood_msgs->value) {
-        cl = ent->client;
+	strcat(text, "\n");
 
-        if (level.time < cl->flood_locktill) {
-            gi.cprintf(ent, PRINT_HIGH, "You can't talk for %d more seconds\n",
-                       (int)((cl->flood_locktill - level.time) / 1000));
-            return;
-        }
-        i = cl->flood_whenhead - flood_msgs->value + 1;
-        if (i < 0)
-            i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
-        if (cl->flood_when[i] &&
-            level.time - cl->flood_when[i] < flood_persecond->value * 1000) {
-            cl->flood_locktill = level.time + flood_waitdelay->value * 1000;
-            gi.cprintf(ent, PRINT_CHAT, "Flood protection:  You can't talk for %d seconds.\n",
-                       (int)flood_waitdelay->value);
-            return;
-        }
-        cl->flood_whenhead = (cl->flood_whenhead + 1) %
-                             (sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
-        cl->flood_when[cl->flood_whenhead] = level.time;
-    }
+	if (flood_msgs->value)
+	{
+		cl = ent->client;
 
-    if (dedicated->value)
-        gi.cprintf(NULL, PRINT_CHAT, "%s", text);
+		if (level.time < cl->flood_locktill)
+		{
+			gi.cprintf(ent, PRINT_HIGH, "You can't talk for %d more seconds\n",
+				(int)((cl->flood_locktill - level.time) / 1000));
+			return;
+		}
 
-    for (j = 1; j <= game.maxclients; j++) {
-        other = &g_edicts[j];
-        if (!other->inuse)
-            continue;
-        if (!other->client)
-            continue;
-        if (team) {
-            if (!OnSameTeam(ent, other))
-                continue;
-        }
-        gi.cprintf(other, PRINT_CHAT, "%s", text);
-    }
+		i = cl->flood_whenhead - flood_msgs->value + 1;
+
+		if (i < 0)
+			i = (sizeof(cl->flood_when) / sizeof(cl->flood_when[0])) + i;
+
+		if (cl->flood_when[i] &&
+			level.time - cl->flood_when[i] < flood_persecond->value * 1000)
+		{
+			cl->flood_locktill = level.time + flood_waitdelay->value * 1000;
+			gi.cprintf(ent, PRINT_CHAT, "Flood protection:  You can't talk for %d seconds.\n",
+				(int)flood_waitdelay->value);
+			return;
+		}
+
+		cl->flood_whenhead = (cl->flood_whenhead + 1) %
+			(sizeof(cl->flood_when) / sizeof(cl->flood_when[0]));
+		cl->flood_when[cl->flood_whenhead] = level.time;
+	}
+
+	if (dedicated->value)
+		gi.cprintf(NULL, PRINT_CHAT, "%s", text);
+
+	for (j = 1; j <= game.maxclients; j++)
+	{
+		other = &g_edicts[j];
+
+		if (!other->inuse)
+			continue;
+
+		if (!other->client)
+			continue;
+
+		if (team)
+		{
+			if (!OnSameTeam(ent, other))
+				continue;
+		}
+
+		gi.cprintf(other, PRINT_CHAT, "%s", text);
+	}
 }
 
 static void Cmd_PlayerList_f(edict_t *ent)
 {
-    int i;
-    char str[80];
-    char text[1400];
-    edict_t *e2;
+	int i;
+	char str[80];
+	char text[1400];
+	edict_t *e2;
+	// connect time, ping, score, name
+	*text = 0;
 
-    // connect time, ping, score, name
-    *text = 0;
-    for (i = 0, e2 = g_edicts + 1; i < maxclients->value; i++, e2++) {
-        if (!e2->inuse)
-            continue;
+	for (i = 0, e2 = g_edicts + 1; i < maxclients->value; i++, e2++)
+	{
+		if (!e2->inuse)
+			continue;
 
-        Q_snprintf(str, sizeof(str), "%02d:%02d %4d %3d %s%s\n",
-                   (int)((level.time - e2->client->resp.entertime) / 6000),
-                   (int)(((level.time - e2->client->resp.entertime) % 6000) / 10),
-                   e2->client->ping,
-                   e2->client->resp.score,
-                   e2->client->pers.netname,
-                   e2->client->resp.spectator ? " (spectator)" : "");
-        if (strlen(text) + strlen(str) > sizeof(text) - 50) {
-            sprintf(text + strlen(text), "And more...\n");
-            gi.cprintf(ent, PRINT_HIGH, "%s", text);
-            return;
-        }
-        strcat(text, str);
-    }
-    gi.cprintf(ent, PRINT_HIGH, "%s", text);
+		Q_snprintf(str, sizeof(str), "%02d:%02d %4d %3d %s%s\n",
+			(int)((level.time - e2->client->resp.entertime) / 6000),
+			(int)(((level.time - e2->client->resp.entertime) % 6000) / 10),
+			e2->client->ping,
+			e2->client->resp.score,
+			e2->client->pers.netname,
+			e2->client->resp.spectator ? " (spectator)" : "");
+
+		if (strlen(text) + strlen(str) > sizeof(text) - 50)
+		{
+			sprintf(text + strlen(text), "And more...\n");
+			gi.cprintf(ent, PRINT_HIGH, "%s", text);
+			return;
+		}
+
+		strcat(text, str);
+	}
+
+	gi.cprintf(ent, PRINT_HIGH, "%s", text);
 }
 
 static int line_nums = 0;
@@ -921,13 +1021,12 @@ static edict_t *line_ent = NULL;
 static void line_think(edict_t *ent)
 {
 	int i;
-	
+
 	for (i = 0; i < line_nums - 1; ++i)
 	{
 		vec3_t from, to;
 		VectorCopy(line_pos[i], from);
 		VectorCopy(line_pos[i + 1], to);
-
 		gi.WriteByte(svc_temp_entity);
 		gi.WriteByte(TE_BFG_LASER);
 		gi.WritePosition(from);
@@ -944,7 +1043,6 @@ static void Cmd_Line_f(edict_t *ent)
 	v[0] = atof(gi.argv(1));
 	v[1] = atof(gi.argv(2));
 	v[2] = atof(gi.argv(3));
-
 	VectorCopy(v, line_pos[line_nums]);
 	line_nums++;
 
@@ -965,43 +1063,53 @@ ClientCommand
 */
 void ClientCommand(edict_t *ent)
 {
-    char    *cmd;
+	char    *cmd;
 
-    if (!ent->client)
-        return;     // not fully in game yet
+	if (!ent->client)
+		return;     // not fully in game yet
 
-    cmd = gi.argv(0);
+	cmd = gi.argv(0);
 
 	//JABot[start]
 	if (BOT_Commands(ent))
 		return;
 	else if (Wave_Commands(ent))
 		return;
+
 	//[end]
 
-    if (Q_stricmp(cmd, "players") == 0) {
-        Cmd_Players_f(ent);
-        return;
-    }
-    if (Q_stricmp(cmd, "say") == 0) {
-        Cmd_Say_f(ent, false, false);
-        return;
-    }
-    if (Q_stricmp(cmd, "say_team") == 0) {
-        Cmd_Say_f(ent, true, false);
-        return;
-    }
-    if (Q_stricmp(cmd, "score") == 0) {
-        Cmd_Score_f(ent);
-        return;
-    }
-    if (Q_stricmp(cmd, "help") == 0) {
-        Cmd_Help_f(ent);
-        return;
-    }
+	if (Q_stricmp(cmd, "players") == 0)
+	{
+		Cmd_Players_f(ent);
+		return;
+	}
 
-    if (level.intermissiontime)
-        return;
+	if (Q_stricmp(cmd, "say") == 0)
+	{
+		Cmd_Say_f(ent, false, false);
+		return;
+	}
+
+	if (Q_stricmp(cmd, "say_team") == 0)
+	{
+		Cmd_Say_f(ent, true, false);
+		return;
+	}
+
+	if (Q_stricmp(cmd, "score") == 0)
+	{
+		Cmd_Score_f(ent);
+		return;
+	}
+
+	if (Q_stricmp(cmd, "help") == 0)
+	{
+		Cmd_Help_f(ent);
+		return;
+	}
+
+	if (level.intermissiontime)
+		return;
 
 	if (Q_stricmp(cmd, "use") == 0)
 		Cmd_Use_f(ent);
@@ -1053,6 +1161,6 @@ void ClientCommand(edict_t *ent)
 		Cmd_PlayerList_f(ent);
 	else if (Q_stricmp(cmd, "line") == 0)
 		Cmd_Line_f(ent);
-    else    // anything that doesn't match a command will be a chat
-        Cmd_Say_f(ent, false, true);
+	else    // anything that doesn't match a command will be a chat
+		Cmd_Say_f(ent, false, true);
 }

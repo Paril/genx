@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -34,7 +34,7 @@ in NO WAY supported by Steve Yeager.
 //==========================================
 void AI_EnemyAdded(edict_t *ent)
 {
-	if( num_AIEnemies < MAX_EDICTS )
+	if (num_AIEnemies < MAX_EDICTS)
 		AIEnemies[num_AIEnemies++] = ent;
 }
 
@@ -48,24 +48,24 @@ void AI_EnemyRemoved(edict_t *ent)
 	int pos = 0;
 
 	// watch for 0 players
-	if(num_AIEnemies < 1)
+	if (num_AIEnemies < 1)
 		return;
 
 	// special case for only one player
-	if(num_AIEnemies == 1)
+	if (num_AIEnemies == 1)
 	{
 		num_AIEnemies = 0;
 		return;
 	}
 
 	// Find the player
-	for(i=0;i<num_AIEnemies;i++)
-		if(ent == AIEnemies[i])
+	for (i = 0; i < num_AIEnemies; i++)
+		if (ent == AIEnemies[i])
 			pos = i;
 
 	// decrement
-	for( i=pos; i<num_AIEnemies-1; i++ )
-		AIEnemies[i] = AIEnemies[i+1];
+	for (i = pos; i < num_AIEnemies - 1; i++)
+		AIEnemies[i] = AIEnemies[i + 1];
 
 	num_AIEnemies--;
 }
@@ -80,7 +80,7 @@ void AI_EnemyRemoved(edict_t *ent)
 // AI_CanUseArmor
 // Check if we can use the armor
 //==========================================
-bool AI_CanUseArmor (gitem_t *item, edict_t *other)
+bool AI_CanUseArmor(gitem_t *item, edict_t *other)
 {
 	item = ResolveItemRedirect(other, item);
 
@@ -94,7 +94,7 @@ bool AI_CanUseArmor (gitem_t *item, edict_t *other)
 // AI_CanPick_Ammo
 // Check if we can use the Ammo
 //==========================================
-bool AI_CanPick_Ammo (edict_t *ent, gitem_t *item)
+bool AI_CanPick_Ammo(edict_t *ent, gitem_t *item)
 {
 	float		max;
 
@@ -118,12 +118,10 @@ bool AI_ItemIsReachable(edict_t *self, vec3_t goal)
 {
 	trace_t trace;
 	vec3_t v;
-
-	VectorCopy(self->mins,v);
+	VectorCopy(self->mins, v);
 	v[2] += AI_STEPSIZE;
-
-//	trap_Trace (&trace, self->s.origin, v, self->maxs, goal, self, MASK_NODESOLID);
-	trace = gi.trace ( self->s.origin, v, self->maxs, goal, self, MASK_NODESOLID );
+	//	trap_Trace (&trace, self->s.origin, v, self->maxs, goal, self, MASK_NODESOLID);
+	trace = gi.trace(self->s.origin, v, self->maxs, goal, self, MASK_NODESOLID);
 
 	// Yes we can see it
 	if (trace.fraction == 1.0f)
@@ -141,7 +139,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 {
 	float		weight;
 
-	if( !self->client )
+	if (!self->client)
 		return 0;
 
 	if (!it->item)
@@ -149,45 +147,42 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 
 	//IT_WEAPON
 	if (it->item->flags & IT_WEAPON)
-	{
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
-	}
 
 	//IT_AMMO
 	if (it->item->flags & IT_AMMO)
-	{
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
-	}
 
 	//IT_ARMOR
 	if (it->item->flags & IT_ARMOR)
-	{
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
-	}
 
 #if CTF
+
 	//IT_FLAG
 	if (it->item->flags & IT_FLAG)
-	{
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
-	}
+
 #endif
 
 	//IT_HEALTH
 	if (it->item->flags & IT_HEALTH)
 	{
 		//CanPickup_Health
-		if (!(it->style & 1)) {	//#define HEALTH_IGNORE_MAX	1
+		if (!(it->style & 1))  	//#define HEALTH_IGNORE_MAX	1
+		{
 			if (self->health >= self->max_health)
 				return 0;
 		}
+
 		if (self->health >= 250 && it->count > 25)
 			return 0;
 
 		//find the weight
 		weight = 0;
+
 		if (self->health < 100)
-			weight = ((100 - self->health) + it->count)*0.01f;
+			weight = ((100 - self->health) + it->count) * 0.01f;
 		else if (self->health <= 250 && it->count == 100)//mega
 			weight = 8.0f;
 
@@ -195,7 +190,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 
 		if (weight < 0.2f)
 			weight = 0.2f;
-		
+
 		return weight;
 	}
 
@@ -204,11 +199,11 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 		return 0.7f;
 
 #if CTF
+
 	//IT_TECH
 	if (it->item->flags & IT_TECH)
-	{
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
-	}
+
 #endif
 
 	//IT_STAY_COOP
@@ -216,8 +211,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 		return 0;
 
 	//item didn't have a recognizable item flag
-//	if (AIDevel.debugMode)
-//		G_PrintMsg (NULL, PRINT_HIGH, "(AI_ItemWeight) WARNING: Item with unhandled item flag:%s\n", it->classname);
-
+	//	if (AIDevel.debugMode)
+	//		G_PrintMsg (NULL, PRINT_HIGH, "(AI_ItemWeight) WARNING: Item with unhandled item flag:%s\n", it->classname);
 	return 0;
 }

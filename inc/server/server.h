@@ -21,31 +21,32 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "common/net/net.h"
 
-typedef enum {
-    ss_dead,            // no map loaded
-    ss_loading,         // spawning level edicts
-    ss_game,            // actively running
-    ss_pic,             // showing static picture
-    ss_broadcast        // running MVD client
+typedef enum
+{
+	ss_dead,            // no map loaded
+	ss_loading,         // spawning level edicts
+	ss_game,            // actively running
+	ss_pic,             // showing static picture
+	ss_broadcast        // running MVD client
 } server_state_t;
 
 #if USE_ICMP
-void SV_ErrorEvent(netadr_t *from, int ee_errno, int ee_info);
+	void SV_ErrorEvent(netadr_t *from, int ee_errno, int ee_info);
 #endif
 void SV_Init(void);
 void SV_Shutdown(const char *finalmsg, error_type_t type);
 unsigned SV_Frame(unsigned msec);
 #if USE_SYSCON
-void SV_SetConsoleTitle(void);
+	void SV_SetConsoleTitle(void);
 #endif
 //void SV_ConsoleOutput(const char *msg);
 
 #if USE_CLIENT
-int MVD_GetDemoPercent(bool *paused, int *framenum);
+	int MVD_GetDemoPercent(bool *paused, int *framenum);
 #endif
 
 #if USE_CLIENT
-char *SV_GetSaveInfo(const char *dir);
+	char *SV_GetSaveInfo(const char *dir);
 #endif
 
 #endif // SERVER_H

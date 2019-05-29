@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -32,38 +32,33 @@ in NO WAY supported by Steve Yeager.
 // AI_CanMove
 // Checks if bot can move (really just checking the ground)
 // Also, this is not a real accurate check, but does a
-// pretty good job and looks for lava/slime.  
+// pretty good job and looks for lava/slime.
 //==========================================
 bool AI_CanMove(edict_t *self, int direction)
 {
 	vec3_t forward, right;
-	vec3_t offset,start,end;
+	vec3_t offset, start, end;
 	vec3_t angles;
 	trace_t tr;
-
 	// Now check to see if move will move us off an edge
-	VectorCopy(self->s.angles,angles);
+	VectorCopy(self->s.angles, angles);
 
-	if(direction == BOT_MOVE_LEFT)
+	if (direction == BOT_MOVE_LEFT)
 		angles[1] += 90;
-	else if(direction == BOT_MOVE_RIGHT)
+	else if (direction == BOT_MOVE_RIGHT)
 		angles[1] -= 90;
-	else if(direction == BOT_MOVE_BACK)
-		angles[1] -=180;
-
+	else if (direction == BOT_MOVE_BACK)
+		angles[1] -= 180;
 
 	// Set up the vectors
-	AngleVectors (angles, forward, right, NULL);
-
+	AngleVectors(angles, forward, right, NULL);
 	VectorSet(offset, 36, 0, 24);
-	G_ProjectSource (self->s.origin, offset, forward, right, start);
-
+	G_ProjectSource(self->s.origin, offset, forward, right, start);
 	VectorSet(offset, 36, 0, -100);
-	G_ProjectSource (self->s.origin, offset, forward, right, end);
+	G_ProjectSource(self->s.origin, offset, forward, right, end);
+	tr = gi.trace(start, NULL, NULL, end, self, MASK_AISOLID);
 
-	tr = gi.trace( start, NULL, NULL, end, self, MASK_AISOLID );
-
-	if(tr.fraction == 1.0f || tr.contents & (CONTENTS_LAVA|CONTENTS_SLIME))
+	if (tr.fraction == 1.0f || tr.contents & (CONTENTS_LAVA | CONTENTS_SLIME))
 	{
 		//if(AIDevel.debugChased)	//jal: is too spammy. Temporary disabled
 		//	G_PrintMsg (AIDevel.devguy, PRINT_HIGH, "%s: move blocked\n", self->bot.botStatus.netname);
@@ -79,23 +74,21 @@ bool AI_CanMove(edict_t *self, int direction)
 //  Checks the floor one step below the player. Used to detect
 //  if the player is really falling or just walking down a stair.
 //===================
-bool AI_IsStep (edict_t *ent)
+bool AI_IsStep(edict_t *ent)
 {
 	vec3_t		point;
 	trace_t		trace;
-	
 	//determine a point below
 	point[0] = ent->s.origin[0];
 	point[1] = ent->s.origin[1];
-	point[2] = ent->s.origin[2] - (1.6f*AI_STEPSIZE);
-	
+	point[2] = ent->s.origin[2] - (1.6f * AI_STEPSIZE);
 	//trace to point
-//	trap_Trace (&trace, ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID);
-	trace = gi.trace( ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID);
-	
+	//	trap_Trace (&trace, ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID);
+	trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_PLAYERSOLID);
+
 	if (trace.plane.normal[2] < 0.7f && !trace.startsolid)
 		return false;
-	
+
 	//found solid.
 	return true;
 }
@@ -110,21 +103,17 @@ bool AI_IsLadder(vec3_t origin, vec3_t v_angle, vec3_t mins, vec3_t maxs, edict_
 	vec3_t	spot;
 	vec3_t	flatforward, zforward;
 	trace_t	trace;
-
-	AngleVectors( v_angle, zforward, NULL, NULL);
-
+	AngleVectors(v_angle, zforward, NULL, NULL);
 	// check for ladder
 	flatforward[0] = zforward[0];
 	flatforward[1] = zforward[1];
 	flatforward[2] = 0;
-	VectorNormalize (flatforward);
+	VectorNormalize(flatforward);
+	VectorMA(origin, 1, flatforward, spot);
+	//	trap_Trace(&trace, self->s.origin, self->mins, self->maxs, spot, self, MASK_AISOLID);
+	trace = gi.trace(origin, mins, maxs, spot, passent, MASK_AISOLID);
 
-	VectorMA ( origin, 1, flatforward, spot);
-
-//	trap_Trace(&trace, self->s.origin, self->mins, self->maxs, spot, self, MASK_AISOLID);
-	trace = gi.trace( origin, mins, maxs, spot, passent, MASK_AISOLID);
-	
-//	if ((trace.fraction < 1) && (trace.surfFlags & SURF_LADDER))
+	//	if ((trace.fraction < 1) && (trace.surfFlags & SURF_LADDER))
 	if ((trace.fraction < 1) && (trace.contents & CONTENTS_LADDER))
 		return true;
 
@@ -134,50 +123,47 @@ bool AI_IsLadder(vec3_t origin, vec3_t v_angle, vec3_t mins, vec3_t maxs, edict_
 
 //==========================================
 // AI_CheckEyes
-// Helper for ACEMV_SpecialMove. 
+// Helper for ACEMV_SpecialMove.
 // Tries to turn when in front of obstacle
 //==========================================
 static bool AI_CheckEyes(edict_t *self, usercmd_t *ucmd)
 {
 	vec3_t  forward, right;
-	vec3_t  leftstart, rightstart,focalpoint;
-	vec3_t  dir,offset;
+	vec3_t  leftstart, rightstart, focalpoint;
+	vec3_t  dir, offset;
 	trace_t traceRight;
 	trace_t traceLeft;
-
 	// Get current angle and set up "eyes"
-	VectorCopy(self->s.angles,dir);
-	AngleVectors (dir, forward, right, NULL);
+	VectorCopy(self->s.angles, dir);
+	AngleVectors(dir, forward, right, NULL);
 
-	if(!self->movetarget)
-		VectorSet(offset,200,0,self->maxs[2]*0.5f); // focalpoint
+	if (!self->movetarget)
+		VectorSet(offset, 200, 0, self->maxs[2] * 0.5f); // focalpoint
 	else
-		VectorSet(offset,64,0,self->maxs[2]*0.5f); // wander focalpoint 
-	
-	G_ProjectSource (self->s.origin, offset, forward, right, focalpoint);
+		VectorSet(offset, 64, 0, self->maxs[2] * 0.5f); // wander focalpoint
 
-	VectorSet(offset, 0, 18, self->maxs[2]*0.5f);
-	G_ProjectSource (self->s.origin, offset, forward, right, leftstart);
+	G_ProjectSource(self->s.origin, offset, forward, right, focalpoint);
+	VectorSet(offset, 0, 18, self->maxs[2] * 0.5f);
+	G_ProjectSource(self->s.origin, offset, forward, right, leftstart);
 	offset[1] -= 36; //VectorSet(offset, 0, -18, self->maxs[2]*0.5);
-	G_ProjectSource (self->s.origin, offset, forward, right, rightstart);
-
-//	trap_Trace(&traceRight, rightstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
-//	trap_Trace(&traceLeft, leftstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
-	traceRight = gi.trace( rightstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
-	traceLeft = gi.trace( leftstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
+	G_ProjectSource(self->s.origin, offset, forward, right, rightstart);
+	//	trap_Trace(&traceRight, rightstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
+	//	trap_Trace(&traceLeft, leftstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
+	traceRight = gi.trace(rightstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
+	traceLeft = gi.trace(leftstart, NULL, NULL, focalpoint, self, MASK_AISOLID);
 
 	// Find the side with more open space and turn
-	if(traceRight.fraction != 1 || traceLeft.fraction != 1)
+	if (traceRight.fraction != 1 || traceLeft.fraction != 1)
 	{
-		if(traceRight.fraction > traceLeft.fraction)
+		if (traceRight.fraction > traceLeft.fraction)
 			self->s.angles[YAW] += (1.0f - traceLeft.fraction) * 45.0f;
 		else
 			self->s.angles[YAW] += -(1.0f - traceRight.fraction) * 45.0f;
-		
+
 		ucmd->forwardmove = 400;
 		return true;
 	}
-				
+
 	return false;
 }
 
@@ -191,53 +177,54 @@ bool AI_SpecialMove(edict_t *self, usercmd_t *ucmd)
 	vec3_t forward;
 	trace_t tr;
 	vec3_t	boxmins, boxmaxs, boxorigin;
-
 	// Get current direction
-	AngleVectors( tv(0, self->s.angles[YAW], 0), forward, NULL, NULL );
-
+	AngleVectors(tv(0, self->s.angles[YAW], 0), forward, NULL, NULL);
 	//make sure we are bloqued
-	VectorCopy( self->s.origin, boxorigin );
-	VectorMA( boxorigin, 8, forward, boxorigin ); //move box by 8 to front
-	tr = gi.trace( self->s.origin, self->mins, self->maxs, boxorigin, self, MASK_AISOLID);
-	if( !tr.startsolid && tr.fraction == 1.0f ) // not bloqued
+	VectorCopy(self->s.origin, boxorigin);
+	VectorMA(boxorigin, 8, forward, boxorigin);   //move box by 8 to front
+	tr = gi.trace(self->s.origin, self->mins, self->maxs, boxorigin, self, MASK_AISOLID);
+
+	if (!tr.startsolid && tr.fraction == 1.0f)  // not bloqued
 		return false;
 
-	if( self->ai->pers.moveTypesMask & LINK_JUMP && self->groundentity )
+	if (self->ai->pers.moveTypesMask & LINK_JUMP && self->groundentity)
 	{
 		//jump box
-		VectorCopy( self->s.origin, boxorigin );
-		VectorCopy( self->mins, boxmins );
-		VectorCopy( self->maxs, boxmaxs );
-		VectorMA( boxorigin, 8, forward, boxorigin );	//move box by 8 to front
+		VectorCopy(self->s.origin, boxorigin);
+		VectorCopy(self->mins, boxmins);
+		VectorCopy(self->maxs, boxmaxs);
+		VectorMA(boxorigin, 8, forward, boxorigin);	//move box by 8 to front
 		//
-		boxorigin[2] += ( boxmins[2] + AI_JUMPABLE_HEIGHT );	//put at bottom + jumpable height
+		boxorigin[2] += (boxmins[2] + AI_JUMPABLE_HEIGHT);	//put at bottom + jumpable height
 		boxmaxs[2] = boxmaxs[2] - boxmins[2];	//total player box height in boxmaxs
 		boxmins[2] = 0;
-		if( boxmaxs[2] > AI_JUMPABLE_HEIGHT ) //the player is smaller than AI_JUMPABLE_HEIGHT
+
+		if (boxmaxs[2] > AI_JUMPABLE_HEIGHT)  //the player is smaller than AI_JUMPABLE_HEIGHT
 		{
 			boxmaxs[2] -= AI_JUMPABLE_HEIGHT;
-			tr = gi.trace( boxorigin, boxmins, boxmaxs, boxorigin, self, MASK_AISOLID);
-			if( !tr.startsolid )	//can move by jumping
+			tr = gi.trace(boxorigin, boxmins, boxmaxs, boxorigin, self, MASK_AISOLID);
+
+			if (!tr.startsolid)	//can move by jumping
 			{
 				ucmd->forwardmove = 400;
 				ucmd->upmove = 400;
-				
 				return true;
 			}
 		}
 	}
 
-	if( self->ai->pers.moveTypesMask & LINK_CROUCH || self->is_swim )
+	if (self->ai->pers.moveTypesMask & LINK_CROUCH || self->is_swim)
 	{
 		//crouch box
-		VectorCopy( self->s.origin, boxorigin );
-		VectorCopy( self->mins, boxmins );
-		VectorCopy( self->maxs, boxmaxs );
+		VectorCopy(self->s.origin, boxorigin);
+		VectorCopy(self->mins, boxmins);
+		VectorCopy(self->maxs, boxmaxs);
 		boxmaxs[2] = 14;	//crouched size
-		VectorMA( boxorigin, 8, forward, boxorigin ); //move box by 8 to front
+		VectorMA(boxorigin, 8, forward, boxorigin);   //move box by 8 to front
 		//see if bloqued
-		tr = gi.trace( boxorigin, boxmins, boxmaxs, boxorigin, self, MASK_AISOLID);
-		if( !tr.startsolid ) // can move by crouching
+		tr = gi.trace(boxorigin, boxmins, boxmaxs, boxorigin, self, MASK_AISOLID);
+
+		if (!tr.startsolid)  // can move by crouching
 		{
 			ucmd->forwardmove = 400;
 			ucmd->upmove = -400;
@@ -254,10 +241,10 @@ bool AI_SpecialMove(edict_t *self, usercmd_t *ucmd)
 // AI_ChangeAngle
 // Make the change in angles a little more gradual, not so snappy
 // Subtle, but noticeable.
-// 
+//
 // Modified from the original id ChangeYaw code...
 //==========================================
-void AI_ChangeAngle (edict_t *ent)
+void AI_ChangeAngle(edict_t *ent)
 {
 	float	ideal_yaw;
 	float   ideal_pitch;
@@ -266,24 +253,20 @@ void AI_ChangeAngle (edict_t *ent)
 	float	move;
 	float	speed;
 	vec3_t  ideal_angle;
-
 	// Normalize the move angle first
 	VectorNormalize(ent->ai->move_vector);
-
 	current_yaw = anglemod(ent->s.angles[YAW]);
 	current_pitch = anglemod(ent->s.angles[PITCH]);
-
-	vectoangles (ent->ai->move_vector, ideal_angle);
-
+	vectoangles(ent->ai->move_vector, ideal_angle);
 	ideal_yaw = anglemod(ideal_angle[YAW]);
 	ideal_pitch = anglemod(ideal_angle[PITCH]);
-
 
 	// Yaw
 	if (current_yaw != ideal_yaw)
 	{
 		move = ideal_yaw - current_yaw;
 		speed = ent->yaw_speed;
+
 		if (ideal_yaw > current_yaw)
 		{
 			if (move >= 180)
@@ -294,6 +277,7 @@ void AI_ChangeAngle (edict_t *ent)
 			if (move <= -180)
 				move = move + 360;
 		}
+
 		if (move > 0)
 		{
 			if (move > speed)
@@ -304,15 +288,16 @@ void AI_ChangeAngle (edict_t *ent)
 			if (move < -speed)
 				move = -speed;
 		}
-		ent->s.angles[YAW] = anglemod (current_yaw + move);
-	}
 
+		ent->s.angles[YAW] = anglemod(current_yaw + move);
+	}
 
 	// Pitch
 	if (current_pitch != ideal_pitch)
 	{
 		move = ideal_pitch - current_pitch;
 		speed = ent->yaw_speed;
+
 		if (ideal_pitch > current_pitch)
 		{
 			if (move >= 180)
@@ -323,6 +308,7 @@ void AI_ChangeAngle (edict_t *ent)
 			if (move <= -180)
 				move = move + 360;
 		}
+
 		if (move > 0)
 		{
 			if (move > speed)
@@ -333,7 +319,8 @@ void AI_ChangeAngle (edict_t *ent)
 			if (move < -speed)
 				move = -speed;
 		}
-		ent->s.angles[PITCH] = anglemod (current_pitch + move);
+
+		ent->s.angles[PITCH] = anglemod(current_pitch + move);
 	}
 }
 
@@ -350,28 +337,29 @@ bool AI_MoveToGoalEntity(edict_t *self, usercmd_t *ucmd)
 
 	// If a rocket or grenade is around deal with it
 	// Simple, but effective (could be rewritten to be more accurate)
-	if(	self->movetarget->entitytype == ET_ROCKET ||
+	if (self->movetarget->entitytype == ET_ROCKET ||
 		self->movetarget->entitytype == ET_GRENADE ||
 		self->movetarget->entitytype == ET_HAND_GRENADE)
 	{
-		VectorSubtract (self->movetarget->s.origin, self->s.origin, self->ai->move_vector);
+		VectorSubtract(self->movetarget->s.origin, self->s.origin, self->ai->move_vector);
 		AI_ChangeAngle(self);
-//		if(AIDevel.debugChased && bot_showcombat->value)
-//			G_PrintMsg (AIDevel.chaseguy, PRINT_HIGH, "%s: Oh crap a rocket!\n",self->ai->pers.netname);
+		//		if(AIDevel.debugChased && bot_showcombat->value)
+		//			G_PrintMsg (AIDevel.chaseguy, PRINT_HIGH, "%s: Oh crap a rocket!\n",self->ai->pers.netname);
 
 		// strafe left/right
-		if(rand()%1 && AI_CanMove(self, BOT_MOVE_LEFT))
-				ucmd->sidemove = -400;
-		else if(AI_CanMove(self, BOT_MOVE_RIGHT))
-				ucmd->sidemove = 400;
-		return true;
+		if (rand() % 1 && AI_CanMove(self, BOT_MOVE_LEFT))
+			ucmd->sidemove = -400;
+		else if (AI_CanMove(self, BOT_MOVE_RIGHT))
+			ucmd->sidemove = 400;
 
+		return true;
 	}
 
 	// Set bot's movement direction
-	VectorSubtract (self->movetarget->s.origin, self->s.origin, self->ai->move_vector);
+	VectorSubtract(self->movetarget->s.origin, self->s.origin, self->ai->move_vector);
 	AI_ChangeAngle(self);
-	if(!AI_CanMove(self, BOT_MOVE_FORWARD) ) 
+
+	if (!AI_CanMove(self, BOT_MOVE_FORWARD))
 	{
 		self->movetarget = NULL;
 		ucmd->forwardmove = -100;

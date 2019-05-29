@@ -30,18 +30,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SPR_IDENT       (('P'<<24)+('S'<<16)+('D'<<8)+'I')
 #define SPR_VERSION     1
 
-typedef struct {
+typedef struct
+{
 	uint32_t offset_x;
 	uint32_t offset_y;
 	uint32_t width;
 	uint32_t height;
 } dsprpicture_t;
 
-typedef struct {
+typedef struct
+{
 	uint32_t group;
 } dsprframe_t;
 
-typedef struct {
+typedef struct
+{
 	uint32_t    ident;
 	uint32_t    version;
 	uint32_t    type;

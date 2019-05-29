@@ -20,9 +20,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define TESTS_H
 
 #if USE_TESTS
-void TST_Init(void);
+	void TST_Init(void);
 #else
-#define TST_Init() (void)0
+	#define TST_Init() (void)0
 #endif
 
 #endif // TESTS_H

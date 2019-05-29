@@ -214,9 +214,6 @@
     <ClCompile Include="..\src\windows\glimp.c">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\windows\wgl.c">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\windows\system.c">
       <Filter>Source Files\windows</Filter>
     </ClCompile>
@@ -271,9 +268,6 @@
     <ClCompile Include="..\src\refresh\shader.c">
       <Filter>Source Files\refresh</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\refresh\qgl.c">
-      <Filter>Source Files\refresh</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\refresh\models.c">
       <Filter>Source Files\refresh</Filter>
     </ClCompile>
@@ -294,6 +288,12 @@
     </ClCompile>
     <ClCompile Include="..\src\client\sound\qal\dynamic.c">
       <Filter>Source Files\client\sound\qal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\refresh\glad.c">
+      <Filter>Source Files\refresh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\windows\glad_wgl.c">
+      <Filter>Source Files\windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -486,17 +486,11 @@
     <ClInclude Include="..\src\windows\glimp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\windows\wgl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\inc\common\nav.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\inc\common\astar.h">
       <Filter>Source Files\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\refresh\qgl.h">
-      <Filter>Source Files\refresh</Filter>
     </ClInclude>
     <ClInclude Include="..\src\refresh\images.h">
       <Filter>Source Files\refresh</Filter>
@@ -509,6 +503,12 @@
     </ClInclude>
     <ClInclude Include="..\inc\format\mdx.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\refresh\glad.h">
+      <Filter>Source Files\refresh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\windows\glad_wgl.h">
+      <Filter>Source Files\windows</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

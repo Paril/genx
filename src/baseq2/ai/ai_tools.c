@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -32,15 +32,15 @@ in NO WAY supported by Steve Yeager.
 //==========================================
 void AIDebug_ToogleBotDebug(void)
 {
-	if (AIDevel.debugMode || !sv_cheats->integer )
+	if (AIDevel.debugMode || !sv_cheats->integer)
 	{
-//		G_Printf ("BOT: Debug Mode Off\n");
+		//		G_Printf ("BOT: Debug Mode Off\n");
 		AIDevel.debugMode = false;
 		return;
 	}
 
 	//Activate debug mode
-	gi.dprintf ("\n======================================\n");
+	gi.dprintf("\n======================================\n");
 	gi.dprintf("--==[ D E B U G ]==--\n");
 	gi.dprintf("======================================\n");
 	gi.dprintf("'addnode [nodetype]' -- Add [specified] node to players current location\n");
@@ -49,9 +49,7 @@ void AIDebug_ToogleBotDebug(void)
 	gi.dprintf("'removelink [node1 node2]' -- Removes link between two nodes\n");
 	gi.dprintf("'addlink [node1 node2]' -- Adds a link between two nodes\n");
 	gi.dprintf("======================================\n\n");
-
 	gi.dprintf("BOT: Debug Mode On\n");
-
 	AIDevel.debugMode = true;
 }
 
@@ -64,37 +62,37 @@ void AIDebug_ToogleBotDebug(void)
 //==========================================
 void AIDebug_SetChased(edict_t *ent)
 {
-/*	int i;
-	AIDevel.chaseguy = NULL;
-	AIDevel.debugChased = false;
-
-	if (!AIDevel.debugMode || !sv_cheats->integer)
-		return;
-
-	//find if anyone is chasing this bot
-	for(i=0;i<game.maxclients+1;i++)
-	{
-//		AIDevel.chaseguy = game.edicts + i + 1;
-		AIDevel.chaseguy = g_edicts + i + 1;
-		if(AIDevel.chaseguy->inuse && AIDevel.chaseguy->client){
-			if( AIDevel.chaseguy->client->chase_target &&
-				AIDevel.chaseguy->client->chase_target == ent)
-				break;
-		}
+	/*	int i;
 		AIDevel.chaseguy = NULL;
-	}
+		AIDevel.debugChased = false;
 
-	if (!AIDevel.chaseguy)
-		return;
+		if (!AIDevel.debugMode || !sv_cheats->integer)
+			return;
 
-	AIDevel.debugChased = true;
-*/
+		//find if anyone is chasing this bot
+		for(i=0;i<game.maxclients+1;i++)
+		{
+	//		AIDevel.chaseguy = game.edicts + i + 1;
+			AIDevel.chaseguy = g_edicts + i + 1;
+			if(AIDevel.chaseguy->inuse && AIDevel.chaseguy->client){
+				if( AIDevel.chaseguy->client->chase_target &&
+					AIDevel.chaseguy->client->chase_target == ent)
+					break;
+			}
+			AIDevel.chaseguy = NULL;
+		}
+
+		if (!AIDevel.chaseguy)
+			return;
+
+		AIDevel.debugChased = true;
+	*/
 }
 
 
 
 //=======================================================================
-//							NODE TOOLS	
+//							NODE TOOLS
 //=======================================================================
 
 
@@ -105,13 +103,13 @@ void AIDebug_SetChased(edict_t *ent)
 //==========================================
 void AITools_DrawLine(vec3_t origin, vec3_t dest)
 {
-/*
-	edict_t		*event;
-	
-	event = G_SpawnEvent ( EV_BFG_LASER, 0, origin );
-	event->svflags = SVF_FORCEOLDORIGIN;
-	VectorCopy ( dest, event->s.origin2 );
-*/
+	/*
+		edict_t		*event;
+
+		event = G_SpawnEvent ( EV_BFG_LASER, 0, origin );
+		event->svflags = SVF_FORCEOLDORIGIN;
+		VectorCopy ( dest, event->s.origin2 );
+	*/
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_BFG_LASER);
 	gi.WritePosition(origin);
@@ -133,24 +131,25 @@ void AITools_DrawPath(edict_t *self, int node_from, int node_to)
 	//don't draw it every frame (flood)
 	if (level.time < drawnpath_timeout)
 		return;
+
 	drawnpath_timeout = level.time + 4 * game.frameseconds;
 
-	if( self->ai->path.goalNode != node_to )
+	if (self->ai->path.goalNode != node_to)
 		return;
 
 	//find position in stored path
-	while( self->ai->path.nodes[pos] != node_from )
+	while (self->ai->path.nodes[pos] != node_from)
 	{
 		pos++;
-		if(self->ai->path.goalNode == self->ai->path.nodes[pos] )
+
+		if (self->ai->path.goalNode == self->ai->path.nodes[pos])
 			return;	//failed
 	}
 
 	// Now set up and display the path
-	while(self->ai->path.nodes[pos] != node_to && count < 32)
+	while (self->ai->path.nodes[pos] != node_to && count < 32)
 	{
 		//edict_t		*event;
-		
 		//event = G_SpawnEvent ( EV_BFG_LASER, 0, nodes[self->ai.path->nodes[pos]].origin );
 		//event->svflags = SVF_FORCEOLDORIGIN;
 		//VectorCopy ( nodes[self->ai.path->nodes[pos+1]].origin, event->s.origin2 );
@@ -165,7 +164,7 @@ void AITools_DrawPath(edict_t *self, int node_from, int node_to)
 // Draws lines from the current node to it's plinks nodes
 //==========================================
 static gtime_t	debugdrawplinks_timeout;
-static void AITools_ShowPlinks( void )
+static void AITools_ShowPlinks(void)
 {
 	int		current_node;
 	int		plink_node;
@@ -177,24 +176,27 @@ static void AITools_ShowPlinks( void )
 	//don't draw it every frame (flood)
 	if (level.time < debugdrawplinks_timeout)
 		return;
-	debugdrawplinks_timeout = level.time + 4 * game.frameseconds;
 
+	debugdrawplinks_timeout = level.time + 4 * game.frameseconds;
 	//do it
-	current_node = AI_FindClosestReachableNode(AIDevel.plinkguy->s.origin, AIDevel.plinkguy,NODE_DENSITY*3,NODE_ALL);
+	current_node = AI_FindClosestReachableNode(AIDevel.plinkguy->s.origin, AIDevel.plinkguy, NODE_DENSITY * 3, NODE_ALL);
+
 	if (!pLinks[current_node].numLinks)
 		return;
 
-	for (i=0; i<nav.num_items;i++){
-		if (nav.items[i].node == current_node){
+	for (i = 0; i < nav.num_items; i++)
+	{
+		if (nav.items[i].node == current_node)
+		{
 			//if( !nav.items[i].ent->classname )
 			//	gi.centerprintf(AIDevel.plinkguy, "no classname");
 			//else
-				gi.centerprintf(AIDevel.plinkguy, "entityid %i", nav.items[i].ent->entitytype);
+			gi.centerprintf(AIDevel.plinkguy, "entityid %i", nav.items[i].ent->entitytype);
 			break;
 		}
 	}
 
-	for (i=0; i<pLinks[current_node].numLinks; i++) 
+	for (i = 0; i < pLinks[current_node].numLinks; i++)
 	{
 		plink_node = pLinks[current_node].nodes[i];
 		AITools_DrawLine(nodes[current_node].origin, nodes[plink_node].origin);
@@ -214,7 +216,7 @@ static void AITools_ShowPlinks( void )
 void AITools_Frame(void)
 {
 	//debug
-	if( AIDevel.showPLinks )
+	if (AIDevel.showPLinks)
 		AITools_ShowPlinks();
 }
 

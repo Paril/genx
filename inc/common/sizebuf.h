@@ -27,16 +27,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SZ_NC_FRG_IN        MakeRawLong('n', 'c', '2', 'i')
 #define SZ_NC_FRG_OUT       MakeRawLong('n', 'c', '2', 'o')
 
-typedef struct {
-    uint32_t    tag;
-    bool        allowoverflow;
-    bool        allowunderflow;
-    bool        overflowed;     // set to true if the buffer size failed
-    byte        *data;
-    size_t      maxsize;
-    size_t      cursize;
-    size_t      readcount;
-    size_t      bitpos;
+typedef struct
+{
+	uint32_t    tag;
+	bool        allowoverflow;
+	bool        allowunderflow;
+	bool        overflowed;     // set to true if the buffer size failed
+	byte        *data;
+	size_t      maxsize;
+	size_t      cursize;
+	size_t      readcount;
+	size_t      bitpos;
 } sizebuf_t;
 
 void SZ_Init(sizebuf_t *buf, void *data, size_t size);
@@ -49,7 +50,7 @@ void SZ_WriteLong(sizebuf_t *sb, int c);
 
 static inline void *SZ_Write(sizebuf_t *buf, const void *data, size_t len)
 {
-    return memcpy(SZ_GetSpace(buf, len), data, len);
+	return memcpy(SZ_GetSpace(buf, len), data, len);
 }
 
 #endif // SIZEBUF_H

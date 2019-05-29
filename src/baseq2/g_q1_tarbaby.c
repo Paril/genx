@@ -7,7 +7,8 @@ BLOB
 */
 #include "g_local.h"
 
-enum {
+enum
+{
 	walk1, walk2, walk3, walk4, walk5, walk6, walk7, walk8, walk9, walk10,
 	walk11, walk12, walk13, walk14, walk15, walk16, walk17, walk18, walk19,
 	walk20, walk21, walk22, walk23, walk24, walk25,
@@ -23,7 +24,8 @@ enum {
 	explode
 };
 
-mframe_t tbaby_frames_stand1[] = {
+mframe_t tbaby_frames_stand1[] =
+{
 	{ ai_stand, 0,   NULL }
 };
 mmove_t tbaby_stand1 = { walk1, walk1, tbaby_frames_stand1, NULL };
@@ -33,7 +35,8 @@ void tbaby_stand(edict_t *self)
 	self->monsterinfo.currentmove = &tbaby_stand1;
 }
 
-mframe_t tbaby_frames_walk1[] = {
+mframe_t tbaby_frames_walk1[] =
+{
 	{ ai_walk, 0,   NULL },
 	{ ai_walk, 0,   NULL },
 	{ ai_walk, 0,   NULL },
@@ -69,7 +72,8 @@ void tbaby_walk(edict_t *self)
 	self->monsterinfo.currentmove = &tbaby_walk1;
 }
 
-mframe_t tbaby_frames_run1[] = {
+mframe_t tbaby_frames_run1[] =
+{
 	{ ai_run, 0,   NULL },
 	{ ai_run, 0,   NULL },
 	{ ai_run, 0,   NULL },
@@ -132,17 +136,18 @@ void Tar_JumpTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *s
 	if (!M_CheckBottom(self))
 	{
 		if (self->groundentity)
-		{	// jump randomly to not get hung up
+		{
+			// jump randomly to not get hung up
 			//dprint ("popjump\n");
 			self->touch = NULL;
 			tbaby_run(self);
 			self->movetype = MOVETYPE_STEP;
-
 			//			self.velocity_x = (random() - 0.5) * 600;
 			//			self.velocity_y = (random() - 0.5) * 600;
 			//			self.velocity_z = 200;
 			//			self.flags = self.flags - FL_ONGROUND;
 		}
+
 		return;	// not on ground yet
 	}
 
@@ -166,6 +171,7 @@ void	tbaby_jump_do(edict_t *self)
 void tbaby_fly_go(edict_t *self)
 {
 	self->count = self->count + 1;
+
 	if (self->count == 4)
 	{
 		//dprint ("spawn hop\n");
@@ -173,7 +179,8 @@ void tbaby_fly_go(edict_t *self)
 	}
 }
 
-mframe_t tbaby_frames_fly1[] = {
+mframe_t tbaby_frames_fly1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -186,7 +193,8 @@ void tbaby_fly(edict_t *self)
 	self->monsterinfo.currentmove = &tbaby_fly1;
 }
 
-mframe_t tbaby_frames_jump1[] = {
+mframe_t tbaby_frames_jump1[] =
+{
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
@@ -206,16 +214,13 @@ void tbaby_jump(edict_t *self)
 void tbaby_explode(edict_t *self)
 {
 	T_RadiusDamage(self, self, 120, world, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, 120, MakeGenericMeansOfDeath(self, MD_NONE, DT_INDIRECT));
-
 	gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
 	VectorNormalize(self->velocity);
 	VectorMA(self->s.origin, -8, self->velocity, self->s.origin);
-
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_Q1_TAREXPLOSION);
 	gi.WritePosition(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
-
 	self->think = G_FreeEdict;
 	self->nextthink = level.time + 100;
 }
@@ -225,7 +230,8 @@ void tbaby_nohurt(edict_t *self)
 	self->takedamage = DAMAGE_NO;
 }
 
-mframe_t tbaby_frames_die1[] = {
+mframe_t tbaby_frames_die1[] =
+{
 	{ ai_move, 0,   tbaby_nohurt }
 };
 mmove_t tbaby_die1 = { explode, explode, tbaby_frames_die1, tbaby_explode };
@@ -254,21 +260,16 @@ void q1_monster_tarbaby(edict_t *self)
 	}
 
 	gi.modelindex("models/q1/tarbaby.mdl");
-
 	sound_death1 = gi.soundindex("q1/blob/death1.wav");
 	sound_hit1 = gi.soundindex("q1/blob/hit1.wav");
 	sound_land1 = gi.soundindex("q1/blob/land1.wav");
 	sound_sight1 = gi.soundindex("q1/blob/sight1.wav");
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	gi.setmodel(self, "models/q1/tarbaby.mdl");
-
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 40);
 	self->health = 80;
-
 	self->monsterinfo.stand = tbaby_stand;
 	self->monsterinfo.walk = tbaby_walk;
 	self->monsterinfo.run = tbaby_run;
@@ -276,11 +277,8 @@ void q1_monster_tarbaby(edict_t *self)
 	self->monsterinfo.melee = tbaby_jump;
 	self->monsterinfo.sight = tbaby_sight;
 	self->die = tbaby_die;
-
 	walkmonster_start(self);
-
 	self->monsterinfo.currentmove = &tbaby_stand1;
 	self->monsterinfo.scale = 1;
-	
 	gi.linkentity(self);
 }

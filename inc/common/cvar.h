@@ -99,10 +99,10 @@ cvar_t *Cvar_Set(const char *var_name, const char *value);
 // will set the variable even if NOSET or LATCH
 cvar_t *Cvar_UserSet(const char *var_name, const char *value);
 cvar_t *Cvar_FullSet(const char *var_name, const char *value,
-                     int flags, from_t from);
+	int flags, from_t from);
 
 #define Cvar_Reset(x) \
-    Cvar_SetByVar(x, (x)->default_string, FROM_CODE)
+	Cvar_SetByVar(x, (x)->default_string, FROM_CODE)
 
 void Cvar_SetValue(cvar_t *var, float value, from_t from);
 void Cvar_SetInteger(cvar_t *var, int value, from_t from);
@@ -120,7 +120,7 @@ char *Cvar_VariableString(const char *var_name);
 // returns an empty string if not defined
 
 #define Cvar_VariableStringBuffer(name, buffer, size) \
-    Q_strlcpy(buffer, Cvar_VariableString(name), size)
+	Q_strlcpy(buffer, Cvar_VariableString(name), size)
 
 void Cvar_Set_f(void);
 

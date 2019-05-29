@@ -35,7 +35,8 @@ typedef float ASGoalType;
 typedef struct __ASNeighborList *ASNeighborList;
 typedef struct __ASPath *ASPath;
 
-typedef struct {
+typedef struct
+{
 	size_t  nodeSize;                                                                               // the size of the structure being used for the nodes - important since nodes are copied into the resulting path
 	void(*nodeNeighbors)(ASNeighborList neighbors, void *node, void *context);                  // add nodes to the neighbor list if they are connected to this node
 	ASGoalType(*pathCostHeuristic)(void *fromNode, void *toNode, void *context);                      // estimated cost to transition from the first node to the second node -- optional, uses 0 if not specified

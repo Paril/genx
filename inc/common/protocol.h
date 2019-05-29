@@ -49,21 +49,21 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define PROTOCOL_VERSION_Q2PRO_CURRENT          1021    // r1358
 
 #define R1Q2_SUPPORTED(x) \
-    ((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
-     (x) <= PROTOCOL_VERSION_R1Q2_CURRENT)
+	((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
+		(x) <= PROTOCOL_VERSION_R1Q2_CURRENT)
 
 #define Q2PRO_SUPPORTED(x) \
-    ((x) >= PROTOCOL_VERSION_Q2PRO_MINIMUM && \
-     (x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
+	((x) >= PROTOCOL_VERSION_Q2PRO_MINIMUM && \
+		(x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
 
 //=========================================
 
 #define UPDATE_BACKUP   16  // copies of entity_state_t to keep buffered
-                            // must be power of two
+// must be power of two
 #define UPDATE_MASK     (UPDATE_BACKUP - 1)
 
 #define CMD_BACKUP      128 // allow a lot of command backups for very fast systems
-                            // increased from 64
+// increased from 64
 #define CMD_MASK        (CMD_BACKUP - 1)
 
 
@@ -92,43 +92,44 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 // server to client
 //
-typedef enum {
-    svc_bad,
+typedef enum
+{
+	svc_bad,
 
-    // these ops are known to the game dll
-    svc_muzzleflash,
-    svc_muzzleflash2,
-    svc_temp_entity,
-    svc_layout,
-    svc_inventory,
+	// these ops are known to the game dll
+	svc_muzzleflash,
+	svc_muzzleflash2,
+	svc_temp_entity,
+	svc_layout,
+	svc_inventory,
 
-    // the rest are private to the client and server
-    svc_nop,
-    svc_disconnect,
-    svc_reconnect,
-    svc_sound,                  // <see code>
-    svc_print,                  // [byte] id [string] null terminated string
-    svc_stufftext,              // [string] stuffed into client's console buffer
-                                // should be \n terminated
-    svc_serverdata,             // [long] protocol ...
-    svc_configstring,           // [short] [string]
-    svc_spawnbaseline,
-    svc_centerprint,            // [string] to put in center of the screen
-    svc_playerinfo,             // variable
-    svc_packetentities,         // [...]
-    svc_deltapacketentities,    // [...]
-    svc_frame,
+	// the rest are private to the client and server
+	svc_nop,
+	svc_disconnect,
+	svc_reconnect,
+	svc_sound,                  // <see code>
+	svc_print,                  // [byte] id [string] null terminated string
+	svc_stufftext,              // [string] stuffed into client's console buffer
+	// should be \n terminated
+	svc_serverdata,             // [long] protocol ...
+	svc_configstring,           // [short] [string]
+	svc_spawnbaseline,
+	svc_centerprint,            // [string] to put in center of the screen
+	svc_playerinfo,             // variable
+	svc_packetentities,         // [...]
+	svc_deltapacketentities,    // [...]
+	svc_frame,
 
-    // r1q2 specific operations
-    svc_zpacket,
-    svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
-    svc_setting,
+	// r1q2 specific operations
+	svc_zpacket,
+	svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
+	svc_setting,
 
 	// Generations
 	svc_precache,
 	svc_precache_baseline,
 
-    svc_num_types
+	svc_num_types
 } svc_ops_t;
 
 //==============================================
@@ -136,20 +137,21 @@ typedef enum {
 //
 // client to server
 //
-typedef enum {
-    clc_bad,
-    clc_nop,
-    clc_move,               // [usercmd_t]
-    clc_userinfo,           // [userinfo string]
-    clc_stringcmd,          // [string] message
+typedef enum
+{
+	clc_bad,
+	clc_nop,
+	clc_move,               // [usercmd_t]
+	clc_userinfo,           // [userinfo string]
+	clc_stringcmd,          // [string] message
 
-    // r1q2 specific operations
-    clc_setting,
+	// r1q2 specific operations
+	clc_setting,
 
-    // q2pro specific operations
-    clc_move_nodelta = 10,
-    clc_move_batched,
-    clc_userinfo_delta
+	// q2pro specific operations
+	clc_move_nodelta = 10,
+	clc_move_batched,
+	clc_userinfo_delta
 } clc_ops_t;
 
 //==============================================
@@ -192,11 +194,12 @@ typedef enum {
 #define EPS_BITS            7
 #define EPS_MASK            ((1<<EPS_BITS)-1)
 
-typedef enum {
-	PS_GUN_INDEX			= 1<<0,
-	PS_GUN_FRAME			= 1<<1,
-	PS_GUN_ANGLE			= 1<<2,
-	PS_GUN_OFFSET			= 1<<3
+typedef enum
+{
+	PS_GUN_INDEX			= 1 << 0,
+	PS_GUN_FRAME			= 1 << 1,
+	PS_GUN_ANGLE			= 1 << 2,
+	PS_GUN_OFFSET			= 1 << 3
 } ps_gun_bits;
 
 //==============================================
@@ -285,28 +288,30 @@ typedef enum {
 // a SOLID_BBOX will never create this value
 #define PACKED_BSP      31
 
-typedef enum {
-    // r1q2 specific
-    CLS_NOGUN,
-    CLS_NOBLEND,
-    CLS_RECORDING,
-    CLS_PLAYERUPDATES,
-    CLS_FPS,
+typedef enum
+{
+	// r1q2 specific
+	CLS_NOGUN,
+	CLS_NOBLEND,
+	CLS_RECORDING,
+	CLS_PLAYERUPDATES,
+	CLS_FPS,
 
-    // q2pro specific
-    CLS_NOGIBS            = 10,
-    CLS_NOFOOTSTEPS,
-    CLS_NOPREDICT,
+	// q2pro specific
+	CLS_NOGIBS            = 10,
+	CLS_NOFOOTSTEPS,
+	CLS_NOPREDICT,
 
-    CLS_MAX
+	CLS_MAX
 } clientSetting_t;
 
-typedef enum {
-    // r1q2 specific
-    SVS_PLAYERUPDATES,
-    SVS_FPS,
+typedef enum
+{
+	// r1q2 specific
+	SVS_PLAYERUPDATES,
+	SVS_FPS,
 
-    SVS_MAX
+	SVS_MAX
 } serverSetting_t;
 
 // q2pro frame flags sent by the server

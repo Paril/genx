@@ -22,339 +22,355 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static const char *os_error_string(int err)
 {
-    return strerror(err);
+	return strerror(err);
 }
 
 // returns true if failed socket operation should be retried.
 static bool process_error_queue(qsocket_t sock, const netadr_t *to)
 {
 #ifdef IP_RECVERR
-    byte buffer[1024];
-    struct sockaddr_storage from_addr;
-    struct msghdr msg;
-    struct cmsghdr *cmsg;
-    struct sock_extended_err *ee;
-    netadr_t from;
-    int tries;
-    bool found = false;
+	byte buffer[1024];
+	struct sockaddr_storage from_addr;
+	struct msghdr msg;
+	struct cmsghdr *cmsg;
+	struct sock_extended_err *ee;
+	netadr_t from;
+	int tries;
+	bool found = false;
 
-    for (tries = 0; tries < MAX_ERROR_RETRIES; tries++) {
-        memset(&from_addr, 0, sizeof(from_addr));
+	for (tries = 0; tries < MAX_ERROR_RETRIES; tries++)
+	{
+		memset(&from_addr, 0, sizeof(from_addr));
+		memset(&msg, 0, sizeof(msg));
+		msg.msg_name = &from_addr;
+		msg.msg_namelen = sizeof(from_addr);
+		msg.msg_control = buffer;
+		msg.msg_controllen = sizeof(buffer);
 
-        memset(&msg, 0, sizeof(msg));
-        msg.msg_name = &from_addr;
-        msg.msg_namelen = sizeof(from_addr);
-        msg.msg_control = buffer;
-        msg.msg_controllen = sizeof(buffer);
+		if (recvmsg(sock, &msg, MSG_ERRQUEUE) == -1)
+		{
+			if (errno != EWOULDBLOCK)
+				Com_DPrintf("%s: %s\n", __func__, strerror(errno));
 
-        if (recvmsg(sock, &msg, MSG_ERRQUEUE) == -1) {
-            if (errno != EWOULDBLOCK)
-                Com_DPrintf("%s: %s\n", __func__, strerror(errno));
-            break;
-        }
+			break;
+		}
 
-        if (!(msg.msg_flags & MSG_ERRQUEUE)) {
-            Com_DPrintf("%s: no extended error received\n", __func__);
-            break;
-        }
+		if (!(msg.msg_flags & MSG_ERRQUEUE))
+		{
+			Com_DPrintf("%s: no extended error received\n", __func__);
+			break;
+		}
 
-        // find an ICMP error message
-        for (cmsg = CMSG_FIRSTHDR(&msg);
-             cmsg != NULL;
-             cmsg = CMSG_NXTHDR(&msg, cmsg)) {
-            if (cmsg->cmsg_level != IPPROTO_IP &&
-                cmsg->cmsg_level != IPPROTO_IPV6) {
-                continue;
-            }
-            if (cmsg->cmsg_type != IP_RECVERR &&
-                cmsg->cmsg_type != IPV6_RECVERR) {
-                continue;
-            }
-            ee = (struct sock_extended_err *)CMSG_DATA(cmsg);
-            if (ee->ee_origin == SO_EE_ORIGIN_ICMP ||
-                ee->ee_origin == SO_EE_ORIGIN_ICMP6) {
-                break;
-            }
-        }
+		// find an ICMP error message
+		for (cmsg = CMSG_FIRSTHDR(&msg);
+			cmsg != NULL;
+			cmsg = CMSG_NXTHDR(&msg, cmsg))
+		{
+			if (cmsg->cmsg_level != IPPROTO_IP &&
+				cmsg->cmsg_level != IPPROTO_IPV6)
+				continue;
 
-        if (!cmsg) {
-            Com_DPrintf("%s: no ICMP error found\n", __func__);
-            break;
-        }
+			if (cmsg->cmsg_type != IP_RECVERR &&
+				cmsg->cmsg_type != IPV6_RECVERR)
+				continue;
 
-        NET_SockadrToNetadr(&from_addr, &from);
+			ee = (struct sock_extended_err *)CMSG_DATA(cmsg);
 
-        // check for offender address being current packet destination
-        if (to != NULL && NET_IsEqualBaseAdr(&from, to) &&
-            (from.port == 0 || from.port == to->port)) {
-            Com_DPrintf("%s: found offending address: %s\n", __func__,
-                        NET_AdrToString(&from));
-            found = true;
-        }
+			if (ee->ee_origin == SO_EE_ORIGIN_ICMP ||
+				ee->ee_origin == SO_EE_ORIGIN_ICMP6)
+				break;
+		}
 
-        // handle ICMP error
-        NET_ErrorEvent(sock, &from, ee->ee_errno, ee->ee_info);
-    }
+		if (!cmsg)
+		{
+			Com_DPrintf("%s: no ICMP error found\n", __func__);
+			break;
+		}
 
-    return tries && !found;
+		NET_SockadrToNetadr(&from_addr, &from);
+
+		// check for offender address being current packet destination
+		if (to != NULL && NET_IsEqualBaseAdr(&from, to) &&
+			(from.port == 0 || from.port == to->port))
+		{
+			Com_DPrintf("%s: found offending address: %s\n", __func__,
+				NET_AdrToString(&from));
+			found = true;
+		}
+
+		// handle ICMP error
+		NET_ErrorEvent(sock, &from, ee->ee_errno, ee->ee_info);
+	}
+
+	return tries && !found;
 #else
-    return false;
+	return false;
 #endif
 }
 
 static int os_udp_recv(qsocket_t sock, void *data,
-                           size_t len, netadr_t *from)
+	size_t len, netadr_t *from)
 {
-    struct sockaddr_storage addr;
-    socklen_t addrlen;
-    int ret;
-    int tries;
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	int ret;
+	int tries;
 
-    for (tries = 0; tries < MAX_ERROR_RETRIES; tries++) {
-        memset(&addr, 0, sizeof(addr));
-        addrlen = sizeof(addr);
-        ret = recvfrom(sock, data, len, 0,
-                       (struct sockaddr *)&addr, &addrlen);
+	for (tries = 0; tries < MAX_ERROR_RETRIES; tries++)
+	{
+		memset(&addr, 0, sizeof(addr));
+		addrlen = sizeof(addr);
+		ret = recvfrom(sock, data, len, 0,
+				(struct sockaddr *)&addr, &addrlen);
+		NET_SockadrToNetadr(&addr, from);
 
-        NET_SockadrToNetadr(&addr, from);
+		if (ret >= 0)
+			return ret;
 
-        if (ret >= 0)
-            return ret;
+		net_error = errno;
 
-        net_error = errno;
+		// wouldblock is silent
+		if (net_error == EWOULDBLOCK)
+			return NET_AGAIN;
 
-        // wouldblock is silent
-        if (net_error == EWOULDBLOCK)
-            return NET_AGAIN;
+		if (!process_error_queue(sock, NULL))
+			break;
+	}
 
-        if (!process_error_queue(sock, NULL))
-            break;
-    }
-
-    return NET_ERROR;
+	return NET_ERROR;
 }
 
 static int os_udp_send(qsocket_t sock, const void *data,
-                           size_t len, const netadr_t *to)
+	size_t len, const netadr_t *to)
 {
-    struct sockaddr_storage addr;
-    socklen_t addrlen;
-    int ret;
-    int tries;
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	int ret;
+	int tries;
+	addrlen = NET_NetadrToSockadr(to, &addr);
 
-    addrlen = NET_NetadrToSockadr(to, &addr);
+	for (tries = 0; tries < MAX_ERROR_RETRIES; tries++)
+	{
+		ret = sendto(sock, data, len, 0,
+				(struct sockaddr *)&addr, addrlen);
 
-    for (tries = 0; tries < MAX_ERROR_RETRIES; tries++) {
-        ret = sendto(sock, data, len, 0,
-                     (struct sockaddr *)&addr, addrlen);
-        if (ret >= 0)
-            return ret;
+		if (ret >= 0)
+			return ret;
 
-        net_error = errno;
+		net_error = errno;
 
-        // wouldblock is silent
-        if (net_error == EWOULDBLOCK)
-            return NET_AGAIN;
+		// wouldblock is silent
+		if (net_error == EWOULDBLOCK)
+			return NET_AGAIN;
 
-        if (!process_error_queue(sock, to))
-            break;
-    }
+		if (!process_error_queue(sock, to))
+			break;
+	}
 
-    return NET_ERROR;
+	return NET_ERROR;
 }
 
 static neterr_t os_get_error(void)
 {
-    net_error = errno;
-    if (net_error == EWOULDBLOCK)
-        return NET_AGAIN;
+	net_error = errno;
 
-    return NET_ERROR;
+	if (net_error == EWOULDBLOCK)
+		return NET_AGAIN;
+
+	return NET_ERROR;
 }
 
 static int os_recv(qsocket_t sock, void *data, size_t len, int flags)
 {
-    int ret = recv(sock, data, len, flags);
+	int ret = recv(sock, data, len, flags);
 
-    if (ret == -1)
-        return os_get_error();
+	if (ret == -1)
+		return os_get_error();
 
-    return ret;
+	return ret;
 }
 
 static int os_send(qsocket_t sock, const void *data, size_t len, int flags)
 {
-    int ret = send(sock, data, len, flags);
+	int ret = send(sock, data, len, flags);
 
-    if (ret == -1)
-        return os_get_error();
+	if (ret == -1)
+		return os_get_error();
 
-    return ret;
+	return ret;
 }
 
 static neterr_t os_listen(qsocket_t sock, int backlog)
 {
-    if (listen(sock, backlog) == -1) {
-        net_error = errno;
-        return NET_ERROR;
-    }
+	if (listen(sock, backlog) == -1)
+	{
+		net_error = errno;
+		return NET_ERROR;
+	}
 
-    return NET_OK;
+	return NET_OK;
 }
 
 static neterr_t os_accept(qsocket_t sock, qsocket_t *newsock, netadr_t *from)
 {
-    struct sockaddr_storage addr;
-    socklen_t addrlen;
-    int s;
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	int s;
+	memset(&addr, 0, sizeof(addr));
+	addrlen = sizeof(addr);
+	s = accept(sock, (struct sockaddr *)&addr, &addrlen);
+	NET_SockadrToNetadr(&addr, from);
 
-    memset(&addr, 0, sizeof(addr));
-    addrlen = sizeof(addr);
-    s = accept(sock, (struct sockaddr *)&addr, &addrlen);
+	if (s == -1)
+	{
+		*newsock = -1;
+		return os_get_error();
+	}
 
-    NET_SockadrToNetadr(&addr, from);
-
-    if (s == -1) {
-        *newsock = -1;
-        return os_get_error();
-    }
-
-    *newsock = s;
-    return NET_OK;
+	*newsock = s;
+	return NET_OK;
 }
 
 static neterr_t os_connect(qsocket_t sock, const netadr_t *to)
 {
-    struct sockaddr_storage addr;
-    socklen_t addrlen;
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	addrlen = NET_NetadrToSockadr(to, &addr);
 
-    addrlen = NET_NetadrToSockadr(to, &addr);
+	if (connect(sock, (struct sockaddr *)&addr, addrlen) == -1)
+	{
+		net_error = errno;
 
-    if (connect(sock, (struct sockaddr *)&addr, addrlen) == -1) {
-        net_error = errno;
-        if (net_error == EINPROGRESS)
-            return NET_OK;
+		if (net_error == EINPROGRESS)
+			return NET_OK;
 
-        return NET_ERROR;
-    }
+		return NET_ERROR;
+	}
 
-    return NET_OK;
+	return NET_OK;
 }
 
 static neterr_t os_make_nonblock(qsocket_t sock, int val)
 {
-    if (ioctl(sock, FIONBIO, &val) == -1) {
-        net_error = errno;
-        return NET_ERROR;
-    }
+	if (ioctl(sock, FIONBIO, &val) == -1)
+	{
+		net_error = errno;
+		return NET_ERROR;
+	}
 
-    return NET_OK;
+	return NET_OK;
 }
 
 static neterr_t os_setsockopt(qsocket_t sock, int level, int name, int val)
 {
-    if (setsockopt(sock, level, name, &val, sizeof(val)) == -1) {
-        net_error = errno;
-        return NET_ERROR;
-    }
+	if (setsockopt(sock, level, name, &val, sizeof(val)) == -1)
+	{
+		net_error = errno;
+		return NET_ERROR;
+	}
 
-    return NET_OK;
+	return NET_OK;
 }
 
 static neterr_t os_getsockopt(qsocket_t sock, int level, int name, int *val)
 {
-    socklen_t _optlen = sizeof(*val);
+	socklen_t _optlen = sizeof(*val);
 
-    if (getsockopt(sock, level, name, val, &_optlen) == -1) {
-        net_error = errno;
-        return NET_ERROR;
-    }
+	if (getsockopt(sock, level, name, val, &_optlen) == -1)
+	{
+		net_error = errno;
+		return NET_ERROR;
+	}
 
-    return NET_OK;
+	return NET_OK;
 }
 
 static neterr_t os_bind(qsocket_t sock, const struct sockaddr *addr, size_t addrlen)
 {
-    if (bind(sock, addr, addrlen) == -1) {
-        net_error = errno;
-        return NET_ERROR;
-    }
+	if (bind(sock, addr, addrlen) == -1)
+	{
+		net_error = errno;
+		return NET_ERROR;
+	}
 
-    return NET_OK;
+	return NET_OK;
 }
 
 static neterr_t os_getsockname(qsocket_t sock, netadr_t *name)
 {
-    struct sockaddr_storage addr;
-    socklen_t addrlen;
+	struct sockaddr_storage addr;
+	socklen_t addrlen;
+	memset(&addr, 0, sizeof(addr));
+	addrlen = sizeof(addr);
 
-    memset(&addr, 0, sizeof(addr));
-    addrlen = sizeof(addr);
-    if (getsockname(sock, (struct sockaddr *)&addr, &addrlen) == -1) {
-        net_error = errno;
-        return NET_ERROR;
-    }
+	if (getsockname(sock, (struct sockaddr *)&addr, &addrlen) == -1)
+	{
+		net_error = errno;
+		return NET_ERROR;
+	}
 
-    NET_SockadrToNetadr(&addr, name);
-    return NET_OK;
+	NET_SockadrToNetadr(&addr, name);
+	return NET_OK;
 }
 
 static void os_closesocket(qsocket_t sock)
 {
-    close(sock);
+	close(sock);
 }
 
 static qsocket_t os_socket(int domain, int type, int protocol)
 {
-    int s = socket(domain, type, protocol);
+	int s = socket(domain, type, protocol);
 
-    if (s == -1) {
-        net_error = errno;
-        return -1;
-    }
+	if (s == -1)
+	{
+		net_error = errno;
+		return -1;
+	}
 
-    return s;
+	return s;
 }
 
 static ioentry_t *_os_get_io(qsocket_t fd, const char *func)
 {
-    if (fd < 0 || fd >= FD_SETSIZE)
-        Com_Error(ERR_FATAL, "%s: fd out of range: %d", func, fd);
+	if (fd < 0 || fd >= FD_SETSIZE)
+		Com_Error(ERR_FATAL, "%s: fd out of range: %d", func, fd);
 
-    return &io_entries[fd];
+	return &io_entries[fd];
 }
 
 static ioentry_t *os_add_io(qsocket_t fd)
 {
-    if (fd >= io_numfds) {
-        io_numfds = fd + 1;
-    }
+	if (fd >= io_numfds)
+		io_numfds = fd + 1;
 
-    return _os_get_io(fd, __func__);
+	return _os_get_io(fd, __func__);
 }
 
 static ioentry_t *os_get_io(qsocket_t fd)
 {
-    return _os_get_io(fd, __func__);
+	return _os_get_io(fd, __func__);
 }
 
 static qsocket_t os_get_fd(ioentry_t *e)
 {
-    return e - io_entries;
+	return e - io_entries;
 }
 
 static int os_select(int nfds, fd_set *rfds, fd_set *wfds,
-                     fd_set *efds, struct timeval *tv)
+	fd_set *efds, struct timeval *tv)
 {
-    int ret = select(nfds, rfds, wfds, efds, tv);
+	int ret = select(nfds, rfds, wfds, efds, tv);
 
-    if (ret == -1) {
-        net_error = errno;
-        if (net_error == EINTR)
-            return 0;
-    }
+	if (ret == -1)
+	{
+		net_error = errno;
 
-    return ret;
+		if (net_error == EINTR)
+			return 0;
+	}
+
+	return ret;
 }
 
 static void os_net_init(void)

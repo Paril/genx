@@ -29,79 +29,86 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static bool match_raw(int c1, int c2, bool ignorecase)
 {
-    if (c1 != c2) {
-        if (!ignorecase) {
-            return false;
-        }
-#ifdef _WIN32
-        // ugly hack for file listing
-        c1 = c1 == '\\' ? '/' : Q_tolower(c1);
-        c2 = c2 == '\\' ? '/' : Q_tolower(c2);
-#else
-        c1 = Q_tolower(c1);
-        c2 = Q_tolower(c2);
-#endif
-        if (c1 != c2) {
-            return false;
-        }
-    }
+	if (c1 != c2)
+	{
+		if (!ignorecase)
+			return false;
 
-    return true;
+#ifdef _WIN32
+		// ugly hack for file listing
+		c1 = c1 == '\\' ? '/' : Q_tolower(c1);
+		c2 = c2 == '\\' ? '/' : Q_tolower(c2);
+#else
+		c1 = Q_tolower(c1);
+		c2 = Q_tolower(c2);
+#endif
+
+		if (c1 != c2)
+			return false;
+	}
+
+	return true;
 }
 
 static bool match_char(int c1, int c2, bool ignorecase)
 {
-    if (c1 == '?') {
-        return c2; // match any char except NUL
-    }
+	if (c1 == '?')
+	{
+		return c2; // match any char except NUL
+	}
 
-    return match_raw(c1, c2, ignorecase);
+	return match_raw(c1, c2, ignorecase);
 }
 
 static bool match_part(const char *filter, const char *string,
-                       size_t len, bool ignorecase)
+	size_t len, bool ignorecase)
 {
-    bool match;
+	bool match;
 
-    do {
-        // skip over escape character
-        if (*filter == '\\') {
-            filter++;
-            match = match_raw(*filter, *string, ignorecase);
-        } else {
-            match = match_char(*filter, *string, ignorecase);
-        }
+	do
+	{
+		// skip over escape character
+		if (*filter == '\\')
+		{
+			filter++;
+			match = match_raw(*filter, *string, ignorecase);
+		}
+		else
+			match = match_char(*filter, *string, ignorecase);
 
-        if (!match) {
-            return false;
-        }
+		if (!match)
+			return false;
 
-        filter++;
-        string++;
-    } while (--len);
+		filter++;
+		string++;
+	}
+	while (--len);
 
-    return true;
+	return true;
 }
 
 // match the longest possible part
 static const char *match_filter(const char *filter, const char *string,
-                                size_t len, bool ignorecase)
+	size_t len, bool ignorecase)
 {
-    const char *ret = NULL;
-    size_t remaining = strlen(string);
+	const char *ret = NULL;
+	size_t remaining = strlen(string);
 
-    while (remaining >= len) {
-        if (match_part(filter, string, len, ignorecase)) {
-            string += len;
-            remaining -= len;
-            ret = string;
-            continue;
-        }
-        string++;
-        remaining--;
-    }
+	while (remaining >= len)
+	{
+		if (match_part(filter, string, len, ignorecase))
+		{
+			string += len;
+			remaining -= len;
+			ret = string;
+			continue;
+		}
 
-    return ret;
+		string++;
+		remaining--;
+	}
+
+	return ret;
 }
 
 /*
@@ -120,63 +127,71 @@ characters lose their meaning in this case.
 =================
 */
 bool Com_WildCmpEx(const char *filter, const char *string,
-                   int term, bool ignorecase)
+	int term, bool ignorecase)
 {
-    const char *sub;
-    size_t len;
-    bool match;
+	const char *sub;
+	size_t len;
+	bool match;
 
-    while (*filter && *filter != term) {
-        if (*filter == '*') {
-            // skip consecutive wildcards
-            do {
-                filter++;
-            } while (*filter == '*');
+	while (*filter && *filter != term)
+	{
+		if (*filter == '*')
+		{
+			// skip consecutive wildcards
+			do
+			{
+				filter++;
+			}
+			while (*filter == '*');
 
-            // scan out filter part to match
-            for (sub = filter, len = 0; *filter && *filter != term && *filter != '*'; filter++, len++) {
-                // skip over escape character
-                if (*filter == '\\') {
-                    filter++;
-                    if (!*filter) {
-                        break;
-                    }
-                }
-            }
+			// scan out filter part to match
+			for (sub = filter, len = 0; *filter && *filter != term && *filter != '*'; filter++, len++)
+			{
+				// skip over escape character
+				if (*filter == '\\')
+				{
+					filter++;
 
-            // wildcard at the end matches everything
-            if (!len) {
-                return true;
-            }
+					if (!*filter)
+						break;
+				}
+			}
 
-            string = match_filter(sub, string, len, ignorecase);
-            if (!string) {
-                return false;
-            }
-        } else {
-            // skip over escape character
-            if (*filter == '\\') {
-                filter++;
-                if (!*filter) {
-                    break;
-                }
-                match = match_raw(*filter, *string, ignorecase);
-            } else {
-                match = match_char(*filter, *string, ignorecase);
-            }
+			// wildcard at the end matches everything
+			if (!len)
+				return true;
 
-            // match single character
-            if (!match) {
-                return false;
-            }
+			string = match_filter(sub, string, len, ignorecase);
 
-            filter++;
-            string++;
-        }
-    }
+			if (!string)
+				return false;
+		}
+		else
+		{
+			// skip over escape character
+			if (*filter == '\\')
+			{
+				filter++;
 
-    // match NUL at the end
-    return !*string;
+				if (!*filter)
+					break;
+
+				match = match_raw(*filter, *string, ignorecase);
+			}
+			else
+				match = match_char(*filter, *string, ignorecase);
+
+			// match single character
+			if (!match)
+				return false;
+
+			filter++;
+			string++;
+		}
+	}
+
+	// match NUL at the end
+	return !*string;
 }
 
 /*
@@ -187,10 +202,11 @@ bool Com_WildCmpEx(const char *filter, const char *string,
 ==============================================================================
 */
 
-const char *const colorNames[10] = {
-    "black", "red", "green", "yellow",
-    "blue", "cyan", "magenta", "white",
-    "alt", "none"
+const char *const colorNames[10] =
+{
+	"black", "red", "green", "yellow",
+	"blue", "cyan", "magenta", "white",
+	"alt", "none"
 };
 
 /*
@@ -203,20 +219,21 @@ Returns COLOR_NONE in case of error.
 */
 color_index_t Com_ParseColor(const char *s, color_index_t last)
 {
-    color_index_t i;
+	color_index_t i;
 
-    if (COM_IsUint(s)) {
-        i = strtoul(s, NULL, 10);
-        return i > last ? COLOR_NONE : i;
-    }
+	if (COM_IsUint(s))
+	{
+		i = strtoul(s, NULL, 10);
+		return i > last ? COLOR_NONE : i;
+	}
 
-    for (i = 0; i <= last; i++) {
-        if (!strcmp(colorNames[i], s)) {
-            return i;
-        }
-    }
+	for (i = 0; i <= last; i++)
+	{
+		if (!strcmp(colorNames[i], s))
+			return i;
+	}
 
-    return COLOR_NONE;
+	return COLOR_NONE;
 }
 
 #if USE_REF
@@ -229,29 +246,34 @@ Helper function to parse an OpenGL-style extension string.
 */
 void Com_ParseExtensionString(const char *s, const char *const extnames[], bool *const extensions)
 {
-    const char *p;
-    size_t l1, l2;
-    int i;
+	const char *p;
+	size_t l1, l2;
+	int i;
 
-    if (!s) {
-        return;
-    }
+	if (!s)
+		return;
 
-    while (*s) {
-        p = Q_strchrnul(s, ' ');
-        l1 = p - s;
-        for (i = 0; extnames[i]; i++) {
-            l2 = strlen(extnames[i]);
-            if (l1 == l2 && !memcmp(s, extnames[i], l1)) {
+	while (*s)
+	{
+		p = Q_strchrnul(s, ' ');
+		l1 = p - s;
+
+		for (i = 0; extnames[i]; i++)
+		{
+			l2 = strlen(extnames[i]);
+
+			if (l1 == l2 && !memcmp(s, extnames[i], l1))
+			{
 				extensions[i] = true;
-                break;
-            }
-        }
-        if (!*p) {
-            break;
-        }
-        s = p + 1;
-    }
+				break;
+			}
+		}
+
+		if (!*p)
+			break;
+
+		s = p + 1;
+	}
 }
 #endif
 
@@ -264,17 +286,16 @@ Restores entity origin and angles from player state
 */
 void Com_PlayerToEntityState(const player_state_t *ps, entity_state_t *es)
 {
-    vec_t pitch;
+	vec_t pitch;
+	VectorScale(ps->pmove.origin, 0.125f, es->origin);
+	pitch = ps->viewangles[PITCH];
 
-    VectorScale(ps->pmove.origin, 0.125f, es->origin);
+	if (pitch > 180)
+		pitch -= 360;
 
-    pitch = ps->viewangles[PITCH];
-    if (pitch > 180) {
-        pitch -= 360;
-    }
-    es->angles[PITCH] = pitch / 3;
-    es->angles[YAW] = ps->viewangles[YAW];
-    es->angles[ROLL] = 0;
+	es->angles[PITCH] = pitch / 3;
+	es->angles[YAW] = ps->viewangles[YAW];
+	es->angles[ROLL] = 0;
 }
 
 #if USE_CLIENT
@@ -288,150 +309,172 @@ Does not check for integer overflow...
 */
 bool Com_ParseTimespec(const char *s, int *frames)
 {
-    unsigned long c1, c2, c3;
-    char *p;
+	unsigned long c1, c2, c3;
+	char *p;
+	c1 = strtoul(s, &p, 10);
 
-    c1 = strtoul(s, &p, 10);
-    if (!*p) {
-        *frames = c1 * 10; // sec
-        return true;
-    }
+	if (!*p)
+	{
+		*frames = c1 * 10; // sec
+		return true;
+	}
 
-    if (*p == '.') {
-        c2 = strtoul(p + 1, &p, 10);
-        if (*p)
-            return false;
-        *frames = c1 * 10 + c2; // sec.frac
-        return true;
-    }
+	if (*p == '.')
+	{
+		c2 = strtoul(p + 1, &p, 10);
 
-    if (*p == ':') {
-        c2 = strtoul(p + 1, &p, 10);
-        if (!*p) {
-            *frames = c1 * 600 + c2 * 10; // min:sec
-            return true;
-        }
+		if (*p)
+			return false;
 
-        if (*p == '.') {
-            c3 = strtoul(p + 1, &p, 10);
-            if (*p)
-                return false;
-            *frames = c1 * 600 + c2 * 10 + c3; // min:sec.frac
-            return true;
-        }
+		*frames = c1 * 10 + c2; // sec.frac
+		return true;
+	}
 
-        return false;
-    }
+	if (*p == ':')
+	{
+		c2 = strtoul(p + 1, &p, 10);
 
-    return false;
+		if (!*p)
+		{
+			*frames = c1 * 600 + c2 * 10; // min:sec
+			return true;
+		}
+
+		if (*p == '.')
+		{
+			c3 = strtoul(p + 1, &p, 10);
+
+			if (*p)
+				return false;
+
+			*frames = c1 * 600 + c2 * 10 + c3; // min:sec.frac
+			return true;
+		}
+
+		return false;
+	}
+
+	return false;
 }
 #endif
 
 size_t Com_FormatTime(char *buffer, size_t size, time_t t)
 {
-    int     sec, min, hour, day;
+	int     sec, min, hour, day;
+	min = t / 60;
+	sec = t % 60;
+	hour = min / 60;
+	min %= 60;
+	day = hour / 24;
+	hour %= 24;
 
-    min = t / 60; sec = t % 60;
-    hour = min / 60; min %= 60;
-    day = hour / 24; hour %= 24;
+	if (day)
+		return Q_scnprintf(buffer, size, "%d+%d:%02d.%02d", day, hour, min, sec);
 
-    if (day) {
-        return Q_scnprintf(buffer, size, "%d+%d:%02d.%02d", day, hour, min, sec);
-    }
-    if (hour) {
-        return Q_scnprintf(buffer, size, "%d:%02d.%02d", hour, min, sec);
-    }
-    return Q_scnprintf(buffer, size, "%02d.%02d", min, sec);
+	if (hour)
+		return Q_scnprintf(buffer, size, "%d:%02d.%02d", hour, min, sec);
+
+	return Q_scnprintf(buffer, size, "%02d.%02d", min, sec);
 }
 
 size_t Com_FormatTimeLong(char *buffer, size_t size, time_t t)
 {
-    int     sec, min, hour, day;
-    size_t  len;
+	int     sec, min, hour, day;
+	size_t  len;
 
-    if (!t) {
-        return Q_scnprintf(buffer, size, "0 secs");
-    }
+	if (!t)
+		return Q_scnprintf(buffer, size, "0 secs");
 
-    min = t / 60; sec = t % 60;
-    hour = min / 60; min %= 60;
-    day = hour / 24; hour %= 24;
+	min = t / 60;
+	sec = t % 60;
+	hour = min / 60;
+	min %= 60;
+	day = hour / 24;
+	hour %= 24;
+	len = 0;
 
-    len = 0;
+	if (day)
+	{
+		len += Q_scnprintf(buffer + len, size - len,
+				"%d day%s%s", day, day == 1 ? "" : "s", (hour || min || sec) ? ", " : "");
+	}
 
-    if (day) {
-        len += Q_scnprintf(buffer + len, size - len,
-                           "%d day%s%s", day, day == 1 ? "" : "s", (hour || min || sec) ? ", " : "");
-    }
-    if (hour) {
-        len += Q_scnprintf(buffer + len, size - len,
-                           "%d hour%s%s", hour, hour == 1 ? "" : "s", (min || sec) ? ", " : "");
-    }
-    if (min) {
-        len += Q_scnprintf(buffer + len, size - len,
-                           "%d min%s%s", min, min == 1 ? "" : "s", sec ? ", " : "");
-    }
-    if (sec) {
-        len += Q_scnprintf(buffer + len, size - len,
-                           "%d sec%s", sec, sec == 1 ? "" : "s");
-    }
+	if (hour)
+	{
+		len += Q_scnprintf(buffer + len, size - len,
+				"%d hour%s%s", hour, hour == 1 ? "" : "s", (min || sec) ? ", " : "");
+	}
 
-    return len;
+	if (min)
+	{
+		len += Q_scnprintf(buffer + len, size - len,
+				"%d min%s%s", min, min == 1 ? "" : "s", sec ? ", " : "");
+	}
+
+	if (sec)
+	{
+		len += Q_scnprintf(buffer + len, size - len,
+				"%d sec%s", sec, sec == 1 ? "" : "s");
+	}
+
+	return len;
 }
 
 size_t Com_TimeDiff(char *buffer, size_t size, time_t *p, time_t now)
 {
-    time_t diff;
+	time_t diff;
 
-    if (*p > now) {
-        *p = now;
-    }
-    diff = now - *p;
-    return Com_FormatTime(buffer, size, diff);
+	if (*p > now)
+		*p = now;
+
+	diff = now - *p;
+	return Com_FormatTime(buffer, size, diff);
 }
 
 size_t Com_TimeDiffLong(char *buffer, size_t size, time_t *p, time_t now)
 {
-    time_t diff;
+	time_t diff;
 
-    if (*p > now) {
-        *p = now;
-    }
-    diff = now - *p;
-    return Com_FormatTimeLong(buffer, size, diff);
+	if (*p > now)
+		*p = now;
+
+	diff = now - *p;
+	return Com_FormatTimeLong(buffer, size, diff);
 }
 
 size_t Com_FormatSize(char *dest, size_t destsize, int64_t bytes)
 {
-    if (bytes >= 10000000) {
-        return Q_scnprintf(dest, destsize, "%"PRId64"M", bytes / 1000000);
-    }
-    if (bytes >= 1000000) {
-        return Q_scnprintf(dest, destsize, "%.1fM", bytes * 1e-6);
-    }
-    if (bytes >= 1000) {
-        return Q_scnprintf(dest, destsize, "%"PRId64"K", bytes / 1000);
-    }
-    if (bytes >= 0) {
-        return Q_scnprintf(dest, destsize, "%"PRId64, bytes);
-    }
-    return Q_scnprintf(dest, destsize, "???");
+	if (bytes >= 10000000)
+		return Q_scnprintf(dest, destsize, "%"PRId64"M", bytes / 1000000);
+
+	if (bytes >= 1000000)
+		return Q_scnprintf(dest, destsize, "%.1fM", bytes * 1e-6);
+
+	if (bytes >= 1000)
+		return Q_scnprintf(dest, destsize, "%"PRId64"K", bytes / 1000);
+
+	if (bytes >= 0)
+		return Q_scnprintf(dest, destsize, "%"PRId64, bytes);
+
+	return Q_scnprintf(dest, destsize, "???");
 }
 
 size_t Com_FormatSizeLong(char *dest, size_t destsize, int64_t bytes)
 {
-    if (bytes >= 10000000) {
-        return Q_scnprintf(dest, destsize, "%"PRId64" MB", bytes / 1000000);
-    }
-    if (bytes >= 1000000) {
-        return Q_scnprintf(dest, destsize, "%.1f MB", bytes * 1e-6);
-    }
-    if (bytes >= 1000) {
-        return Q_scnprintf(dest, destsize, "%"PRId64" kB", bytes / 1000);
-    }
-    if (bytes >= 0) {
-        return Q_scnprintf(dest, destsize, "%"PRId64" byte%s",
-                           bytes, bytes == 1 ? "" : "s");
-    }
-    return Q_scnprintf(dest, destsize, "unknown size");
+	if (bytes >= 10000000)
+		return Q_scnprintf(dest, destsize, "%"PRId64" MB", bytes / 1000000);
+
+	if (bytes >= 1000000)
+		return Q_scnprintf(dest, destsize, "%.1f MB", bytes * 1e-6);
+
+	if (bytes >= 1000)
+		return Q_scnprintf(dest, destsize, "%"PRId64" kB", bytes / 1000);
+
+	if (bytes >= 0)
+	{
+		return Q_scnprintf(dest, destsize, "%"PRId64" byte%s",
+				bytes, bytes == 1 ? "" : "s");
+	}
+
+	return Q_scnprintf(dest, destsize, "unknown size");
 }

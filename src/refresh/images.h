@@ -41,33 +41,35 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // absolute limit for OpenGL renderer
 #define MAX_TEXTURE_SIZE            4096
 
-typedef enum {
-    IM_PCX,
-    IM_WAL,
+typedef enum
+{
+	IM_PCX,
+	IM_WAL,
 #if USE_TGA
-    IM_TGA,
+	IM_TGA,
 #endif
 #if USE_JPG
-    IM_JPG,
+	IM_JPG,
 #endif
 #if USE_PNG
-    IM_PNG,
+	IM_PNG,
 #endif
 
-    IM_MAX
+	IM_MAX
 } imageformat_t;
 
-typedef struct image_s {
-    list_t          entry;
-    char            name[MAX_QPATH]; // game path
-    int             baselen; // without extension
-    imagetype_t     type;
-    imageflags_t    flags;
-    int             width, height; // source image
-    int             upload_width, upload_height; // after power of two and picmip
-    int             registration_sequence; // 0 = free
-    unsigned        texnum; // gl texture binding
-    float           sl, sh, tl, th;
+typedef struct image_s
+{
+	list_t          entry;
+	char            name[MAX_QPATH]; // game path
+	int             baselen; // without extension
+	imagetype_t     type;
+	imageflags_t    flags;
+	int             width, height; // source image
+	int             upload_width, upload_height; // after power of two and picmip
+	int             registration_sequence; // 0 = free
+	unsigned        texnum; // gl texture binding
+	float           sl, sh, tl, th;
 
 	// Generations
 	imageformat_t	original_format;

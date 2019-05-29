@@ -38,30 +38,34 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MD2_MAX_SKINWIDTH   640
 #define MD2_MAX_SKINHEIGHT  480
 
-typedef struct {
-    int16_t    s;
-    int16_t    t;
+typedef struct
+{
+	int16_t    s;
+	int16_t    t;
 } dmd2stvert_t;
 
-typedef struct {
-    uint16_t    index_xyz[3];
-    uint16_t    index_st[3];
+typedef struct
+{
+	uint16_t    index_xyz[3];
+	uint16_t    index_st[3];
 } dmd2triangle_t;
 
-typedef struct {
-    uint8_t    v[3];            // scaled byte to fit in frame mins/maxs
-    uint8_t    lightnormalindex;
+typedef struct
+{
+	uint8_t    v[3];            // scaled byte to fit in frame mins/maxs
+	uint8_t    lightnormalindex;
 } dmd2trivertx_t;
 
-typedef struct {
-    float           scale[3];       // multiply byte verts by this
-    float           translate[3];   // then add this
-    char            name[16];       // frame name from grabbing
-    dmd2trivertx_t  verts[1];       // variable sized
+typedef struct
+{
+	float           scale[3];       // multiply byte verts by this
+	float           translate[3];   // then add this
+	char            name[16];       // frame name from grabbing
+	dmd2trivertx_t  verts[1];       // variable sized
 } dmd2frame_t;
 
 #define MD2_MAX_FRAMESIZE \
-    (sizeof(dmd2frame_t) + sizeof(dmd2trivertx_t) * (MD2_MAX_VERTS - 1))
+	(sizeof(dmd2frame_t) + sizeof(dmd2trivertx_t) * (MD2_MAX_VERTS - 1))
 
 // the glcmd format:
 // a positive integer starts a tristrip command, followed by that many
@@ -72,27 +76,28 @@ typedef struct {
 // and an integer vertex index.
 
 
-typedef struct dmd2header_s {
-    uint32_t        ident;
-    uint32_t        version;
+typedef struct dmd2header_s
+{
+	uint32_t        ident;
+	uint32_t        version;
 
-    uint32_t        skinwidth;
-    uint32_t        skinheight;
-    uint32_t        framesize;      // byte size of each frame
+	uint32_t        skinwidth;
+	uint32_t        skinheight;
+	uint32_t        framesize;      // byte size of each frame
 
-    uint32_t        num_skins;
-    uint32_t        num_xyz;
-    uint32_t        num_st;         // greater than num_xyz for seams
-    uint32_t        num_tris;
-    uint32_t        num_glcmds;     // dwords in strip/fan command list
-    uint32_t        num_frames;
+	uint32_t        num_skins;
+	uint32_t        num_xyz;
+	uint32_t        num_st;         // greater than num_xyz for seams
+	uint32_t        num_tris;
+	uint32_t        num_glcmds;     // dwords in strip/fan command list
+	uint32_t        num_frames;
 
-    uint32_t        ofs_skins;      // each skin is a MAX_SKINNAME string
-    uint32_t        ofs_st;         // byte offset from start for stverts
-    uint32_t        ofs_tris;       // offset for dtriangles
-    uint32_t        ofs_frames;     // offset for first frame
-    uint32_t        ofs_glcmds;
-    uint32_t        ofs_end;        // end of file
+	uint32_t        ofs_skins;      // each skin is a MAX_SKINNAME string
+	uint32_t        ofs_st;         // byte offset from start for stverts
+	uint32_t        ofs_tris;       // offset for dtriangles
+	uint32_t        ofs_frames;     // offset for first frame
+	uint32_t        ofs_glcmds;
+	uint32_t        ofs_end;        // end of file
 } dmd2header_t;
 
 #endif // FORMAT_MD2_H

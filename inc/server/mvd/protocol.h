@@ -25,23 +25,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define GTF_DEFLATE     1
 #define GTF_STRINGCMDS  2
 
-typedef enum {
-    GTS_HELLO,
-    GTS_PONG,
-    GTS_STREAM_START,
-    GTS_STREAM_STOP,
-    GTS_STREAM_DATA,
-    GTS_ERROR,
-    GTS_BADREQUEST,
-    GTS_NOACCESS,
-    GTS_DISCONNECT,
-    GTS_RECONNECT
+typedef enum
+{
+	GTS_HELLO,
+	GTS_PONG,
+	GTS_STREAM_START,
+	GTS_STREAM_STOP,
+	GTS_STREAM_DATA,
+	GTS_ERROR,
+	GTS_BADREQUEST,
+	GTS_NOACCESS,
+	GTS_DISCONNECT,
+	GTS_RECONNECT
 } gtv_serverop_t;
 
-typedef enum {
-    GTC_HELLO,
-    GTC_PING,
-    GTC_STREAM_START,
-    GTC_STREAM_STOP,
-    GTC_STRINGCMD
+typedef enum
+{
+	GTC_HELLO,
+	GTC_PING,
+	GTC_STREAM_START,
+	GTC_STREAM_STOP,
+	GTC_STRINGCMD
 } gtv_clientop_t;

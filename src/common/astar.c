@@ -33,7 +33,8 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <math.h>
 #include <string.h>
 
-struct __ASNeighborList {
+struct __ASNeighborList
+{
 	const ASPathNodeSource *source;
 	size_t capacity;
 	size_t count;
@@ -41,13 +42,15 @@ struct __ASNeighborList {
 	byte *nodeKeys;
 };
 
-struct __ASPath {
+struct __ASPath
+{
 	size_t nodeSize;
 	size_t count;
 	ASGoalType cost;
 };
 
-typedef enum {
+typedef enum
+{
 	isClosed = 1,
 	isOpen = 2,
 	isGoal = 4,
@@ -55,7 +58,8 @@ typedef enum {
 	hasEstimatedCost = 16
 } NodeRecordFlags;
 
-typedef struct {
+typedef struct
+{
 	NodeRecordFlags flags;
 	ASGoalType estimatedCost;
 	ASGoalType cost;
@@ -67,7 +71,8 @@ typedef struct {
 #define RECORD_ADD_FLAG(record, flag) (record->flags |= flag)
 #define RECORD_REMOVE_FLAG(record, flag) (record->flags &= ~flag)
 
-struct __VisitedNodes {
+struct __VisitedNodes
+{
 	const ASPathNodeSource *source;
 	void *context;
 	size_t nodeRecordsCapacity;
@@ -80,12 +85,13 @@ struct __VisitedNodes {
 };
 typedef struct __VisitedNodes *VisitedNodes;
 
-typedef struct {
+typedef struct
+{
 	VisitedNodes nodes;
 	size_t index;
 } Node;
 
-static const Node NodeNull = { NULL, (uint32_t)-1 };
+static const Node NodeNull = { NULL, (uint32_t) -1 };
 
 /********************************************/
 
@@ -112,7 +118,10 @@ static inline int NodeIsNull(Node n)
 
 static inline Node NodeMake(VisitedNodes nodes, size_t index)
 {
-	return (Node) { nodes, index };
+	return (Node)
+	{
+		nodes, index
+	};
 }
 
 static inline NodeRecord *NodeGetRecord(Node node)
@@ -175,9 +184,8 @@ static inline int NodeHasEstimatedCost(Node n)
 
 static inline void SetNodeIsGoal(Node n)
 {
-	if (!NodeIsNull(n)) {
+	if (!NodeIsNull(n))
 		RECORD_ADD_FLAG(NodeGetRecord(n), isGoal);
-	}
 }
 
 static inline int NodeIsGoal(Node n)
@@ -188,109 +196,96 @@ static inline int NodeIsGoal(Node n)
 static inline Node GetParentNode(Node n)
 {
 	NodeRecord *record = NodeGetRecord(n);
-	if (RECORD_HAS_FLAG(record, hasParent)) {
+
+	if (RECORD_HAS_FLAG(record, hasParent))
 		return NodeMake(n.nodes, record->parentIndex);
-	}
-	else {
+	else
 		return NodeNull;
-	}
 }
 
 static inline int NodeRankCompare(Node n1, Node n2)
 {
 	const ASGoalType rank1 = GetNodeRank(n1);
 	const ASGoalType rank2 = GetNodeRank(n2);
-	if (rank1 < rank2) {
+
+	if (rank1 < rank2)
 		return -1;
-	}
-	else if (rank1 > rank2) {
+	else if (rank1 > rank2)
 		return 1;
-	}
-	else {
+	else
 		return 0;
-	}
 }
 
 static inline ASGoalType GetPathCostHeuristic(Node a, Node b)
 {
-	if (a.nodes->source->pathCostHeuristic && !NodeIsNull(a) && !NodeIsNull(b)) {
+	if (a.nodes->source->pathCostHeuristic && !NodeIsNull(a) && !NodeIsNull(b))
 		return a.nodes->source->pathCostHeuristic(GetNodeKey(a), GetNodeKey(b), a.nodes->context);
-	}
-	else {
+	else
 		return 0;
-	}
 }
 
 static inline int NodeKeyCompare(Node node, void *nodeKey)
 {
-	if (node.nodes->source->nodeComparator) {
+	if (node.nodes->source->nodeComparator)
 		return node.nodes->source->nodeComparator(GetNodeKey(node), nodeKey, node.nodes->context);
-	}
-	else {
+	else
 		return memcmp(GetNodeKey(node), nodeKey, node.nodes->source->nodeSize);
-	}
 }
 
 static inline Node GetNode(VisitedNodes nodes, void *nodeKey)
 {
-	if (!nodeKey) {
+	if (!nodeKey)
 		return NodeNull;
-	}
 
 	// looks it up in the index, if it's not found it inserts a new record in the sorted index and the nodeRecords array and returns a reference to it
 	size_t first = 0;
 
-	if (nodes->nodeRecordsCount > 0) {
+	if (nodes->nodeRecordsCount > 0)
+	{
 		size_t last = nodes->nodeRecordsCount - 1;
 
-		while (first <= last) {
+		while (first <= last)
+		{
 			const size_t mid = (first + last) / 2;
 			const int comp = NodeKeyCompare(NodeMake(nodes, nodes->nodeRecordsIndex[mid]), nodeKey);
 
-			if (comp < 0) {
+			if (comp < 0)
 				first = mid + 1;
-			}
-			else if (comp > 0 && mid > 0) {
+			else if (comp > 0 && mid > 0)
 				last = mid - 1;
-			}
-			else if (comp > 0) {
+			else if (comp > 0)
 				break;
-			}
-			else {
+			else
 				return NodeMake(nodes, nodes->nodeRecordsIndex[mid]);
-			}
 		}
 	}
 
-	if (nodes->nodeRecordsCount == nodes->nodeRecordsCapacity) {
+	if (nodes->nodeRecordsCount == nodes->nodeRecordsCapacity)
+	{
 		nodes->nodeRecordsCapacity = 1 + (nodes->nodeRecordsCapacity * 2);
-		nodes->nodeRecords = (byte*)Z_Realloc(nodes->nodeRecords, nodes->nodeRecordsCapacity * (sizeof(NodeRecord) + nodes->source->nodeSize));
-		nodes->nodeRecordsIndex = (size_t*)Z_Realloc(nodes->nodeRecordsIndex, nodes->nodeRecordsCapacity * sizeof(size_t));
+		nodes->nodeRecords = (byte *)Z_Realloc(nodes->nodeRecords, nodes->nodeRecordsCapacity * (sizeof(NodeRecord) + nodes->source->nodeSize));
+		nodes->nodeRecordsIndex = (size_t *)Z_Realloc(nodes->nodeRecordsIndex, nodes->nodeRecordsCapacity * sizeof(size_t));
 	}
 
 	Node node = NodeMake(nodes, nodes->nodeRecordsCount);
 	nodes->nodeRecordsCount++;
-
 	memmove(&nodes->nodeRecordsIndex[first + 1], &nodes->nodeRecordsIndex[first], (nodes->nodeRecordsCapacity - first - 1) * sizeof(size_t));
 	nodes->nodeRecordsIndex[first] = node.index;
-
 	NodeRecord *record = NodeGetRecord(node);
 	memset(record, 0, sizeof(NodeRecord));
 	memcpy((record + 1), nodeKey, nodes->source->nodeSize);
-
 	return node;
 }
 
 static inline void SwapOpenSetNodesAtIndexes(VisitedNodes nodes, size_t index1, size_t index2)
 {
-	if (index1 != index2) {
+	if (index1 != index2)
+	{
 		NodeRecord *record1 = NodeGetRecord(NodeMake(nodes, nodes->openNodes[index1]));
 		NodeRecord *record2 = NodeGetRecord(NodeMake(nodes, nodes->openNodes[index2]));
-
 		const size_t tempOpenIndex = record1->openIndex;
 		record1->openIndex = record2->openIndex;
 		record2->openIndex = tempOpenIndex;
-
 		const size_t tempNodeIndex = nodes->openNodes[index1];
 		nodes->openNodes[index1] = nodes->openNodes[index2];
 		nodes->openNodes[index2] = tempNodeIndex;
@@ -301,8 +296,10 @@ static inline void DidRemoveFromOpenSetAtIndex(VisitedNodes nodes, size_t index)
 {
 	size_t smallestIndex = index;
 
-	do {
-		if (smallestIndex != index) {
+	do
+	{
+		if (smallestIndex != index)
+		{
 			SwapOpenSetNodesAtIndexes(nodes, smallestIndex, index);
 			index = smallestIndex;
 		}
@@ -310,24 +307,23 @@ static inline void DidRemoveFromOpenSetAtIndex(VisitedNodes nodes, size_t index)
 		const size_t leftIndex = (2 * index) + 1;
 		const size_t rightIndex = (2 * index) + 2;
 
-		if (leftIndex < nodes->openNodesCount && NodeRankCompare(NodeMake(nodes, nodes->openNodes[leftIndex]), NodeMake(nodes, nodes->openNodes[smallestIndex])) < 0) {
+		if (leftIndex < nodes->openNodesCount && NodeRankCompare(NodeMake(nodes, nodes->openNodes[leftIndex]), NodeMake(nodes, nodes->openNodes[smallestIndex])) < 0)
 			smallestIndex = leftIndex;
-		}
 
-		if (rightIndex < nodes->openNodesCount && NodeRankCompare(NodeMake(nodes, nodes->openNodes[rightIndex]), NodeMake(nodes, nodes->openNodes[smallestIndex])) < 0) {
+		if (rightIndex < nodes->openNodesCount && NodeRankCompare(NodeMake(nodes, nodes->openNodes[rightIndex]), NodeMake(nodes, nodes->openNodes[smallestIndex])) < 0)
 			smallestIndex = rightIndex;
-		}
-	} while (smallestIndex != index);
+	}
+	while (smallestIndex != index);
 }
 
 static inline void RemoveNodeFromOpenSet(Node n)
 {
 	NodeRecord *record = NodeGetRecord(n);
 
-	if (RECORD_HAS_FLAG(record, isOpen)) {
+	if (RECORD_HAS_FLAG(record, isOpen))
+	{
 		RECORD_REMOVE_FLAG(record, isOpen);
 		n.nodes->openNodesCount--;
-
 		const size_t index = record->openIndex;
 		SwapOpenSetNodesAtIndexes(n.nodes, index, n.nodes->openNodesCount);
 		DidRemoveFromOpenSetAtIndex(n.nodes, index);
@@ -336,13 +332,14 @@ static inline void RemoveNodeFromOpenSet(Node n)
 
 static inline void DidInsertIntoOpenSetAtIndex(VisitedNodes nodes, size_t index)
 {
-	while (index > 0) {
+	while (index > 0)
+	{
 		const size_t parentIndex = floorf((index - 1) / 2);
 
-		if (NodeRankCompare(NodeMake(nodes, nodes->openNodes[parentIndex]), NodeMake(nodes, nodes->openNodes[index])) < 0) {
+		if (NodeRankCompare(NodeMake(nodes, nodes->openNodes[parentIndex]), NodeMake(nodes, nodes->openNodes[index])) < 0)
 			break;
-		}
-		else {
+		else
+		{
 			SwapOpenSetNodesAtIndexes(nodes, parentIndex, index);
 			index = parentIndex;
 		}
@@ -353,27 +350,26 @@ static inline void AddNodeToOpenSet(Node n, ASGoalType cost, Node parent)
 {
 	NodeRecord *record = NodeGetRecord(n);
 
-	if (!NodeIsNull(parent)) {
+	if (!NodeIsNull(parent))
+	{
 		RECORD_ADD_FLAG(record, hasParent);
 		record->parentIndex = parent.index;
 	}
-	else {
+	else
 		RECORD_REMOVE_FLAG(record, hasParent);
-	}
 
-	if (n.nodes->openNodesCount == n.nodes->openNodesCapacity) {
+	if (n.nodes->openNodesCount == n.nodes->openNodesCapacity)
+	{
 		n.nodes->openNodesCapacity = 1 + (n.nodes->openNodesCapacity * 2);
-		n.nodes->openNodes = (size_t*)Z_Realloc(n.nodes->openNodes, n.nodes->openNodesCapacity * sizeof(size_t));
+		n.nodes->openNodes = (size_t *)Z_Realloc(n.nodes->openNodes, n.nodes->openNodesCapacity * sizeof(size_t));
 	}
 
 	const size_t openIndex = n.nodes->openNodesCount;
 	n.nodes->openNodes[openIndex] = n.index;
 	n.nodes->openNodesCount++;
-
 	record->openIndex = openIndex;
 	RECORD_ADD_FLAG(record, isOpen);
 	record->cost = cost;
-
 	DidInsertIntoOpenSetAtIndex(n.nodes, openIndex);
 }
 
@@ -415,11 +411,13 @@ static void *NeighborListGetNodeKey(ASNeighborList list, size_t index)
 
 void ASNeighborListAdd(ASNeighborList list, void *node, ASGoalType edgeCost)
 {
-	if (list->count == list->capacity) {
+	if (list->count == list->capacity)
+	{
 		list->capacity = 1 + (list->capacity * 2);
-		list->costs = (ASGoalType*)Z_Realloc(list->costs, sizeof(ASGoalType) * list->capacity);
-		list->nodeKeys = (byte*)Z_Realloc(list->nodeKeys, list->source->nodeSize * list->capacity);
+		list->costs = (ASGoalType *)Z_Realloc(list->costs, sizeof(ASGoalType) * list->capacity);
+		list->nodeKeys = (byte *)Z_Realloc(list->nodeKeys, list->source->nodeSize * list->capacity);
 	}
+
 	list->costs[list->count] = edgeCost;
 	memcpy(list->nodeKeys + (list->count * list->source->nodeSize), node, list->source->nodeSize);
 	list->count++;
@@ -427,74 +425,70 @@ void ASNeighborListAdd(ASNeighborList list, void *node, ASGoalType edgeCost)
 
 ASPath ASPathCreate(const ASPathNodeSource *source, void *context, void *startNodeKey, void *goalNodeKey)
 {
-	if (!startNodeKey || !source || !source->nodeNeighbors || source->nodeSize == 0) {
+	if (!startNodeKey || !source || !source->nodeNeighbors || source->nodeSize == 0)
 		return NULL;
-	}
 
 	VisitedNodes visitedNodes = VisitedNodesCreate(source, context);
 	ASNeighborList neighborList = NeighborListCreate(source);
 	Node current = GetNode(visitedNodes, startNodeKey);
 	Node goalNode = GetNode(visitedNodes, goalNodeKey);
 	ASPath path = NULL;
-
 	// mark the goal node as the goal
 	SetNodeIsGoal(goalNode);
-
 	// set the starting node's estimate cost to the goal and add it to the open set
 	SetNodeEstimatedCost(current, GetPathCostHeuristic(current, goalNode));
 	AddNodeToOpenSet(current, 0, NodeNull);
 
 	// perform the A* algorithm
-	while (HasOpenNode(visitedNodes) && !NodeIsGoal((current = GetOpenNode(visitedNodes)))) {
-		if (source->earlyExit) {
+	while (HasOpenNode(visitedNodes) && !NodeIsGoal((current = GetOpenNode(visitedNodes))))
+	{
+		if (source->earlyExit)
+		{
 			const int shouldExit = source->earlyExit(visitedNodes->nodeRecordsCount, GetNodeKey(current), goalNodeKey, context);
 
-			if (shouldExit > 0) {
+			if (shouldExit > 0)
+			{
 				SetNodeIsGoal(current);
 				break;
 			}
-			else if (shouldExit < 0) {
+			else if (shouldExit < 0)
 				break;
-			}
 		}
 
 		RemoveNodeFromOpenSet(current);
 		AddNodeToClosedSet(current);
-
 		neighborList->count = 0;
 		source->nodeNeighbors(neighborList, GetNodeKey(current), context);
 
-		for (size_t n = 0; n<neighborList->count; n++) {
+		for (size_t n = 0; n < neighborList->count; n++)
+		{
 			const ASGoalType cost = GetNodeCost(current) + NeighborListGetEdgeCost(neighborList, n);
 			Node neighbor = GetNode(visitedNodes, NeighborListGetNodeKey(neighborList, n));
 
-			if (!NodeHasEstimatedCost(neighbor)) {
+			if (!NodeHasEstimatedCost(neighbor))
 				SetNodeEstimatedCost(neighbor, GetPathCostHeuristic(neighbor, goalNode));
-			}
 
-			if (NodeIsInOpenSet(neighbor) && cost < GetNodeCost(neighbor)) {
+			if (NodeIsInOpenSet(neighbor) && cost < GetNodeCost(neighbor))
 				RemoveNodeFromOpenSet(neighbor);
-			}
 
-			if (NodeIsInClosedSet(neighbor) && cost < GetNodeCost(neighbor)) {
+			if (NodeIsInClosedSet(neighbor) && cost < GetNodeCost(neighbor))
 				RemoveNodeFromClosedSet(neighbor);
-			}
 
-			if (!NodeIsInOpenSet(neighbor) && !NodeIsInClosedSet(neighbor)) {
+			if (!NodeIsInOpenSet(neighbor) && !NodeIsInClosedSet(neighbor))
 				AddNodeToOpenSet(neighbor, cost, current);
-			}
 		}
 	}
 
-	if (NodeIsNull(goalNode)) {
+	if (NodeIsNull(goalNode))
 		SetNodeIsGoal(current);
-	}
 
-	if (NodeIsGoal(current)) {
+	if (NodeIsGoal(current))
+	{
 		size_t count = 0;
 		Node n = current;
 
-		while (!NodeIsNull(n)) {
+		while (!NodeIsNull(n))
+		{
 			count++;
 			n = GetParentNode(n);
 		}
@@ -503,17 +497,17 @@ ASPath ASPathCreate(const ASPathNodeSource *source, void *context, void *startNo
 		path->nodeSize = source->nodeSize;
 		path->count = count;
 		path->cost = GetNodeCost(current);
-
 		n = current;
-		for (size_t i = count; i>0; i--) {
-			memcpy((byte*)(path + 1) + ((i - 1) * source->nodeSize), GetNodeKey(n), source->nodeSize);
+
+		for (size_t i = count; i > 0; i--)
+		{
+			memcpy((byte *)(path + 1) + ((i - 1) * source->nodeSize), GetNodeKey(n), source->nodeSize);
 			n = GetParentNode(n);
 		}
 	}
 
 	NeighborListDestroy(neighborList);
 	VisitedNodesDestroy(visitedNodes);
-
 	return path;
 }
 
@@ -524,15 +518,15 @@ void ASPathDestroy(ASPath path)
 
 ASPath ASPathCopy(ASPath path)
 {
-	if (path) {
+	if (path)
+	{
 		const size_t size = sizeof(struct __ASPath) + (path->count * path->nodeSize);
 		ASPath newPath = (ASPath)Z_Malloc(size);
 		memcpy(newPath, path, size);
 		return newPath;
 	}
-	else {
+	else
 		return NULL;
-	}
 }
 
 ASGoalType ASPathGetCost(ASPath path)
@@ -547,5 +541,5 @@ size_t ASPathGetCount(ASPath path)
 
 void *ASPathGetNode(ASPath path, size_t index)
 {
-	return (path && index < path->count) ? ((byte*)(path + 1) + (index * path->nodeSize)) : NULL;
+	return (path && index < path->count) ? ((byte *)(path + 1) + (index * path->nodeSize)) : NULL;
 }

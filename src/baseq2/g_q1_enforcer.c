@@ -8,7 +8,8 @@ SOLDIER / PLAYER
 
 #include "g_local.h"
 
-enum {
+enum
+{
 	stand1, stand2, stand3, stand4, stand5, stand6, stand7,
 
 	walk1, walk2, walk3, walk4, walk5, walk6, walk7, walk8, walk9, walk10,
@@ -52,16 +53,14 @@ void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 void enforcer_fire(edict_t *self)
 {
 	gi.positioned_sound(self->s.origin, self, CHAN_VOICE, sound_enfire, 1, ATTN_NORM, 0);
-
 	//self.effects = self.effects | EF_MUZZLEFLASH;
 	vec3_t org, v_forward, v_right;
 	AngleVectors(self->s.angles, v_forward, v_right, NULL);
 
 	for (int i = 0; i < 3; ++i)
 		org[i] = self->s.origin[i] + v_forward[i] * 30 + v_right[i] * 8.5f;
-	
-	org[2] += 16;
 
+	org[2] += 16;
 	vec3_t dir;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
 	VectorNormalize(dir);
@@ -70,7 +69,8 @@ void enforcer_fire(edict_t *self)
 
 //============================================================================
 
-mframe_t enf_frames_stand1[] = {
+mframe_t enf_frames_stand1[] =
+{
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
@@ -92,7 +92,8 @@ void enf_idle_sound(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
 }
 
-mframe_t enf_frames_walk1[] = {
+mframe_t enf_frames_walk1[] =
+{
 	{ ai_walk, 2,   enf_idle_sound },
 	{ ai_walk, 4,   NULL },
 	{ ai_walk, 4,   NULL },
@@ -117,7 +118,8 @@ void enf_walk(edict_t *self)
 	self->monsterinfo.currentmove = &enf_walk1;
 }
 
-mframe_t enf_frames_run1[] = {
+mframe_t enf_frames_run1[] =
+{
 	{ ai_run, 18,   enf_idle_sound },
 	{ ai_run, 14,   NULL },
 	{ ai_run, 7,   NULL },
@@ -153,7 +155,8 @@ void enf_pew(edict_t *self)
 	self->dmg = 0;
 }
 
-mframe_t enf_frames_atk1[] = {
+mframe_t enf_frames_atk1[] =
+{
 	{ ai_charge, 0,   enf_idle_sound },
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
@@ -172,7 +175,8 @@ void enf_atk(edict_t *self)
 	self->monsterinfo.currentmove = &enf_atk1;
 }
 
-mframe_t enf_frames_paina1[] = {
+mframe_t enf_frames_paina1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -180,7 +184,8 @@ mframe_t enf_frames_paina1[] = {
 };
 mmove_t enf_paina1 = { paina1, paina4, enf_frames_paina1, enf_run };
 
-mframe_t enf_frames_painb1[] = {
+mframe_t enf_frames_painb1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -189,7 +194,8 @@ mframe_t enf_frames_painb1[] = {
 };
 mmove_t enf_painb1 = { painb1, painb5, enf_frames_painb1, enf_run };
 
-mframe_t enf_frames_painc1[] = {
+mframe_t enf_frames_painc1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -201,7 +207,8 @@ mframe_t enf_frames_painc1[] = {
 };
 mmove_t enf_painc1 = { painc1, painc8, enf_frames_painc1, enf_run };
 
-mframe_t enf_frames_paind1[] = {
+mframe_t enf_frames_paind1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -226,15 +233,15 @@ mmove_t enf_paind1 = { paind1, paind19, enf_frames_paind1, enf_run };
 
 void enf_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 {
-	float r = random ();
-	
+	float r = random();
+
 	if (self->pain_debounce_time > level.time)
 		return;
 
 	if (r < 0.5f)
-		gi.sound (self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
 	else
-		gi.sound (self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_VOICE, sound_pain2, 1, ATTN_NORM, 0);
 
 	if (r < 0.2f)
 	{
@@ -277,7 +284,8 @@ void enf_dead(edict_t *self)
 	self->nextthink = 0;
 }
 
-mframe_t enf_frames_die1[] = {
+mframe_t enf_frames_die1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   enf_drop },
@@ -295,7 +303,8 @@ mframe_t enf_frames_die1[] = {
 };
 mmove_t enf_die1 = { death1, death14, enf_frames_die1, enf_dead };
 
-mframe_t enf_frames_fdie1[] = {
+mframe_t enf_frames_fdie1[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   enf_drop },
@@ -312,10 +321,10 @@ mmove_t enf_fdie1 = { fdeath1, fdeath11, enf_frames_fdie1, enf_dead };
 
 void enf_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-// check for gib
+	// check for gib
 	if (self->health < -35)
 	{
-		gi.sound (self, CHAN_VOICE, sound_udeath, 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_VOICE, sound_udeath, 1, ATTN_NORM, 0);
 		ThrowHead(self, "models/q1/h_mega.mdl", self->health, GIB_Q1);
 		ThrowGib(self, "models/q1/gib1.mdl", self->health, GIB_Q1);
 		ThrowGib(self, "models/q1/gib2.mdl", self->health, GIB_Q1);
@@ -328,9 +337,8 @@ void enf_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, v
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
-// regular death
-	gi.sound (self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+	// regular death
+	gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
 
 	if (random() > 0.5f)
 		self->monsterinfo.currentmove = &enf_die1;
@@ -362,11 +370,10 @@ void q1_monster_enforcer(edict_t *self)
 		G_FreeEdict(self);
 		return;
 	}
-	
+
 	gi.modelindex("models/q1/enforcer.mdl");
 	gi.modelindex("models/q1/h_mega.mdl");
 	gi.modelindex("models/q1/laser.mdl");
-
 	sound_death1 = gi.soundindex("q1/enforcer/death1.wav");
 	sound_enfire = gi.soundindex("q1/enforcer/enfire.wav");
 	gi.soundindex("q1/enforcer/enfstop.wav");
@@ -378,16 +385,12 @@ void q1_monster_enforcer(edict_t *self)
 	sound_sight3 = gi.soundindex("q1/enforcer/sight3.wav");
 	sound_sight4 = gi.soundindex("q1/enforcer/sight4.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
-	gi.setmodel (self, "models/q1/enforcer.mdl");
-
+	gi.setmodel(self, "models/q1/enforcer.mdl");
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 40);
 	self->health = 80;
-
 	self->monsterinfo.stand = enf_stand;
 	self->monsterinfo.walk = enf_walk;
 	self->monsterinfo.run = enf_run;
@@ -395,11 +398,8 @@ void q1_monster_enforcer(edict_t *self)
 	self->monsterinfo.sight = enf_sight;
 	self->pain = enf_pain;
 	self->die = enf_die;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &enf_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

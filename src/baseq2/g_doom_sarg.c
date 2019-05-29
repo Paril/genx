@@ -6,7 +6,8 @@ static int sound_pain;
 static int sound_death;
 static int sound_attack;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -46,7 +47,8 @@ void sarg_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_action, 1, ATTN_NORM, 0);
 }
 
-mframe_t sarg_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t sarg_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -64,7 +66,8 @@ void sarg_stand(edict_t *self)
 #define MOVE_SPEED 17.5f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t sarg_frames_run1[FRAME_COUNT(run)] = {
+mframe_t sarg_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  sarg_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  sarg_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  sarg_idle, frames_run2 },
@@ -81,7 +84,8 @@ void sarg_run(edict_t *self)
 	self->monsterinfo.currentmove = &sarg_run1;
 }
 
-mframe_t sarg_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t sarg_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -104,7 +108,8 @@ void sarg_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t sarg_frames_die1[FRAME_COUNT(die)] = {
+mframe_t sarg_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death2 },
 	{ ai_move, 0,  NULL, frames_death3 },
@@ -120,17 +125,15 @@ void sarg_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
-
 	self->monsterinfo.currentmove = &sarg_die1;
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-mframe_t sarg_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t sarg_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
 };
@@ -160,7 +163,8 @@ void sarg_eat(edict_t *self)
 		T_Damage(self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ((Q_rand() % 10) + 1) * 4, 0, DAMAGE_NO_PARTICLES, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 }
 
-mframe_t sarg_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t sarg_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack2 },
@@ -196,20 +200,16 @@ void doom_monster_sarg(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_alert = gi.soundindex("doom/SGTSIT.wav");
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/SGTDTH.wav");
 	sound_attack = gi.soundindex("doom/SGTATK.wav");
-
 	VectorSet(self->mins, -30, -30, -4);
 	VectorSet(self->maxs, 30, 30, 52);
-
 	self->s.modelindex = gi.modelindex("sprites/doom/sarg.d2s");
 	self->health = 150;
 	self->dmg = 0;
-
 	self->monsterinfo.stand = sarg_stand;
 	self->monsterinfo.walk = sarg_walk;
 	self->monsterinfo.run = sarg_run;
@@ -224,9 +224,7 @@ void doom_monster_sarg(edict_t *self)
 		self->s.renderfx |= RF_SPECTRE;
 
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &sarg_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

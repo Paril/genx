@@ -19,34 +19,37 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef DMA_H
 #define DMA_H
 
-typedef struct dma_s {
-    int         channels;
-    int         samples;                // mono samples in buffer
-    int         submission_chunk;       // don't mix less than this #
-    int         samplepos;              // in mono samples
-    int         samplebits;
-    int         speed;
-    byte        *buffer;
+typedef struct dma_s
+{
+	int         channels;
+	int         samples;                // mono samples in buffer
+	int         submission_chunk;       // don't mix less than this #
+	int         samplepos;              // in mono samples
+	int         samplebits;
+	int         speed;
+	byte        *buffer;
 } dma_t;
 
-typedef enum {
-    SIS_SUCCESS,
-    SIS_FAILURE,
-    SIS_NOTAVAIL
+typedef enum
+{
+	SIS_SUCCESS,
+	SIS_FAILURE,
+	SIS_NOTAVAIL
 } sndinitstat_t;
 
-typedef struct snddmaAPI_s {
-    sndinitstat_t (*Init)(void);
-    void (*Shutdown)(void);
-    void (*BeginPainting)(void);
-    void (*Submit)(void);
-    void (*Activate)(bool active);
+typedef struct snddmaAPI_s
+{
+	sndinitstat_t (*Init)(void);
+	void (*Shutdown)(void);
+	void (*BeginPainting)(void);
+	void (*Submit)(void);
+	void (*Activate)(bool active);
 } snddmaAPI_t;
 
 void WAVE_FillAPI(snddmaAPI_t *api);
 
 #if USE_DSOUND
-void DS_FillAPI(snddmaAPI_t *api);
+	void DS_FillAPI(snddmaAPI_t *api);
 #endif
 
 extern dma_t    dma;

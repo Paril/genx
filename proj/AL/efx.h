@@ -203,43 +203,43 @@ extern "C" {
 
 
 /* Effect object function types. */
-typedef void (AL_APIENTRY *LPALGENEFFECTS)(ALsizei, ALuint*);
-typedef void (AL_APIENTRY *LPALDELETEEFFECTS)(ALsizei, const ALuint*);
-typedef ALboolean (AL_APIENTRY *LPALISEFFECT)(ALuint);
+typedef void (AL_APIENTRY *LPALGENEFFECTS)(ALsizei, ALuint *);
+typedef void (AL_APIENTRY *LPALDELETEEFFECTS)(ALsizei, const ALuint *);
+typedef ALboolean(AL_APIENTRY *LPALISEFFECT)(ALuint);
 typedef void (AL_APIENTRY *LPALEFFECTI)(ALuint, ALenum, ALint);
-typedef void (AL_APIENTRY *LPALEFFECTIV)(ALuint, ALenum, const ALint*);
+typedef void (AL_APIENTRY *LPALEFFECTIV)(ALuint, ALenum, const ALint *);
 typedef void (AL_APIENTRY *LPALEFFECTF)(ALuint, ALenum, ALfloat);
-typedef void (AL_APIENTRY *LPALEFFECTFV)(ALuint, ALenum, const ALfloat*);
-typedef void (AL_APIENTRY *LPALGETEFFECTI)(ALuint, ALenum, ALint*);
-typedef void (AL_APIENTRY *LPALGETEFFECTIV)(ALuint, ALenum, ALint*);
-typedef void (AL_APIENTRY *LPALGETEFFECTF)(ALuint, ALenum, ALfloat*);
-typedef void (AL_APIENTRY *LPALGETEFFECTFV)(ALuint, ALenum, ALfloat*);
+typedef void (AL_APIENTRY *LPALEFFECTFV)(ALuint, ALenum, const ALfloat *);
+typedef void (AL_APIENTRY *LPALGETEFFECTI)(ALuint, ALenum, ALint *);
+typedef void (AL_APIENTRY *LPALGETEFFECTIV)(ALuint, ALenum, ALint *);
+typedef void (AL_APIENTRY *LPALGETEFFECTF)(ALuint, ALenum, ALfloat *);
+typedef void (AL_APIENTRY *LPALGETEFFECTFV)(ALuint, ALenum, ALfloat *);
 
 /* Filter object function types. */
-typedef void (AL_APIENTRY *LPALGENFILTERS)(ALsizei, ALuint*);
-typedef void (AL_APIENTRY *LPALDELETEFILTERS)(ALsizei, const ALuint*);
-typedef ALboolean (AL_APIENTRY *LPALISFILTER)(ALuint);
+typedef void (AL_APIENTRY *LPALGENFILTERS)(ALsizei, ALuint *);
+typedef void (AL_APIENTRY *LPALDELETEFILTERS)(ALsizei, const ALuint *);
+typedef ALboolean(AL_APIENTRY *LPALISFILTER)(ALuint);
 typedef void (AL_APIENTRY *LPALFILTERI)(ALuint, ALenum, ALint);
-typedef void (AL_APIENTRY *LPALFILTERIV)(ALuint, ALenum, const ALint*);
+typedef void (AL_APIENTRY *LPALFILTERIV)(ALuint, ALenum, const ALint *);
 typedef void (AL_APIENTRY *LPALFILTERF)(ALuint, ALenum, ALfloat);
-typedef void (AL_APIENTRY *LPALFILTERFV)(ALuint, ALenum, const ALfloat*);
-typedef void (AL_APIENTRY *LPALGETFILTERI)(ALuint, ALenum, ALint*);
-typedef void (AL_APIENTRY *LPALGETFILTERIV)(ALuint, ALenum, ALint*);
-typedef void (AL_APIENTRY *LPALGETFILTERF)(ALuint, ALenum, ALfloat*);
-typedef void (AL_APIENTRY *LPALGETFILTERFV)(ALuint, ALenum, ALfloat*);
+typedef void (AL_APIENTRY *LPALFILTERFV)(ALuint, ALenum, const ALfloat *);
+typedef void (AL_APIENTRY *LPALGETFILTERI)(ALuint, ALenum, ALint *);
+typedef void (AL_APIENTRY *LPALGETFILTERIV)(ALuint, ALenum, ALint *);
+typedef void (AL_APIENTRY *LPALGETFILTERF)(ALuint, ALenum, ALfloat *);
+typedef void (AL_APIENTRY *LPALGETFILTERFV)(ALuint, ALenum, ALfloat *);
 
 /* Auxiliary Effect Slot object function types. */
-typedef void (AL_APIENTRY *LPALGENAUXILIARYEFFECTSLOTS)(ALsizei, ALuint*);
-typedef void (AL_APIENTRY *LPALDELETEAUXILIARYEFFECTSLOTS)(ALsizei, const ALuint*);
-typedef ALboolean (AL_APIENTRY *LPALISAUXILIARYEFFECTSLOT)(ALuint);
+typedef void (AL_APIENTRY *LPALGENAUXILIARYEFFECTSLOTS)(ALsizei, ALuint *);
+typedef void (AL_APIENTRY *LPALDELETEAUXILIARYEFFECTSLOTS)(ALsizei, const ALuint *);
+typedef ALboolean(AL_APIENTRY *LPALISAUXILIARYEFFECTSLOT)(ALuint);
 typedef void (AL_APIENTRY *LPALAUXILIARYEFFECTSLOTI)(ALuint, ALenum, ALint);
-typedef void (AL_APIENTRY *LPALAUXILIARYEFFECTSLOTIV)(ALuint, ALenum, const ALint*);
+typedef void (AL_APIENTRY *LPALAUXILIARYEFFECTSLOTIV)(ALuint, ALenum, const ALint *);
 typedef void (AL_APIENTRY *LPALAUXILIARYEFFECTSLOTF)(ALuint, ALenum, ALfloat);
-typedef void (AL_APIENTRY *LPALAUXILIARYEFFECTSLOTFV)(ALuint, ALenum, const ALfloat*);
-typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTI)(ALuint, ALenum, ALint*);
-typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTIV)(ALuint, ALenum, ALint*);
-typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTF)(ALuint, ALenum, ALfloat*);
-typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTFV)(ALuint, ALenum, ALfloat*);
+typedef void (AL_APIENTRY *LPALAUXILIARYEFFECTSLOTFV)(ALuint, ALenum, const ALfloat *);
+typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTI)(ALuint, ALenum, ALint *);
+typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTIV)(ALuint, ALenum, ALint *);
+typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTF)(ALuint, ALenum, ALfloat *);
+typedef void (AL_APIENTRY *LPALGETAUXILIARYEFFECTSLOTFV)(ALuint, ALenum, ALfloat *);
 
 #ifdef AL_ALEXT_PROTOTYPES
 AL_API ALvoid AL_APIENTRY alGenEffects(ALsizei n, ALuint *effects);

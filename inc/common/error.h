@@ -24,9 +24,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define ERRNO_MAX       0x5000
 
 #if EINVAL > 0
-#define Q_ERR(e)        (e < 1 || e > ERRNO_MAX ? -ERRNO_MAX : -e)
+	#define Q_ERR(e)        (e < 1 || e > ERRNO_MAX ? -ERRNO_MAX : -e)
 #else
-#define Q_ERR(e)        (e > -1 || e < -ERRNO_MAX ? -ERRNO_MAX : e)
+	#define Q_ERR(e)        (e > -1 || e < -ERRNO_MAX ? -ERRNO_MAX : e)
 #endif
 
 #define _Q_ERR(e)       (-ERRNO_MAX - e)
@@ -53,9 +53,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define Q_ERR_LIBRARY_ERROR     _Q_ERR(17)  // Library error
 #define Q_ERR_OUT_OF_SLOTS      _Q_ERR(18)  // Out of slots
 #if USE_ZLIB
-#define Q_ERR_INFLATE_FAILED    _Q_ERR(19)  // Inflate failed
-#define Q_ERR_DEFLATE_FAILED    _Q_ERR(20)  // Deflate failed
-#define Q_ERR_NOT_COHERENT      _Q_ERR(21)  // Coherency check failed
+	#define Q_ERR_INFLATE_FAILED    _Q_ERR(19)  // Inflate failed
+	#define Q_ERR_DEFLATE_FAILED    _Q_ERR(20)  // Deflate failed
+	#define Q_ERR_NOT_COHERENT      _Q_ERR(21)  // Coherency check failed
 #endif
 
 // These values directly map to system errno.
@@ -74,10 +74,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // This macro converts system errno into quake error value.
 #if _WIN32
-extern int q_errno;
-#define Q_ERRNO					(q_errno = errno, Q_ERR(q_errno))
+	extern int q_errno;
+	#define Q_ERRNO					(q_errno = errno, Q_ERR(q_errno))
 #else
-#define Q_ERRNO                 ({int e = errno; Q_ERR(e);})
+	#define Q_ERRNO                 ({int e = errno; Q_ERR(e);})
 #endif
 
 const char *Q_ErrorString(int error);

@@ -28,18 +28,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_MATCHES     64
 #define MAX_MATCHES     250000000
 
-typedef struct commandPrompt_s {
-    int     inputLineNum;
-    int     historyLineNum;
+typedef struct commandPrompt_s
+{
+	int     inputLineNum;
+	int     historyLineNum;
 
-    inputField_t inputLine;
-    char        *history[HISTORY_SIZE];
-    char        *search;
+	inputField_t inputLine;
+	char        *history[HISTORY_SIZE];
+	char        *search;
 
-    int         widthInChars;
-    bool        tooMany;
+	int         widthInChars;
+	bool        tooMany;
 
-    void        (* q_printf(1, 2) printf)(const char *fmt, ...);
+	void (* q_printf(1, 2) printf)(const char *fmt, ...);
 } commandPrompt_t;
 
 void Prompt_Init(void);

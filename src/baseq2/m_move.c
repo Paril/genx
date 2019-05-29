@@ -40,58 +40,59 @@ bool M_CheckBottom(edict_t *ent)
 	trace_t trace;
 	int     x, y;
 	float   mid, bottom;
-
 	VectorAdd(ent->s.origin, ent->mins, mins);
 	VectorAdd(ent->s.origin, ent->maxs, maxs);
-
-// if all of the points under the corners are solid world, don't bother
-// with the tougher checks
-// the corners must be within 16 of the midpoint
+	// if all of the points under the corners are solid world, don't bother
+	// with the tougher checks
+	// the corners must be within 16 of the midpoint
 	start[2] = mins[2] - 1;
-    for (x = 0 ; x <= 1 ; x++)
-        for (y = 0 ; y <= 1 ; y++) {
+
+	for (x = 0 ; x <= 1 ; x++)
+		for (y = 0 ; y <= 1 ; y++)
+		{
 			start[0] = x ? maxs[0] : mins[0];
 			start[1] = y ? maxs[1] : mins[1];
+
 			if (gi.pointcontents(start) != CONTENTS_SOLID)
 				goto realcheck;
 		}
 
 	c_yes++;
-    return true;        // we got out easy
-
+	return true;        // we got out easy
 realcheck:
 	c_no++;
-//
-// check it for real...
-//
+	//
+	// check it for real...
+	//
 	start[2] = mins[2];
-
-// the midpoint must be within 16 of the bottom
-    start[0] = stop[0] = (mins[0] + maxs[0]) * 0.5f;
-    start[1] = stop[1] = (mins[1] + maxs[1]) * 0.5f;
+	// the midpoint must be within 16 of the bottom
+	start[0] = stop[0] = (mins[0] + maxs[0]) * 0.5f;
+	start[1] = stop[1] = (mins[1] + maxs[1]) * 0.5f;
 	stop[2] = start[2] - 2 * STEPSIZE;
 	trace = gi.trace(start, vec3_origin, vec3_origin, stop, ent, MASK_MONSTERSOLID);
 
-    if (trace.fraction == 1.0f)
-        return false;
+	if (trace.fraction == 1.0f)
+		return false;
+
 	mid = bottom = trace.endpos[2];
 
-// the corners must be within 16 of the midpoint
-    for (x = 0 ; x <= 1 ; x++)
-        for (y = 0 ; y <= 1 ; y++) {
+	// the corners must be within 16 of the midpoint
+	for (x = 0 ; x <= 1 ; x++)
+		for (y = 0 ; y <= 1 ; y++)
+		{
 			start[0] = stop[0] = x ? maxs[0] : mins[0];
 			start[1] = stop[1] = y ? maxs[1] : mins[1];
-
 			trace = gi.trace(start, vec3_origin, vec3_origin, stop, ent, MASK_MONSTERSOLID);
 
-            if (trace.fraction != 1.0f && trace.endpos[2] > bottom)
+			if (trace.fraction != 1.0f && trace.endpos[2] > bottom)
 				bottom = trace.endpos[2];
-            if (trace.fraction == 1.0f || mid - trace.endpos[2] > STEPSIZE)
-                return false;
+
+			if (trace.fraction == 1.0f || mid - trace.endpos[2] > STEPSIZE)
+				return false;
 		}
 
 	c_yes++;
-    return true;
+	return true;
 }
 
 
@@ -117,17 +118,17 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 	vec3_t      test;
 	int         contents;
 
-	if (ent->s.game == GAME_DOOM && ent->health) {
+	if (ent->s.game == GAME_DOOM && ent->health)
+	{
 		if (ent->flags & FL_FLY)
 			VectorClear(ent->velocity);
 		else
 			ent->velocity[0] = ent->velocity[1] = 0;
 	}
 
-// try the move
+	// try the move
 	VectorCopy(ent->s.origin, oldorg);
 	VectorAdd(ent->s.origin, move, neworg);
-
 	vec3_t target_origin;
 	bool has_target = false;
 
@@ -145,22 +146,28 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 		VectorCopy(ent->goalentity->s.origin, target_origin);
 	}
 
-// flying monsters don't step up
-	if (ent->flags & (FL_SWIM | FL_FLY)) {
+	// flying monsters don't step up
+	if (ent->flags & (FL_SWIM | FL_FLY))
+	{
 		// try one move with vertical motion, then one without
-        for (i = 0 ; i < 2 ; i++) {
+		for (i = 0 ; i < 2 ; i++)
+		{
 			VectorAdd(ent->s.origin, move, neworg);
-			
-			if (i == 0 && has_target) {			
+
+			if (i == 0 && has_target)
+			{
 				dz = ent->s.origin[2] - target_origin[2];
-				
-				if (ent->goalentity && ent->goalentity->client) {
+
+				if (ent->goalentity && ent->goalentity->client)
+				{
 					if (dz > 40)
 						neworg[2] -= 8;
-				
+
 					if (!((ent->flags & FL_SWIM) && (ent->waterlevel < 2)) && dz < 30)
 						neworg[2] += 8;
-				} else {
+				}
+				else
+				{
 					if (dz > 8)
 						neworg[2] -= 8;
 					else if (dz > 0)
@@ -175,46 +182,56 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 			trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, neworg, ent, MASK_MONSTERSOLID);
 
 			// fly monsters don't enter water voluntarily
-            if (ent->flags & FL_FLY) {
-                if (!ent->waterlevel) {
+			if (ent->flags & FL_FLY)
+			{
+				if (!ent->waterlevel)
+				{
 					test[0] = trace.endpos[0];
 					test[1] = trace.endpos[1];
 					test[2] = trace.endpos[2] + ent->mins[2] + 1;
 					contents = gi.pointcontents(test);
+
 					if (contents & MASK_WATER)
-                        return false;
+						return false;
 				}
 			}
 
 			// swim monsters don't exit water voluntarily
-            if (ent->flags & FL_SWIM) {
-                if (ent->waterlevel < 2) {
+			if (ent->flags & FL_SWIM)
+			{
+				if (ent->waterlevel < 2)
+				{
 					test[0] = trace.endpos[0];
 					test[1] = trace.endpos[1];
 					test[2] = trace.endpos[2] + ent->mins[2] + 1;
 					contents = gi.pointcontents(test);
+
 					if (!(contents & MASK_WATER))
-                        return false;
+						return false;
 				}
 			}
 
-            if (trace.fraction == 1) {
+			if (trace.fraction == 1)
+			{
 				VectorCopy(trace.endpos, ent->s.origin);
-                if (relink) {
+
+				if (relink)
+				{
 					gi.linkentity(ent);
 					G_TouchTriggers(ent);
 				}
-                return true;
+
+				return true;
 			}
 
 			if (!ent->enemy)
 				break;
 		}
 
-        return false;
+		return false;
 	}
 
-// push down from a step height above the wished position
+	// push down from a step height above the wished position
 	if (!(ent->monsterinfo.aiflags & AI_NOSTEP))
 		stepsize = STEPSIZE;
 	else
@@ -223,19 +240,20 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 	neworg[2] += stepsize;
 	VectorCopy(neworg, end);
 	end[2] -= stepsize * 2;
-
 	trace = gi.trace(neworg, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
 
 	// Paril: if we've been told that we're stuck in a wall, we will
 	// ignore bad clipping planes so long as the move doesn't push us entirely into a wall.
 	if (trace.allsolid)
-        return false;
+		return false;
 
-    if (trace.startsolid) {
+	if (trace.startsolid)
+	{
 		neworg[2] -= stepsize;
 		trace = gi.trace(neworg, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
+
 		if (trace.allsolid || trace.startsolid)
-            return false;
+			return false;
 	}
 
 	// Paril: if we were stuck and the new position is good, we can stop pseudo-noclipping now
@@ -261,34 +279,43 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 			return false;
 	}*/
 
-    if (trace.fraction == 1) {
+	if (trace.fraction == 1)
+	{
 		// if monster had the ground pulled out, go ahead and fall
-        if (ent->flags & FL_PARTIALGROUND) {
+		if (ent->flags & FL_PARTIALGROUND)
+		{
 			VectorAdd(ent->s.origin, move, ent->s.origin);
-            if (relink) {
+
+			if (relink)
+			{
 				gi.linkentity(ent);
 				G_TouchTriggers(ent);
 			}
+
 			ent->groundentity = NULL;
-            return true;
+			return true;
 		}
 
 		if (target_origin[2] >= ent->s.origin[2])
 			return false;       // walked off an edge
 	}
 
-// check point traces down for dangling corners
+	// check point traces down for dangling corners
 	VectorCopy(trace.endpos, ent->s.origin);
 
-    if (!M_CheckBottom(ent)) {
-        if (ent->flags & FL_PARTIALGROUND) {
+	if (!M_CheckBottom(ent))
+	{
+		if (ent->flags & FL_PARTIALGROUND)
+		{
 			// entity had floor mostly pulled out from underneath it
 			// and is trying to correct
-            if (relink) {
+			if (relink)
+			{
 				gi.linkentity(ent);
 				G_TouchTriggers(ent);
 			}
-            return true;
+
+			return true;
 		}
 
 		/*if (target_origin[2] >= ent->s.origin[2])
@@ -298,18 +325,20 @@ bool SV_movestep(edict_t *ent, vec3_t move, bool relink)
 		}*/
 	}
 
-    if (ent->flags & FL_PARTIALGROUND) {
+	if (ent->flags & FL_PARTIALGROUND)
 		ent->flags &= ~FL_PARTIALGROUND;
-    }
+
 	ent->groundentity = trace.ent;
 	ent->groundentity_linkcount = trace.ent->linkcount;
 
-// the move is ok
-    if (relink) {
+	// the move is ok
+	if (relink)
+	{
 		gi.linkentity(ent);
 		G_TouchTriggers(ent);
 	}
-    return true;
+
+	return true;
 }
 
 
@@ -327,7 +356,6 @@ void M_ChangeYaw(edict_t *ent)
 	float   current;
 	float   move;
 	float   speed;
-
 	current = anglemod(ent->s.angles[YAW]);
 	ideal = ent->ideal_yaw;
 
@@ -336,17 +364,25 @@ void M_ChangeYaw(edict_t *ent)
 
 	move = ideal - current;
 	speed = ent->yaw_speed * 3;
-	if (ideal > current) {
+
+	if (ideal > current)
+	{
 		if (move >= 180)
 			move = move - 360;
-    } else {
+	}
+	else
+	{
 		if (move <= -180)
 			move = move + 360;
 	}
-	if (move > 0) {
+
+	if (move > 0)
+	{
 		if (move > speed)
 			move = speed;
-    } else {
+	}
+	else
+	{
 		if (move < -speed)
 			move = -speed;
 	}
@@ -368,29 +404,32 @@ bool SV_StepDirection(edict_t *ent, float yaw, float dist)
 {
 	vec3_t      move, oldorigin;
 	float       delta;
-
 	ent->ideal_yaw = yaw;
 	M_ChangeYaw(ent);
-
-    yaw = DEG2RAD(yaw);
+	yaw = DEG2RAD(yaw);
 	move[0] = cosf(yaw) * dist;
 	move[1] = sinf(yaw) * dist;
 	move[2] = 0;
-
 	VectorCopy(ent->s.origin, oldorigin);
-    if (SV_movestep(ent, move, false)) {
+
+	if (SV_movestep(ent, move, false))
+	{
 		delta = ent->s.angles[YAW] - ent->ideal_yaw;
-		if (delta > 45 && delta < 315) {
+
+		if (delta > 45 && delta < 315)
+		{
 			// not turned far enough, so don't take the step
 			VectorCopy(oldorigin, ent->s.origin);
 		}
+
 		gi.linkentity(ent);
 		G_TouchTriggers(ent);
-        return true;
+		return true;
 	}
+
 	gi.linkentity(ent);
 	G_TouchTriggers(ent);
-    return false;
+	return false;
 }
 
 /*
@@ -425,23 +464,20 @@ void SV_NewChaseDir(edict_t *actor, vec3_t enemy_origin, float dist)
 
 	deltax = enemy_origin[0] - actor->s.origin[0];
 	deltay = enemy_origin[1] - actor->s.origin[1];
-
 	olddir = actor->ideal_yaw;
-
 	//if (actor->monsterinfo.aiflags & AI_NODE_PATH)
 	//{
-		d[0] = deltax;
-		d[1] = deltay;
-		d[2] = 0;
+	d[0] = deltax;
+	d[1] = deltay;
+	d[2] = 0;
+	tdir = vectoyaw(d);
 
-		tdir = vectoyaw(d);
+	if (SV_StepDirection(actor, tdir, dist))
+		return;
 
-		if (SV_StepDirection(actor, tdir, dist))
-			return;
 	//}
 	//else
 	//    olddir = anglemod((int)(actor->ideal_yaw / 45) * 45);
-
 	turnaround = anglemod(olddir - 180);
 
 	if (deltax > 10)
@@ -450,6 +486,7 @@ void SV_NewChaseDir(edict_t *actor, vec3_t enemy_origin, float dist)
 		d[1] = 180;
 	else
 		d[1] = DI_NODIR;
+
 	if (deltay < -10)
 		d[2] = 270;
 	else if (deltay > 10)
@@ -457,8 +494,9 @@ void SV_NewChaseDir(edict_t *actor, vec3_t enemy_origin, float dist)
 	else
 		d[2] = DI_NODIR;
 
-// try direct route
-    if (d[1] != DI_NODIR && d[2] != DI_NODIR) {
+	// try direct route
+	if (d[1] != DI_NODIR && d[2] != DI_NODIR)
+	{
 		if (d[1] == 0)
 			tdir = d[2] == 90 ? 45 : 315;
 		else
@@ -468,8 +506,9 @@ void SV_NewChaseDir(edict_t *actor, vec3_t enemy_origin, float dist)
 			return;
 	}
 
-// try other directions
-    if (((Q_rand() & 3) & 1) || fabsf(deltay) > fabsf(deltax)) {
+	// try other directions
+	if (((Q_rand() & 3) & 1) || fabsf(deltay) > fabsf(deltax))
+	{
 		tdir = d[1];
 		d[1] = d[2];
 		d[2] = tdir;
@@ -488,12 +527,15 @@ void SV_NewChaseDir(edict_t *actor, vec3_t enemy_origin, float dist)
 	if (olddir != DI_NODIR && SV_StepDirection(actor, olddir, dist))
 		return;
 
-    if (Q_rand() & 1) { /*randomly determine direction of search*/
-        for (tdir = 0 ; tdir <= 315 ; tdir += 45)
+	if (Q_rand() & 1)   /*randomly determine direction of search*/
+	{
+		for (tdir = 0 ; tdir <= 315 ; tdir += 45)
 			if (tdir != turnaround && SV_StepDirection(actor, tdir, dist))
 				return;
-    } else {
-        for (tdir = 315 ; tdir >= 0 ; tdir -= 45)
+	}
+	else
+	{
+		for (tdir = 315 ; tdir >= 0 ; tdir -= 45)
 			if (tdir != turnaround && SV_StepDirection(actor, tdir, dist))
 				return;
 	}
@@ -503,8 +545,8 @@ void SV_NewChaseDir(edict_t *actor, vec3_t enemy_origin, float dist)
 
 	actor->ideal_yaw = olddir;      // can't move
 
-// if a bridge was pulled out from underneath a monster, it may not have
-// a valid standing position at all
+	// if a bridge was pulled out from underneath a monster, it may not have
+	// a valid standing position at all
 
 	if (!M_CheckBottom(actor))
 		SV_FixCheckBottom(actor);
@@ -520,12 +562,15 @@ bool SV_CloseEnough(edict_t *ent, vec3_t goal_absmin, vec3_t goal_absmax, float 
 {
 	int     i;
 
-	for (i = 0 ; i < 3 ; i++) {
+	for (i = 0 ; i < 3 ; i++)
+	{
 		if (goal_absmin[i] > ent->absmax[i] + dist)
 			return false;
+
 		if (goal_absmax[i] < ent->absmin[i] - dist)
 			return false;
 	}
+
 	return true;
 }
 
@@ -544,7 +589,6 @@ void plat_go_up(edict_t *self);
 void M_NavigatorNodeReached(edict_t *self)
 {
 	nav_node_id reached = gi.Nav_GetNavigatorPathNode(self->monsterinfo.navigator, self->monsterinfo.navigator_node_current);
-
 	self->monsterinfo.navigator_node_current++;
 
 	if (self->monsterinfo.navigator_node_current >= self->monsterinfo.navigator_node_max)
@@ -574,7 +618,6 @@ void M_NavigatorNodeReached(edict_t *self)
 		gi.Nav_GetNodePosition(reached, start);
 		gi.Nav_GetNodePosition(reached, end);
 		end[2] -= 32;
-
 		trace_t tr = gi.trace(start, vec3_origin, vec3_origin, end, self, MASK_SOLID | CONTENTS_MONSTER);
 
 		if (tr.fraction == 1.0f || tr.ent->entitytype != ET_FUNC_PLAT)
@@ -605,24 +648,25 @@ bool M_NavCloseFunc(nav_node_id node)
 
 	switch (gi.Nav_GetNodeType(node))
 	{
-	case NAV_NODE_NORMAL:
-		return true;
-	case NAV_NODE_PLATFORM:
-		gi.Nav_GetNodePosition(node, start);
-		gi.Nav_GetNodePosition(node, end);
-		end[2] -= 32;
-
-		trace_t tr = gi.trace(start, vec3_origin, vec3_origin, end, NULL, MASK_SOLID | CONTENTS_MONSTER);
-
-		if (tr.fraction == 1.0f)
-			return false;
-		else if (tr.ent->entitytype != ET_FUNC_PLAT)
-			return false;
-
-		// platform valid to use for us
-		if (tr.ent->moveinfo.state == STATE_BOTTOM)
+		case NAV_NODE_NORMAL:
 			return true;
-		break;
+
+		case NAV_NODE_PLATFORM:
+			gi.Nav_GetNodePosition(node, start);
+			gi.Nav_GetNodePosition(node, end);
+			end[2] -= 32;
+			trace_t tr = gi.trace(start, vec3_origin, vec3_origin, end, NULL, MASK_SOLID | CONTENTS_MONSTER);
+
+			if (tr.fraction == 1.0f)
+				return false;
+			else if (tr.ent->entitytype != ET_FUNC_PLAT)
+				return false;
+
+			// platform valid to use for us
+			if (tr.ent->moveinfo.state == STATE_BOTTOM)
+				return true;
+
+			break;
 	}
 
 	return false;
@@ -648,7 +692,6 @@ bool M_NavigatorPathToSpot(edict_t *self, vec3_t spot)
 	self->monsterinfo.navigator_node_current = 0;
 	self->monsterinfo.navigator_node_max = gi.Nav_GetNavigatorPathCount(self->monsterinfo.navigator);
 	gi.Nav_GetNodePosition(gi.Nav_GetNavigatorPathNode(self->monsterinfo.navigator, self->monsterinfo.navigator_node_current), self->monsterinfo.navigator_pos);
-
 	return true;
 }
 
@@ -669,9 +712,7 @@ void M_MoveToGoal(edict_t *ent, float dist)
 		gi.WritePosition(ent->s.origin);
 		gi.WritePosition(ent->monsterinfo.navigator_pos);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);*/
-
 		vec3_t path_absmin = { -4, -4, -4 }, path_absmax = { 4, 4, 4 };
-
 		VectorAdd(ent->monsterinfo.navigator_pos, path_absmin, path_absmin);
 		VectorAdd(ent->monsterinfo.navigator_pos, path_absmax, path_absmax);
 
@@ -684,7 +725,8 @@ void M_MoveToGoal(edict_t *ent, float dist)
 		else
 		{
 			// bump around...
-			if ((Q_rand() & 3) == 1 || !SV_StepDirection(ent, ent->ideal_yaw, dist)) {
+			if ((Q_rand() & 3) == 1 || !SV_StepDirection(ent, ent->ideal_yaw, dist))
+			{
 				if (ent->inuse)
 					SV_NewChaseDir(ent, ent->monsterinfo.navigator_pos, dist);
 			}
@@ -699,7 +741,8 @@ void M_MoveToGoal(edict_t *ent, float dist)
 			return;
 
 		// bump around...
-		if ((Q_rand() & 3) == 1 || !SV_StepDirection(ent, ent->ideal_yaw, dist)) {
+		if ((Q_rand() & 3) == 1 || !SV_StepDirection(ent, ent->ideal_yaw, dist))
+		{
 			if (ent->inuse)
 				SV_NewChaseDir(ent, goal->s.origin, dist);
 		}
@@ -719,10 +762,9 @@ bool M_walkmove(edict_t *ent, float yaw, float dist)
 	if (!ent->groundentity && !(ent->flags & (FL_FLY | FL_SWIM)))
 		return false;
 
-    yaw = DEG2RAD(yaw);
+	yaw = DEG2RAD(yaw);
 	move[0] = cosf(yaw) * dist;
 	move[1] = sinf(yaw) * dist;
 	move[2] = 0;
-
-    return SV_movestep(ent, move, true);
+	return SV_movestep(ent, move, true);
 }

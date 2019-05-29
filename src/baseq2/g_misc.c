@@ -29,8 +29,8 @@ Used to group brushes together just for editor convenience.
 void Use_Areaportal(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	ent->count ^= 1;        // toggle state
-//  gi.dprintf ("portalstate: %i = %i\n", ent->style, ent->count);
-    gi.SetAreaPortalState(ent->style, ent->count);
+	//  gi.dprintf ("portalstate: %i = %i\n", ent->style, ent->count);
+	gi.SetAreaPortalState(ent->style, ent->count);
 }
 
 /*QUAKED func_areaportal (0 0 0) ?
@@ -55,9 +55,9 @@ Misc functions
 */
 void VelocityForDamage(int damage, vec3_t v)
 {
-    v[0] = 100.0f * crandom();
-    v[1] = 100.0f * crandom();
-    v[2] = 200.0f + 100.0f * random();
+	v[0] = 100.0f * crandom();
+	v[1] = 100.0f * crandom();
+	v[2] = 200.0f + 100.0f * random();
 
 	if (damage < 50)
 		VectorScale(v, 0.7f, v);
@@ -71,10 +71,12 @@ void ClipGibVelocity(edict_t *ent)
 		ent->velocity[0] = -300;
 	else if (ent->velocity[0] > 300)
 		ent->velocity[0] = 300;
+
 	if (ent->velocity[1] < -300)
 		ent->velocity[1] = -300;
 	else if (ent->velocity[1] > 300)
 		ent->velocity[1] = 300;
+
 	if (ent->velocity[2] < 200)
 		ent->velocity[2] = 200; // always some upwards
 	else if (ent->velocity[2] > 500)
@@ -92,7 +94,8 @@ void gib_think(edict_t *self)
 	self->s.frame++;
 	self->nextthink = level.time + game.frametime;
 
-	if (self->s.frame == 10) {
+	if (self->s.frame == 10)
+	{
 		self->think = G_FreeEdict;
 		self->nextthink = level.time + 8000 + (Q_rand() % 10000);
 	}
@@ -107,14 +110,15 @@ void gib_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 
 	self->touch = NULL;
 
-	if (plane) {
+	if (plane)
+	{
 		gi.sound(self, CHAN_VOICE, gi.soundindex("misc/fhit3.wav"), 1, ATTN_NORM, 0);
-
 		vectoangles(plane->normal, normal_angles);
 		AngleVectors(normal_angles, NULL, right, NULL);
 		vectoangles(right, self->s.angles);
 
-		if (self->s.modelindex == sm_meat_index) {
+		if (self->s.modelindex == sm_meat_index)
+		{
 			self->s.frame++;
 			self->think = gib_think;
 			self->nextthink = level.time + 1;
@@ -150,12 +154,10 @@ void duke_gib_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *
 	if (plane && plane->normal[2] > 0.7f)
 	{
 		VectorMA(self->s.origin, 1, plane->normal, self->s.origin);
-		
 		gi.WriteByte(svc_temp_entity);
 		gi.WriteByte(TE_DUKE_BLOOD_SPLAT);
 		gi.WritePosition(self->s.origin);
 		gi.multicast(self->s.origin, MULTICAST_PVS);
-
 		G_FreeEdict(self);
 	}
 }
@@ -178,15 +180,12 @@ void ThrowGib(edict_t *self, char *gibname, int damage, gibtype_e type)
 	vec3_t  origin;
 	vec3_t  size;
 	float   vscale;
-
 	gib = G_Spawn();
-
 	VectorScale(self->size, 0.5f, size);
 	VectorAdd(self->absmin, size, origin);
 	gib->s.origin[0] = origin[0] + crandom() * size[0];
 	gib->s.origin[1] = origin[1] + crandom() * size[1];
 	gib->s.origin[2] = origin[2] + crandom() * size[2];
-
 	gi.setmodel(gib, gibname);
 	gib->solid = SOLID_NOT;
 	gib->s.effects |= EF_GIB;
@@ -203,25 +202,25 @@ void ThrowGib(edict_t *self, char *gibname, int damage, gibtype_e type)
 		gib->movetype = MOVETYPE_BOUNCE;
 		gib->s.game = GAME_DUKE;
 		gib->s.effects = 0;
-
 		gib->velocity[0] = 200 * crandom();
 		gib->velocity[1] = 200 * crandom();
 		gib->velocity[2] = 300 + 200 * random();
-
 		gib->touch = duke_gib_touch;
 		gib->solid = SOLID_TRIGGER;
 		gib->owner = gib;
-
 		gib->s.frame = Q_rand() % 8;
 		gib_duke_think(gib);
 	}
 	else
 	{
-		if (type == GIB_ORGANIC) {
+		if (type == GIB_ORGANIC)
+		{
 			gib->movetype = MOVETYPE_TOSS;
 			gib->touch = gib_touch;
 			vscale = 0.5f;
-		} else {
+		}
+		else
+		{
 			gib->movetype = MOVETYPE_BOUNCE;
 			vscale = 1.0f;
 		}
@@ -242,7 +241,6 @@ void ThrowGib(edict_t *self, char *gibname, int damage, gibtype_e type)
 		gib->avelocity[0] = random() * 600;
 		gib->avelocity[1] = random() * 600;
 		gib->avelocity[2] = random() * 600;
-
 		gib->think = G_FreeEdict;
 		gib->nextthink = level.time + 10000 + (Q_rand() % 10000);
 	}
@@ -254,12 +252,10 @@ void ThrowHead(edict_t *self, char *gibname, int damage, gibtype_e type)
 {
 	vec3_t  vd;
 	float   vscale;
-
 	self->s.skinnum = 0;
 	self->s.frame = 0;
 	VectorClear(self->mins);
 	VectorClear(self->maxs);
-
 	self->s.modelindex2 = 0;
 	gi.setmodel(self, gibname);
 	self->solid = SOLID_NOT;
@@ -272,19 +268,21 @@ void ThrowHead(edict_t *self, char *gibname, int damage, gibtype_e type)
 	self->takedamage = DAMAGE_YES;
 	self->die = gib_die;
 
-	if (type == GIB_ORGANIC) {
+	if (type == GIB_ORGANIC)
+	{
 		self->movetype = MOVETYPE_TOSS;
 		self->touch = gib_touch;
 		vscale = 0.5f;
-	} else {
+	}
+	else
+	{
 		self->movetype = MOVETYPE_BOUNCE;
 		vscale = 1.0f;
 	}
-	
+
 	if (type == GIB_Q1)
 	{
 		VelocityForDamage_Q1(self->health, self->velocity);
-
 		VectorClear(self->avelocity);
 		self->avelocity[1] = 600;
 		self->s.game = GAME_Q1;
@@ -297,10 +295,8 @@ void ThrowHead(edict_t *self, char *gibname, int damage, gibtype_e type)
 	}
 
 	self->avelocity[YAW] = crandom() * 600;
-
 	self->think = G_FreeEdict;
 	self->nextthink = level.time + 10000 + (Q_rand() % 10000);
-
 	gi.linkentity(self);
 }
 
@@ -308,15 +304,17 @@ void ThrowClientHead(edict_t *self, int damage)
 {
 	vec3_t  vd;
 	char    *gibname;
-
 	self->takedamage = DAMAGE_NO;
 
 	if (self->s.game == GAME_Q2)
 	{
-		if (Q_rand() & 1) {
+		if (Q_rand() & 1)
+		{
 			gibname = "models/objects/gibs/head2/tris.md2";
 			self->s.skinnum = 1;        // second skin is player
-		} else {
+		}
+		else
+		{
 			gibname = "models/objects/gibs/skull/tris.md2";
 			self->s.skinnum = 0;
 		}
@@ -327,9 +325,7 @@ void ThrowClientHead(edict_t *self, int damage)
 	else if (self->s.game == GAME_Q1)
 	{
 		gibname = "models/q1/h_player.mdl";
-
 		VelocityForDamage_Q1(self->health, self->velocity);
-
 		VectorClear(self->avelocity);
 		self->avelocity[1] = 600;
 	}
@@ -338,7 +334,6 @@ void ThrowClientHead(edict_t *self, int damage)
 		self->clipmask = MASK_PLAYERSOLID;
 		self->solid = SOLID_TRIGGER;
 		self->s.modelindex = 0;
-
 		gi.linkentity(self);
 		return;
 	}
@@ -348,18 +343,19 @@ void ThrowClientHead(edict_t *self, int damage)
 	gi.setmodel(self, gibname);
 	VectorSet(self->mins, -16, -16, 0);
 	VectorSet(self->maxs, 16, 16, 16);
-
 	self->solid = SOLID_NOT;
 	self->s.effects = EF_GIB;
 	self->s.sound = 0;
 	self->flags |= FL_NO_KNOCKBACK;
-
 	self->movetype = MOVETYPE_BOUNCE;
 
-	if (self->client) { // bodies in the queue don't have a client anymore
+	if (self->client)   // bodies in the queue don't have a client anymore
+	{
 		self->client->anim_priority = ANIM_DEATH;
 		self->client->anim_end = self->s.frame;
-	} else {
+	}
+	else
+	{
 		self->think = NULL;
 		self->nextthink = 0;
 	}
@@ -382,7 +378,6 @@ void ThrowDebris(edict_t *self, char *modelname, float speed, vec3_t origin)
 {
 	edict_t *chunk;
 	vec3_t  v;
-
 	chunk = G_Spawn();
 	VectorCopy(origin, chunk->s.origin);
 	gi.setmodel(chunk, modelname);
@@ -411,7 +406,6 @@ void BecomeExplosion1(edict_t *self)
 	gi.WriteByte(TE_EXPLOSION1);
 	gi.WritePosition(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
-
 	G_FreeEdict(self);
 }
 
@@ -422,7 +416,6 @@ void BecomeExplosion2(edict_t *self)
 	gi.WriteByte(TE_EXPLOSION2);
 	gi.WritePosition(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
-
 	G_FreeEdict(self);
 }
 
@@ -446,9 +439,9 @@ void path_corner_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	if (other->enemy)
 		return;
 
-	if (self->pathtarget) {
+	if (self->pathtarget)
+	{
 		char *savetarget;
-
 		savetarget = self->target;
 		self->target = self->pathtarget;
 		G_UseTargets(self, other);
@@ -460,7 +453,8 @@ void path_corner_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	else
 		next = NULL;
 
-	if ((next) && (next->spawnflags & 1)) {
+	if ((next) && (next->spawnflags & 1))
+	{
 		VectorCopy(next->s.origin, v);
 		v[2] += next->mins[2];
 		v[2] -= other->mins[2];
@@ -474,16 +468,20 @@ void path_corner_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	if (other->entitytype == ET_Q1_MONSTER_OGRE)
 		ogre_drag_sound(other);// play chainsaw drag sound
 
-	if (self->wait) {
+	if (self->wait)
+	{
 		other->monsterinfo.pausetime = level.time + (self->wait * 1000);
 		other->monsterinfo.stand(other);
 		return;
 	}
 
-	if (!other->movetarget) {
+	if (!other->movetarget)
+	{
 		other->monsterinfo.pausetime = GTIME_MAX;
 		other->monsterinfo.stand(other);
-    } else {
+	}
+	else
+	{
 		VectorSubtract(other->goalentity->s.origin, other->s.origin, v);
 		other->ideal_yaw = vectoyaw(v);
 	}
@@ -491,7 +489,8 @@ void path_corner_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 
 void SP_path_corner(edict_t *self)
 {
-	if (!self->targetname) {
+	if (!self->targetname)
+	{
 		gi.dprintf("path_corner with no targetname at %s\n", vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
@@ -518,32 +517,40 @@ void point_combat_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 	if (other->movetarget != self)
 		return;
 
-	if (self->target) {
+	if (self->target)
+	{
 		other->target = self->target;
 		other->goalentity = other->movetarget = G_PickTarget(other->target);
-		if (!other->goalentity) {
+
+		if (!other->goalentity)
+		{
 			gi.dprintf("entityid %i at %s target %s does not exist\n", self->entitytype, vtos(self->s.origin), self->target);
 			other->movetarget = self;
 		}
+
 		self->target = NULL;
-	} else if ((self->spawnflags & 1) && !(other->flags & (FL_SWIM | FL_FLY))) {
+	}
+	else if ((self->spawnflags & 1) && !(other->flags & (FL_SWIM | FL_FLY)))
+	{
 		other->monsterinfo.pausetime = GTIME_MAX;
 		other->monsterinfo.aiflags |= AI_STAND_GROUND;
 		other->monsterinfo.stand(other);
 	}
 
-	if (other->movetarget == self) {
+	if (other->movetarget == self)
+	{
 		other->target = NULL;
 		other->movetarget = NULL;
 		other->goalentity = other->enemy;
 		other->monsterinfo.aiflags &= ~AI_COMBAT_POINT;
 	}
 
-	if (self->pathtarget) {
+	if (self->pathtarget)
+	{
 		char *savetarget;
-
 		savetarget = self->target;
 		self->target = self->pathtarget;
+
 		if (other->enemy && other->enemy->client)
 			activator = other->enemy;
 		else if (other->oldenemy && other->oldenemy->client)
@@ -552,6 +559,7 @@ void point_combat_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 			activator = other->activator;
 		else
 			activator = other;
+
 		G_UseTargets(self, activator);
 		self->target = savetarget;
 	}
@@ -559,10 +567,12 @@ void point_combat_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 
 void SP_point_combat(edict_t *self)
 {
-	if (deathmatch->value) {
+	if (deathmatch->value)
+	{
 		G_FreeEdict(self);
 		return;
 	}
+
 	self->solid = SOLID_TRIGGER;
 	self->touch = point_combat_touch;
 	VectorSet(self->mins, -8, -8, -16);
@@ -577,24 +587,23 @@ Just for the debugging level.  Don't use
 */
 void TH_viewthing(edict_t *ent)
 {
-    ent->s.frame = (ent->s.frame + 1) % 7;
-    ent->nextthink = level.time + game.frameseconds;
+	ent->s.frame = (ent->s.frame + 1) % 7;
+	ent->nextthink = level.time + game.frameseconds;
 }
 
 void SP_viewthing(edict_t *ent)
 {
-    gi.dprintf("viewthing spawned\n");
-
-    ent->movetype = MOVETYPE_NONE;
-    ent->solid = SOLID_BBOX;
-    ent->s.renderfx = RF_FRAMELERP;
-    VectorSet(ent->mins, -16, -16, -24);
-    VectorSet(ent->maxs, 16, 16, 32);
-    ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
-    gi.linkentity(ent);
-    ent->nextthink = level.time + 0.5f;
-    ent->think = TH_viewthing;
-    return;
+	gi.dprintf("viewthing spawned\n");
+	ent->movetype = MOVETYPE_NONE;
+	ent->solid = SOLID_BBOX;
+	ent->s.renderfx = RF_FRAMELERP;
+	VectorSet(ent->mins, -16, -16, -24);
+	VectorSet(ent->maxs, 16, 16, 32);
+	ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
+	gi.linkentity(ent);
+	ent->nextthink = level.time + 0.5f;
+	ent->think = TH_viewthing;
+	return;
 }
 
 
@@ -629,10 +638,13 @@ Default _cone value is 10 (used to set size of light for spotlights)
 
 void light_use(edict_t *self, edict_t *other, edict_t *activator)
 {
-	if (self->spawnflags & START_OFF) {
+	if (self->spawnflags & START_OFF)
+	{
 		gi.configstring(CS_LIGHTS + self->style, "m");
 		self->spawnflags &= ~START_OFF;
-    } else {
+	}
+	else
+	{
 		gi.configstring(CS_LIGHTS + self->style, "a");
 		self->spawnflags |= START_OFF;
 	}
@@ -641,13 +653,16 @@ void light_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_light(edict_t *self)
 {
 	// no targeted lights in deathmatch, because they cause global messages
-	if (!self->targetname || deathmatch->value) {
+	if (!self->targetname || deathmatch->value)
+	{
 		G_FreeEdict(self);
 		return;
 	}
 
-	if (self->style >= 32) {
+	if (self->style >= 32)
+	{
 		self->use = light_use;
+
 		if (self->spawnflags & START_OFF)
 			gi.configstring(CS_LIGHTS + self->style, "a");
 		else
@@ -672,14 +687,18 @@ START_ON        only valid for TRIGGER_SPAWN walls
 
 void func_wall_use(edict_t *self, edict_t *other, edict_t *activator)
 {
-	if (self->solid == SOLID_NOT) {
+	if (self->solid == SOLID_NOT)
+	{
 		self->solid = SOLID_BSP;
 		self->svflags &= ~SVF_NOCLIENT;
 		KillBox(self);
-    } else {
+	}
+	else
+	{
 		self->solid = SOLID_NOT;
 		self->svflags |= SVF_NOCLIENT;
 	}
+
 	gi.linkentity(self);
 
 	if (!(self->spawnflags & 2))
@@ -693,37 +712,45 @@ void SP_func_wall(edict_t *self)
 
 	if (self->spawnflags & 8)
 		self->s.effects |= EF_ANIM_ALL;
+
 	if (self->spawnflags & 16)
 		self->s.effects |= EF_ANIM_ALLFAST;
 
 	// just a wall
-	if ((self->spawnflags & 7) == 0) {
+	if ((self->spawnflags & 7) == 0)
+	{
 		self->solid = SOLID_BSP;
 		gi.linkentity(self);
 		return;
 	}
 
 	// it must be TRIGGER_SPAWN
-	if (!(self->spawnflags & 1)) {
-//      gi.dprintf("func_wall missing TRIGGER_SPAWN\n");
+	if (!(self->spawnflags & 1))
+	{
+		//      gi.dprintf("func_wall missing TRIGGER_SPAWN\n");
 		self->spawnflags |= 1;
 	}
 
 	// yell if the spawnflags are odd
-	if (self->spawnflags & 4) {
-		if (!(self->spawnflags & 2)) {
+	if (self->spawnflags & 4)
+	{
+		if (!(self->spawnflags & 2))
+		{
 			gi.dprintf("func_wall START_ON without TOGGLE\n");
 			self->spawnflags |= 2;
 		}
 	}
 
 	self->use = func_wall_use;
-	if (self->spawnflags & 4) {
+
+	if (self->spawnflags & 4)
 		self->solid = SOLID_BSP;
-    } else {
+	else
+	{
 		self->solid = SOLID_NOT;
 		self->svflags |= SVF_NOCLIENT;
 	}
+
 	gi.linkentity(self);
 }
 
@@ -737,10 +764,13 @@ void func_object_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	// only squash thing we fall on top of
 	if (!plane)
 		return;
-    if (plane->normal[2] < 1.0f)
+
+	if (plane->normal[2] < 1.0f)
 		return;
+
 	if (other->takedamage == DAMAGE_NO)
 		return;
+
 	T_Damage(other, self, self, vec3_origin, self->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
 }
 
@@ -762,7 +792,6 @@ void func_object_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_func_object(edict_t *self)
 {
 	gi.setmodel(self, self->model);
-
 	self->mins[0] += 1;
 	self->mins[1] += 1;
 	self->mins[2] += 1;
@@ -773,12 +802,15 @@ void SP_func_object(edict_t *self)
 	if (!self->dmg)
 		self->dmg = 100;
 
-	if (self->spawnflags == 0) {
+	if (self->spawnflags == 0)
+	{
 		self->solid = SOLID_BSP;
 		self->movetype = MOVETYPE_PUSH;
 		self->think = func_object_release;
 		self->nextthink = level.time + (game.frametime * 2);
-	} else {
+	}
+	else
+	{
 		self->solid = SOLID_NOT;
 		self->movetype = MOVETYPE_PUSH;
 		self->use = func_object_use;
@@ -787,11 +819,11 @@ void SP_func_object(edict_t *self)
 
 	if (self->spawnflags & 2)
 		self->s.effects |= EF_ANIM_ALL;
+
 	if (self->spawnflags & 4)
 		self->s.effects |= EF_ANIM_ALLFAST;
 
 	self->clipmask = MASK_MONSTERSOLID;
-
 	gi.linkentity(self);
 }
 
@@ -816,12 +848,10 @@ void func_explosive_explode(edict_t *self, edict_t *inflictor, edict_t *attacker
 	vec3_t  size;
 	int     count;
 	int     mass;
-
 	// bmodel origins are (0 0 0), we need to adjust that here
 	VectorScale(self->size, 0.5f, size);
 	VectorAdd(self->absmin, size, origin);
 	VectorCopy(origin, self->s.origin);
-
 	self->takedamage = DAMAGE_NO;
 
 	if (self->dmg)
@@ -830,20 +860,23 @@ void func_explosive_explode(edict_t *self, edict_t *inflictor, edict_t *attacker
 	VectorSubtract(self->s.origin, inflictor->s.origin, self->velocity);
 	VectorNormalize(self->velocity);
 	VectorScale(self->velocity, 150, self->velocity);
-
 	// start chunks towards the center
 	VectorScale(size, 0.5f, size);
-
 	mass = self->mass;
+
 	if (!mass)
 		mass = 75;
 
 	// big chunks
-	if (mass >= 100) {
+	if (mass >= 100)
+	{
 		count = mass / 100;
+
 		if (count > 8)
 			count = 8;
-		while (count--) {
+
+		while (count--)
+		{
 			chunkorigin[0] = origin[0] + crandom() * size[0];
 			chunkorigin[1] = origin[1] + crandom() * size[1];
 			chunkorigin[2] = origin[2] + crandom() * size[2];
@@ -853,9 +886,12 @@ void func_explosive_explode(edict_t *self, edict_t *inflictor, edict_t *attacker
 
 	// small chunks
 	count = mass / 25;
+
 	if (count > 16)
 		count = 16;
-	while (count--) {
+
+	while (count--)
+	{
 		chunkorigin[0] = origin[0] + crandom() * size[0];
 		chunkorigin[1] = origin[1] + crandom() * size[1];
 		chunkorigin[2] = origin[2] + crandom() * size[2];
@@ -886,37 +922,43 @@ void func_explosive_spawn(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_func_explosive(edict_t *self)
 {
-	if (deathmatch->value) {
+	if (deathmatch->value)
+	{
 		// auto-remove for deathmatch
 		G_FreeEdict(self);
 		return;
 	}
 
 	self->movetype = MOVETYPE_PUSH;
-
 	gi.modelindex("models/objects/debris1/tris.md2");
 	gi.modelindex("models/objects/debris2/tris.md2");
-
 	gi.setmodel(self, self->model);
 
-	if (self->spawnflags & 1) {
+	if (self->spawnflags & 1)
+	{
 		self->svflags |= SVF_NOCLIENT;
 		self->solid = SOLID_NOT;
 		self->use = func_explosive_spawn;
-    } else {
+	}
+	else
+	{
 		self->solid = SOLID_BSP;
+
 		if (self->targetname)
 			self->use = func_explosive_use;
 	}
 
 	if (self->spawnflags & 2)
 		self->s.effects |= EF_ANIM_ALL;
+
 	if (self->spawnflags & 4)
 		self->s.effects |= EF_ANIM_ALLFAST;
 
-	if (self->use != func_explosive_use) {
+	if (self->use != func_explosive_use)
+	{
 		if (!self->health)
 			self->health = 100;
+
 		self->die = func_explosive_explode;
 		self->takedamage = DAMAGE_YES;
 	}
@@ -949,12 +991,9 @@ void barrel_explode(edict_t *self)
 	vec3_t  org;
 	float   spd;
 	vec3_t  save;
-
 	T_RadiusDamage(self, self->activator, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
-
 	VectorCopy(self->s.origin, save);
 	VectorMA(self->absmin, 0.5f, self->size, self->s.origin);
-
 	// a few big chunks
 	spd = 1.5f * (float)self->dmg / 200.0f;
 	org[0] = self->s.origin[0] + crandom() * self->size[0];
@@ -965,7 +1004,6 @@ void barrel_explode(edict_t *self)
 	org[1] = self->s.origin[1] + crandom() * self->size[1];
 	org[2] = self->s.origin[2] + crandom() * self->size[2];
 	ThrowDebris(self, "models/objects/debris1/tris.md2", spd, org);
-
 	// bottom corners
 	spd = 1.75f * (float)self->dmg / 200.0f;
 	VectorCopy(self->absmin, org);
@@ -980,7 +1018,6 @@ void barrel_explode(edict_t *self)
 	org[0] += self->size[0];
 	org[1] += self->size[1];
 	ThrowDebris(self, "models/objects/debris3/tris.md2", spd, org);
-
 	// a bunch of little chunks
 	spd = 2 * self->dmg / 200;
 	org[0] = self->s.origin[0] + crandom() * self->size[0];
@@ -1015,8 +1052,8 @@ void barrel_explode(edict_t *self)
 	org[1] = self->s.origin[1] + crandom() * self->size[1];
 	org[2] = self->s.origin[2] + crandom() * self->size[2];
 	ThrowDebris(self, "models/objects/debris2/tris.md2", spd, org);
-
 	VectorCopy(save, self->s.origin);
+
 	if (self->groundentity)
 		BecomeExplosion2(self);
 	else
@@ -1033,7 +1070,8 @@ void barrel_delay(edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 
 void SP_misc_explobox(edict_t *self)
 {
-	if (deathmatch->value) {
+	if (deathmatch->value)
+	{
 		// auto-remove for deathmatch
 		G_FreeEdict(self);
 		return;
@@ -1042,10 +1080,8 @@ void SP_misc_explobox(edict_t *self)
 	gi.modelindex("models/objects/debris1/tris.md2");
 	gi.modelindex("models/objects/debris2/tris.md2");
 	gi.modelindex("models/objects/debris3/tris.md2");
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	self->model = "models/objects/barrels/tris.md2";
 	self->s.modelindex = gi.modelindex(self->model);
 	VectorSet(self->mins, -16, -16, 0);
@@ -1053,20 +1089,19 @@ void SP_misc_explobox(edict_t *self)
 
 	if (!self->mass)
 		self->mass = 400;
+
 	if (!self->health)
 		self->health = 10;
+
 	if (!self->dmg)
 		self->dmg = 150;
 
 	self->die = barrel_delay;
 	self->takedamage = DAMAGE_YES;
 	self->monsterinfo.aiflags = AI_NOSTEP;
-
 	self->touch = barrel_touch;
-
 	self->think = M_droptofloor;
 	self->nextthink = level.time + (2 * game.frametime);
-
 	gi.linkentity(self);
 }
 
@@ -1093,7 +1128,8 @@ void misc_blackhole_think(edict_t *self)
 {
 	if (++self->s.frame < 19)
 		self->nextthink = level.time + game.frametime;
-	else {
+	else
+	{
 		self->s.frame = 0;
 		self->nextthink = level.time + game.frametime;
 	}
@@ -1120,7 +1156,8 @@ void misc_eastertank_think(edict_t *self)
 {
 	if (++self->s.frame < 293)
 		self->nextthink = level.time + game.frametime;
-	else {
+	else
+	{
 		self->s.frame = 254;
 		self->nextthink = level.time + game.frametime;
 	}
@@ -1147,7 +1184,8 @@ void misc_easterchick_think(edict_t *self)
 {
 	if (++self->s.frame < 247)
 		self->nextthink = level.time + game.frametime;
-	else {
+	else
+	{
 		self->s.frame = 208;
 		self->nextthink = level.time + game.frametime;
 	}
@@ -1174,7 +1212,8 @@ void misc_easterchick2_think(edict_t *self)
 {
 	if (++self->s.frame < 287)
 		self->nextthink = level.time + game.frametime;
-	else {
+	else
+	{
 		self->s.frame = 248;
 		self->nextthink = level.time + game.frametime;
 	}
@@ -1236,10 +1275,8 @@ void SP_monster_commander_body(edict_t *self)
 	self->flags = FL_GODMODE;
 	self->s.renderfx |= RF_FRAMELERP;
 	gi.linkentity(self);
-
 	gi.soundindex("tank/thud.wav");
 	gi.soundindex("tank/pain.wav");
-
 	self->think = commander_body_drop;
 	self->nextthink = level.time + (5 * game.frametime);
 }
@@ -1262,7 +1299,6 @@ void SP_misc_banner(edict_t *ent)
 	ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
 	ent->s.frame = Q_rand() % 16;
 	gi.linkentity(ent);
-
 	ent->think = misc_banner_think;
 	ent->nextthink = level.time + game.frametime;
 }
@@ -1278,14 +1314,17 @@ void misc_deadsoldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, 
 		return;
 
 	gi.sound(self, CHAN_BODY, gi.soundindex("misc/udeath.wav"), 1, ATTN_NORM, 0);
+
 	for (n = 0; n < 4; n++)
 		ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", damage, GIB_ORGANIC);
+
 	ThrowHead(self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
 }
 
 void SP_misc_deadsoldier(edict_t *ent)
 {
-	if (deathmatch->value) {
+	if (deathmatch->value)
+	{
 		// auto-remove for deathmatch
 		G_FreeEdict(ent);
 		return;
@@ -1317,7 +1356,6 @@ void SP_misc_deadsoldier(edict_t *ent)
 	ent->s.clip_contents = CONTENTS_DEADMONSTER;
 	ent->die = misc_deadsoldier_die;
 	ent->monsterinfo.aiflags |= AI_GOOD_GUY;
-
 	gi.linkentity(ent);
 }
 
@@ -1341,7 +1379,8 @@ void misc_viper_use(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_misc_viper(edict_t *ent)
 {
-	if (!ent->target) {
+	if (!ent->target)
+	{
 		gi.dprintf("misc_viper without a target at %s\n", vtos(ent->absmin));
 		G_FreeEdict(ent);
 		return;
@@ -1355,13 +1394,11 @@ void SP_misc_viper(edict_t *ent)
 	ent->s.modelindex = gi.modelindex("models/ships/viper/tris.md2");
 	VectorSet(ent->mins, -16, -16, 0);
 	VectorSet(ent->maxs, 16, 16, 32);
-
 	ent->think = func_train_find;
 	ent->nextthink = level.time + game.frametime;
 	ent->use = misc_viper_use;
 	ent->svflags |= SVF_NOCLIENT;
 	ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
-
 	gi.linkentity(ent);
 }
 
@@ -1386,7 +1423,6 @@ void SP_misc_bigviper(edict_t *ent)
 void misc_viper_bomb_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
 	G_UseTargets(self, self->activator);
-
 	self->s.origin[2] = self->absmin[2] + 1;
 	T_RadiusDamage(self, self, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
 	BecomeExplosion2(self);
@@ -1396,16 +1432,14 @@ void misc_viper_bomb_prethink(edict_t *self)
 {
 	vec3_t  v;
 	float   diff;
-
 	self->groundentity = NULL;
-
 	diff = self->timestamp - level.time;
-    if (diff < -1.0f)
-        diff = -1.0f;
+
+	if (diff < -1.0f)
+		diff = -1.0f;
 
 	VectorScale(self->moveinfo.dir, 1.0f + diff, v);
 	v[2] = diff;
-
 	diff = self->s.angles[2];
 	vectoangles(v, self->s.angles);
 	self->s.angles[2] = diff + 10;
@@ -1414,7 +1448,6 @@ void misc_viper_bomb_prethink(edict_t *self)
 void misc_viper_bomb_use(edict_t *self, edict_t *other, edict_t *activator)
 {
 	edict_t *viper;
-
 	self->solid = SOLID_BBOX;
 	self->svflags &= ~SVF_NOCLIENT;
 	self->s.effects |= EF_ROCKET;
@@ -1423,10 +1456,8 @@ void misc_viper_bomb_use(edict_t *self, edict_t *other, edict_t *activator)
 	self->prethink = misc_viper_bomb_prethink;
 	self->touch = misc_viper_bomb_touch;
 	self->activator = activator;
-
 	viper = G_FindByType(NULL, ET_MISC_VIPER);
 	VectorScale(viper->moveinfo.dir, viper->moveinfo.speed, self->velocity);
-
 	self->timestamp = level.time;
 	VectorCopy(viper->moveinfo.dir, self->moveinfo.dir);
 }
@@ -1437,7 +1468,6 @@ void SP_misc_viper_bomb(edict_t *self)
 	self->solid = SOLID_NOT;
 	VectorSet(self->mins, -8, -8, -8);
 	VectorSet(self->maxs, 8, 8, 8);
-
 	self->s.modelindex = gi.modelindex("models/objects/bomb/tris.md2");
 
 	if (!self->dmg)
@@ -1445,7 +1475,6 @@ void SP_misc_viper_bomb(edict_t *self)
 
 	self->use = misc_viper_bomb_use;
 	self->svflags |= SVF_NOCLIENT;
-
 	gi.linkentity(self);
 }
 
@@ -1470,7 +1499,8 @@ void misc_strogg_ship_use(edict_t *self, edict_t *other, edict_t *activator)
 
 void SP_misc_strogg_ship(edict_t *ent)
 {
-	if (!ent->target) {
+	if (!ent->target)
+	{
 		gi.dprintf("%s without a target at %s\n", spawnTemp.classname, vtos(ent->absmin));
 		G_FreeEdict(ent);
 		return;
@@ -1484,13 +1514,11 @@ void SP_misc_strogg_ship(edict_t *ent)
 	ent->s.modelindex = gi.modelindex("models/ships/strogg1/tris.md2");
 	VectorSet(ent->mins, -16, -16, 0);
 	VectorSet(ent->maxs, 16, 16, 32);
-
 	ent->think = func_train_find;
 	ent->nextthink = level.time + game.frametime;
 	ent->use = misc_strogg_ship_use;
 	ent->svflags |= SVF_NOCLIENT;
 	ent->moveinfo.accel = ent->moveinfo.decel = ent->moveinfo.speed = ent->speed;
-
 	gi.linkentity(ent);
 }
 
@@ -1500,6 +1528,7 @@ void SP_misc_strogg_ship(edict_t *ent)
 void misc_satellite_dish_think(edict_t *self)
 {
 	self->s.frame++;
+
 	if (self->s.frame < 38)
 		self->nextthink = level.time + game.frametime;
 }
@@ -1634,18 +1663,23 @@ void target_string_use(edict_t *self, edict_t *other, edict_t *activator)
 	edict_t *e;
 	int     n, l;
 	char    c;
-
 	l = strlen(self->message);
-	for (e = self->teammaster; e; e = e->teamchain) {
+
+	for (e = self->teammaster; e; e = e->teamchain)
+	{
 		if (!e->count)
 			continue;
+
 		n = e->count - 1;
-		if (n > l) {
+
+		if (n > l)
+		{
 			e->s.frame = 12;
 			continue;
 		}
 
 		c = self->message[n];
+
 		if (c >= '0' && c <= '9')
 			e->s.frame = c - '0';
 		else if (c == '-')
@@ -1661,6 +1695,7 @@ void SP_target_string(edict_t *self)
 {
 	if (!self->message)
 		self->message = "";
+
 	self->use = target_string_use;
 }
 
@@ -1681,10 +1716,14 @@ If START_OFF, this entity must be used before it starts
 static void func_clock_reset(edict_t *self)
 {
 	self->activator = NULL;
-	if (self->spawnflags & 1) {
+
+	if (self->spawnflags & 1)
+	{
 		self->health = 0;
 		self->wait = self->count;
-    } else if (self->spawnflags & 2) {
+	}
+	else if (self->spawnflags & 2)
+	{
 		self->health = self->count;
 		self->wait = 0;
 	}
@@ -1692,54 +1731,71 @@ static void func_clock_reset(edict_t *self)
 
 static void func_clock_format_countdown(edict_t *self)
 {
-	if (self->style == 0) {
+	if (self->style == 0)
+	{
 		Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i", self->health);
 		return;
 	}
 
-	if (self->style == 1) {
+	if (self->style == 1)
+	{
 		Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i", self->health / 60, self->health % 60);
+
 		if (self->message[3] == ' ')
 			self->message[3] = '0';
+
 		return;
 	}
 
-	if (self->style == 2) {
+	if (self->style == 2)
+	{
 		Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", self->health / 3600, (self->health - (self->health / 3600) * 3600) / 60, self->health % 60);
+
 		if (self->message[3] == ' ')
 			self->message[3] = '0';
+
 		if (self->message[6] == ' ')
 			self->message[6] = '0';
+
 		return;
 	}
 }
 
 void func_clock_think(edict_t *self)
 {
-	if (!self->enemy) {
+	if (!self->enemy)
+	{
 		self->enemy = G_Find(NULL, FOFS(targetname), self->target);
+
 		if (!self->enemy)
 			return;
 	}
 
-	if (self->spawnflags & 1) {
+	if (self->spawnflags & 1)
+	{
 		func_clock_format_countdown(self);
 		self->health++;
-    } else if (self->spawnflags & 2) {
+	}
+	else if (self->spawnflags & 2)
+	{
 		func_clock_format_countdown(self);
 		self->health--;
-    } else {
+	}
+	else
+	{
 		struct tm   *ltime;
 		time_t      gmtime;
-
-        gmtime = time(NULL);
+		gmtime = time(NULL);
 		ltime = localtime(&gmtime);
-        if (ltime)
+
+		if (ltime)
 			Q_snprintf(self->message, CLOCK_MESSAGE_SIZE, "%2i:%2i:%2i", ltime->tm_hour, ltime->tm_min, ltime->tm_sec);
-        else
-            strcpy(self->message, "00:00:00");
+		else
+			strcpy(self->message, "00:00:00");
+
 		if (self->message[3] == ' ')
 			self->message[3] = '0';
+
 		if (self->message[6] == ' ')
 			self->message[6] = '0';
 	}
@@ -1748,11 +1804,12 @@ void func_clock_think(edict_t *self)
 	self->enemy->use(self->enemy, self, self);
 
 	if (((self->spawnflags & 1) && (self->health > self->wait)) ||
-		((self->spawnflags & 2) && (self->health < self->wait))) {
-		if (self->pathtarget) {
+		((self->spawnflags & 2) && (self->health < self->wait)))
+	{
+		if (self->pathtarget)
+		{
 			char *savetarget;
 			char *savemessage;
-
 			savetarget = self->target;
 			savemessage = self->message;
 			self->target = self->pathtarget;
@@ -1778,21 +1835,25 @@ void func_clock_use(edict_t *self, edict_t *other, edict_t *activator)
 {
 	if (!(self->spawnflags & 8))
 		self->use = NULL;
+
 	if (self->activator)
 		return;
+
 	self->activator = activator;
 	self->think(self);
 }
 
 void SP_func_clock(edict_t *self)
 {
-	if (!self->target) {
+	if (!self->target)
+	{
 		gi.dprintf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}
 
-	if ((self->spawnflags & 2) && (!self->count)) {
+	if ((self->spawnflags & 2) && (!self->count))
+	{
 		gi.dprintf("%s with no count at %s\n", spawnTemp.classname, vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
@@ -1802,9 +1863,7 @@ void SP_func_clock(edict_t *self)
 		self->count = 60 * 60;;
 
 	func_clock_reset(self);
-
-    self->message = gi.TagMalloc(CLOCK_MESSAGE_SIZE, TAG_LEVEL);
-
+	self->message = gi.TagMalloc(CLOCK_MESSAGE_SIZE, TAG_LEVEL);
 	self->think = func_clock_think;
 
 	if (self->spawnflags & 4)
@@ -1822,40 +1881,37 @@ void teleporter_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t
 
 	if (!other->client)
 		return;
+
 	dest = G_Find(NULL, FOFS(targetname), self->target);
-	if (!dest) {
+
+	if (!dest)
+	{
 		gi.dprintf("Couldn't find destination\n");
 		return;
 	}
 
 	// unlink to make sure it can't possibly interfere with KillBox
 	gi.unlinkentity(other);
-
 	VectorCopy(dest->s.origin, other->s.origin);
 	VectorCopy(dest->s.origin, other->s.old_origin);
 	other->s.origin[2] += 10;
-
 	// clear the velocity and hold them in place briefly
 	VectorClear(other->velocity);
 	other->client->ps.pmove.pm_time = 160 >> 3;     // hold time
 	other->client->ps.pmove.pm_flags |= PMF_TIME_TELEPORT;
-
 	// draw the teleport splash at source and on the player
 	self->owner->s.event = EV_PLAYER_TELEPORT;
 	other->s.event = EV_PLAYER_TELEPORT;
 
 	// set angles
-    for (i = 0 ; i < 3 ; i++) {
+	for (i = 0 ; i < 3 ; i++)
 		other->client->ps.pmove.delta_angles[i] = ANGLE2SHORT(dest->s.angles[i] - other->client->resp.cmd_angles[i]);
-	}
 
 	VectorClear(other->s.angles);
 	VectorClear(other->client->ps.viewangles);
 	VectorClear(other->client->v_angle);
-
 	// kill anything at the destination
 	KillBox(other);
-
 	gi.linkentity(other);
 }
 
@@ -1866,7 +1922,8 @@ void SP_misc_teleporter(edict_t *ent)
 {
 	edict_t     *trig;
 
-	if (!ent->target) {
+	if (!ent->target)
+	{
 		gi.dprintf("teleporter without a target.\n");
 		G_FreeEdict(ent);
 		return;
@@ -1877,11 +1934,9 @@ void SP_misc_teleporter(edict_t *ent)
 	ent->s.effects = EF_TELEPORTER;
 	ent->s.sound = gi.soundindex("world/amb10.wav");
 	ent->solid = SOLID_BBOX;
-
 	VectorSet(ent->mins, -32, -32, -24);
 	VectorSet(ent->maxs, 32, 32, -16);
 	gi.linkentity(ent);
-
 	trig = G_Spawn();
 	trig->touch = teleporter_touch;
 	trig->solid = SOLID_TRIGGER;
@@ -1891,7 +1946,6 @@ void SP_misc_teleporter(edict_t *ent)
 	VectorSet(trig->mins, -8, -8, 8);
 	VectorSet(trig->maxs, 8, 8, 24);
 	gi.linkentity(trig);
-
 }
 
 /*QUAKED misc_teleporter_dest (1 0 0) (-32 -32 -24) (32 32 -16)
@@ -1902,7 +1956,7 @@ void SP_misc_teleporter_dest(edict_t *ent)
 	gi.setmodel(ent, "models/objects/dmspot/tris.md2");
 	ent->s.skinnum = 0;
 	ent->solid = SOLID_BBOX;
-//  ent->s.effects |= EF_FLIES;
+	//  ent->s.effects |= EF_FLIES;
 	VectorSet(ent->mins, -32, -32, -24);
 	VectorSet(ent->maxs, 32, 32, -16);
 	gi.linkentity(ent);

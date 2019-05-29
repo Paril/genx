@@ -27,20 +27,21 @@ PCX files are used for as many images as possible
 ========================================================================
 */
 
-typedef struct {
-    uint8_t     manufacturer;
-    uint8_t     version;
-    uint8_t     encoding;
-    uint8_t     bits_per_pixel;
-    uint16_t    xmin, ymin, xmax, ymax;
-    uint16_t    hres, vres;
-    uint8_t     palette[48];
-    uint8_t     reserved;
-    uint8_t     color_planes;
-    uint16_t    bytes_per_line;
-    uint16_t    palette_type;
-    uint8_t     filler[58];
-    uint8_t     data[1];            // unbounded
+typedef struct
+{
+	uint8_t     manufacturer;
+	uint8_t     version;
+	uint8_t     encoding;
+	uint8_t     bits_per_pixel;
+	uint16_t    xmin, ymin, xmax, ymax;
+	uint16_t    hres, vres;
+	uint8_t     palette[48];
+	uint8_t     reserved;
+	uint8_t     color_planes;
+	uint16_t    bytes_per_line;
+	uint16_t    palette_type;
+	uint8_t     filler[58];
+	uint8_t     data[1];            // unbounded
 } dpcx_t;
 
 #endif // FORMAT_PCX_H

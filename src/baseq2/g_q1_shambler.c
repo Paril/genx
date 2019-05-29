@@ -8,7 +8,8 @@ SHAMBLER
 
 #include "g_local.h"
 
-enum {
+enum
+{
 	stand1, stand2, stand3, stand4, stand5, stand6, stand7, stand8, stand9,
 	stand10, stand11, stand12, stand13, stand14, stand15, stand16, stand17,
 
@@ -35,7 +36,8 @@ enum {
 	death7, death8, death9, death10, death11
 };
 
-mframe_t sham_frames_stand1[] = {
+mframe_t sham_frames_stand1[] =
+{
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
@@ -79,7 +81,8 @@ void sham_idle_sound(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_sidle, 1, ATTN_IDLE, 0);
 }
 
-mframe_t sham_frames_walk1[] = {
+mframe_t sham_frames_walk1[] =
+{
 	{ ai_walk, 10,  NULL },
 	{ ai_walk, 9,   NULL },
 	{ ai_walk, 9,   NULL },
@@ -101,7 +104,8 @@ void sham_walk(edict_t *self)
 	self->monsterinfo.currentmove = &sham_walk1;
 }
 
-mframe_t sham_frames_run1[] = {
+mframe_t sham_frames_run1[] =
+{
 	{ ai_run, 20,  NULL },
 	{ ai_run, 24,  NULL },
 	{ ai_run, 20,  NULL },
@@ -129,21 +133,18 @@ void sham_smash_hit(edict_t *self)
 
 	if (VectorLength(delta) > 100)
 		return;
+
 	if (!CanDamage(self->enemy, self))
 		return;
 
 	ldmg = (random() + random() + random()) * 40;
 	T_Damage(self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ldmg, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, MakeGenericMeansOfDeath(self, MD_MELEE, DT_DIRECT));
 	gi.sound(self, CHAN_VOICE, sound_smack, 1, ATTN_NORM, 0);
-
 	vec3_t v, o;
 	vec3_t v_forward, v_right;
-
 	AngleVectors(self->s.angles, v_forward, v_right, NULL);
-
 	VectorMA(self->s.origin, 16, v_forward, o);
 	VectorScale(v_right, crandom() * 100, v);
-
 	SpawnMeatSpray(self, o, v);
 	SpawnMeatSpray(self, o, v);
 }
@@ -153,7 +154,8 @@ void sham_smash_sound(edict_t *self)
 	gi.sound(self, CHAN_VOICE, sound_melee1, 1, ATTN_NORM, 0);
 }
 
-mframe_t sham_frames_smash1[] = {
+mframe_t sham_frames_smash1[] =
+{
 	{ ai_charge, 2,  NULL },
 	{ ai_charge, 6,  NULL },
 	{ ai_charge, 6,  NULL },
@@ -187,21 +189,18 @@ void ShamClaw(edict_t *self, float side)
 
 	if (VectorLength(delta) > 100)
 		return;
-		
+
 	ldmg = (random() + random() + random()) * 20;
-	T_Damage (self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ldmg, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, MakeGenericMeansOfDeath(self, MD_MELEE, DT_DIRECT));
-	gi.sound (self, CHAN_VOICE, sound_smack, 1, ATTN_NORM, 0);
+	T_Damage(self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ldmg, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, MakeGenericMeansOfDeath(self, MD_MELEE, DT_DIRECT));
+	gi.sound(self, CHAN_VOICE, sound_smack, 1, ATTN_NORM, 0);
 
 	if (side)
 	{
 		vec3_t v, o;
 		vec3_t v_forward, v_right;
-
 		AngleVectors(self->s.angles, v_forward, v_right, NULL);
-
 		VectorMA(self->s.origin, 16, v_forward, o);
 		VectorScale(v_right, side, v);
-
 		SpawnMeatSpray(self, o, v);
 	}
 }
@@ -224,7 +223,8 @@ void sham_swing_left_re(edict_t *self)
 		self->monsterinfo.currentmove = &sham_swingr1;
 }
 
-mframe_t sham_frames_swingl1[] = {
+mframe_t sham_frames_swingl1[] =
+{
 	{ ai_charge, 5,  sham_swing_sound },
 	{ ai_charge, 3,  NULL },
 	{ ai_charge, 7,  NULL },
@@ -253,7 +253,8 @@ void sham_swing_right_re(edict_t *self)
 		self->monsterinfo.currentmove = &sham_swingl1;
 }
 
-mframe_t sham_frames_swingr1[] = {
+mframe_t sham_frames_swingr1[] =
+{
 	{ ai_charge, 1,  sham_smash_sound },
 	{ ai_charge, 8,  NULL },
 	{ ai_charge, 14,  NULL },
@@ -274,8 +275,8 @@ void sham_swingr(edict_t *self)
 void sham_melee(edict_t *self)
 {
 	float chance;
-	
 	chance = random();
+
 	if (chance > 0.6f || self->health == 600)
 		sham_smash(self);
 	else if (chance > 0.3f)
@@ -292,9 +293,7 @@ void LightningDamage(edict_t *ent, vec3_t p1, vec3_t p2, edict_t *from, int dama
 void CastLightning(edict_t *self)
 {
 	vec3_t org, dir;
-	
 	//self.effects = self.effects | EF_MUZZLEFLASH;
-
 	VectorCopy(self->s.origin, org);
 	org[2] += 40;
 
@@ -302,18 +301,15 @@ void CastLightning(edict_t *self)
 		dir[i] = self->enemy->s.origin[i] + ((i == 2) ? 16 : 0) - org[i];
 
 	VectorNormalize(dir);
-
 	vec3_t end;
 	VectorMA(self->s.origin, 600, dir, end);
 	trace_t tr = gi.trace(org, vec3_origin, vec3_origin, end, self, MASK_SHOT);
-
-	gi.WriteByte (svc_temp_entity);
-	gi.WriteByte (TE_Q1_LIGHTNING1);
+	gi.WriteByte(svc_temp_entity);
+	gi.WriteByte(TE_Q1_LIGHTNING1);
 	gi.WriteShort(self - g_edicts);
 	gi.WritePosition(org);
 	gi.WritePosition(tr.endpos);
 	gi.multicast(tr.endpos, MULTICAST_PVS);
-
 	LightningDamage(self, org, tr.endpos, self, 10);
 }
 
@@ -327,9 +323,7 @@ void sham_magic_start(edict_t *self)
 	if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME))
 	{
 		self->monsterinfo.pausetime = level.time + 200;
-
 		edict_t *o;
-
 		//self.effects = self.effects | EF_MUZZLEFLASH;
 		o = G_Spawn();
 		self->owner = o;
@@ -338,7 +332,6 @@ void sham_magic_start(edict_t *self)
 		VectorCopy(self->s.angles, o->s.angles);
 		o->nextthink = level.time + 700;
 		o->think = G_FreeEdict;
-
 		gi.linkentity(o);
 	}
 	else if (level.time >= self->monsterinfo.pausetime)
@@ -371,7 +364,8 @@ void sham_fire(edict_t *self)
 	}
 }
 
-mframe_t sham_frames_magic1[] = {
+mframe_t sham_frames_magic1[] =
+{
 	{ ai_charge, 0,  sham_magic_sound },
 	{ ai_charge, 0,  NULL },
 	{ ai_charge, 0,  sham_magic_start },
@@ -393,7 +387,8 @@ void sham_magic(edict_t *self)
 	self->monsterinfo.currentmove = &sham_magic1;
 }
 
-mframe_t sham_frames_pain1[] = {
+mframe_t sham_frames_pain1[] =
+{
 	{ ai_move, 0,  NULL },
 	{ ai_move, 0,  NULL },
 	{ ai_move, 0,  NULL },
@@ -405,18 +400,18 @@ mmove_t sham_pain1 = { pain1, pain6, sham_frames_pain1, sham_run };
 
 void sham_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
-	gi.sound (self, CHAN_VOICE, sound_shurt2, 1, ATTN_NORM, 0);
+	gi.sound(self, CHAN_VOICE, sound_shurt2, 1, ATTN_NORM, 0);
 
 	if (self->health <= 0)
 		return;		// allready dying, don't go into pain frame
 
-	if (random()*400 > damage)
+	if (random() * 400 > damage)
 		return;		// didn't flinch
 
 	if (self->pain_debounce_time > level.time)
 		return;
+
 	self->pain_debounce_time = level.time + 2000;
-		
 	self->monsterinfo.currentmove = &sham_pain1;
 }
 
@@ -436,7 +431,8 @@ void sham_dead(edict_t *self)
 	self->nextthink = 0;
 }
 
-mframe_t sham_frames_death1[] = {
+mframe_t sham_frames_death1[] =
+{
 	{ ai_move, 0,  NULL },
 	{ ai_move, 0,  NULL },
 	{ ai_move, 0,  sham_unsolid },
@@ -454,10 +450,10 @@ mmove_t sham_death1 = { death1, death11, sham_frames_death1, sham_dead };
 
 void sham_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-// check for gib
+	// check for gib
 	if (self->health < -60)
 	{
-		gi.sound (self, CHAN_VOICE, sound_udeath, 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_VOICE, sound_udeath, 1, ATTN_NORM, 0);
 		ThrowHead(self, "models/q1/h_shams.mdl", self->health, GIB_Q1);
 		ThrowGib(self, "models/q1/gib1.mdl", self->health, GIB_Q1);
 		ThrowGib(self, "models/q1/gib2.mdl", self->health, GIB_Q1);
@@ -470,9 +466,8 @@ void sham_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
-// regular death
-	gi.sound (self, CHAN_VOICE, sound_sdeath, 1, ATTN_NORM, 0);
+	// regular death
+	gi.sound(self, CHAN_VOICE, sound_sdeath, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &sham_death1;
 }
 
@@ -496,26 +491,22 @@ void q1_monster_shambler(edict_t *self)
 	gi.modelindex("models/q1/s_light.mdl");
 	gi.modelindex("models/q1/h_shams.mdl");
 	gi.modelindex("models/q1/bolt.mdl");
-	
-	sound_sattck1 = gi.soundindex ("q1/shambler/sattck1.wav");
-	sound_sboom = gi.soundindex ("q1/shambler/sboom.wav");
-	sound_sdeath = gi.soundindex ("q1/shambler/sdeath.wav");
-	sound_shurt2 = gi.soundindex ("q1/shambler/shurt2.wav");
-	sound_sidle = gi.soundindex ("q1/shambler/sidle.wav");
-	sound_ssight = gi.soundindex ("q1/shambler/ssight.wav");
-	sound_melee1 = gi.soundindex ("q1/shambler/melee1.wav");
-	sound_melee2 = gi.soundindex ("q1/shambler/melee2.wav");
-	sound_smack = gi.soundindex ("q1/shambler/smack.wav");
+	sound_sattck1 = gi.soundindex("q1/shambler/sattck1.wav");
+	sound_sboom = gi.soundindex("q1/shambler/sboom.wav");
+	sound_sdeath = gi.soundindex("q1/shambler/sdeath.wav");
+	sound_shurt2 = gi.soundindex("q1/shambler/shurt2.wav");
+	sound_sidle = gi.soundindex("q1/shambler/sidle.wav");
+	sound_ssight = gi.soundindex("q1/shambler/ssight.wav");
+	sound_melee1 = gi.soundindex("q1/shambler/melee1.wav");
+	sound_melee2 = gi.soundindex("q1/shambler/melee2.wav");
+	sound_smack = gi.soundindex("q1/shambler/smack.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	gi.setmodel (self, "models/q1/shambler.mdl");
-
+	gi.setmodel(self, "models/q1/shambler.mdl");
 	VectorSet(self->mins, -32, -32, -24);
 	VectorSet(self->maxs, 32, 32, 64);
 	self->health = 600;
-
 	self->monsterinfo.stand = sham_stand;
 	self->monsterinfo.walk = sham_walk;
 	self->monsterinfo.run = sham_run;
@@ -524,10 +515,8 @@ void q1_monster_shambler(edict_t *self)
 	self->monsterinfo.attack = sham_magic;
 	self->monsterinfo.sight = sham_sight;
 	self->pain = sham_pain;
-	
 	walkmonster_start(self);
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &sham_stand1;
 	self->monsterinfo.scale = 1;
 }

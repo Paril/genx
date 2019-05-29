@@ -10,7 +10,8 @@ static int sound_death2;
 static int sound_death3;
 static int sound_gib;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -57,7 +58,8 @@ void poss_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_action, 1, ATTN_NORM, 0);
 }
 
-mframe_t poss_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t poss_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -75,7 +77,8 @@ void poss_stand(edict_t *self)
 #define MOVE_SPEED 9.3f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t poss_frames_run1[FRAME_COUNT(run)] = {
+mframe_t poss_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  poss_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  poss_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  poss_idle, frames_run2 },
@@ -92,7 +95,8 @@ void poss_run(edict_t *self)
 	self->monsterinfo.currentmove = &poss_run1;
 }
 
-mframe_t poss_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t poss_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -115,7 +119,8 @@ void poss_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t poss_frames_gib1[FRAME_COUNT(gib)] = {
+mframe_t poss_frames_gib1[FRAME_COUNT(gib)] =
+{
 	{ ai_move, 0,  NULL, frames_gib1 },
 	{ ai_move, 0,  NULL, frames_gib1 },
 	{ ai_move, 0,  NULL, frames_gib2 },
@@ -137,7 +142,8 @@ mframe_t poss_frames_gib1[FRAME_COUNT(gib)] = {
 };
 mmove_t poss_gib1 = { frames_gib_start, frames_gib_end, poss_frames_gib1, poss_dead };
 
-mframe_t poss_frames_die1[FRAME_COUNT(die)] = {
+mframe_t poss_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death2 },
 	{ ai_move, 0,  NULL, frames_death3 },
@@ -171,15 +177,17 @@ void poss_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	{
 		switch (Q_rand() % 3)
 		{
-		case 0:
-			gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
-			break;
-		case 1:
-			gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
-			break;
-		case 2:
-			gi.sound(self, CHAN_VOICE, sound_death3, 1, ATTN_NORM, 0);
-			break;
+			case 0:
+				gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
+				break;
+
+			case 1:
+				gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
+				break;
+
+			case 2:
+				gi.sound(self, CHAN_VOICE, sound_death3, 1, ATTN_NORM, 0);
+				break;
 		}
 
 		self->monsterinfo.currentmove = &poss_die1;
@@ -189,13 +197,13 @@ void poss_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		Doom_TossItem(self, ITI_DOOM_SHOTGUN, 4);
 	else
 		Doom_TossItem(self, ITI_BULLETS, 5);*/
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-mframe_t poss_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t poss_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
@@ -207,10 +215,10 @@ void poss_pain(edict_t *self, edict_t *other, float kick, int damage)
 	if (random() < ((self->dmg == 1) ? 0.6641f : 0.7813f))
 	{
 		gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
-		
+
 		if (self->pain_debounce_time > level.time)
 			return;
-		
+
 		self->monsterinfo.currentmove = &poss_pain1;
 	}
 }
@@ -225,22 +233,17 @@ void poss_fire_gun(edict_t *self)
 	gi.WriteShort(self - g_edicts);
 	gi.WriteByte(self->dmg == 1 ? MZ_SHOTGUN : MZ_BLASTER);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
-
 	vec3_t start, forward, right, offset;
-
 	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);
 	VectorNormalize(forward);
-
 	VectorSet(offset, 0, 0, self->viewheight);
-
 	G_ProjectSource(self->s.origin, offset, forward, right, start);
-
 	int damage = ((Q_rand() % 5) + 1) * 3;
-
 	fire_doom_shotgun(self, start, forward, damage, 0, TE_DOOM_GUNSHOT, (self->dmg == 1 ? 3 : 1), 800, 0, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
 }
 
-mframe_t poss_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t poss_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  poss_fire_gun, frames_attack2 },
@@ -258,15 +261,17 @@ void poss_sight(edict_t *self, edict_t *other)
 {
 	switch (Q_rand() % 3)
 	{
-	case 0:
-		gi.sound(self, CHAN_VOICE, sound_alert1, 1, ATTN_NORM, 0);
-		break;
-	case 1:
-		gi.sound(self, CHAN_VOICE, sound_alert2, 1, ATTN_NORM, 0);
-		break;
-	case 2:
-		gi.sound(self, CHAN_VOICE, sound_alert3, 1, ATTN_NORM, 0);
-		break;
+		case 0:
+			gi.sound(self, CHAN_VOICE, sound_alert1, 1, ATTN_NORM, 0);
+			break;
+
+		case 1:
+			gi.sound(self, CHAN_VOICE, sound_alert2, 1, ATTN_NORM, 0);
+			break;
+
+		case 2:
+			gi.sound(self, CHAN_VOICE, sound_alert3, 1, ATTN_NORM, 0);
+			break;
 	}
 }
 
@@ -285,7 +290,6 @@ void doom_monster_poss(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_gib = gi.soundindex("doom/SLOP.wav");
 	sound_alert1 = gi.soundindex("doom/POSIT1.wav");
 	sound_alert2 = gi.soundindex("doom/POSIT2.wav");
@@ -295,7 +299,6 @@ void doom_monster_poss(edict_t *self)
 	sound_death1 = gi.soundindex("doom/PODTH1.wav");
 	sound_death2 = gi.soundindex("doom/PODTH2.wav");
 	sound_death3 = gi.soundindex("doom/PODTH3.wav");
-
 	VectorSet(self->mins, -20, -20, -2);
 	VectorSet(self->maxs, 20, 20, 62);
 
@@ -313,7 +316,6 @@ void doom_monster_poss(edict_t *self)
 	}
 
 	self->gib_health = -self->health;
-
 	self->monsterinfo.stand = poss_stand;
 	self->monsterinfo.walk = poss_walk;
 	self->monsterinfo.run = poss_run;
@@ -323,11 +325,8 @@ void doom_monster_poss(edict_t *self)
 	self->monsterinfo.attack = poss_attack;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &poss_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

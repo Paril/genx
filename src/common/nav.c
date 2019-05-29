@@ -48,7 +48,8 @@ double default_distance_func(nav_node_id a, nav_node_id b)
 	return Distance(Nav_NodeIDToNode(a)->position, Nav_NodeIDToNode(b)->position);
 }
 
-typedef struct Node_Ident_s {
+typedef struct Node_Ident_s
+{
 	nav_node_t		*node;
 	nav_node_id		id;
 } Node_Ident_t;
@@ -56,18 +57,14 @@ typedef struct Node_Ident_s {
 nav_igator_t *Nav_CreateNavigator()
 {
 	nav_igator_t *navigator = Z_Malloc(sizeof(nav_igator_t));
-
 	navigator->start = NULL;
 	navigator->goal = NULL;
 	navigator->heuristic_func = default_heuristic_func;
 	navigator->distance_func = default_distance_func;
-
 	navigator->path = NULL;
 	navigator->path_count = 0;
-
 	navigator->accessible_nodes = Z_Mallocz(sizeof(bool) * num_loaded_nodes);
 	navigator->node_redirections = Z_Mallocz(sizeof(Node_Ident_t) * num_loaded_nodes);
-
 	return navigator;
 }
 
@@ -78,7 +75,6 @@ void Nav_DestroyNavigator(nav_igator_t *navigator)
 
 	Z_Free(navigator->accessible_nodes);
 	Z_Free(navigator->node_redirections);
-
 	Z_Free(navigator);
 }
 
@@ -94,9 +90,7 @@ void NavStateDestroyNagivator()
 void ResetNavState()
 {
 	NavStateDestroyNagivator();
-
 	memset(&nav_debug, 0, sizeof(nav_debug));
-
 	nav_debug.node_selected_a = nav_debug.node_selected_b = NAV_NODE_INVALID;
 }
 
@@ -123,17 +117,16 @@ nav_node_t *Nav_GetClosestNode(vec3_t position)
 
 float astarPathCostHeuristic(void *start, void *end, void *ctx)
 {
-	Node_Ident_t *startnode_id = (Node_Ident_t*)start;
-	Node_Ident_t *endnode_id = (Node_Ident_t*)end;
-	nav_igator_t *navigator = (nav_igator_t*)ctx;
-
+	Node_Ident_t *startnode_id = (Node_Ident_t *)start;
+	Node_Ident_t *endnode_id = (Node_Ident_t *)end;
+	nav_igator_t *navigator = (nav_igator_t *)ctx;
 	return navigator->heuristic_func(startnode_id->id, endnode_id->id);
 }
 
 void astarNodeNeighbors(ASNeighborList neighbors, void *node, void *ctx)
 {
-	Node_Ident_t *node_id = (Node_Ident_t*)node;
-	nav_igator_t *navigator = (nav_igator_t*)ctx;
+	Node_Ident_t *node_id = (Node_Ident_t *)node;
+	nav_igator_t *navigator = (nav_igator_t *)ctx;
 
 	for (uint32_t i = 0; i < node_id->node->num_connections; ++i)
 	{
@@ -144,8 +137,8 @@ void astarNodeNeighbors(ASNeighborList neighbors, void *node, void *ctx)
 
 int astarNodeComparator(void *node1, void *node2, void *ctx)
 {
-	Node_Ident_t *startnode_id = (Node_Ident_t*)node1;
-	Node_Ident_t *endnode_id = (Node_Ident_t*)node2;
+	Node_Ident_t *startnode_id = (Node_Ident_t *)node1;
+	Node_Ident_t *endnode_id = (Node_Ident_t *)node2;
 
 	if (startnode_id->id < endnode_id->id)
 		return -1;
@@ -172,29 +165,25 @@ bool Nav_AStar(nav_igator_t *navigator)
 	for (uint32_t i = 0; i < num_loaded_nodes; ++i)
 	{
 		navigator->accessible_nodes[i] = navigator->close_func(i);
-		navigator->node_redirections[i] = (Node_Ident_t) { Nav_NodeIDToNode(i), i };
+		navigator->node_redirections[i] = (Node_Ident_t)
+		{
+			Nav_NodeIDToNode(i), i
+		};
 	}
 
 	static ASPathNodeSource source;
-
 	source.nodeSize = sizeof(Node_Ident_t);
-
 	source.pathCostHeuristic = astarPathCostHeuristic;
-
 	source.nodeNeighbors = astarNodeNeighbors;
-
 	source.nodeComparator = astarNodeComparator;
-
 	ASPath path = ASPathCreate(&source, navigator, &navigator->node_redirections[start_id], &navigator->node_redirections[goal_id]);
-
 	navigator->path_count = ASPathGetCount(path);
-	navigator->path = (nav_node_t**)Z_Malloc(sizeof(nav_node_t*) * navigator->path_count);
+	navigator->path = (nav_node_t **)Z_Malloc(sizeof(nav_node_t *) * navigator->path_count);
 
 	for (uint32_t i = 0; i < navigator->path_count; ++i)
-		navigator->path[i] = ((Node_Ident_t*)ASPathGetNode(path, i))->node;
+		navigator->path[i] = ((Node_Ident_t *)ASPathGetNode(path, i))->node;
 
 	ASPathDestroy(path);
-
 	return navigator->path_count > 0;
 }
 
@@ -208,10 +197,9 @@ void Nav_ToggleAutoDrop()
 			Com_Printf("Enabled node autodrop.\n");
 		else
 			Com_Printf("Disabled node autodrop.\n");
-		
+
 		nav_debug.node_selected_a = NAV_NODE_INVALID;
 		nav_debug.node_selected_b = NAV_NODE_INVALID;
-		
 		Cvar_SetInteger(nav_autodrop, nav_debug.auto_drop ? 1 : 0, FROM_CODE);
 		Cvar_SetInteger(nav_autoconnect, 0, FROM_CODE);
 	}
@@ -227,10 +215,9 @@ void Nav_ToggleAutoConnect()
 			Com_Printf("Enabled node autoconnect.\n");
 		else
 			Com_Printf("Disabled node autoconnect.\n");
-		
+
 		nav_debug.node_selected_a = NAV_NODE_INVALID;
 		nav_debug.node_selected_b = NAV_NODE_INVALID;
-
 		Cvar_SetInteger(nav_autoconnect, nav_debug.auto_connect ? 1 : 0, FROM_CODE);
 		Cvar_SetInteger(nav_autodrop, 0, FROM_CODE);
 	}
@@ -258,7 +245,7 @@ nav_node_t *Nav_CreateNode()
 	if (num_loaded_nodes == num_allocated_nodes)
 	{
 		num_allocated_nodes *= 2;
-		loaded_nodes = (nav_node_t*)Z_Realloc(loaded_nodes, sizeof(nav_node_t) * num_allocated_nodes);
+		loaded_nodes = (nav_node_t *)Z_Realloc(loaded_nodes, sizeof(nav_node_t) * num_allocated_nodes);
 	}
 
 	nav_node_t *node = &loaded_nodes[num_loaded_nodes++];
@@ -346,7 +333,6 @@ bool Nav_UnconnectNodes(nav_node_t *from, nav_node_t *to, bool both)
 void Nav_DeleteNode(nav_node_t *node)
 {
 	NavStateDestroyNagivator();
-
 	// fix up a/b first
 	nav_node_id id = Nav_NodeToNodeID(node);
 
@@ -367,7 +353,7 @@ void Nav_DeleteNode(nav_node_t *node)
 		// fix the connections
 		for (uint32_t i = 0; i < num_loaded_nodes - 1; ++i)
 		{
-			for (uint32_t c = 0; c < loaded_nodes[i].num_connections; )
+			for (uint32_t c = 0; c < loaded_nodes[i].num_connections;)
 			{
 				// if it's us, we have to shift us back
 				if (loaded_nodes[i].connections[c] == id)
@@ -391,16 +377,17 @@ bool Nav_LeavesConnected(mleaf_t *leaf1, mleaf_t *leaf2, int vis)
 	byte mask[VIS_MAX_BYTES];
 	bsp_t *bsp = nav_debug.bsp;
 
-	if (!bsp) {
+	if (!bsp)
 		Com_Error(ERR_DROP, "%s: no map loaded", __func__);
-	}
 
 	BSP_ClusterVis(bsp, mask, leaf1->cluster, vis);
 
 	if (leaf2->cluster == -1)
 		return false;
+
 	if (!Q_IsBitSet(mask, leaf2->cluster))
 		return false;
+
 	//if (!CM_AreasConnected(&cl.s.cm, leaf1->area, leaf2->area))
 	//return false;        // a door blocks it
 	return true;
@@ -409,7 +396,6 @@ bool Nav_LeavesConnected(mleaf_t *leaf1, mleaf_t *leaf2, int vis)
 void Nav_SetNodePosition(nav_node_t *node, vec3_t new_position)
 {
 	NavStateDestroyNagivator();
-
 	VectorCopy(new_position, node->position);
 	node->leaf = BSP_PointLeaf(nav_debug.bsp->nodes, new_position);
 }
@@ -488,41 +474,37 @@ void Nav_ToggleConnection(nav_node_t *first, nav_node_t *second)
 		state = NONE;
 
 	Nav_UnconnectNodes(first, second, true);
-
 	uint8_t new_state = (state + 1) % 4;
 
 	switch (new_state)
 	{
-	case LOW_TO_HIGH:
-		Nav_ConnectNodes(first, second, false);
-		break;
-	case HIGH_TO_LOW:
-		Nav_ConnectNodes(second, first, false);
-		break;
-	case BOTH:
-		Nav_ConnectNodes(first, second, true);
-		break;
+		case LOW_TO_HIGH:
+			Nav_ConnectNodes(first, second, false);
+			break;
+
+		case HIGH_TO_LOW:
+			Nav_ConnectNodes(second, first, false);
+			break;
+
+		case BOTH:
+			Nav_ConnectNodes(first, second, true);
+			break;
 	}
 }
 
 void Nav_Save(void)
 {
 	char buffer[MAX_QPATH];
-	
 	Q_snprintf(buffer, sizeof(buffer), "%s/nav/", fs_gamedir);
 	FS_CreatePath(buffer);
-
 	Q_snprintf(buffer, MAX_QPATH, "nav/%s.nod", nav_debug.mapname);
-
 	qhandle_t f;
 	FS_FOpenFile(buffer, &f, FS_MODE_WRITE);
-
 	FS_Write(&num_loaded_nodes, sizeof(num_loaded_nodes), f);
 
 	for (uint32_t i = 0; i < num_loaded_nodes; ++i)
 	{
 		nav_node_t *node = &loaded_nodes[i];
-
 		FS_Write(node->position, sizeof(node->position), f);
 		FS_Write(&node->type, 1, f);
 		FS_Write(&node->num_connections, sizeof(node->num_connections), f);
@@ -530,7 +512,6 @@ void Nav_Save(void)
 	}
 
 	FS_FCloseFile(f);
-
 	Com_Printf("Nodes saved.\n");
 }
 
@@ -542,7 +523,6 @@ void Nav_MapUnloaded(void)
 	Com_Printf("------- Nav_MapUnloaded -------\n");
 	nav_debug.is_running = false;
 	nav_debug.bsp = NULL;
-
 	Z_Free(loaded_nodes);
 	loaded_nodes = NULL;
 	num_loaded_nodes = num_allocated_nodes = 0;
@@ -556,41 +536,32 @@ void Nav_MapLoaded(const char *name, bsp_t *bsp)
 	ResetNavState();
 	nav_debug.bsp = bsp;
 	nav_debug.is_running = true;
-
 	Cvar_SetInteger(nav_autodrop, 0, FROM_CODE);
-
 	Com_Printf("------- Nav_MapLoaded -------\n");
-
 	size_t len = strlen(name);
 	memcpy(nav_debug.mapname, bsp->name + 5, len - 9);
 	nav_debug.mapname[len - 9] = 0;
-
 	char buffer[MAX_QPATH];
 	Q_snprintf(buffer, MAX_QPATH, "nav/%s.nod", nav_debug.mapname);
 
 	if (!FS_FileExists(buffer))
 	{
 		Com_Printf("No navigation nodes found for %s\n", nav_debug.mapname);
-
 		num_allocated_nodes = 64;
-		loaded_nodes = (nav_node_t*)Z_Malloc(sizeof(nav_node_t) * num_allocated_nodes);
+		loaded_nodes = (nav_node_t *)Z_Malloc(sizeof(nav_node_t) * num_allocated_nodes);
 		num_loaded_nodes = 0;
-
 		return;
 	}
 
 	qhandle_t f;
 	FS_FOpenFile(buffer, &f, FS_MODE_READ);
-
 	FS_Read(&num_loaded_nodes, sizeof(num_loaded_nodes), f);
-
 	num_allocated_nodes = num_loaded_nodes;
-	loaded_nodes = (nav_node_t*)Z_Malloc(sizeof(nav_node_t) * num_allocated_nodes);
+	loaded_nodes = (nav_node_t *)Z_Malloc(sizeof(nav_node_t) * num_allocated_nodes);
 
 	for (uint32_t i = 0; i < num_loaded_nodes; ++i)
 	{
 		nav_node_t *node = &loaded_nodes[i];
-
 		FS_Read(node->position, sizeof(node->position), f);
 		node->leaf = BSP_PointLeaf(nav_debug.bsp->nodes, node->position);
 		FS_Read(&node->type, 1, f);
@@ -599,16 +570,13 @@ void Nav_MapLoaded(const char *name, bsp_t *bsp)
 	}
 
 	Com_Printf("Loaded %i nodes for %s\n", num_loaded_nodes, nav_debug.mapname);
-
 	FS_FCloseFile(f);
-
 	nav_debug.nodes_loaded = true;
 }
 
 void Nav_CmInit()
 {
 	ResetNavState();
-
 	nav_tools = Cvar_Get("nav_tools", "0", CVAR_LATCH);
 	nav_autodrop = Cvar_Get("nav_autodrop", "0", 0);
 	nav_autoconnect = Cvar_Get("nav_autoconnect", "0", 0);

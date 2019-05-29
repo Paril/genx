@@ -7,7 +7,8 @@ SOLDIER / PLAYER
 */
 #include "g_local.h"
 
-enum {
+enum
+{
 	stand1, stand2, stand3, stand4, stand5, stand6, stand7, stand8,
 
 	death1, death2, death3, death4, death5, death6, death7, death8,
@@ -44,7 +45,8 @@ static int sound_sight1;
 
 static int sound_udeath;
 
-mframe_t army_frames_stand[] = {
+mframe_t army_frames_stand[] =
+{
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
@@ -69,7 +71,8 @@ void army_run_sound(edict_t *self)
 
 void army_walk(edict_t *self);
 
-mframe_t army_frames_walk[] = {
+mframe_t army_frames_walk[] =
+{
 	{ ai_walk, 1,   army_run_sound },
 	{ ai_walk, 1,   NULL },
 	{ ai_walk, 1,   NULL },
@@ -104,7 +107,8 @@ void army_walk(edict_t *self)
 
 void army_run(edict_t *self);
 
-mframe_t army_frames_run[] = {
+mframe_t army_frames_run[] =
+{
 	{ ai_run, 11,   army_run_sound },
 	{ ai_run, 15,   NULL },
 	{ ai_run, 10,   NULL },
@@ -131,7 +135,6 @@ void FireBullets(edict_t *ent, int shotcount, int damage, vec3_t dir, vec3_t spr
 void army_fire(edict_t *self)
 {
 	gi.sound(self, CHAN_WEAPON, sound_sattck1, 1, ATTN_NORM, 0);
-
 	// fire somewhat behind the player, so a dodging player is harder to hit
 	edict_t *en = self->enemy;
 	vec3_t dir;
@@ -139,10 +142,8 @@ void army_fire(edict_t *self)
 	VectorSubtract(en->s.origin, dir, dir);
 	VectorSubtract(dir, self->s.origin, dir);
 	VectorNormalize(dir);
-
 	vec3_t right, up;
 	AngleVectors(self->s.angles, NULL, right, up);
-
 	vec3_t spread = { 0.1, 0.1, 0 };
 	FireBullets(self, 4, 4, dir, spread, up, right, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
 }
@@ -151,10 +152,13 @@ void SUB_CheckRefire(edict_t *self, int frame)
 {
 	if (skill->integer != 3 || !self->enemy)
 		return;
+
 	if (self->count == 1)
 		return;
+
 	if (!visible(self, self->enemy))
 		return;
+
 	self->count = 1;
 	self->monsterinfo.nextframe = frame;
 }
@@ -164,7 +168,8 @@ void army_checkrefire(edict_t *self)
 	SUB_CheckRefire(self, shoot1);
 }
 
-mframe_t army_frames_atk[] = {
+mframe_t army_frames_atk[] =
+{
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
 	{ ai_charge, 0,   NULL },
@@ -199,7 +204,8 @@ void army_dead(edict_t *self)
 	self->nextthink = 0;
 }
 
-mframe_t army_frames_bdeath[] = {
+mframe_t army_frames_bdeath[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   army_drop },
@@ -213,7 +219,8 @@ mframe_t army_frames_bdeath[] = {
 };
 mmove_t army_bdie = { death1, death10, army_frames_bdeath, army_dead };
 
-mframe_t army_frames_cdeath[] = {
+mframe_t army_frames_cdeath[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, -5,   NULL },
 	{ ai_move, -4,   army_drop },
@@ -255,7 +262,8 @@ void army_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		self->monsterinfo.currentmove = &army_cdie;
 }
 
-mframe_t army_frames_paina[] = {
+mframe_t army_frames_paina[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -265,7 +273,8 @@ mframe_t army_frames_paina[] = {
 };
 mmove_t army_paina = { pain1, pain6, army_frames_paina, army_run };
 
-mframe_t army_frames_painb[] = {
+mframe_t army_frames_painb[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 13,   NULL },
 	{ ai_move, 9,   NULL },
@@ -283,7 +292,8 @@ mframe_t army_frames_painb[] = {
 };
 mmove_t army_painb = { painb1, painb14, army_frames_painb, army_run };
 
-mframe_t army_frames_painc[] = {
+mframe_t army_frames_painc[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, -1,   NULL },
 	{ ai_move, 0,   NULL },
@@ -311,7 +321,7 @@ void army_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 	{
 		self->pain_debounce_time = level.time + 600;
 		self->monsterinfo.currentmove = &army_paina;
-		gi.sound (self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
+		gi.sound(self, CHAN_VOICE, sound_pain1, 1, ATTN_NORM, 0);
 	}
 	else if (r < 0.6f)
 	{
@@ -331,36 +341,30 @@ void army_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 /*QUAKED monster_army (1 0 0) (-16 -16 -24) (16 16 40) Ambush
 */
 void q1_monster_army(edict_t *self)
-{	
+{
 	if (deathmatch->integer)
 	{
 		G_FreeEdict(self);
 		return;
 	}
+
 	gi.modelindex("models/q1/h_guard.mdl");
 	gi.modelindex("models/q1/gib1.mdl");
 	gi.modelindex("models/q1/gib2.mdl");
 	gi.modelindex("models/q1/gib3.mdl");
-
 	sound_death1 = gi.soundindex("q1/soldier/death1.wav");
 	sound_idle = gi.soundindex("q1/soldier/idle.wav");
 	sound_pain1 = gi.soundindex("q1/soldier/pain1.wav");
 	sound_pain2 = gi.soundindex("q1/soldier/pain2.wav");
 	sound_sattck1 = gi.soundindex("q1/soldier/sattck1.wav");
 	sound_sight1 = gi.soundindex("q1/soldier/sight1.wav");
-
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	self->s.modelindex = gi.modelindex("models/q1/soldier.mdl");
-
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 40);
-
 	self->health = 30;
-
 	self->monsterinfo.stand = army_stand;
 	self->monsterinfo.walk = army_walk;
 	self->monsterinfo.run = army_run;
@@ -368,11 +372,8 @@ void q1_monster_army(edict_t *self)
 	self->monsterinfo.sight = army_sight;
 	self->pain = army_pain;
 	self->die = army_die;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &army_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

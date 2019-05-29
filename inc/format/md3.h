@@ -43,70 +43,77 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // vertex scales
 #define    MD3_XYZ_SCALE        (1.0f/64.0f)
 
-typedef struct {
-    float       st[2];
+typedef struct
+{
+	float       st[2];
 } dmd3coord_t;
 
-typedef struct {
-    int16_t     point[3];
-    uint8_t     norm[2];
+typedef struct
+{
+	int16_t     point[3];
+	uint8_t     norm[2];
 } dmd3vertex_t;
 
-typedef struct {
-    float       mins[3];
-    float       maxs[3];
-    float       translate[3];
-    float       radius;
-    char        creator[16];
+typedef struct
+{
+	float       mins[3];
+	float       maxs[3];
+	float       translate[3];
+	float       radius;
+	char        creator[16];
 } dmd3frame_t;
 
-typedef struct {
-    char        name[MD3_MAX_PATH];     // tag name
-    float       origin[3];
-    float       axis[3][3];
+typedef struct
+{
+	char        name[MD3_MAX_PATH];     // tag name
+	float       origin[3];
+	float       axis[3][3];
 } dmd3tag_t;
 
-typedef struct {
-    char        name[MD3_MAX_PATH];
-    uint32_t    unused;                 // shader
+typedef struct
+{
+	char        name[MD3_MAX_PATH];
+	uint32_t    unused;                 // shader
 } dmd3skin_t;
 
-typedef struct {
-    uint32_t    ident;
+typedef struct
+{
+	uint32_t    ident;
 
-    char        name[MD3_MAX_PATH];
-    uint32_t    flags;
+	char        name[MD3_MAX_PATH];
+	uint32_t    flags;
 
-    uint32_t    num_frames;
-    uint32_t    num_skins;
-    uint32_t    num_verts;
-    uint32_t    num_tris;
+	uint32_t    num_frames;
+	uint32_t    num_skins;
+	uint32_t    num_verts;
+	uint32_t    num_tris;
 
-    uint32_t    ofs_indexes;
-    uint32_t    ofs_skins;
-    uint32_t    ofs_tcs;
-    uint32_t    ofs_verts;
+	uint32_t    ofs_indexes;
+	uint32_t    ofs_skins;
+	uint32_t    ofs_tcs;
+	uint32_t    ofs_verts;
 
-    uint32_t    meshsize;
+	uint32_t    meshsize;
 } dmd3mesh_t;
 
-typedef struct {
-    uint32_t    ident;
-    uint32_t    version;
+typedef struct
+{
+	uint32_t    ident;
+	uint32_t    version;
 
-    char        filename[MD3_MAX_PATH];
+	char        filename[MD3_MAX_PATH];
 
-    uint32_t    flags;
+	uint32_t    flags;
 
-    uint32_t    num_frames;
-    uint32_t    num_tags;
-    uint32_t    num_meshes;
-    uint32_t    num_skins;
+	uint32_t    num_frames;
+	uint32_t    num_tags;
+	uint32_t    num_meshes;
+	uint32_t    num_skins;
 
-    uint32_t    ofs_frames;
-    uint32_t    ofs_tags;
-    uint32_t    ofs_meshes;
-    uint32_t    ofs_end;
+	uint32_t    ofs_frames;
+	uint32_t    ofs_tags;
+	uint32_t    ofs_meshes;
+	uint32_t    ofs_end;
 } dmd3header_t;
 
 #endif // FORMAT_MD3_H

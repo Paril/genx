@@ -36,24 +36,25 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MIN_MENU_ITEMS  64
 #define MAX_MENU_ITEMS  250000000
 
-typedef enum {
-    MTYPE_BAD,
-    MTYPE_SLIDER,
-    MTYPE_LIST,
-    MTYPE_ACTION,
-    MTYPE_SPINCONTROL,
-    MTYPE_SEPARATOR,
-    MTYPE_FIELD,
-    MTYPE_BITFIELD,
-    MTYPE_PAIRS,
-    MTYPE_STRINGS,
-    MTYPE_VALUES,
-    MTYPE_TOGGLE,
-    MTYPE_STATIC,
-    MTYPE_KEYBIND,
-    MTYPE_BITMAP,
-    MTYPE_SAVEGAME,
-    MTYPE_LOADGAME
+typedef enum
+{
+	MTYPE_BAD,
+	MTYPE_SLIDER,
+	MTYPE_LIST,
+	MTYPE_ACTION,
+	MTYPE_SPINCONTROL,
+	MTYPE_SEPARATOR,
+	MTYPE_FIELD,
+	MTYPE_BITFIELD,
+	MTYPE_PAIRS,
+	MTYPE_STRINGS,
+	MTYPE_VALUES,
+	MTYPE_TOGGLE,
+	MTYPE_STATIC,
+	MTYPE_KEYBIND,
+	MTYPE_BITMAP,
+	MTYPE_SAVEGAME,
+	MTYPE_LOADGAME
 } menuType_t;
 
 #define QMF_LEFT_JUSTIFY    0x00000001
@@ -64,13 +65,14 @@ typedef enum {
 #define QMF_DISABLED        0x00000020
 #define QMF_CUSTOM_COLOR    0x00000040
 
-typedef enum {
-    QMS_NOTHANDLED,
-    QMS_SILENT,
-    QMS_IN,
-    QMS_MOVE,
-    QMS_OUT,
-    QMS_BEEP
+typedef enum
+{
+	QMS_NOTHANDLED,
+	QMS_SILENT,
+	QMS_IN,
+	QMS_MOVE,
+	QMS_OUT,
+	QMS_BEEP
 } menuSound_t;
 
 #define RCOLUMN_OFFSET  (CHAR_WIDTH * 2)
@@ -83,86 +85,90 @@ typedef enum {
 #define DOUBLE_CLICK_DELAY    300
 
 #define UI_IsItemSelectable(item) \
-    ((item)->type != MTYPE_SEPARATOR && \
-     (item)->type != MTYPE_STATIC && \
-     !((item)->flags & (QMF_GRAYED | QMF_HIDDEN | QMF_DISABLED)))
+	((item)->type != MTYPE_SEPARATOR && \
+		(item)->type != MTYPE_STATIC && \
+		!((item)->flags & (QMF_GRAYED | QMF_HIDDEN | QMF_DISABLED)))
 
-typedef struct menuFrameWork_s {
-    list_t  entry;
+typedef struct menuFrameWork_s
+{
+	list_t  entry;
 
-    char    *name, *title, *status;
+	char    *name, *title, *status;
 
-    void    **items;
-    int     nitems;
+	void    **items;
+	int     nitems;
 
-    bool compact;
-    bool transparent;
-    bool keywait;
+	bool compact;
+	bool transparent;
+	bool keywait;
 
-    qhandle_t image;
-    color_t color;
-    int y1, y2;
+	qhandle_t image;
+	color_t color;
+	int y1, y2;
 
-    int mins[2];
-    int maxs[2];
+	int mins[2];
+	int maxs[2];
 
-    qhandle_t banner;
-    vrect_t banner_rc;
+	qhandle_t banner;
+	vrect_t banner_rc;
 
-    qhandle_t plaque;
-    vrect_t plaque_rc;
+	qhandle_t plaque;
+	vrect_t plaque_rc;
 
-    qhandle_t logo;
-    vrect_t logo_rc;
+	qhandle_t logo;
+	vrect_t logo_rc;
 
-    bool (*push)(struct menuFrameWork_s *);
-    void (*pop)(struct menuFrameWork_s *);
-    void (*expose)(struct menuFrameWork_s *);
-    void (*draw)(struct menuFrameWork_s *);
-    void (*size)(struct menuFrameWork_s *);
-    void (*free)(struct menuFrameWork_s *);
-    menuSound_t (*keydown)(struct menuFrameWork_s *, int);
+	bool (*push)(struct menuFrameWork_s *);
+	void (*pop)(struct menuFrameWork_s *);
+	void (*expose)(struct menuFrameWork_s *);
+	void (*draw)(struct menuFrameWork_s *);
+	void (*size)(struct menuFrameWork_s *);
+	void (*free)(struct menuFrameWork_s *);
+	menuSound_t (*keydown)(struct menuFrameWork_s *, int);
 } menuFrameWork_t;
 
-typedef struct menuCommon_s {
-    menuType_t type;
-    int id;
-    char *name;
-    menuFrameWork_t *parent;
-    color_t color;
-    vrect_t rect;
-    char *status;
+typedef struct menuCommon_s
+{
+	menuType_t type;
+	int id;
+	char *name;
+	menuFrameWork_t *parent;
+	color_t color;
+	vrect_t rect;
+	char *status;
 
-    int x, y;
-    int width, height;
+	int x, y;
+	int width, height;
 
-    int flags;
-    int uiFlags;
+	int flags;
+	int uiFlags;
 
-    menuSound_t (*activate)(struct menuCommon_s *);
-    menuSound_t (*change)(struct menuCommon_s *);
-    menuSound_t (*keydown)(struct menuCommon_s *, int key);
-    menuSound_t (*focus)(struct menuCommon_s *, bool gain);
+	menuSound_t (*activate)(struct menuCommon_s *);
+	menuSound_t (*change)(struct menuCommon_s *);
+	menuSound_t (*keydown)(struct menuCommon_s *, int key);
+	menuSound_t (*focus)(struct menuCommon_s *, bool gain);
 } menuCommon_t;
 
-typedef struct menuField_s {
-    menuCommon_t generic;
-    inputField_t field;
-    cvar_t *cvar;
-    int width;
+typedef struct menuField_s
+{
+	menuCommon_t generic;
+	inputField_t field;
+	cvar_t *cvar;
+	int width;
 } menuField_t;
 
 #define SLIDER_RANGE 10
 
-typedef struct menuSlider_s {
-    menuCommon_t generic;
-    cvar_t *cvar;
-    bool modified;
+typedef struct menuSlider_s
+{
+	menuCommon_t generic;
+	cvar_t *cvar;
+	bool modified;
 
-    float minvalue;
-    float maxvalue;
-    float curvalue;
-    float step;
+	float minvalue;
+	float maxvalue;
+	float curvalue;
+	float step;
 } menuSlider_t;
 
 #define MAX_COLUMNS     8
@@ -177,85 +183,94 @@ typedef struct menuSlider_s {
 #define MLF_SCROLLBAR   0x00000002
 #define MLF_COLOR       0x00000004
 
-typedef struct menuListColumn_s {
-    char *name;
-    int width;
-    int uiFlags;
+typedef struct menuListColumn_s
+{
+	char *name;
+	int width;
+	int uiFlags;
 } menuListColumn_t;
 
-typedef struct menuList_s {
-    menuCommon_t generic;
+typedef struct menuList_s
+{
+	menuCommon_t generic;
 
-    void        **items;
-    int         numItems;
-    int         maxItems;
-    int         mlFlags;
-    int         extrasize;
+	void        **items;
+	int         numItems;
+	int         maxItems;
+	int         mlFlags;
+	int         extrasize;
 
-    int        prestep;
-    int        curvalue;
-    int        clickTime;
+	int        prestep;
+	int        curvalue;
+	int        clickTime;
 
-    char    scratch[8];
-    int     scratchCount;
-    int     scratchTime;
+	char    scratch[8];
+	int     scratchCount;
+	int     scratchTime;
 
-    int     drag_y;
+	int     drag_y;
 
-    menuListColumn_t    columns[MAX_COLUMNS];
-    int                 numcolumns;
-    int                 sortdir, sortcol;
+	menuListColumn_t    columns[MAX_COLUMNS];
+	int                 numcolumns;
+	int                 sortdir, sortcol;
 
-    menuSound_t (*sort)(struct menuList_s *);
+	menuSound_t (*sort)(struct menuList_s *);
 } menuList_t;
 
-typedef struct menuSpinControl_s {
-    menuCommon_t generic;
-    cvar_t *cvar;
+typedef struct menuSpinControl_s
+{
+	menuCommon_t generic;
+	cvar_t *cvar;
 
-    char    **itemnames;
-    char    **itemvalues;
-    int     numItems;
-    int     curvalue;
+	char    **itemnames;
+	char    **itemvalues;
+	int     numItems;
+	int     curvalue;
 
-    int         mask;
-    bool        negate;
+	int         mask;
+	bool        negate;
 } menuSpinControl_t;
 
-typedef struct menuAction_s {
-    menuCommon_t generic;
-    char *cmd;
+typedef struct menuAction_s
+{
+	menuCommon_t generic;
+	char *cmd;
 } menuAction_t;
 
-typedef struct menuSeparator_s {
-    menuCommon_t generic;
+typedef struct menuSeparator_s
+{
+	menuCommon_t generic;
 } menuSeparator_t;
 
-typedef struct menuStatic_s {
-    menuCommon_t    generic;
-    int             maxChars;
+typedef struct menuStatic_s
+{
+	menuCommon_t    generic;
+	int             maxChars;
 } menuStatic_t;
 
-typedef struct menuBitmap_s {
-    menuCommon_t generic;
-    qhandle_t pics[2];
-    char *cmd;
+typedef struct menuBitmap_s
+{
+	menuCommon_t generic;
+	qhandle_t pics[2];
+	char *cmd;
 } menuBitmap_t;
 
-typedef struct menuKeybind_s {
-    menuCommon_t    generic;
-    char            binding[32];
-    char            altbinding[32];
-    char            *cmd;
-    char            *altstatus;
+typedef struct menuKeybind_s
+{
+	menuCommon_t    generic;
+	char            binding[32];
+	char            altbinding[32];
+	char            *cmd;
+	char            *altstatus;
 } menuKeybind_t;
 
 #define MAX_PLAYERMODELS 1024
 
-typedef struct playerModelInfo_s {
-    int nskins;
-    char **skindisplaynames;
-    char *directory;
+typedef struct playerModelInfo_s
+{
+	int nskins;
+	char **skindisplaynames;
+	char *directory;
 } playerModelInfo_t;
 
 void PlayerModel_Load(void);
@@ -269,37 +284,39 @@ void PlayerModel_Free(void);
 
 #define NUM_CURSOR_FRAMES 15
 
-typedef struct uiStatic_s {
-    bool initialized;
-    int realtime;
-    int width, height; // scaled
-    float scale;
-    int menuDepth;
-    menuFrameWork_t *layers[MAX_MENU_DEPTH];
-    menuFrameWork_t *activeMenu;
-    menuCommon_t *mouseTracker;
-    int mouseCoords[2];
-    bool entersound;        // play after drawing a frame, so caching
-                                // won't disrupt the sound
-    bool transparent;
-    int numPlayerModels;
-    playerModelInfo_t pmi[MAX_PLAYERMODELS];
-    char weaponModel[32];
+typedef struct uiStatic_s
+{
+	bool initialized;
+	int realtime;
+	int width, height; // scaled
+	float scale;
+	int menuDepth;
+	menuFrameWork_t *layers[MAX_MENU_DEPTH];
+	menuFrameWork_t *activeMenu;
+	menuCommon_t *mouseTracker;
+	int mouseCoords[2];
+	bool entersound;        // play after drawing a frame, so caching
+	// won't disrupt the sound
+	bool transparent;
+	int numPlayerModels;
+	playerModelInfo_t pmi[MAX_PLAYERMODELS];
+	char weaponModel[32];
 
-    qhandle_t backgroundHandle;
-    qhandle_t fontHandle;
-    qhandle_t cursorHandle;
-    int cursorWidth, cursorHeight;
+	qhandle_t backgroundHandle;
+	qhandle_t fontHandle;
+	qhandle_t cursorHandle;
+	int cursorWidth, cursorHeight;
 
-    qhandle_t bitmapCursors[NUM_CURSOR_FRAMES];
+	qhandle_t bitmapCursors[NUM_CURSOR_FRAMES];
 
-    struct {
-        color_t background;
-        color_t normal;
-        color_t active;
-        color_t selection;
-        color_t disabled;
-    } color;
+	struct
+	{
+		color_t background;
+		color_t normal;
+		color_t active;
+		color_t selection;
+		color_t disabled;
+	} color;
 } uiStatic_t;
 
 extern uiStatic_t   uis;
@@ -342,7 +359,7 @@ menuCommon_t    *Menu_HitTest(menuFrameWork_t *menu);
 void        MenuList_Init(menuList_t *l);
 void        MenuList_SetValue(menuList_t *l, int value);
 void        MenuList_Sort(menuList_t *l, int offset,
-                          int (*cmpfunc)(const void *, const void *));
+	int (*cmpfunc)(const void *, const void *));
 void SpinControl_Init(menuSpinControl_t *s);
 bool        Menu_Push(menuFrameWork_t *menu);
 void        Menu_Pop(menuFrameWork_t *menu);

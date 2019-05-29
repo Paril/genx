@@ -26,26 +26,27 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // memory tags to allow dynamic memory to be cleaned up
 // game DLL has separate tag namespace starting at TAG_MAX
-typedef enum {
-    TAG_FREE,       // should have never been set
-    TAG_STATIC,
+typedef enum
+{
+	TAG_FREE,       // should have never been set
+	TAG_STATIC,
 
-    TAG_GENERAL,
-    TAG_CMD,
-    TAG_CVAR,
-    TAG_FILESYSTEM,
-    TAG_RENDERER,
-    TAG_UI,
-    TAG_SERVER,
-    TAG_SOUND,
-    TAG_CMODEL,
+	TAG_GENERAL,
+	TAG_CMD,
+	TAG_CVAR,
+	TAG_FILESYSTEM,
+	TAG_RENDERER,
+	TAG_UI,
+	TAG_SERVER,
+	TAG_SOUND,
+	TAG_CMODEL,
 
 	// Generations
 	TAG_MODEL,
 	TAG_BSP,
 	TAG_LAYOUT,
 
-    TAG_MAX
+	TAG_MAX
 } memtag_t;
 
 void    Z_Init(void);

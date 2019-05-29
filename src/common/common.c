@@ -52,7 +52,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 static jmp_buf  com_abortframe;    // an ERR_DROP occured, exit the entire frame
 
-static void     (*com_abort_func)(void *);
+static void (*com_abort_func)(void *);
 static void     *com_abort_arg;
 
 static bool     com_errorEntered;
@@ -69,7 +69,7 @@ static int      com_argc;
 cvar_t  *z_perturb;
 
 #ifdef _DEBUG
-cvar_t  *developer;
+	cvar_t  *developer;
 #endif
 cvar_t  *timescale;
 cvar_t  *fixedtime;
@@ -82,8 +82,8 @@ cvar_t  *logfile_name;
 cvar_t  *logfile_prefix;
 
 #if USE_CLIENT
-cvar_t  *cl_running;
-cvar_t  *cl_paused;
+	cvar_t  *cl_running;
+	cvar_t  *cl_paused;
 #endif
 cvar_t  *sv_running;
 cvar_t  *sv_paused;
@@ -91,14 +91,14 @@ cvar_t  *com_timedemo;
 cvar_t  *com_date_format;
 cvar_t  *com_time_format;
 #ifdef _DEBUG
-cvar_t  *com_debug_break;
+	cvar_t  *com_debug_break;
 #endif
 cvar_t  *com_fatal_error;
 
 cvar_t  *rcon_password;
 
 const char  com_version_string[] =
-    APPLICATION " " VERSION " " __DATE__ " " BUILDSTRING " " CPUSTRING;
+	APPLICATION " " VERSION " " __DATE__ " " BUILDSTRING " " CPUSTRING;
 
 unsigned    com_framenum;
 unsigned    com_eventTime;
@@ -107,13 +107,13 @@ bool        com_initialized;
 time_t      com_startTime;
 
 #if USE_CLIENT
-cvar_t  *host_speeds;
+	cvar_t  *host_speeds;
 
-// host_speeds times
-unsigned    time_before_game;
-unsigned    time_after_game;
-unsigned    time_before_ref;
-unsigned    time_after_ref;
+	// host_speeds times
+	unsigned    time_before_game;
+	unsigned    time_after_game;
+	unsigned    time_before_ref;
+	unsigned    time_after_ref;
 #endif
 
 /*
@@ -132,210 +132,251 @@ static rdflush_t    rd_flush;
 
 void Com_BeginRedirect(int target, char *buffer, size_t buffersize, rdflush_t flush)
 {
-    if (rd_target || !target || !buffer || !buffersize || !flush) {
-        return;
-    }
-    rd_target = target;
-    rd_buffer = buffer;
-    rd_buffersize = buffersize;
-    rd_flush = flush;
-    rd_length = 0;
+	if (rd_target || !target || !buffer || !buffersize || !flush)
+		return;
+
+	rd_target = target;
+	rd_buffer = buffer;
+	rd_buffersize = buffersize;
+	rd_flush = flush;
+	rd_length = 0;
 }
 
 static void Com_AbortRedirect(void)
 {
-    rd_target = 0;
-    rd_buffer = NULL;
-    rd_buffersize = 0;
-    rd_flush = NULL;
-    rd_length = 0;
+	rd_target = 0;
+	rd_buffer = NULL;
+	rd_buffersize = 0;
+	rd_flush = NULL;
+	rd_length = 0;
 }
 
 void Com_EndRedirect(void)
 {
-    if (!rd_target) {
-        return;
-    }
-    rd_flush(rd_target, rd_buffer, rd_length);
-    rd_target = 0;
-    rd_buffer = NULL;
-    rd_buffersize = 0;
-    rd_flush = NULL;
-    rd_length = 0;
+	if (!rd_target)
+		return;
+
+	rd_flush(rd_target, rd_buffer, rd_length);
+	rd_target = 0;
+	rd_buffer = NULL;
+	rd_buffersize = 0;
+	rd_flush = NULL;
+	rd_length = 0;
 }
 
 static void Com_Redirect(const char *msg, size_t total)
 {
-    size_t length;
+	size_t length;
 
-    while (total) {
-        length = total;
-        if (length > rd_buffersize) {
-            length = rd_buffersize;
-        }
-        if (rd_length > rd_buffersize - length) {
-            rd_flush(rd_target, rd_buffer, rd_length);
-            rd_length = 0;
-        }
-        memcpy(rd_buffer + rd_length, msg, length);
-        rd_length += length;
-        msg += length;
-        total -= length;
-    }
+	while (total)
+	{
+		length = total;
+
+		if (length > rd_buffersize)
+			length = rd_buffersize;
+
+		if (rd_length > rd_buffersize - length)
+		{
+			rd_flush(rd_target, rd_buffer, rd_length);
+			rd_length = 0;
+		}
+
+		memcpy(rd_buffer + rd_length, msg, length);
+		rd_length += length;
+		msg += length;
+		total -= length;
+	}
 }
 
 static void logfile_close(void)
 {
-    if (!com_logFile) {
-        return;
-    }
+	if (!com_logFile)
+		return;
 
-    Com_Printf("Closing console log.\n");
-
-    FS_FCloseFile(com_logFile);
-    com_logFile = 0;
+	Com_Printf("Closing console log.\n");
+	FS_FCloseFile(com_logFile);
+	com_logFile = 0;
 }
 
 static void logfile_open(void)
 {
-    char buffer[MAX_OSPATH];
-    unsigned mode;
-    qhandle_t f;
+	char buffer[MAX_OSPATH];
+	unsigned mode;
+	qhandle_t f;
+	mode = logfile_enable->integer > 1 ? FS_MODE_APPEND : FS_MODE_WRITE;
 
-    mode = logfile_enable->integer > 1 ? FS_MODE_APPEND : FS_MODE_WRITE;
-    if (logfile_flush->integer > 0) {
-        if (logfile_flush->integer > 1) {
-            mode |= FS_BUF_NONE;
-        } else {
-            mode |= FS_BUF_LINE;
-        }
-    }
+	if (logfile_flush->integer > 0)
+	{
+		if (logfile_flush->integer > 1)
+			mode |= FS_BUF_NONE;
+		else
+			mode |= FS_BUF_LINE;
+	}
 
-    f = FS_EasyOpenFile(buffer, sizeof(buffer), mode | FS_FLAG_TEXT,
-                        "logs/", logfile_name->string, ".log");
-    if (!f) {
-        Cvar_Set("logfile", "0");
-        return;
-    }
+	f = FS_EasyOpenFile(buffer, sizeof(buffer), mode | FS_FLAG_TEXT,
+			"logs/", logfile_name->string, ".log");
 
-    com_logFile = f;
-    com_logNewline = true;
-    Com_Printf("Logging console to %s\n", buffer);
+	if (!f)
+	{
+		Cvar_Set("logfile", "0");
+		return;
+	}
+
+	com_logFile = f;
+	com_logNewline = true;
+	Com_Printf("Logging console to %s\n", buffer);
 }
 
 static void logfile_enable_changed(cvar_t *self)
 {
-    logfile_close();
-    if (self->integer) {
-        logfile_open();
-    }
+	logfile_close();
+
+	if (self->integer)
+		logfile_open();
 }
 
 static void logfile_param_changed(cvar_t *self)
 {
-    if (logfile_enable->integer) {
-        logfile_close();
-        logfile_open();
-    }
+	if (logfile_enable->integer)
+	{
+		logfile_close();
+		logfile_open();
+	}
 }
 
 size_t Com_FormatLocalTime(char *buffer, size_t size, const char *fmt)
 {
-    static struct tm cached_tm;
-    static time_t cached_time;
-    time_t now;
-    struct tm *tm;
-    size_t ret;
+	static struct tm cached_tm;
+	static time_t cached_time;
+	time_t now;
+	struct tm *tm;
+	size_t ret;
 
-    if (!size)
-        return 0;
+	if (!size)
+		return 0;
 
-    now = time(NULL);
-    if (now == cached_time) {
-        // avoid calling localtime() too often since it is not that cheap
-        tm = &cached_tm;
-    } else {
-        tm = localtime(&now);
-        if (!tm)
-            goto fail;
-        cached_time = now;
-        cached_tm = *tm;
-    }
+	now = time(NULL);
 
-    ret = strftime(buffer, size, fmt, tm);
-    if (ret)
-        return ret;
+	if (now == cached_time)
+	{
+		// avoid calling localtime() too often since it is not that cheap
+		tm = &cached_tm;
+	}
+	else
+	{
+		tm = localtime(&now);
+
+		if (!tm)
+			goto fail;
+
+		cached_time = now;
+		cached_tm = *tm;
+	}
+
+	ret = strftime(buffer, size, fmt, tm);
+
+	if (ret)
+		return ret;
+
 fail:
-    buffer[0] = 0;
-    return 0;
+	buffer[0] = 0;
+	return 0;
 }
 
 static void logfile_write(print_type_t type, const char *s)
 {
-    char text[MAXPRINTMSG];
-    char buf[MAX_QPATH];
-    char *p, *maxp;
-    size_t len;
-    int ret;
-    int c;
+	char text[MAXPRINTMSG];
+	char buf[MAX_QPATH];
+	char *p, *maxp;
+	size_t len;
+	int ret;
+	int c;
 
-    if (logfile_prefix->string[0]) {
-        p = strchr(logfile_prefix->string, '@');
-        if (p) {
-            // expand it in place, hacky
-            switch (type) {
-            case PRINT_TALK:      *p = 'T'; break;
-            case PRINT_DEVELOPER: *p = 'D'; break;
-            case PRINT_WARNING:   *p = 'W'; break;
-            case PRINT_ERROR:     *p = 'E'; break;
-            case PRINT_NOTICE:    *p = 'N'; break;
-            default:              *p = 'A'; break;
-            }
-        }
-        len = Com_FormatLocalTime(buf, sizeof(buf), logfile_prefix->string);
-        if (p) {
-            *p = '@';
-        }
-    } else {
-        len = 0;
-    }
+	if (logfile_prefix->string[0])
+	{
+		p = strchr(logfile_prefix->string, '@');
 
-    p = text;
-    maxp = text + sizeof(text) - 1;
-    while (*s) {
-        if (com_logNewline) {
-            if (len > 0 && p + len < maxp) {
-                memcpy(p, buf, len);
-                p += len;
-            }
-            com_logNewline = false;
-        }
+		if (p)
+		{
+			// expand it in place, hacky
+			switch (type)
+			{
+				case PRINT_TALK:
+					*p = 'T';
+					break;
 
-        if (p == maxp) {
-            break;
-        }
+				case PRINT_DEVELOPER:
+					*p = 'D';
+					break;
 
-        c = *s++;
-        if (c == '\n') {
-            com_logNewline = true;
-        } else {
-            c = Q_charascii(c);
-        }
+				case PRINT_WARNING:
+					*p = 'W';
+					break;
 
-        *p++ = c;
-    }
-    *p = 0;
+				case PRINT_ERROR:
+					*p = 'E';
+					break;
 
-    len = p - text;
-    ret = FS_Write(text, len, com_logFile);
-    if (ret != len) {
-        // zero handle BEFORE doing anything else to avoid recursion
-        qhandle_t tmp = com_logFile;
-        com_logFile = 0;
-        FS_FCloseFile(tmp);
-        Com_EPrintf("Couldn't write console log: %s\n", Q_ErrorString(ret));
-        Cvar_Set("logfile", "0");
-    }
+				case PRINT_NOTICE:
+					*p = 'N';
+					break;
+
+				default:
+					*p = 'A';
+					break;
+			}
+		}
+
+		len = Com_FormatLocalTime(buf, sizeof(buf), logfile_prefix->string);
+
+		if (p)
+			*p = '@';
+	}
+	else
+		len = 0;
+
+	p = text;
+	maxp = text + sizeof(text) - 1;
+
+	while (*s)
+	{
+		if (com_logNewline)
+		{
+			if (len > 0 && p + len < maxp)
+			{
+				memcpy(p, buf, len);
+				p += len;
+			}
+
+			com_logNewline = false;
+		}
+
+		if (p == maxp)
+			break;
+
+		c = *s++;
+
+		if (c == '\n')
+			com_logNewline = true;
+		else
+			c = Q_charascii(c);
+
+		*p++ = c;
+	}
+
+	*p = 0;
+	len = p - text;
+	ret = FS_Write(text, len, com_logFile);
+
+	if (ret != len)
+	{
+		// zero handle BEFORE doing anything else to avoid recursion
+		qhandle_t tmp = com_logFile;
+		com_logFile = 0;
+		FS_FCloseFile(tmp);
+		Com_EPrintf("Couldn't write console log: %s\n", Q_ErrorString(ret));
+		Cvar_Set("logfile", "0");
+	}
 }
 
 #ifndef _WIN32
@@ -349,33 +390,31 @@ will close and reopen logfile handle for rotation.
 */
 void Com_FlushLogs(void)
 {
-    if (logfile_enable) {
-        logfile_enable_changed(logfile_enable);
-    }
+	if (logfile_enable)
+		logfile_enable_changed(logfile_enable);
 }
 #endif
 
 void Com_SetColor(color_index_t color)
 {
-    if (rd_target) {
-        return;
-    }
-    Con_SetColor(color);
-    Sys_SetConsoleColor(color);
+	if (rd_target)
+		return;
+
+	Con_SetColor(color);
+	Sys_SetConsoleColor(color);
 }
 
 void Com_SetLastError(const char *msg)
 {
-    if (msg) {
-        Q_strlcpy(com_errorMsg, msg, sizeof(com_errorMsg));
-    } else {
-        strcpy(com_errorMsg, "No error");
-    }
+	if (msg)
+		Q_strlcpy(com_errorMsg, msg, sizeof(com_errorMsg));
+	else
+		strcpy(com_errorMsg, "No error");
 }
 
 char *Com_GetLastError(void)
 {
-    return com_errorMsg;
+	return com_errorMsg;
 }
 
 /*
@@ -388,77 +427,78 @@ to the apropriate place.
 */
 void Com_LPrintf(print_type_t type, const char *fmt, ...)
 {
-    va_list     argptr;
-    char        msg[MAXPRINTMSG];
-    size_t      len;
+	va_list     argptr;
+	char        msg[MAXPRINTMSG];
+	size_t      len;
 
-    // may be entered recursively only once
-    if (com_printEntered >= 2) {
-        return;
-    }
+	// may be entered recursively only once
+	if (com_printEntered >= 2)
+		return;
 
-    com_printEntered++;
+	com_printEntered++;
+	va_start(argptr, fmt);
+	len = Q_vscnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
 
-    va_start(argptr, fmt);
-    len = Q_vscnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
+	if (type == PRINT_ERROR && !com_errorEntered && len)
+	{
+		size_t errlen = min(len, sizeof(com_errorMsg) - 1);
+		// save error msg
+		memcpy(com_errorMsg, msg, errlen);
+		com_errorMsg[errlen] = 0;
 
-    if (type == PRINT_ERROR && !com_errorEntered && len) {
-        size_t errlen = min(len, sizeof(com_errorMsg) - 1);
+		// strip trailing '\n'
+		if (com_errorMsg[errlen - 1] == '\n')
+			com_errorMsg[errlen - 1] = 0;
+	}
 
-        // save error msg
-        memcpy(com_errorMsg, msg, errlen);
-        com_errorMsg[errlen] = 0;
+	if (rd_target)
+		Com_Redirect(msg, len);
+	else
+	{
+		switch (type)
+		{
+			case PRINT_TALK:
+				Com_SetColor(COLOR_ALT);
+				break;
 
-        // strip trailing '\n'
-        if (com_errorMsg[errlen - 1] == '\n') {
-            com_errorMsg[errlen - 1] = 0;
-        }
-    }
+			case PRINT_DEVELOPER:
+				Com_SetColor(COLOR_GREEN);
+				break;
 
-    if (rd_target) {
-        Com_Redirect(msg, len);
-    } else {
-        switch (type) {
-        case PRINT_TALK:
-            Com_SetColor(COLOR_ALT);
-            break;
-        case PRINT_DEVELOPER:
-            Com_SetColor(COLOR_GREEN);
-            break;
-        case PRINT_WARNING:
-            Com_SetColor(COLOR_YELLOW);
-            break;
-        case PRINT_ERROR:
-            Com_SetColor(COLOR_RED);
-            break;
-        case PRINT_NOTICE:
-            Com_SetColor(COLOR_CYAN);
-            break;
-        default:
-            break;
-        }
+			case PRINT_WARNING:
+				Com_SetColor(COLOR_YELLOW);
+				break;
 
-        // graphical console
-        Con_Print(msg);
+			case PRINT_ERROR:
+				Com_SetColor(COLOR_RED);
+				break;
 
-        // debugging console
-        Sys_ConsoleOutput(msg);
+			case PRINT_NOTICE:
+				Com_SetColor(COLOR_CYAN);
+				break;
 
-        // remote console
-        //SV_ConsoleOutput(msg);
+			default:
+				break;
+		}
 
-        // logfile
-        if (com_logFile) {
-            logfile_write(type, msg);
-        }
+		// graphical console
+		Con_Print(msg);
+		// debugging console
+		Sys_ConsoleOutput(msg);
 
-        if (type) {
-            Com_SetColor(COLOR_NONE);
-        }
-    }
+		// remote console
+		//SV_ConsoleOutput(msg);
 
-    com_printEntered--;
+		// logfile
+		if (com_logFile)
+			logfile_write(type, msg);
+
+		if (type)
+			Com_SetColor(COLOR_NONE);
+	}
+
+	com_printEntered--;
 }
 
 
@@ -472,106 +512,104 @@ do the apropriate things.
 */
 void Com_Error(error_type_t code, const char *fmt, ...)
 {
-    char            msg[MAXERRORMSG];
-    va_list         argptr;
-    size_t          len;
-
+	char            msg[MAXERRORMSG];
+	va_list         argptr;
+	size_t          len;
 	Sys_DebugBreak();
 
-    // may not be entered recursively
-    if (com_errorEntered) {
+	// may not be entered recursively
+	if (com_errorEntered)
+	{
 #ifdef _DEBUG
-        if (com_debug_break && com_debug_break->integer) {
-            Sys_DebugBreak();
-        }
+
+		if (com_debug_break && com_debug_break->integer)
+			Sys_DebugBreak();
+
 #endif
-        Sys_Error("recursive error after: %s", com_errorMsg);
-    }
+		Sys_Error("recursive error after: %s", com_errorMsg);
+	}
 
-    com_errorEntered = true;
+	com_errorEntered = true;
+	va_start(argptr, fmt);
+	len = Q_vscnprintf(msg, sizeof(msg), fmt, argptr);
+	va_end(argptr);
+	// save error msg
+	// can't print into it directly since it may
+	// overlap with one of the arguments!
+	memcpy(com_errorMsg, msg, len + 1);
+	// fix up drity message buffers
+	MSG_Init();
+	// abort any console redirects
+	Com_AbortRedirect();
 
-    va_start(argptr, fmt);
-    len = Q_vscnprintf(msg, sizeof(msg), fmt, argptr);
-    va_end(argptr);
+	// call custom cleanup function if set
+	if (com_abort_func)
+	{
+		com_abort_func(com_abort_arg);
+		com_abort_func = NULL;
+	}
 
-    // save error msg
-    // can't print into it directly since it may
-    // overlap with one of the arguments!
-    memcpy(com_errorMsg, msg, len + 1);
+	// reset Com_Printf recursion level
+	com_printEntered = 0;
 
-    // fix up drity message buffers
-    MSG_Init();
-
-    // abort any console redirects
-    Com_AbortRedirect();
-
-    // call custom cleanup function if set
-    if (com_abort_func) {
-        com_abort_func(com_abort_arg);
-        com_abort_func = NULL;
-    }
-
-    // reset Com_Printf recursion level
-    com_printEntered = 0;
-
-    if (code == ERR_DISCONNECT || code == ERR_RECONNECT) {
-        Com_WPrintf("%s\n", com_errorMsg);
-        SV_Shutdown(va("Server was killed: %s\n", com_errorMsg), code);
-        CL_Disconnect(code);
-        goto abort;
-    }
+	if (code == ERR_DISCONNECT || code == ERR_RECONNECT)
+	{
+		Com_WPrintf("%s\n", com_errorMsg);
+		SV_Shutdown(va("Server was killed: %s\n", com_errorMsg), code);
+		CL_Disconnect(code);
+		goto abort;
+	}
 
 #ifdef _DEBUG
-    if (com_debug_break && com_debug_break->integer) {
-        Sys_DebugBreak();
-    }
+
+	if (com_debug_break && com_debug_break->integer)
+		Sys_DebugBreak();
+
 #endif
 
-    // make otherwise non-fatal errors fatal
-    if (com_fatal_error && com_fatal_error->integer) {
-        code = ERR_FATAL;
-    }
+	// make otherwise non-fatal errors fatal
+	if (com_fatal_error && com_fatal_error->integer)
+		code = ERR_FATAL;
 
-    if (code == ERR_DROP) {
-        Com_EPrintf("********************\n"
-                    "ERROR: %s\n"
-                    "********************\n", com_errorMsg);
-        SV_Shutdown(va("Server crashed: %s\n", com_errorMsg), ERR_DROP);
-        CL_Disconnect(ERR_DROP);
-        goto abort;
-    }
+	if (code == ERR_DROP)
+	{
+		Com_EPrintf("********************\n"
+			"ERROR: %s\n"
+			"********************\n", com_errorMsg);
+		SV_Shutdown(va("Server crashed: %s\n", com_errorMsg), ERR_DROP);
+		CL_Disconnect(ERR_DROP);
+		goto abort;
+	}
 
-    if (com_logFile) {
-        FS_FPrintf(com_logFile, "FATAL: %s\n", com_errorMsg);
-    }
+	if (com_logFile)
+		FS_FPrintf(com_logFile, "FATAL: %s\n", com_errorMsg);
 
-    SV_Shutdown(va("Server fatal crashed: %s\n", com_errorMsg), ERR_FATAL);
-    CL_Shutdown();
-    NET_Shutdown();
-    logfile_close();
-    FS_Shutdown();
-
-    Sys_Error("%s", com_errorMsg);
-    // doesn't get there
-
+	SV_Shutdown(va("Server fatal crashed: %s\n", com_errorMsg), ERR_FATAL);
+	CL_Shutdown();
+	NET_Shutdown();
+	logfile_close();
+	FS_Shutdown();
+	Sys_Error("%s", com_errorMsg);
+	// doesn't get there
 abort:
-    if (com_logFile) {
-        FS_Flush(com_logFile);
-    }
-    com_errorEntered = false;
-    longjmp(com_abortframe, -1);
+
+	if (com_logFile)
+		FS_Flush(com_logFile);
+
+	com_errorEntered = false;
+	longjmp(com_abortframe, -1);
 }
 
 void Com_AbortFunc(void (*func)(void *), void *arg)
 {
-    com_abort_func = func;
-    com_abort_arg = arg;
+	com_abort_func = func;
+	com_abort_arg = arg;
 }
 
 #ifdef _WIN32
 void q_noreturn Com_AbortFrame(void)
 {
-    longjmp(com_abortframe, -1);
+	longjmp(com_abortframe, -1);
 }
 #endif
 
@@ -585,36 +623,38 @@ do the apropriate things. This function never returns.
 */
 void Com_Quit(const char *reason, error_type_t type)
 {
-    char buffer[MAX_STRING_CHARS];
-    char *what = type == ERR_RECONNECT ? "restarted" : "quit";
+	char buffer[MAX_STRING_CHARS];
+	char *what = type == ERR_RECONNECT ? "restarted" : "quit";
 
-    if (reason && *reason) {
-        Q_snprintf(buffer, sizeof(buffer),
-                   "Server %s: %s\n", what, reason);
-    } else {
-        Q_snprintf(buffer, sizeof(buffer),
-                   "Server %s\n", what);
-    }
+	if (reason && *reason)
+	{
+		Q_snprintf(buffer, sizeof(buffer),
+			"Server %s: %s\n", what, reason);
+	}
+	else
+	{
+		Q_snprintf(buffer, sizeof(buffer),
+			"Server %s\n", what);
+	}
 
-    SV_Shutdown(buffer, type);
-    CL_Shutdown();
-    NET_Shutdown();
-    logfile_close();
-    FS_Shutdown();
-
-    Sys_Quit();
-    // doesn't get there
+	SV_Shutdown(buffer, type);
+	CL_Shutdown();
+	NET_Shutdown();
+	logfile_close();
+	FS_Shutdown();
+	Sys_Quit();
+	// doesn't get there
 }
 
 static q_noreturn void Com_Quit_f(void)
 {
-    Com_Quit(Cmd_Args(), ERR_DISCONNECT);
+	Com_Quit(Cmd_Args(), ERR_DISCONNECT);
 }
 
 #if !USE_CLIENT
 static void Com_Recycle_f(void)
 {
-    Com_Quit(Cmd_Args(), ERR_RECONNECT);
+	Com_Quit(Cmd_Args(), ERR_RECONNECT);
 }
 #endif
 
@@ -628,136 +668,147 @@ static void Com_Recycle_f(void)
 
 size_t Com_Time_m(char *buffer, size_t size)
 {
-    return Com_FormatLocalTime(buffer, size, com_time_format->string);
+	return Com_FormatLocalTime(buffer, size, com_time_format->string);
 }
 
 static size_t Com_Date_m(char *buffer, size_t size)
 {
-    return Com_FormatLocalTime(buffer, size, com_date_format->string);
+	return Com_FormatLocalTime(buffer, size, com_date_format->string);
 }
 
 size_t Com_Uptime_m(char *buffer, size_t size)
 {
-    return Com_TimeDiff(buffer, size, &com_startTime, time(NULL));
+	return Com_TimeDiff(buffer, size, &com_startTime, time(NULL));
 }
 
 size_t Com_UptimeLong_m(char *buffer, size_t size)
 {
-    return Com_TimeDiffLong(buffer, size, &com_startTime, time(NULL));
+	return Com_TimeDiffLong(buffer, size, &com_startTime, time(NULL));
 }
 
 static size_t Com_Random_m(char *buffer, size_t size)
 {
-    return Q_scnprintf(buffer, size, "%d", Q_rand() % 10);
+	return Q_scnprintf(buffer, size, "%d", Q_rand() % 10);
 }
 
 static size_t Com_MapList_m(char *buffer, size_t size)
 {
-    int i, numFiles;
-    void **list;
-    size_t len, total = 0;
+	int i, numFiles;
+	void **list;
+	size_t len, total = 0;
+	list = FS_ListFiles("maps", ".bsp", FS_SEARCH_STRIPEXT, &numFiles);
 
-    list = FS_ListFiles("maps", ".bsp", FS_SEARCH_STRIPEXT, &numFiles);
-    for (i = 0; i < numFiles && total < SIZE_MAX; i++) {
-        len = strlen(list[i]);
-        if (i)
-            total++;
-        total += len = min(len, SIZE_MAX - total);
-        if (total < size) {
-            if (i)
-                *buffer++ = ' ';
-            memcpy(buffer, list[i], len);
-            buffer += len;
-        }
-    }
-    if (size)
-        *buffer = 0;
+	for (i = 0; i < numFiles && total < SIZE_MAX; i++)
+	{
+		len = strlen(list[i]);
 
-    FS_FreeList(list);
-    return total;
+		if (i)
+			total++;
+
+		total += len = min(len, SIZE_MAX - total);
+
+		if (total < size)
+		{
+			if (i)
+				*buffer++ = ' ';
+
+			memcpy(buffer, list[i], len);
+			buffer += len;
+		}
+	}
+
+	if (size)
+		*buffer = 0;
+
+	FS_FreeList(list);
+	return total;
 }
 
 static void Com_LastError_f(void)
 {
-    Com_Printf("%s\n", com_errorMsg);
+	Com_Printf("%s\n", com_errorMsg);
 }
 
 #if 0
 static void Com_Setenv_f(void)
 {
-    int argc = Cmd_Argc();
+	int argc = Cmd_Argc();
 
-    if (argc > 2) {
-        Q_setenv(Cmd_Argv(1), Cmd_ArgsFrom(2));
-    } else if (argc == 2) {
-        char *env = getenv(Cmd_Argv(1));
+	if (argc > 2)
+		Q_setenv(Cmd_Argv(1), Cmd_ArgsFrom(2));
+	else if (argc == 2)
+	{
+		char *env = getenv(Cmd_Argv(1));
 
-        if (env) {
-            Com_Printf("%s=%s\n", Cmd_Argv(1), env);
-        } else {
-            Com_Printf("%s undefined\n", Cmd_Argv(1));
-        }
-    } else {
-        Com_Printf("Usage: %s <name> [value]\n", Cmd_Argv(0));
-    }
+		if (env)
+			Com_Printf("%s=%s\n", Cmd_Argv(1), env);
+		else
+			Com_Printf("%s undefined\n", Cmd_Argv(1));
+	}
+	else
+		Com_Printf("Usage: %s <name> [value]\n", Cmd_Argv(0));
 }
 #endif
 
 void Com_Address_g(genctx_t *ctx)
 {
-    int i;
-    cvar_t *var;
+	int i;
+	cvar_t *var;
 
-    for (i = 0; i < 1024; i++) {
-        var = Cvar_FindVar(va("adr%d", i));
-        if (!var) {
-            break;
-        }
-        if (var->string[0]) {
-            Prompt_AddMatch(ctx, var->string);
-        }
-    }
+	for (i = 0; i < 1024; i++)
+	{
+		var = Cvar_FindVar(va("adr%d", i));
+
+		if (!var)
+			break;
+
+		if (var->string[0])
+			Prompt_AddMatch(ctx, var->string);
+	}
 }
 
 void Com_Generic_c(genctx_t *ctx, int argnum)
 {
-    xcompleter_t c;
-    xgenerator_t g;
-    cvar_t *var;
-    char *s;
+	xcompleter_t c;
+	xgenerator_t g;
+	cvar_t *var;
+	char *s;
 
-    // complete command, alias or cvar name
-    if (!argnum) {
-        Cmd_Command_g(ctx);
-        Cvar_Variable_g(ctx);
-        Cmd_Alias_g(ctx);
-        return;
-    }
+	// complete command, alias or cvar name
+	if (!argnum)
+	{
+		Cmd_Command_g(ctx);
+		Cvar_Variable_g(ctx);
+		Cmd_Alias_g(ctx);
+		return;
+	}
 
-    // protect against possible duplicates
-    ctx->ignoredups = true;
+	// protect against possible duplicates
+	ctx->ignoredups = true;
+	s = Cmd_Argv(ctx->argnum - argnum);
 
-    s = Cmd_Argv(ctx->argnum - argnum);
+	// complete command argument or cvar value
+	if ((c = Cmd_FindCompleter(s)) != NULL)
+		c(ctx, argnum);
+	else if (argnum == 1 && (var = Cvar_FindVar(s)) != NULL)
+	{
+		g = var->generator;
 
-    // complete command argument or cvar value
-    if ((c = Cmd_FindCompleter(s)) != NULL) {
-        c(ctx, argnum);
-    } else if (argnum == 1 && (var = Cvar_FindVar(s)) != NULL) {
-        g = var->generator;
-        if (g) {
-            ctx->data = var;
-            g(ctx);
-        }
-    }
+		if (g)
+		{
+			ctx->data = var;
+			g(ctx);
+		}
+	}
 }
 
 #if USE_CLIENT
 void Com_Color_g(genctx_t *ctx)
 {
-    int color;
+	int color;
 
-    for (color = 0; color < 8; color++)
-        Prompt_AddMatch(ctx, colorNames[color]);
+	for (color = 0; color < 8; color++)
+		Prompt_AddMatch(ctx, colorNames[color]);
 }
 #endif
 
@@ -776,28 +827,33 @@ Other commands are added late, after all initialization is complete.
 */
 static void Com_AddEarlyCommands(bool clear)
 {
-    int     i;
-    char    *s;
+	int     i;
+	char    *s;
 
-    for (i = 1; i < com_argc; i++) {
-        s = com_argv[i];
-        if (!s) {
-            continue;
-        }
-        if (strcmp(s, "+set")) {
-            continue;
-        }
-        if (i + 2 >= com_argc) {
-            Com_Printf("Usage: +set <variable> <value>\n");
-            com_argc = i;
-            break;
-        }
-        Cvar_SetEx(com_argv[i + 1], com_argv[i + 2], FROM_CMDLINE);
-        if (clear) {
-            com_argv[i] = com_argv[i + 1] = com_argv[i + 2] = NULL;
-        }
-        i += 2;
-    }
+	for (i = 1; i < com_argc; i++)
+	{
+		s = com_argv[i];
+
+		if (!s)
+			continue;
+
+		if (strcmp(s, "+set"))
+			continue;
+
+		if (i + 2 >= com_argc)
+		{
+			Com_Printf("Usage: +set <variable> <value>\n");
+			com_argc = i;
+			break;
+		}
+
+		Cvar_SetEx(com_argv[i + 1], com_argv[i + 2], FROM_CMDLINE);
+
+		if (clear)
+			com_argv[i] = com_argv[i + 1] = com_argv[i + 2] = NULL;
+
+		i += 2;
+	}
 }
 
 /*
@@ -815,45 +871,49 @@ Assumes +set commands are already filtered out
 */
 static bool Com_AddLateCommands(void)
 {
-    int     i;
-    char    *s;
-    bool    ret = false;
+	int     i;
+	char    *s;
+	bool    ret = false;
 
-    for (i = 1; i < com_argc; i++) {
-        s = com_argv[i];
-        if (!s) {
-            continue;
-        }
-        if (*s == '+') {
-            if (ret) {
-                Cbuf_AddText(&cmd_buffer, "\n");
-            }
-            s++;
-        } else if (ret) {
-            Cbuf_AddText(&cmd_buffer, " ");
-        }
-        Cbuf_AddText(&cmd_buffer, s);
-        ret = true;
-    }
+	for (i = 1; i < com_argc; i++)
+	{
+		s = com_argv[i];
 
-    if (ret) {
-        Cbuf_AddText(&cmd_buffer, "\n");
-        Cbuf_Execute(&cmd_buffer);
-    }
+		if (!s)
+			continue;
 
-    return ret;
+		if (*s == '+')
+		{
+			if (ret)
+				Cbuf_AddText(&cmd_buffer, "\n");
+
+			s++;
+		}
+		else if (ret)
+			Cbuf_AddText(&cmd_buffer, " ");
+
+		Cbuf_AddText(&cmd_buffer, s);
+		ret = true;
+	}
+
+	if (ret)
+	{
+		Cbuf_AddText(&cmd_buffer, "\n");
+		Cbuf_Execute(&cmd_buffer);
+	}
+
+	return ret;
 }
 
 void Com_AddConfigFile(const char *name, unsigned flags)
 {
-    int ret;
+	int ret;
+	ret = Cmd_ExecuteFile(name, flags);
 
-    ret = Cmd_ExecuteFile(name, flags);
-    if (ret == Q_ERR_SUCCESS) {
-        Cbuf_Execute(&cmd_buffer);
-    } else if (ret != Q_ERR_NOENT) {
-        Com_WPrintf("Couldn't exec %s: %s\n", name, Q_ErrorString(ret));
-    }
+	if (ret == Q_ERR_SUCCESS)
+		Cbuf_Execute(&cmd_buffer);
+	else if (ret != Q_ERR_NOENT)
+		Com_WPrintf("Couldn't exec %s: %s\n", name, Q_ErrorString(ret));
 }
 
 /*
@@ -863,161 +923,139 @@ Qcommon_Init
 */
 void Qcommon_Init(int argc, char **argv)
 {
-    if (setjmp(com_abortframe))
-        Sys_Error("Error during initialization: %s", com_errorMsg);
+	if (setjmp(com_abortframe))
+		Sys_Error("Error during initialization: %s", com_errorMsg);
 
-    com_argc = argc;
-    com_argv = argv;
-
-    Com_SetLastError(NULL);
-
-    Q_srand(time(NULL));
-
-    // prepare enough of the subsystems to handle
-    // cvar and command buffer management
-    Z_Init();
-    MSG_Init();
-    Cbuf_Init();
-    Cmd_Init();
-    Cvar_Init();
-    Key_Init();
-    Prompt_Init();
-    Con_Init();
-
-    //
-    // init commands and vars
-    //
-    z_perturb = Cvar_Get("z_perturb", "0", 0);
+	com_argc = argc;
+	com_argv = argv;
+	Com_SetLastError(NULL);
+	Q_srand(time(NULL));
+	// prepare enough of the subsystems to handle
+	// cvar and command buffer management
+	Z_Init();
+	MSG_Init();
+	Cbuf_Init();
+	Cmd_Init();
+	Cvar_Init();
+	Key_Init();
+	Prompt_Init();
+	Con_Init();
+	//
+	// init commands and vars
+	//
+	z_perturb = Cvar_Get("z_perturb", "0", 0);
 #if USE_CLIENT
-    host_speeds = Cvar_Get("host_speeds", "0", 0);
+	host_speeds = Cvar_Get("host_speeds", "0", 0);
 #endif
 #ifdef _DEBUG
-    developer = Cvar_Get("developer", "0", 0);
+	developer = Cvar_Get("developer", "0", 0);
 #endif
-    timescale = Cvar_Get("timescale", "1", CVAR_CHEAT);
-    fixedtime = Cvar_Get("fixedtime", "0", CVAR_CHEAT);
-    logfile_enable = Cvar_Get("logfile", "0", 0);
-    logfile_flush = Cvar_Get("logfile_flush", "0", 0);
-    logfile_name = Cvar_Get("logfile_name", "console", 0);
-    logfile_prefix = Cvar_Get("logfile_prefix", "[%Y-%m-%d %H:%M] ", 0);
+	timescale = Cvar_Get("timescale", "1", CVAR_CHEAT);
+	fixedtime = Cvar_Get("fixedtime", "0", CVAR_CHEAT);
+	logfile_enable = Cvar_Get("logfile", "0", 0);
+	logfile_flush = Cvar_Get("logfile_flush", "0", 0);
+	logfile_name = Cvar_Get("logfile_name", "console", 0);
+	logfile_prefix = Cvar_Get("logfile_prefix", "[%Y-%m-%d %H:%M] ", 0);
 #if USE_CLIENT
-    dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
-    cl_running = Cvar_Get("cl_running", "0", CVAR_ROM);
-    cl_paused = Cvar_Get("cl_paused", "0", CVAR_ROM);
+	dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
+	cl_running = Cvar_Get("cl_running", "0", CVAR_ROM);
+	cl_paused = Cvar_Get("cl_paused", "0", CVAR_ROM);
 #else
-    dedicated = Cvar_Get("dedicated", "1", CVAR_ROM);
+	dedicated = Cvar_Get("dedicated", "1", CVAR_ROM);
 #endif
-    sv_running = Cvar_Get("sv_running", "0", CVAR_ROM);
-    sv_paused = Cvar_Get("sv_paused", "0", CVAR_ROM);
-    com_timedemo = Cvar_Get("timedemo", "0", CVAR_CHEAT);
-    com_date_format = Cvar_Get("com_date_format", "%Y-%m-%d", 0);
+	sv_running = Cvar_Get("sv_running", "0", CVAR_ROM);
+	sv_paused = Cvar_Get("sv_paused", "0", CVAR_ROM);
+	com_timedemo = Cvar_Get("timedemo", "0", CVAR_CHEAT);
+	com_date_format = Cvar_Get("com_date_format", "%Y-%m-%d", 0);
 #ifdef _WIN32
-    com_time_format = Cvar_Get("com_time_format", "%H.%M", 0);
+	com_time_format = Cvar_Get("com_time_format", "%H.%M", 0);
 #else
-    com_time_format = Cvar_Get("com_time_format", "%H:%M", 0);
+	com_time_format = Cvar_Get("com_time_format", "%H:%M", 0);
 #endif
 #ifdef _DEBUG
-    com_debug_break = Cvar_Get("com_debug_break", "0", 0);
+	com_debug_break = Cvar_Get("com_debug_break", "0", 0);
 #endif
-    com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
-    com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
-
-    rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
-
-    Cmd_AddCommand("z_stats", Z_Stats_f);
-
-    //Cmd_AddCommand("setenv", Com_Setenv_f);
-
-    Cmd_AddMacro("com_date", Com_Date_m);
-    Cmd_AddMacro("com_time", Com_Time_m);
-    Cmd_AddMacro("com_uptime", Com_Uptime_m);
-    Cmd_AddMacro("com_uptime_long", Com_UptimeLong_m);
-    Cmd_AddMacro("random", Com_Random_m);
-    Cmd_AddMacro("com_maplist", Com_MapList_m);
-
-    // add any system-wide configuration files
-    Sys_AddDefaultConfig();
-
-    // we need to add the early commands twice, because
-    // a basedir or cddir needs to be set before execing
-    // config files, but we want other parms to override
-    // the settings of the config files
-    Com_AddEarlyCommands(false);
-
-    Sys_Init();
-
-    Sys_RunConsole();
-
-    FS_Init();
-
-    Sys_RunConsole();
-
-    // no longer allow CVAR_NOSET modifications
-    com_initialized = true;
-
-    // after FS is initialized, open logfile
-    logfile_enable->changed = logfile_enable_changed;
-    logfile_flush->changed = logfile_param_changed;
-    logfile_name->changed = logfile_param_changed;
-    logfile_enable_changed(logfile_enable);
-
-    // execute configs: default.cfg may come from the packfile, but config.cfg
-    // and autoexec.cfg must be real files within the game directory
+	com_fatal_error = Cvar_Get("com_fatal_error", "0", 0);
+	com_version = Cvar_Get("version", com_version_string, CVAR_SERVERINFO | CVAR_ROM);
+	rcon_password = Cvar_Get("rcon_password", "", CVAR_PRIVATE);
+	Cmd_AddCommand("z_stats", Z_Stats_f);
+	//Cmd_AddCommand("setenv", Com_Setenv_f);
+	Cmd_AddMacro("com_date", Com_Date_m);
+	Cmd_AddMacro("com_time", Com_Time_m);
+	Cmd_AddMacro("com_uptime", Com_Uptime_m);
+	Cmd_AddMacro("com_uptime_long", Com_UptimeLong_m);
+	Cmd_AddMacro("random", Com_Random_m);
+	Cmd_AddMacro("com_maplist", Com_MapList_m);
+	// add any system-wide configuration files
+	Sys_AddDefaultConfig();
+	// we need to add the early commands twice, because
+	// a basedir or cddir needs to be set before execing
+	// config files, but we want other parms to override
+	// the settings of the config files
+	Com_AddEarlyCommands(false);
+	Sys_Init();
+	Sys_RunConsole();
+	FS_Init();
+	Sys_RunConsole();
+	// no longer allow CVAR_NOSET modifications
+	com_initialized = true;
+	// after FS is initialized, open logfile
+	logfile_enable->changed = logfile_enable_changed;
+	logfile_flush->changed = logfile_param_changed;
+	logfile_name->changed = logfile_param_changed;
+	logfile_enable_changed(logfile_enable);
+	// execute configs: default.cfg may come from the packfile, but config.cfg
+	// and autoexec.cfg must be real files within the game directory
 	Com_AddConfigFile(COM_DEFAULT_CFG, 0);
-    Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME);
-    Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_GAME);
-    Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
-
-    Com_AddEarlyCommands(true);
-
-    Cmd_AddCommand("lasterror", Com_LastError_f);
-
-    Cmd_AddCommand("quit", Com_Quit_f);
+	Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME);
+	Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_GAME);
+	Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
+	Com_AddEarlyCommands(true);
+	Cmd_AddCommand("lasterror", Com_LastError_f);
+	Cmd_AddCommand("quit", Com_Quit_f);
 #if !USE_CLIENT
-    Cmd_AddCommand("recycle", Com_Recycle_f);
+	Cmd_AddCommand("recycle", Com_Recycle_f);
 #endif
+	Netchan_Init();
+	NET_Init();
+	BSP_Init();
+	CM_Init();
+	SV_Init();
+	CL_Init();
+	TST_Init();
+	Sys_RunConsole();
 
-    Netchan_Init();
-    NET_Init();
-    BSP_Init();
-    CM_Init();
-    SV_Init();
-    CL_Init();
-    TST_Init();
+	// add + commands from command line
+	if (!Com_AddLateCommands())
+	{
+		// if the user didn't give any commands, run default action
+		char *cmd = COM_DEDICATED ? "dedicated_start" : "client_start";
 
-    Sys_RunConsole();
+		if ((cmd = Cmd_AliasCommand(cmd)) != NULL)
+		{
+			Cbuf_AddText(&cmd_buffer, cmd);
+			Cbuf_Execute(&cmd_buffer);
+		}
+	}
+	else
+	{
+		// the user asked for something explicit
+		// so drop the loading plaque
+		SCR_EndLoadingPlaque();
+	}
 
-    // add + commands from command line
-    if (!Com_AddLateCommands()) {
-        // if the user didn't give any commands, run default action
-        char *cmd = COM_DEDICATED ? "dedicated_start" : "client_start";
+	// even not given a starting map, dedicated server starts
+	// listening for rcon commands (create socket after all configs
+	// are executed to make sure port number is properly set)
+	if (COM_DEDICATED)
+		NET_Config(NET_SERVER);
 
-        if ((cmd = Cmd_AliasCommand(cmd)) != NULL) {
-            Cbuf_AddText(&cmd_buffer, cmd);
-            Cbuf_Execute(&cmd_buffer);
-        }
-    } else {
-        // the user asked for something explicit
-        // so drop the loading plaque
-        SCR_EndLoadingPlaque();
-    }
-
-    // even not given a starting map, dedicated server starts
-    // listening for rcon commands (create socket after all configs
-    // are executed to make sure port number is properly set)
-    if (COM_DEDICATED) {
-        NET_Config(NET_SERVER);
-    }
-
-    Com_AddConfigFile(COM_POSTINIT_CFG, FS_TYPE_REAL);
-
-    Com_Printf("====== " PRODUCT " initialized ======\n\n");
-    Com_LPrintf(PRINT_NOTICE, APPLICATION " " VERSION ", " __DATE__ "\n");
-    Com_Printf("https://github.com/skullernet/q2pro\n\n");
-
-    time(&com_startTime);
-
-    com_eventTime = Sys_Milliseconds();
+	Com_AddConfigFile(COM_POSTINIT_CFG, FS_TYPE_REAL);
+	Com_Printf("====== " PRODUCT " initialized ======\n\n");
+	Com_LPrintf(PRINT_NOTICE, APPLICATION " " VERSION ", " __DATE__ "\n");
+	Com_Printf("https://github.com/skullernet/q2pro\n\n");
+	time(&com_startTime);
+	com_eventTime = Sys_Milliseconds();
 }
 
 /*
@@ -1028,106 +1066,113 @@ Qcommon_Frame
 void Qcommon_Frame(void)
 {
 #if USE_CLIENT
-    unsigned time_before, time_event, time_between, time_after;
-    unsigned clientrem;
+	unsigned time_before, time_event, time_between, time_after;
+	unsigned clientrem;
 #endif
-    unsigned oldtime, msec;
-    static unsigned remaining;
-    static float frac;
+	unsigned oldtime, msec;
+	static unsigned remaining;
+	static float frac;
 
-    if (setjmp(com_abortframe)) {
-        return;            // an ERR_DROP was thrown
-    }
+	if (setjmp(com_abortframe))
+	{
+		return;            // an ERR_DROP was thrown
+	}
 
 #if USE_CLIENT
-    time_before = time_event = time_between = time_after = 0;
+	time_before = time_event = time_between = time_after = 0;
 
-    if (host_speeds->integer)
-        time_before = Sys_Milliseconds();
+	if (host_speeds->integer)
+		time_before = Sys_Milliseconds();
+
+#endif
+	// sleep on network sockets when running a dedicated server
+	// still do a select(), but don't sleep when running a client!
+	NET_Sleep(remaining);
+	// calculate time spent running last frame and sleeping
+	oldtime = com_eventTime;
+	com_eventTime = Sys_Milliseconds();
+
+	if (oldtime > com_eventTime)
+		oldtime = com_eventTime;
+
+	msec = com_eventTime - oldtime;
+#if USE_CLIENT
+
+	// spin until msec is non-zero if running a client
+	if (!dedicated->integer && !com_timedemo->integer)
+	{
+		while (msec < 1)
+		{
+			bool break_now = CL_ProcessEvents();
+			com_eventTime = Sys_Milliseconds();
+			msec = com_eventTime - oldtime;
+
+			if (break_now)
+				break;
+		}
+	}
+
 #endif
 
-    // sleep on network sockets when running a dedicated server
-    // still do a select(), but don't sleep when running a client!
-    NET_Sleep(remaining);
+	if (msec > 250)
+	{
+		Com_DPrintf("Hitch warning: %u msec frame time\n", msec);
+		msec = 100; // time was unreasonable,
+		// host OS was hibernated or something
+	}
 
-    // calculate time spent running last frame and sleeping
-    oldtime = com_eventTime;
-    com_eventTime = Sys_Milliseconds();
-    if (oldtime > com_eventTime) {
-        oldtime = com_eventTime;
-    }
-    msec = com_eventTime - oldtime;
+	if (fixedtime->integer)
+	{
+		Cvar_ClampInteger(fixedtime, 1, 1000);
+		msec = fixedtime->integer;
+	}
+	else if (timescale->value > 0)
+	{
+		frac += msec * timescale->value;
+		msec = frac;
+		frac -= msec;
+	}
 
+	// run local time
+	com_localTime += msec;
+	com_framenum++;
 #if USE_CLIENT
-    // spin until msec is non-zero if running a client
-    if (!dedicated->integer && !com_timedemo->integer) {
-        while (msec < 1) {
-            bool break_now = CL_ProcessEvents();
-            com_eventTime = Sys_Milliseconds();
-            msec = com_eventTime - oldtime;
-            if (break_now)
-                break;
-        }
-    }
+
+	if (host_speeds->integer)
+		time_event = Sys_Milliseconds();
+
 #endif
-
-    if (msec > 250) {
-        Com_DPrintf("Hitch warning: %u msec frame time\n", msec);
-        msec = 100; // time was unreasonable,
-        // host OS was hibernated or something
-    }
-
-    if (fixedtime->integer) {
-        Cvar_ClampInteger(fixedtime, 1, 1000);
-        msec = fixedtime->integer;
-    } else if (timescale->value > 0) {
-        frac += msec * timescale->value;
-        msec = frac;
-        frac -= msec;
-    }
-
-    // run local time
-    com_localTime += msec;
-    com_framenum++;
-
+	// run system console
+	Sys_RunConsole();
+	NET_UpdateStats();
+	remaining = SV_Frame(msec);
 #if USE_CLIENT
-    if (host_speeds->integer)
-        time_event = Sys_Milliseconds();
-#endif
 
-    // run system console
-    Sys_RunConsole();
+	if (host_speeds->integer)
+		time_between = Sys_Milliseconds();
 
-    NET_UpdateStats();
+	clientrem = CL_Frame(msec);
 
-    remaining = SV_Frame(msec);
+	if (remaining > clientrem)
+		remaining = clientrem;
 
-#if USE_CLIENT
-    if (host_speeds->integer)
-        time_between = Sys_Milliseconds();
+	if (host_speeds->integer)
+		time_after = Sys_Milliseconds();
 
-    clientrem = CL_Frame(msec);
-    if (remaining > clientrem) {
-        remaining = clientrem;
-    }
+	if (host_speeds->integer)
+	{
+		int all, ev, sv, gm, cl, rf;
+		all = time_after - time_before;
+		ev = time_event - time_before;
+		sv = time_between - time_event;
+		cl = time_after - time_between;
+		gm = time_after_game - time_before_game;
+		rf = time_after_ref - time_before_ref;
+		sv -= gm;
+		cl -= rf;
+		Com_Printf("all:%3i ev:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
+			all, ev, sv, gm, cl, rf);
+	}
 
-    if (host_speeds->integer)
-        time_after = Sys_Milliseconds();
-
-    if (host_speeds->integer) {
-        int all, ev, sv, gm, cl, rf;
-
-        all = time_after - time_before;
-        ev = time_event - time_before;
-        sv = time_between - time_event;
-        cl = time_after - time_between;
-        gm = time_after_game - time_before_game;
-        rf = time_after_ref - time_before_ref;
-        sv -= gm;
-        cl -= rf;
-
-        Com_Printf("all:%3i ev:%3i sv:%3i gm:%3i cl:%3i rf:%3i\n",
-                   all, ev, sv, gm, cl, rf);
-    }
 #endif
 }

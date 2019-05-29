@@ -59,36 +59,43 @@ static void Win_SetPosition(void)
 	LONG            style;
 	int             x, y, w, h;
 	HWND            after;
-
 	// get previous window style
 	style = GetWindowLong(win.wnd, GWL_STYLE);
 	style &= ~(WS_OVERLAPPEDWINDOW | WS_POPUP | WS_DLGFRAME);
 
 	// set new style bits
-	if (win.flags & QVF_FULLSCREEN) {
+	if (win.flags & QVF_FULLSCREEN)
+	{
 		after = HWND_TOPMOST;
 		style |= WS_POPUP;
-    } else {
-		if (win_alwaysontop->integer) {
+	}
+	else
+	{
+		if (win_alwaysontop->integer)
 			after = HWND_TOPMOST;
-        } else {
-            after = HWND_NOTOPMOST;
-        }
-        style |= WS_OVERLAPPED;
-		if (win.flags & QVF_BORDERLESS) {
+		else
+			after = HWND_NOTOPMOST;
+
+		style |= WS_OVERLAPPED;
+
+		if (win.flags & QVF_BORDERLESS)
+		{
 			style &= ~WS_THICKFRAME;
 			style |= WS_POPUP;
-		} else if (win_notitle->integer) {
-            if (win_noresize->integer) {
-                style |= WS_DLGFRAME;
-            } else {
+		}
+		else if (win_notitle->integer)
+		{
+			if (win_noresize->integer)
+				style |= WS_DLGFRAME;
+			else
 				style |= WS_THICKFRAME;
-			}
-        } else {
+		}
+		else
+		{
 			style |= WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX;
-			if (!win_noresize->integer) {
+
+			if (!win_noresize->integer)
 				style |= WS_THICKFRAME;
-			}
 		}
 	}
 
@@ -97,15 +104,12 @@ static void Win_SetPosition(void)
 	r.top = 0;
 	r.right = win.rc.width;
 	r.bottom = win.rc.height;
-
 	AdjustWindowRect(&r, style, FALSE);
-
 	// figure out position
 	x = win.rc.x;
 	y = win.rc.y;
 	w = r.right - r.left;
 	h = r.bottom - r.top;
-
 	// set new window style and position
 	SetWindowLong(win.wnd, GWL_STYLE, style);
 	SetWindowPos(win.wnd, after, x, y, w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
@@ -113,9 +117,8 @@ static void Win_SetPosition(void)
 	SetForegroundWindow(win.wnd);
 	SetFocus(win.wnd);
 
-	if (win.mouse.grabbed) {
+	if (win.mouse.grabbed)
 		Win_ClipCursor();
-	}
 }
 
 /*
@@ -125,7 +128,7 @@ Win_ModeChanged
 */
 void Win_ModeChanged(void)
 {
-    R_ModeChanged(win.rc.width, win.rc.height, win.flags);
+	R_ModeChanged(win.rc.width, win.rc.height, win.flags);
 	SCR_ModeChanged();
 }
 
@@ -139,12 +142,14 @@ static int modecmp(const void *p1, const void *p2)
 	// sort from highest resolution to lowest
 	if (size1 < size2)
 		return 1;
+
 	if (size1 > size2)
 		return -1;
 
 	// sort from highest frequency to lowest
 	if (dm1->dmDisplayFrequency < dm2->dmDisplayFrequency)
 		return 1;
+
 	if (dm1->dmDisplayFrequency > dm2->dmDisplayFrequency)
 		return -1;
 
@@ -155,69 +160,69 @@ static bool mode_is_sane(const DEVMODE *dm)
 {
 	// should have all these flags set
 	if (~dm->dmFields & (DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT | DM_DISPLAYFLAGS | DM_DISPLAYFREQUENCY))
-        return false;
+		return false;
 
-    // grayscale and interlaced modes are not supported
-    if (dm->dmDisplayFlags & DM_INTERLACED)
-        return false;
+	// grayscale and interlaced modes are not supported
+	if (dm->dmDisplayFlags & DM_INTERLACED)
+		return false;
 
 	// according to MSDN, frequency can be 0 or 1 for some weird hardware
 	if (dm->dmDisplayFrequency == 0 || dm->dmDisplayFrequency == 1)
-        return false;
+		return false;
 
-    return true;
+	return true;
 }
 
 static bool modes_are_equal(const DEVMODE *base, const DEVMODE *compare)
 {
 	if (!mode_is_sane(base))
-        return false;
+		return false;
 
 	if ((compare->dmFields & DM_PELSWIDTH) && base->dmPelsWidth != compare->dmPelsWidth)
-        return false;
+		return false;
 
 	if ((compare->dmFields & DM_PELSHEIGHT) && base->dmPelsHeight != compare->dmPelsHeight)
-        return false;
+		return false;
 
 	if ((compare->dmFields & DM_BITSPERPEL) && base->dmBitsPerPel != compare->dmBitsPerPel)
-        return false;
+		return false;
 
 	if ((compare->dmFields & DM_DISPLAYFREQUENCY) && base->dmDisplayFrequency != compare->dmDisplayFrequency)
-        return false;
+		return false;
 
-    return true;
+	return true;
 }
 
 // avoid doing CDS to the same fullscreen mode to reduce flickering
 static bool mode_is_current(const DEVMODE *dm)
 {
 	DEVMODE current;
-
 	memset(&current, 0, sizeof(current));
 	current.dmSize = sizeof(current);
 
 	if (!EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &current))
-        return false;
+		return false;
 
 	return modes_are_equal(&current, dm);
 }
 
 static LONG set_fullscreen_mode(void)
 {
-    DEVMODE desktop, dm;
-    LONG ret;
-
+	DEVMODE desktop, dm;
+	LONG ret;
 	memset(&desktop, 0, sizeof(desktop));
 	desktop.dmSize = sizeof(desktop);
-
 	EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &desktop);
 
-    if (mode_is_sane(&desktop)) {
-        win.rc.width = desktop.dmPelsWidth;
-        win.rc.height = desktop.dmPelsHeight;
-        Com_DPrintf("...setting fullscreen mode: %dx%d\n",
-                    win.rc.width, win.rc.height);
-    } else {
+	if (mode_is_sane(&desktop))
+	{
+		win.rc.width = desktop.dmPelsWidth;
+		win.rc.height = desktop.dmPelsHeight;
+		Com_DPrintf("...setting fullscreen mode: %dx%d\n",
+			win.rc.width, win.rc.height);
+	}
+	else
+	{
 		Com_DPrintf("...falling back to default mode: %dx%d\n",
 			win.rc.width, win.rc.height);
 	}
@@ -228,28 +233,36 @@ static LONG set_fullscreen_mode(void)
 	dm.dmPelsHeight = win.rc.height;
 	dm.dmFields     = DM_PELSWIDTH | DM_PELSHEIGHT;
 
-    if (modes_are_equal(&desktop, &dm)) {
+	if (modes_are_equal(&desktop, &dm))
+	{
 		dm.dmDisplayFrequency = desktop.dmDisplayFrequency;
 		dm.dmFields |= DM_DISPLAYFREQUENCY;
-        Com_DPrintf("...using desktop display frequency of %lu\n", desktop.dmDisplayFrequency);
+		Com_DPrintf("...using desktop display frequency of %lu\n", desktop.dmDisplayFrequency);
 	}
 
-    if (mode_is_sane(&desktop)) {
+	if (mode_is_sane(&desktop))
+	{
 		dm.dmBitsPerPel = desktop.dmBitsPerPel;
 		dm.dmFields |= DM_BITSPERPEL;
 		Com_DPrintf("...using desktop bitdepth of %lu\n", desktop.dmBitsPerPel);
 	}
 
-	if (mode_is_current(&dm)) {
+	if (mode_is_current(&dm))
+	{
 		Com_DPrintf("...skipping CDS\n");
 		ret = DISP_CHANGE_SUCCESSFUL;
-    } else {
+	}
+	else
+	{
 		Com_DPrintf("...calling CDS: ");
 		ret = ChangeDisplaySettings(&dm, CDS_FULLSCREEN);
-		if (ret != DISP_CHANGE_SUCCESSFUL) {
+
+		if (ret != DISP_CHANGE_SUCCESSFUL)
+		{
 			Com_DPrintf("failed with error %ld\n", ret);
 			return ret;
 		}
+
 		Com_DPrintf("ok\n");
 	}
 
@@ -257,7 +270,6 @@ static LONG set_fullscreen_mode(void)
 	win.flags |= QVF_FULLSCREEN;
 	Win_SetPosition();
 	win.mode_changed = 0;
-
 	return ret;
 }
 
@@ -270,63 +282,68 @@ void Win_SetMode(void)
 {
 	win.flags &= ~QVF_BORDERLESS;
 
-    // set full screen mode if requested
-    if (vid_mode->integer == VM_FULLSCREEN) {
-        LONG ret;
-
+	// set full screen mode if requested
+	if (vid_mode->integer == VM_FULLSCREEN)
+	{
+		LONG ret;
 		ret = set_fullscreen_mode();
-		switch (ret) {
-		case DISP_CHANGE_SUCCESSFUL:
-			return;
-		case DISP_CHANGE_FAILED:
-			Com_EPrintf("Display driver failed the %dx%d video mode.\n", win.rc.width, win.rc.height);
-			break;
-		case DISP_CHANGE_BADMODE:
-			Com_EPrintf("Video mode %dx%d is not supported.\n", win.rc.width, win.rc.height);
-			break;
-		default:
-			Com_EPrintf("Video mode %dx%d failed with error %ld.\n", win.rc.width, win.rc.height, ret);
-			break;
+
+		switch (ret)
+		{
+			case DISP_CHANGE_SUCCESSFUL:
+				return;
+
+			case DISP_CHANGE_FAILED:
+				Com_EPrintf("Display driver failed the %dx%d video mode.\n", win.rc.width, win.rc.height);
+				break;
+
+			case DISP_CHANGE_BADMODE:
+				Com_EPrintf("Video mode %dx%d is not supported.\n", win.rc.width, win.rc.height);
+				break;
+
+			default:
+				Com_EPrintf("Video mode %dx%d failed with error %ld.\n", win.rc.width, win.rc.height, ret);
+				break;
 		}
 
-        // fall back to windowed mode
-        Cvar_Reset(vid_mode);
-	} else if (vid_mode->integer == VM_BORDERLESS) {
-		win.flags |= QVF_BORDERLESS;
+		// fall back to windowed mode
+		Cvar_Reset(vid_mode);
 	}
+	else if (vid_mode->integer == VM_BORDERLESS)
+		win.flags |= QVF_BORDERLESS;
 
 	ChangeDisplaySettings(NULL, 0);
-
 	// parse vid_geometry specification
 	VID_GetGeometry(&win.rc);
-
 	// align client area
 	win.rc.width &= ~7;
 	win.rc.height &= ~1;
 
-    // don't allow too small size
-	if (!(win.flags & QVF_BORDERLESS)) {
-		if (win.rc.width < 320) win.rc.width = 320;
-		if (win.rc.height < 240) win.rc.height = 240;
-	} else {
+	// don't allow too small size
+	if (!(win.flags & QVF_BORDERLESS))
+	{
+		if (win.rc.width < 320)
+			win.rc.width = 320;
+
+		if (win.rc.height < 240)
+			win.rc.height = 240;
+	}
+	else
+	{
 		DEVMODE desktop;
 		memset(&desktop, 0, sizeof(desktop));
 		desktop.dmSize = sizeof(desktop);
-
 		EnumDisplaySettings(NULL, ENUM_REGISTRY_SETTINGS, &desktop);
-
 		win.rc.width = desktop.dmPelsWidth;
 		win.rc.height = desktop.dmPelsHeight + 2;
 	}
 
-    Com_DPrintf("...setting windowed mode: %dx%d%+d%+d\n",
-                win.rc.width, win.rc.height, win.rc.x, win.rc.y);
-
-    memset(&win.dm, 0, sizeof(win.dm));
+	Com_DPrintf("...setting windowed mode: %dx%d%+d%+d\n",
+		win.rc.width, win.rc.height, win.rc.x, win.rc.y);
+	memset(&win.dm, 0, sizeof(win.dm));
 	win.flags &= ~QVF_FULLSCREEN;
-    Win_SetPosition();
-    win.mode_changed = 0;
-
+	Win_SetPosition();
+	win.mode_changed = 0;
 	// set vid_geometry back
 	VID_SetGeometry(&win.rc);
 }
@@ -341,8 +358,10 @@ void VID_UpdateGamma(const byte *table)
 	WORD v;
 	int i;
 
-	if (win.flags & QVF_GAMMARAMP) {
-		for (i = 0; i < 256; i++) {
+	if (win.flags & QVF_GAMMARAMP)
+	{
+		for (i = 0; i < 256; i++)
+		{
 			v = table[i] << 8;
 			win.gamma_cust[0][i] = v;
 			win.gamma_cust[1][i] = v;
@@ -355,85 +374,88 @@ void VID_UpdateGamma(const byte *table)
 
 static void Win_DisableAltTab(void)
 {
-	if (!win.alttab_disabled) {
+	if (!win.alttab_disabled)
+	{
 		RegisterHotKey(0, 0, MOD_ALT, VK_TAB);
 		RegisterHotKey(0, 1, MOD_ALT, VK_RETURN);
-        win.alttab_disabled = true;
+		win.alttab_disabled = true;
 	}
 }
 
 static void Win_EnableAltTab(void)
 {
-	if (win.alttab_disabled) {
+	if (win.alttab_disabled)
+	{
 		UnregisterHotKey(0, 0);
 		UnregisterHotKey(0, 1);
-        win.alttab_disabled = false;
+		win.alttab_disabled = false;
 	}
 }
 
 static void win_noalttab_changed(cvar_t *self)
 {
-	if (self->integer) {
+	if (self->integer)
 		Win_DisableAltTab();
-    } else {
+	else
 		Win_EnableAltTab();
-	}
 }
 
 static void Win_Activate(WPARAM wParam)
 {
 	active_t active;
 
-	if (HIWORD(wParam)) {
+	if (HIWORD(wParam))
+	{
 		// we don't want to act like we're active if we're minimized
 		active = ACT_MINIMIZED;
-    } else {
-		if (LOWORD(wParam)) {
+	}
+	else
+	{
+		if (LOWORD(wParam))
 			active = ACT_ACTIVATED;
-        } else {
+		else
 			active = ACT_RESTORED;
-		}
 	}
 
 	CL_Activate(active);
 
-	if (win_noalttab->integer) {
-		if (active == ACT_ACTIVATED) {
+	if (win_noalttab->integer)
+	{
+		if (active == ACT_ACTIVATED)
 			Win_EnableAltTab();
-        } else {
+		else
 			Win_DisableAltTab();
-		}
 	}
 
-	if (win.flags & QVF_GAMMARAMP) {
-		if (active == ACT_ACTIVATED) {
+	if (win.flags & QVF_GAMMARAMP)
+	{
+		if (active == ACT_ACTIVATED)
 			SetDeviceGammaRamp(win.dc, win.gamma_cust);
-        } else {
+		else
 			SetDeviceGammaRamp(win.dc, win.gamma_orig);
-		}
 	}
 
-	if (win.flags & QVF_FULLSCREEN) {
-		if (active == ACT_ACTIVATED) {
+	if (win.flags & QVF_FULLSCREEN)
+	{
+		if (active == ACT_ACTIVATED)
 			ShowWindow(win.wnd, SW_RESTORE);
-        } else {
+		else
 			ShowWindow(win.wnd, SW_MINIMIZE);
-		}
 
-		if (vid_flip_on_switch->integer) {
-			if (active == ACT_ACTIVATED) {
-				if (!mode_is_current(&win.dm)) {
+		if (vid_flip_on_switch->integer)
+		{
+			if (active == ACT_ACTIVATED)
+			{
+				if (!mode_is_current(&win.dm))
 					ChangeDisplaySettings(&win.dm, CDS_FULLSCREEN);
-				}
-            } else {
-				ChangeDisplaySettings(NULL, 0);
 			}
+			else
+				ChangeDisplaySettings(NULL, 0);
 		}
 	}
 
-	if (active == ACT_ACTIVATED) {
+	if (active == ACT_ACTIVATED)
 		SetForegroundWindow(win.wnd);
-	}
 }
 
 STATIC LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
@@ -441,30 +463,35 @@ STATIC LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lP
 	PKBDLLHOOKSTRUCT kb = (PKBDLLHOOKSTRUCT)lParam;
 	unsigned key;
 
-	if (nCode != HC_ACTION) {
+	if (nCode != HC_ACTION)
 		goto ignore;
+
+	switch (kb->vkCode)
+	{
+		case VK_LWIN:
+			key = K_LWINKEY;
+			break;
+
+		case VK_RWIN:
+			key = K_RWINKEY;
+			break;
+
+		default:
+			goto ignore;
 	}
 
-	switch (kb->vkCode) {
-	case VK_LWIN:
-		key = K_LWINKEY;
-		break;
-	case VK_RWIN:
-		key = K_RWINKEY;
-		break;
-	default:
-		goto ignore;
-	}
+	switch (wParam)
+	{
+		case WM_KEYDOWN:
+			Key_Event(key, true, kb->time);
+			return TRUE;
 
-	switch (wParam) {
-	case WM_KEYDOWN:
-        Key_Event(key, true, kb->time);
-		return TRUE;
-	case WM_KEYUP:
-        Key_Event(key, false, kb->time);
-		return TRUE;
-	default:
-		break;
+		case WM_KEYUP:
+			Key_Event(key, false, kb->time);
+			return TRUE;
+
+		default:
+			break;
 	}
 
 ignore:
@@ -473,34 +500,41 @@ ignore:
 
 static void win_disablewinkey_changed(cvar_t *self)
 {
-	if (self->integer) {
+	if (self->integer)
+	{
 		win.kbdHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, hGlobalInstance, 0);
-		if (!win.kbdHook) {
+
+		if (!win.kbdHook)
+		{
 			Com_EPrintf("Couldn't set low-level keyboard hook, error %#lX\n", GetLastError());
 			Cvar_Set("win_disablewinkey", "0");
 		}
-    } else {
-		if (win.kbdHook) {
+	}
+	else
+	{
+		if (win.kbdHook)
+		{
 			UnhookWindowsHookEx(win.kbdHook);
 			win.kbdHook = NULL;
 		}
 	}
 }
 
-static const byte scantokey[2][96] = {
+static const byte scantokey[2][96] =
+{
 	{
-//      0               1           2           3               4           5               6           7
-//      8               9           A           B               C           D               E           F
+		//      0               1           2           3               4           5               6           7
+		//      8               9           A           B               C           D               E           F
 		0,              K_ESCAPE,   '1',        '2',            '3',        '4',            '5',        '6',
-		'7',            '8',        '9',        '0',            '-',        '=',            K_BACKSPACE,K_TAB,      // 0
+		'7',            '8',        '9',        '0',            '-',        '=',            K_BACKSPACE, K_TAB,     // 0
 		'q',            'w',        'e',        'r',            't',        'y',            'u',        'i',
 		'o',            'p',        '[',        ']',            K_ENTER,    K_LCTRL,        'a',        's',        // 1
 		'd',            'f',        'g',        'h',            'j',        'k',            'l',        ';',
 		'\'',           '`',        K_LSHIFT,   '\\',           'z',        'x',            'c',        'v',        // 2
 		'b',            'n',        'm',        ',',            '.',        '/',            K_RSHIFT,   K_KP_MULTIPLY,
 		K_LALT,         K_SPACE,    K_CAPSLOCK, K_F1,           K_F2,       K_F3,           K_F4,       K_F5,       // 3
-		K_F6,           K_F7,       K_F8,       K_F9,           K_F10,      K_PAUSE,        K_SCROLLOCK,K_KP_HOME,
-		K_KP_UPARROW,   K_KP_PGUP,  K_KP_MINUS, K_KP_LEFTARROW, K_KP_5,     K_KP_RIGHTARROW,K_KP_PLUS,  K_KP_END,   // 4
+		K_F6,           K_F7,       K_F8,       K_F9,           K_F10,      K_PAUSE,        K_SCROLLOCK, K_KP_HOME,
+		K_KP_UPARROW,   K_KP_PGUP,  K_KP_MINUS, K_KP_LEFTARROW, K_KP_5,     K_KP_RIGHTARROW, K_KP_PLUS,  K_KP_END,  // 4
 		K_KP_DOWNARROW, K_KP_PGDN,  K_KP_INS,   K_KP_DEL,       0,          0,              K_102ND,    K_F11,
 		K_F12,          0,          0,          0,              0,          0,              0,          0,          // 5
 	},
@@ -532,7 +566,8 @@ static void legacy_key_event(WPARAM wParam, LPARAM lParam, bool down)
 	else
 		result = 0;
 
-	if (!result) {
+	if (!result)
+	{
 		Com_DPrintf("%s: unknown %sscancode %d\n",
 			__func__, extended ? "extended " : "", scancode);
 		return;
@@ -553,25 +588,27 @@ static void mouse_wheel_event(int delta)
 	UINT lines, key;
 
 	// FIXME: handle WHEEL_DELTA and partial scrolls...
-	if (delta > 0) {
+	if (delta > 0)
 		key = K_MWHEELUP;
-    } else if (delta < 0) {
+	else if (delta < 0)
 		key = K_MWHEELDOWN;
-    } else {
+	else
 		return;
-	}
 
-	if (Key_GetDest() & KEY_CONSOLE) {
+	if (Key_GetDest() & KEY_CONSOLE)
+	{
 		SystemParametersInfo(SPI_GETWHEELSCROLLLINES, 0, &lines, 0);
-        clamp(lines, 1, 9);
-    } else {
-		lines = 1;
+		clamp(lines, 1, 9);
 	}
+	else
+		lines = 1;
 
-	do {
-        Key_Event(key, true, win.lastMsgTime);
-        Key_Event(key, false, win.lastMsgTime);
-	} while (--lines);
+	do
+	{
+		Key_Event(key, true, win.lastMsgTime);
+		Key_Event(key, false, win.lastMsgTime);
+	}
+	while (--lines);
 }
 
 static void mouse_hwheel_event(int delta)
@@ -579,16 +616,15 @@ static void mouse_hwheel_event(int delta)
 	UINT key;
 
 	// FIXME: handle WHEEL_DELTA and partial scrolls...
-	if (delta > 0) {
+	if (delta > 0)
 		key = K_MWHEELRIGHT;
-    } else if (delta < 0) {
+	else if (delta < 0)
 		key = K_MWHEELLEFT;
-    } else {
+	else
 		return;
-	}
 
-    Key_Event(key, true, win.lastMsgTime);
-    Key_Event(key, false, win.lastMsgTime);
+	Key_Event(key, true, win.lastMsgTime);
+	Key_Event(key, false, win.lastMsgTime);
 }
 
 // this is complicated because Win32 seems to pack multiple mouse events into
@@ -616,13 +652,13 @@ static void legacy_mouse_event(WPARAM wParam)
 		return;
 
 	// perform button actions
-	for (i = 0, mask = 1; i < MOUSE_BUTTONS; i++, mask <<= 1) {
-		if ((temp & mask) && !(win.mouse.state & mask)) {
-            Key_Event(K_MOUSE1 + i, true, win.lastMsgTime);
-		}
-		if (!(temp & mask) && (win.mouse.state & mask)) {
-            Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
-		}
+	for (i = 0, mask = 1; i < MOUSE_BUTTONS; i++, mask <<= 1)
+	{
+		if ((temp & mask) && !(win.mouse.state & mask))
+			Key_Event(K_MOUSE1 + i, true, win.lastMsgTime);
+
+		if (!(temp & mask) && (win.mouse.state & mask))
+			Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
 	}
 
 	win.mouse.state = temp;
@@ -649,39 +685,41 @@ static void raw_mouse_event(PRAWMOUSE rm)
 {
 	int i;
 
-	if (!check_cursor_pos()) {
+	if (!check_cursor_pos())
+	{
 		// cursor is over non-client area
 		// perform just button up actions
-		for (i = 0; i < MOUSE_BUTTONS; i++) {
-			if (rm->usButtonFlags & BTN_UP(i)) {
-                Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
-			}
+		for (i = 0; i < MOUSE_BUTTONS; i++)
+		{
+			if (rm->usButtonFlags & BTN_UP(i))
+				Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
 		}
+
 		return;
 	}
 
-	if (rm->usButtonFlags) {
+	if (rm->usButtonFlags)
+	{
 		// perform button actions
-		for (i = 0; i < MOUSE_BUTTONS; i++) {
-			if (rm->usButtonFlags & BTN_DN(i)) {
-                Key_Event(K_MOUSE1 + i, true, win.lastMsgTime);
-			}
-			if (rm->usButtonFlags & BTN_UP(i)) {
-                Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
-			}
+		for (i = 0; i < MOUSE_BUTTONS; i++)
+		{
+			if (rm->usButtonFlags & BTN_DN(i))
+				Key_Event(K_MOUSE1 + i, true, win.lastMsgTime);
+
+			if (rm->usButtonFlags & BTN_UP(i))
+				Key_Event(K_MOUSE1 + i, false, win.lastMsgTime);
 		}
 
-		if (rm->usButtonFlags & RI_MOUSE_WHEEL) {
+		if (rm->usButtonFlags & RI_MOUSE_WHEEL)
 			mouse_wheel_event((short)rm->usButtonData);
-		}
 
 		// this flag is undocumented, but confirmed to work on Win7
-		if (rm->usButtonFlags & 0x0800) {
+		if (rm->usButtonFlags & 0x0800)
 			mouse_hwheel_event((short)rm->usButtonData);
-		}
 	}
 
-	if ((rm->usFlags & (MOUSE_MOVE_RELATIVE | MOUSE_MOVE_ABSOLUTE)) == MOUSE_MOVE_RELATIVE) {
+	if ((rm->usFlags & (MOUSE_MOVE_RELATIVE | MOUSE_MOVE_ABSOLUTE)) == MOUSE_MOVE_RELATIVE)
+	{
 		win.mouse.mx += rm->lLastX;
 		win.mouse.my += rm->lLastY;
 	}
@@ -692,18 +730,19 @@ static void raw_input_event(HANDLE handle)
 	BYTE buffer[64];
 	UINT len, ret;
 	PRAWINPUT ri;
-
 	len = sizeof(buffer);
-    ret = GetRawInputData(handle, RID_INPUT, buffer, &len, sizeof(RAWINPUTHEADER));
-    if (ret == (UINT) - 1) {
+	ret = GetRawInputData(handle, RID_INPUT, buffer, &len, sizeof(RAWINPUTHEADER));
+
+	if (ret == (UINT) - 1)
+	{
 		Com_EPrintf("GetRawInputData failed with error %#lx\n", GetLastError());
 		return;
 	}
 
 	ri = (PRAWINPUT)buffer;
-	if (ri->header.dwType == RIM_TYPEMOUSE) {
+
+	if (ri->header.dwType == RIM_TYPEMOUSE)
 		raw_mouse_event(&ri->data.mouse);
-	}
 }
 
 static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
@@ -719,25 +758,24 @@ static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
 		return;
 
 	style = GetWindowLong(wnd, GWL_STYLE);
-
 	// calculate size of non-client area
 	rc.left = 0;
 	rc.top = 0;
 	rc.right = 1;
 	rc.bottom = 1;
-
 	AdjustWindowRect(&rc, style, FALSE);
-
 	nc_w = rc.right - rc.left - 1;
 	nc_h = rc.bottom - rc.top - 1;
-
 	// align client area
 	w = (pos->cx - nc_w) & ~7;
 	h = (pos->cy - nc_h) & ~1;
 
 	// don't allow too small size
-	if (w < 320) w = 320;
-	if (h < 240) h = 240;
+	if (w < 320)
+		w = 320;
+
+	if (h < 240)
+		h = 240;
 
 	// convert back to window size
 	pos->cx = w + nc_w;
@@ -747,17 +785,14 @@ static void pos_changing_event(HWND wnd, WINDOWPOS *pos)
 static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
 {
 	RECT rc;
-
 	// get window position
 	GetWindowRect(wnd, &rc);
 	win.rc.x = rc.left;
 	win.rc.y = rc.top;
-
 	// get size of client area
 	GetClientRect(wnd, &rc);
 	win.rc.width = rc.right - rc.left;
 	win.rc.height = rc.bottom - rc.top;
-
 	// get rectangle of client area in screen coordinates
 	MapWindowPoints(wnd, NULL, (POINT *)&rc, 2);
 	win.screen_rc = rc;
@@ -768,7 +803,8 @@ static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
 	if (win.flags & QVF_FULLSCREEN)
 		return;
 
-	if (!pos) {
+	if (!pos)
+	{
 		win.mode_changed |= MODE_STYLE;
 		return;
 	}
@@ -783,95 +819,106 @@ static void pos_changed_event(HWND wnd, WINDOWPOS *pos)
 // main window procedure
 STATIC LRESULT WINAPI Win_MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	switch (uMsg) {
-	case WM_MOUSEWHEEL:
-		if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-			mouse_wheel_event((short)HIWORD(wParam));
-		break;
+	switch (uMsg)
+	{
+		case WM_MOUSEWHEEL:
+			if (win.mouse.initialized == WIN_MOUSE_LEGACY)
+				mouse_wheel_event((short)HIWORD(wParam));
 
-	case WM_MOUSEHWHEEL:
-		if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-			mouse_hwheel_event((short)HIWORD(wParam));
-		break;
+			break;
 
-	case WM_MOUSEMOVE:
-		if (win.mouse.initialized)
-			UI_MouseEvent((short)LOWORD(lParam), (short)HIWORD(lParam));
+		case WM_MOUSEHWHEEL:
+			if (win.mouse.initialized == WIN_MOUSE_LEGACY)
+				mouse_hwheel_event((short)HIWORD(wParam));
+
+			break;
+
+		case WM_MOUSEMOVE:
+			if (win.mouse.initialized)
+				UI_MouseEvent((short)LOWORD(lParam), (short)HIWORD(lParam));
+
 		// fall through
 
-	case WM_LBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_RBUTTONDOWN:
-	case WM_RBUTTONUP:
-	case WM_MBUTTONDOWN:
-	case WM_MBUTTONUP:
-	case WM_XBUTTONDOWN:
-	case WM_XBUTTONUP:
-		if (win.mouse.initialized == WIN_MOUSE_LEGACY)
-			legacy_mouse_event(wParam);
-		break;
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONUP:
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONUP:
+			if (win.mouse.initialized == WIN_MOUSE_LEGACY)
+				legacy_mouse_event(wParam);
 
-	case WM_HOTKEY:
-		return FALSE;
+			break;
 
-	case WM_INPUT:
-		if (wParam == RIM_INPUT && win.mouse.initialized == WIN_MOUSE_RAW)
-			raw_input_event((HANDLE)lParam);
-		break;
-
-	case WM_CLOSE:
-		PostQuitMessage(0);
-		return FALSE;
-
-	case WM_ACTIVATE:
-		Win_Activate(wParam);
-		break;
-
-	case WM_WINDOWPOSCHANGING:
-		pos_changing_event(hWnd, (WINDOWPOS *)lParam);
-		break;
-
-	case WM_WINDOWPOSCHANGED:
-		pos_changed_event(hWnd, (WINDOWPOS *)lParam);
-		return FALSE;
-
-	case WM_STYLECHANGED:
-	case WM_THEMECHANGED:
-		pos_changed_event(hWnd, NULL);
-		break;
-
-    case WM_SYSCOMMAND:
-        switch (wParam & 0xFFF0) {
-        case SC_SCREENSAVE:
-            return FALSE;
-        case SC_MAXIMIZE:
-            if (vid_mode->integer != VM_FULLSCREEN)
-                VID_ToggleFullscreen();
-            return FALSE;
-        }
-        break;
-
-	case WM_KEYDOWN:
-	case WM_SYSKEYDOWN:
-        legacy_key_event(wParam, lParam, true);
-		return FALSE;
-
-	case WM_KEYUP:
-	case WM_SYSKEYUP:
-        legacy_key_event(wParam, lParam, false);
-		return FALSE;
-
-	case WM_SYSCHAR:
-	case WM_CHAR:
-		return FALSE;
-
-	case WM_ERASEBKGND:
-		if (win.flags & QVF_FULLSCREEN)
+		case WM_HOTKEY:
 			return FALSE;
-		break;
 
-	default:
-		break;
+		case WM_INPUT:
+			if (wParam == RIM_INPUT && win.mouse.initialized == WIN_MOUSE_RAW)
+				raw_input_event((HANDLE)lParam);
+
+			break;
+
+		case WM_CLOSE:
+			PostQuitMessage(0);
+			return FALSE;
+
+		case WM_ACTIVATE:
+			Win_Activate(wParam);
+			break;
+
+		case WM_WINDOWPOSCHANGING:
+			pos_changing_event(hWnd, (WINDOWPOS *)lParam);
+			break;
+
+		case WM_WINDOWPOSCHANGED:
+			pos_changed_event(hWnd, (WINDOWPOS *)lParam);
+			return FALSE;
+
+		case WM_STYLECHANGED:
+		case WM_THEMECHANGED:
+			pos_changed_event(hWnd, NULL);
+			break;
+
+		case WM_SYSCOMMAND:
+			switch (wParam & 0xFFF0)
+			{
+				case SC_SCREENSAVE:
+					return FALSE;
+
+				case SC_MAXIMIZE:
+					if (vid_mode->integer != VM_FULLSCREEN)
+						VID_ToggleFullscreen();
+
+					return FALSE;
+			}
+
+			break;
+
+		case WM_KEYDOWN:
+		case WM_SYSKEYDOWN:
+			legacy_key_event(wParam, lParam, true);
+			return FALSE;
+
+		case WM_KEYUP:
+		case WM_SYSKEYUP:
+			legacy_key_event(wParam, lParam, false);
+			return FALSE;
+
+		case WM_SYSCHAR:
+		case WM_CHAR:
+			return FALSE;
+
+		case WM_ERASEBKGND:
+			if (win.flags & QVF_FULLSCREEN)
+				return FALSE;
+
+			break;
+
+		default:
+			break;
 	}
 
 	// pass all unhandled messages to DefWindowProc
@@ -897,38 +944,41 @@ VID_PumpEvents
 void VID_PumpEvents(void)
 {
 	MSG        msg;
+	win.lastMsgTime = Sys_Milliseconds();
 
-    win.lastMsgTime = Sys_Milliseconds();
-	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-		if (msg.message == WM_QUIT) {
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	{
+		if (msg.message == WM_QUIT)
 			Com_Quit(NULL, ERR_DISCONNECT);
-		}
+
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
 
-	if (win.mode_changed) {
-		if (win.mode_changed & MODE_REPOSITION) {
+	if (win.mode_changed)
+	{
+		if (win.mode_changed & MODE_REPOSITION)
 			Win_SetPosition();
-		}
-		if (win.mode_changed & (MODE_SIZE | MODE_POS | MODE_STYLE)) {
+
+		if (win.mode_changed & (MODE_SIZE | MODE_POS | MODE_STYLE))
+		{
 			VID_SetGeometry(&win.rc);
-			if (win.mouse.grabbed) {
+
+			if (win.mouse.grabbed)
 				Win_ClipCursor();
-			}
 		}
-		if (win.mode_changed & MODE_SIZE) {
+
+		if (win.mode_changed & MODE_SIZE)
 			Win_ModeChanged();
-		}
+
 		win.mode_changed = 0;
 	}
 }
 
 static void win_style_changed(cvar_t *self)
 {
-	if (win.wnd && !(win.flags & QVF_FULLSCREEN)) {
+	if (win.wnd && !(win.flags & QVF_FULLSCREEN))
 		win.mode_changed |= MODE_REPOSITION;
-	}
 }
 
 /*
@@ -939,7 +989,6 @@ Win_Init
 void Win_Init(void)
 {
 	WNDCLASSEX wc;
-
 	// register variables
 	vid_flip_on_switch = Cvar_Get("vid_flip_on_switch", "0", 0);
 	vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
@@ -955,53 +1004,53 @@ void Win_Init(void)
 	win_alwaysontop->changed = win_style_changed;
 	win_xpfix = Cvar_Get("win_xpfix", "0", 0);
 	win_rawmouse = Cvar_Get("win_rawmouse", "1", 0);
-
 	win_disablewinkey_changed(win_disablewinkey);
-
 	// register the frame class
 	memset(&wc, 0, sizeof(wc));
 	wc.cbSize = sizeof(wc);
 	wc.lpfnWndProc = (WNDPROC)Win_MainWndProc;
 	wc.hInstance = hGlobalInstance;
-    wc.hIcon = LoadImage(hGlobalInstance, MAKEINTRESOURCE(IDI_APP),
-						 IMAGE_ICON, 32, 32, LR_CREATEDIBSECTION);
-    wc.hIconSm = LoadImage(hGlobalInstance, MAKEINTRESOURCE(IDI_APP),
-						 IMAGE_ICON, 16, 16, LR_CREATEDIBSECTION);
+	wc.hIcon = LoadImage(hGlobalInstance, MAKEINTRESOURCE(IDI_APP),
+			IMAGE_ICON, 32, 32, LR_CREATEDIBSECTION);
+	wc.hIconSm = LoadImage(hGlobalInstance, MAKEINTRESOURCE(IDI_APP),
+			IMAGE_ICON, 16, 16, LR_CREATEDIBSECTION);
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.hbrBackground = GetStockObject(BLACK_BRUSH);
+	wc.hbrBackground = GetStockObject(BLACK_BRUSH);
 	wc.lpszClassName = _T(WINDOW_CLASS_NAME);
 
-	if (!RegisterClassEx(&wc)) {
+	if (!RegisterClassEx(&wc))
 		Com_Error(ERR_FATAL, "Couldn't register main window class");
-	}
 
 	// create the window
 	win.wnd = CreateWindow(
-		_T(WINDOW_CLASS_NAME),
-		_T(PRODUCT),
-		0, //style
-		0, 0, 0, 0,
-		NULL,
-		NULL,
-		hGlobalInstance,
-		NULL);
+			_T(WINDOW_CLASS_NAME),
+			_T(PRODUCT),
+			0, //style
+			0, 0, 0, 0,
+			NULL,
+			NULL,
+			hGlobalInstance,
+			NULL);
 
-	if (!win.wnd) {
+	if (!win.wnd)
 		Com_Error(ERR_FATAL, "Couldn't create main window");
-	}
 
 	win.dc = GetDC(win.wnd);
-	if (!win.dc) {
+
+	if (!win.dc)
 		Com_Error(ERR_FATAL, "Couldn't get DC of the main window");
-	}
 
 	// init gamma ramp
-	if (vid_hwgamma->integer) {
-		if (GetDeviceGammaRamp(win.dc, win.gamma_orig)) {
+	if (vid_hwgamma->integer)
+	{
+		if (GetDeviceGammaRamp(win.dc, win.gamma_orig))
+		{
 			Com_DPrintf("...enabling hardware gamma\n");
 			win.flags |= QVF_GAMMARAMP;
 			memcpy(win.gamma_cust, win.gamma_orig, sizeof(win.gamma_cust));
-        } else {
+		}
+		else
+		{
 			Com_DPrintf("...hardware gamma not supported\n");
 			Cvar_Set("vid_hwgamma", "0");
 		}
@@ -1015,9 +1064,8 @@ Win_Shutdown
 */
 void Win_Shutdown(void)
 {
-	if (win.flags & QVF_GAMMARAMP) {
+	if (win.flags & QVF_GAMMARAMP)
 		SetDeviceGammaRamp(win.dc, win.gamma_orig);
-	}
 
 	// prevents leaving empty slots in the taskbar
 	ShowWindow(win.wnd, SW_SHOWNORMAL);
@@ -1025,13 +1073,11 @@ void Win_Shutdown(void)
 	DestroyWindow(win.wnd);
 	UnregisterClass(_T(WINDOW_CLASS_NAME), hGlobalInstance);
 
-	if (win.kbdHook) {
+	if (win.kbdHook)
 		UnhookWindowsHookEx(win.kbdHook);
-	}
 
-	if (win.flags & QVF_FULLSCREEN) {
+	if (win.flags & QVF_FULLSCREEN)
 		ChangeDisplaySettings(NULL, 0);
-	}
 
 	memset(&win, 0, sizeof(win));
 }
@@ -1068,20 +1114,22 @@ static void Win_AcquireMouse(void)
 {
 	int parms[3];
 
-	if (win.mouse.parmsvalid) {
-		if (win_xpfix->integer) {
+	if (win.mouse.parmsvalid)
+	{
+		if (win_xpfix->integer)
 			parms[0] = parms[1] = parms[2] = 0;
-        } else {
+		else
+		{
 			parms[0] = parms[1] = 0;
 			parms[2] = 1;
 		}
-        win.mouse.restoreparms = SystemParametersInfo(
-								 	 SPI_SETMOUSE, 0, parms, 0);
+
+		win.mouse.restoreparms = SystemParametersInfo(
+				SPI_SETMOUSE, 0, parms, 0);
 	}
 
 	Win_ClipCursor();
 	SetCapture(win.wnd);
-
 	SetWindowText(win.wnd, "[" PRODUCT "]");
 }
 
@@ -1092,10 +1140,8 @@ static void Win_DeAcquireMouse(void)
 		SystemParametersInfo(SPI_SETMOUSE, 0, win.mouse.originalparms, 0);
 
 	SetCursorPos(win.center_x, win.center_y);
-
 	ClipCursor(NULL);
 	ReleaseCapture();
-
 	SetWindowText(win.wnd, PRODUCT);
 }
 
@@ -1103,77 +1149,69 @@ static bool Win_GetMouseMotion(int *dx, int *dy)
 {
 	POINT pt;
 
-	if (!win.mouse.initialized) {
-        return false;
-	}
+	if (!win.mouse.initialized)
+		return false;
 
-	if (!win.mouse.grabbed) {
-        return false;
-	}
+	if (!win.mouse.grabbed)
+		return false;
 
-	if (win.mouse.initialized == WIN_MOUSE_RAW) {
+	if (win.mouse.initialized == WIN_MOUSE_RAW)
+	{
 		*dx = win.mouse.mx;
 		*dy = win.mouse.my;
 		win.mouse.mx = 0;
 		win.mouse.my = 0;
-        return true;
+		return true;
 	}
 
 	// find mouse movement
-	if (!GetCursorPos(&pt)) {
-        return false;
-	}
+	if (!GetCursorPos(&pt))
+		return false;
 
 	*dx = pt.x - win.center_x;
 	*dy = pt.y - win.center_y;
-
 	// force the mouse to the center, so there's room to move
 	SetCursorPos(win.center_x, win.center_y);
-    return true;
+	return true;
 }
 
 static BOOL register_raw_mouse(DWORD flags)
 {
 	RAWINPUTDEVICE rid;
-
 	memset(&rid, 0, sizeof(rid));
 	rid.usUsagePage = 0x01;
 	rid.usUsage = 0x02;
 	rid.dwFlags = flags;
 	rid.hwndTarget = win.wnd;
-
 	return RegisterRawInputDevices(&rid, 1, sizeof(rid));
 }
 
 static void Win_ShutdownMouse(void)
 {
-	if (!win.mouse.initialized) {
+	if (!win.mouse.initialized)
 		return;
-	}
 
 	Win_DeAcquireMouse();
 	Win_ShowCursor();
 
-	if (win.mouse.initialized == WIN_MOUSE_RAW) {
+	if (win.mouse.initialized == WIN_MOUSE_RAW)
 		register_raw_mouse(RIDEV_REMOVE);
-	}
 
 	win_xpfix->changed = NULL;
 	win_rawmouse->changed = NULL;
-
 	memset(&win.mouse, 0, sizeof(win.mouse));
 }
 
 static void win_xpfix_changed(cvar_t *self)
 {
-	if (win.mouse.grabbed) {
+	if (win.mouse.grabbed)
 		Win_AcquireMouse();
-	}
 }
 
 static void win_rawmouse_changed(cvar_t *self)
 {
-	if (win.mouse.initialized) {
+	if (win.mouse.initialized)
+	{
 		Win_ShutdownMouse();
 		Win_InitMouse();
 	}
@@ -1181,54 +1219,60 @@ static void win_rawmouse_changed(cvar_t *self)
 
 static bool Win_InitMouse(void)
 {
-	if (!win.wnd) {
-        return false;
-	}
+	if (!win.wnd)
+		return false;
 
 	win.mouse.initialized = WIN_MOUSE_LEGACY;
 
-	if (win_rawmouse->integer) {
-		if (!register_raw_mouse(/*RIDEV_NOLEGACY*/ 0)) {
+	if (win_rawmouse->integer)
+	{
+		if (!register_raw_mouse(/*RIDEV_NOLEGACY*/ 0))
+		{
 			Com_EPrintf("RegisterRawInputDevices failed with error %#lx\n", GetLastError());
 			Cvar_Set("win_rawmouse", "0");
-        } else {
+		}
+		else
+		{
 			Com_Printf("Raw mouse initialized.\n");
 			win.mouse.initialized = WIN_MOUSE_RAW;
 		}
 	}
 
-	if (win.mouse.initialized == WIN_MOUSE_LEGACY) {
-        win.mouse.parmsvalid = SystemParametersInfo(SPI_GETMOUSE, 0,
-							   win.mouse.originalparms, 0);
+	if (win.mouse.initialized == WIN_MOUSE_LEGACY)
+	{
+		win.mouse.parmsvalid = SystemParametersInfo(SPI_GETMOUSE, 0,
+				win.mouse.originalparms, 0);
 		win_xpfix->changed = win_xpfix_changed;
 		Com_Printf("Legacy mouse initialized.\n");
 	}
 
 	win_rawmouse->changed = win_rawmouse_changed;
-
-    return true;
+	return true;
 }
 
 // Called when the main window gains or loses focus.
 static void Win_GrabMouse(bool grab)
 {
-	if (!win.mouse.initialized) {
+	if (!win.mouse.initialized)
 		return;
-	}
 
-	if (win.mouse.grabbed == grab) {
-		if (win.mouse.initialized == WIN_MOUSE_LEGACY) {
+	if (win.mouse.grabbed == grab)
+	{
+		if (win.mouse.initialized == WIN_MOUSE_LEGACY)
 			SetCursorPos(win.center_x, win.center_y);
-		}
+
 		win.mouse.mx = 0;
 		win.mouse.my = 0;
 		return;
 	}
 
-	if (grab) {
+	if (grab)
+	{
 		Win_AcquireMouse();
 		Win_HideCursor();
-    } else {
+	}
+	else
+	{
 		Win_DeAcquireMouse();
 		Win_ShowCursor();
 	}
@@ -1254,14 +1298,18 @@ char *VID_GetClipboardData(void)
 	HANDLE clipdata;
 	char *cliptext, *data;
 
-	if (!OpenClipboard(NULL)) {
+	if (!OpenClipboard(NULL))
+	{
 		Com_DPrintf("Couldn't open clipboard.\n");
 		return NULL;
 	}
 
 	data = NULL;
-	if ((clipdata = GetClipboardData(CF_TEXT)) != NULL) {
-        if ((cliptext = GlobalLock(clipdata)) != NULL) {
+
+	if ((clipdata = GetClipboardData(CF_TEXT)) != NULL)
+	{
+		if ((cliptext = GlobalLock(clipdata)) != NULL)
+		{
 			data = Z_CopyString(cliptext);
 			GlobalUnlock(clipdata);
 		}
@@ -1282,20 +1330,22 @@ void VID_SetClipboardData(const char *data)
 	char *cliptext;
 	size_t length;
 
-	if (!data || !*data) {
+	if (!data || !*data)
 		return;
-	}
 
-	if (!OpenClipboard(NULL)) {
+	if (!OpenClipboard(NULL))
+	{
 		Com_DPrintf("Couldn't open clipboard.\n");
 		return;
 	}
 
 	EmptyClipboard();
-
 	length = strlen(data) + 1;
-	if ((clipdata = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, length)) != NULL) {
-        if ((cliptext = GlobalLock(clipdata)) != NULL) {
+
+	if ((clipdata = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE, length)) != NULL)
+	{
+		if ((cliptext = GlobalLock(clipdata)) != NULL)
+		{
 			memcpy(cliptext, data, length);
 			GlobalUnlock(clipdata);
 			SetClipboardData(CF_TEXT, clipdata);

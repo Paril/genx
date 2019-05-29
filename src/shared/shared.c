@@ -24,28 +24,32 @@ void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 {
 	float        angle;
 	float        sr, sp, sy, cr, cp, cy;
-
-    angle = DEG2RAD(angles[YAW]);
+	angle = DEG2RAD(angles[YAW]);
 	sy = sinf(angle);
 	cy = cosf(angle);
-    angle = DEG2RAD(angles[PITCH]);
+	angle = DEG2RAD(angles[PITCH]);
 	sp = sinf(angle);
 	cp = cosf(angle);
-    angle = DEG2RAD(angles[ROLL]);
+	angle = DEG2RAD(angles[ROLL]);
 	sr = sinf(angle);
 	cr = cosf(angle);
 
-	if (forward) {
+	if (forward)
+	{
 		forward[0] = cp * cy;
 		forward[1] = cp * sy;
 		forward[2] = -sp;
 	}
-	if (right) {
+
+	if (right)
+	{
 		right[0] = (-1 * sr * sp * cy + -1 * cr * -sy);
 		right[1] = (-1 * sr * sp * sy + -1 * cr * cy);
 		right[2] = -1 * sr * cp;
 	}
-	if (up) {
+
+	if (up)
+	{
 		up[0] = (cr * sp * cy + -sr * -sy);
 		up[1] = (cr * sp * sy + -sr * cy);
 		up[2] = cr * cp;
@@ -55,10 +59,10 @@ void AngleVectors(vec3_t angles, vec3_t forward, vec3_t right, vec3_t up)
 vec_t VectorNormalize(vec3_t v)
 {
 	float    length, ilength;
+	length = VectorLength(v);
 
-    length = VectorLength(v);
-
-	if (length) {
+	if (length)
+	{
 		ilength = 1 / length;
 		v[0] *= ilength;
 		v[1] *= ilength;
@@ -66,16 +70,15 @@ vec_t VectorNormalize(vec3_t v)
 	}
 
 	return length;
-
 }
 
 vec_t VectorNormalize2(vec3_t v, vec3_t out)
 {
 	float    length, ilength;
+	length = VectorLength(v);
 
-    length = VectorLength(v);
-
-	if (length) {
+	if (length)
+	{
 		ilength = 1 / length;
 		out[0] = v[0] * ilength;
 		out[1] = v[1] * ilength;
@@ -83,7 +86,6 @@ vec_t VectorNormalize2(vec3_t v, vec3_t out)
 	}
 
 	return length;
-
 }
 
 void ClearBounds(vec3_t mins, vec3_t maxs)
@@ -97,21 +99,23 @@ void AddPointToBounds(const vec3_t v, vec3_t mins, vec3_t maxs)
 	int        i;
 	vec_t    val;
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 3; i++)
+	{
 		val = v[i];
-        mins[i] = min(mins[i], val);
-        maxs[i] = max(maxs[i], val);
+		mins[i] = min(mins[i], val);
+		maxs[i] = max(maxs[i], val);
 	}
 }
 
 void UnionBounds(vec3_t a[2], vec3_t b[2], vec3_t c[2])
 {
-    int        i;
+	int        i;
 
-    for (i = 0; i < 3; i++) {
-        c[0][i] = min(a[0][i], b[0][i]);
-        c[1][i] = max(a[1][i], b[1][i]);
-    }
+	for (i = 0; i < 3; i++)
+	{
+		c[0][i] = min(a[0][i], b[0][i]);
+		c[1][i] = max(a[1][i], b[1][i]);
+	}
 }
 
 /*
@@ -125,10 +129,11 @@ vec_t RadiusFromBounds(const vec3_t mins, const vec3_t maxs)
 	vec3_t  corner;
 	vec_t   a, b;
 
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < 3; i++)
+	{
 		a = fabsf(mins[i]);
 		b = fabsf(maxs[i]);
-        corner[i] = max(a, b);
+		corner[i] = max(a, b);
 	}
 
 	return VectorLength(corner);
@@ -145,16 +150,19 @@ char *COM_SkipPath(const char *pathname)
 {
 	char    *last;
 
-	if (!pathname) {
+	if (!pathname)
 		Com_Error(ERR_FATAL, "%s: NULL", __func__);
-	}
 
 	last = (char *)pathname;
-	while (*pathname) {
+
+	while (*pathname)
+	{
 		if (*pathname == '/')
 			last = (char *)pathname + 1;
+
 		pathname++;
 	}
+
 	return last;
 }
 
@@ -165,15 +173,16 @@ COM_StripExtension
 */
 size_t COM_StripExtension(char *out, const char *in, size_t size)
 {
-    size_t ret = COM_FileExtension(in) - in;
+	size_t ret = COM_FileExtension(in) - in;
 
-    if (size) {
-        size_t len = min(ret, size - 1);
-        memcpy(out, in, len);
-        out[len] = 0;
+	if (size)
+	{
+		size_t len = min(ret, size - 1);
+		memcpy(out, in, len);
+		out[len] = 0;
 	}
 
-    return ret;
+	return ret;
 }
 
 /*
@@ -183,19 +192,18 @@ COM_FileExtension
 */
 char *COM_FileExtension(const char *in)
 {
-    const char *last, *s;
+	const char *last, *s;
 
-	if (!in) {
+	if (!in)
 		Com_Error(ERR_FATAL, "%s: NULL", __func__);
-	}
 
-    for (last = s = in + strlen(in); s != in; s--) {
-		if (*s == '/') {
+	for (last = s = in + strlen(in); s != in; s--)
+	{
+		if (*s == '/')
 			break;
-		}
-		if (*s == '.') {
+
+		if (*s == '.')
 			return (char *)s;
-		}
 	}
 
 	return (char *)last;
@@ -211,10 +219,10 @@ if path doesn't have .EXT, append extension
 */
 size_t COM_DefaultExtension(char *path, const char *ext, size_t size)
 {
-    if (*COM_FileExtension(path))
-        return strlen(path);
-    else
-        return Q_strlcat(path, ext, size);
+	if (*COM_FileExtension(path))
+		return strlen(path);
+	else
+		return Q_strlcat(path, ext, size);
 }
 
 /*
@@ -229,73 +237,77 @@ bool COM_IsFloat(const char *s)
 {
 	int c, dot = '.';
 
-	if (*s == '-') {
+	if (*s == '-')
 		s++;
-	}
-	if (!*s) {
-        return false;
-	}
 
-	do {
+	if (!*s)
+		return false;
+
+	do
+	{
 		c = *s++;
-		if (c == dot) {
-			dot = 0;
-        } else if (!Q_isdigit(c)) {
-            return false;
-		}
-	} while (*s);
 
-    return true;
+		if (c == dot)
+			dot = 0;
+		else if (!Q_isdigit(c))
+			return false;
+	}
+	while (*s);
+
+	return true;
 }
 
 bool COM_IsUint(const char *s)
 {
 	int c;
 
-	if (!*s) {
-        return false;
-	}
+	if (!*s)
+		return false;
 
-	do {
+	do
+	{
 		c = *s++;
-		if (!Q_isdigit(c)) {
-            return false;
-		}
-	} while (*s);
 
-    return true;
+		if (!Q_isdigit(c))
+			return false;
+	}
+	while (*s);
+
+	return true;
 }
 
 bool COM_IsPath(const char *s)
 {
 	int c;
 
-	if (!*s) {
-        return false;
-	}
+	if (!*s)
+		return false;
 
-	do {
+	do
+	{
 		c = *s++;
-		if (!Q_ispath(c)) {
-            return false;
-		}
-	} while (*s);
 
-    return true;
+		if (!Q_ispath(c))
+			return false;
+	}
+	while (*s);
+
+	return true;
 }
 
 bool COM_IsWhite(const char *s)
 {
 	int c;
 
-	while (*s) {
+	while (*s)
+	{
 		c = *s++;
-		if (Q_isgraph(c)) {
-            return false;
-		}
+
+		if (Q_isgraph(c))
+			return false;
 	}
 
-    return true;
+	return true;
 }
 
 int SortStrcmp(const void *p1, const void *p2)
@@ -321,35 +333,39 @@ size_t COM_strclr(char *s)
 	char *p;
 	int c;
 	size_t len;
-
 	p = s;
 	len = 0;
-	while (*s) {
+
+	while (*s)
+	{
 		c = *s++;
 		c &= 127;
-		if (Q_isprint(c)) {
+
+		if (Q_isprint(c))
+		{
 			*p++ = c;
 			len++;
 		}
 	}
 
 	*p = 0;
-
 	return len;
 }
 
 char *COM_StripQuotes(char *s)
 {
-    if (*s == '"') {
-        size_t p = strlen(s) - 1;
+	if (*s == '"')
+	{
+		size_t p = strlen(s) - 1;
 
-        if (s[p] == '"') {
-            s[p] = 0;
-            return s + 1;
-        }
-    }
+		if (s[p] == '"')
+		{
+			s[p] = 0;
+			return s + 1;
+		}
+	}
 
-    return s;
+	return s;
 }
 
 /*
@@ -366,13 +382,10 @@ char *va(const char *format, ...)
 	va_list         argptr;
 	static char     buffers[2][0x2800];
 	static int      index;
-
 	index ^= 1;
-
 	va_start(argptr, format);
 	Q_vsnprintf(buffers[index], sizeof(buffers[0]), format, argptr);
 	va_end(argptr);
-
 	return buffers[index];
 }
 
@@ -393,74 +406,90 @@ char *COM_Parse(const char **data_p)
 	int         len;
 	const char  *data;
 	char        *s = com_token[com_tokidx++ & 3];
-
 	data = *data_p;
 	len = 0;
 	s[0] = 0;
 
-	if (!data) {
+	if (!data)
+	{
 		*data_p = NULL;
 		return s;
 	}
 
-// skip whitespace
+	// skip whitespace
 skipwhite:
-	while ((c = *data) <= ' ') {
-		if (c == 0) {
+
+	while ((c = *data) <= ' ')
+	{
+		if (c == 0)
+		{
 			*data_p = NULL;
 			return s;
 		}
+
 		data++;
 	}
 
-// skip // comments
-	if (c == '/' && data[1] == '/') {
+	// skip // comments
+	if (c == '/' && data[1] == '/')
+	{
 		data += 2;
+
 		while (*data && *data != '\n')
 			data++;
+
 		goto skipwhite;
 	}
 
-// skip /* */ comments
-	if (c == '/' && data[1] == '*') {
+	// skip /* */ comments
+	if (c == '/' && data[1] == '*')
+	{
 		data += 2;
-		while (*data) {
-			if (data[0] == '*' && data[1] == '/') {
+
+		while (*data)
+		{
+			if (data[0] == '*' && data[1] == '/')
+			{
 				data += 2;
 				break;
 			}
+
 			data++;
 		}
+
 		goto skipwhite;
 	}
 
-// handle quoted strings specially
-	if (c == '\"') {
+	// handle quoted strings specially
+	if (c == '\"')
+	{
 		data++;
-		while (1) {
-			c = *data++;
-			if (c == '\"' || !c) {
-				goto finish;
-			}
 
-			if (len < MAX_TOKEN_CHARS - 1) {
+		while (1)
+		{
+			c = *data++;
+
+			if (c == '\"' || !c)
+				goto finish;
+
+			if (len < MAX_TOKEN_CHARS - 1)
 				s[len++] = c;
-			}
 		}
 	}
 
-// parse a regular word
-	do {
-		if (len < MAX_TOKEN_CHARS - 1) {
+	// parse a regular word
+	do
+	{
+		if (len < MAX_TOKEN_CHARS - 1)
 			s[len++] = c;
-		}
+
 		data++;
 		c = *data;
-	} while (c > 32);
+	}
+	while (c > 32);
 
 finish:
 	s[len] = 0;
-
 	*data_p = data;
 	return s;
 }
@@ -480,89 +509,112 @@ size_t COM_Compress(char *data)
 	int     c, n = 0;
 	char    *s = data, *d = data;
 
-	while (*s) {
+	while (*s)
+	{
 		// skip whitespace
-		if (*s <= ' ') {
-			if (n == 0) {
+		if (*s <= ' ')
+		{
+			if (n == 0)
 				n = ' ';
-			}
-			do {
+
+			do
+			{
 				c = *s++;
-				if (c == '\n') {
+
+				if (c == '\n')
 					n = '\n';
-				}
-				if (!c) {
+
+				if (!c)
 					goto finish;
-				}
-			} while (*s <= ' ');
+			}
+			while (*s <= ' ');
 		}
 
 		// skip // comments
-		if (s[0] == '/' && s[1] == '/') {
+		if (s[0] == '/' && s[1] == '/')
+		{
 			n = ' ';
 			s += 2;
-			while (*s && *s != '\n') {
+
+			while (*s && *s != '\n')
 				s++;
-			}
+
 			continue;
 		}
 
 		// skip /* */ comments
-		if (s[0] == '/' && s[1] == '*') {
+		if (s[0] == '/' && s[1] == '*')
+		{
 			n = ' ';
 			s += 2;
-			while (*s) {
-				if (s[0] == '*' && s[1] == '/') {
+
+			while (*s)
+			{
+				if (s[0] == '*' && s[1] == '/')
+				{
 					s += 2;
 					break;
 				}
-				if (*s == '\n') {
+
+				if (*s == '\n')
 					n = '\n';
-				}
+
 				s++;
 			}
+
 			continue;
 		}
 
 		// add whitespace character
-		if (n) {
+		if (n)
+		{
 			*d++ = n;
 			n = 0;
 		}
 
 		// handle quoted strings specially
-		if (*s == '\"') {
+		if (*s == '\"')
+		{
 			s++;
 			*d++ = '\"';
-			do {
+
+			do
+			{
 				c = *s++;
-				if (!c) {
+
+				if (!c)
 					goto finish;
-				}
+
 				*d++ = c;
-			} while (c != '\"');
+			}
+			while (c != '\"');
+
 			continue;
 		}
 
 		// handle line feed escape
-		if (*s == '\\' && s[1] == '\n') {
+		if (*s == '\\' && s[1] == '\n')
+		{
 			s += 2;
 			continue;
 		}
-		if (*s == '\\' && s[1] == '\r' && s[2] == '\n') {
+
+		if (*s == '\\' && s[1] == '\r' && s[2] == '\n')
+		{
 			s += 3;
 			continue;
 		}
 
 		// parse a regular word
-		do {
+		do
+		{
 			*d++ = *s++;
-		} while (*s > ' ');
+		}
+		while (*s > ' ');
 	}
 
 finish:
 	*d = 0;
-
 	return d - data;
 }
 
@@ -578,22 +630,27 @@ int Q_strncasecmp(const char *s1, const char *s2, size_t n)
 {
 	int        c1, c2;
 
-	do {
+	do
+	{
 		c1 = *s1++;
 		c2 = *s2++;
 
 		if (!n--)
 			return 0;        /* strings are equal until end point */
 
-		if (c1 != c2) {
+		if (c1 != c2)
+		{
 			c1 = Q_tolower(c1);
 			c2 = Q_tolower(c2);
+
 			if (c1 < c2)
 				return -1;
+
 			if (c1 > c2)
 				return 1;        /* strings not equal */
 		}
-	} while (c1);
+	}
+	while (c1);
 
 	return 0;        /* strings are equal */
 }
@@ -602,19 +659,24 @@ int Q_strcasecmp(const char *s1, const char *s2)
 {
 	int        c1, c2;
 
-	do {
+	do
+	{
 		c1 = *s1++;
 		c2 = *s2++;
 
-		if (c1 != c2) {
+		if (c1 != c2)
+		{
 			c1 = Q_tolower(c1);
 			c2 = Q_tolower(c2);
+
 			if (c1 < c2)
 				return -1;
+
 			if (c1 > c2)
 				return 1;        /* strings not equal */
 		}
-	} while (c1);
+	}
+	while (c1);
 
 	return 0;        /* strings are equal */
 }
@@ -622,18 +684,20 @@ int Q_strcasecmp(const char *s1, const char *s2)
 char *Q_strcasestr(const char *s1, const char *s2)
 {
 	size_t l1, l2;
-
 	l2 = strlen(s2);
-	if (!l2) {
+
+	if (!l2)
 		return (char *)s1;
-	}
 
 	l1 = strlen(s1);
-	while (l1 >= l2) {
+
+	while (l1 >= l2)
+	{
 		l1--;
-		if (!Q_strncasecmp(s1, s2, l2)) {
+
+		if (!Q_strncasecmp(s1, s2, l2))
 			return (char *)s1;
-		}
+
 		s1++;
 	}
 
@@ -651,8 +715,9 @@ size_t Q_strlcpy(char *dst, const char *src, size_t size)
 {
 	size_t ret = strlen(src);
 
-	if (size) {
-        size_t len = min(ret, size - 1);
+	if (size)
+	{
+		size_t len = min(ret, size - 1);
 		memcpy(dst, src, len);
 		dst[len] = 0;
 	}
@@ -669,13 +734,12 @@ Returns length of the source and destinations strings combined.
 */
 size_t Q_strlcat(char *dst, const char *src, size_t size)
 {
-    size_t len = strlen(dst);
+	size_t len = strlen(dst);
 
-	if (len >= size) {
+	if (len >= size)
 		Com_Error(ERR_FATAL, "%s: already overflowed", __func__);
-	}
 
-    return len + Q_strlcpy(dst + len, src, size - len);
+	return len + Q_strlcpy(dst + len, src, size - len);
 }
 
 /*
@@ -692,21 +756,25 @@ size_t Q_concat(char *dest, size_t size, ...)
 	va_list argptr;
 	const char *s;
 	size_t len, total = 0;
-
 	va_start(argptr, size);
-	while ((s = va_arg(argptr, const char *)) != NULL) {
+
+	while ((s = va_arg(argptr, const char *)) != NULL)
+	{
 		len = strlen(s);
-		if (total + len < size) {
+
+		if (total + len < size)
+		{
 			memcpy(dest, s, len);
 			dest += len;
 		}
+
 		total += len;
 	}
+
 	va_end(argptr);
 
-	if (size) {
+	if (size)
 		*dest = 0;
-	}
 
 	return total;
 }
@@ -732,18 +800,21 @@ size_t Q_vsnprintf(char *dest, size_t size, const char *fmt, va_list argptr)
 		Com_Error(ERR_FATAL, "%s: bad buffer size", __func__);
 
 #ifdef _WIN32
-	if (size) {
+
+	if (size)
+	{
 		ret = _vsnprintf(dest, size - 1, fmt, argptr);
+
 		if (ret < 0 || ret >= (int)(size - 1))
 			dest[size - 1] = 0;
-    } else {
-		ret = _vscprintf(fmt, argptr);
 	}
+	else
+		ret = _vscprintf(fmt, argptr);
+
 #else
 	ret = vsnprintf(dest, size, fmt, argptr);
 #endif
-
-    return ret;
+	return ret;
 }
 
 /*
@@ -757,10 +828,11 @@ and returns 0.
 */
 size_t Q_vscnprintf(char *dest, size_t size, const char *fmt, va_list argptr)
 {
-    if (size) {
-        size_t ret = Q_vsnprintf(dest, size, fmt, argptr);
-        return min(ret, size - 1);
-    }
+	if (size)
+	{
+		size_t ret = Q_vsnprintf(dest, size, fmt, argptr);
+		return min(ret, size - 1);
+	}
 
 	return 0;
 }
@@ -782,11 +854,9 @@ size_t Q_snprintf(char *dest, size_t size, const char *fmt, ...)
 {
 	va_list argptr;
 	size_t  ret;
-
 	va_start(argptr, fmt);
 	ret = Q_vsnprintf(dest, size, fmt, argptr);
 	va_end(argptr);
-
 	return ret;
 }
 
@@ -803,19 +873,17 @@ size_t Q_scnprintf(char *dest, size_t size, const char *fmt, ...)
 {
 	va_list argptr;
 	size_t  ret;
-
 	va_start(argptr, fmt);
 	ret = Q_vscnprintf(dest, size, fmt, argptr);
 	va_end(argptr);
-
 	return ret;
 }
 
 char *Q_strchrnul(const char *s, int c)
 {
-	while (*s && *s != c) {
+	while (*s && *s != c)
 		s++;
-	}
+
 	return (char *)s;
 }
 
@@ -829,13 +897,13 @@ Returns pointer to next byte after 'c' in 'dst', or NULL if 'c' was not found.
 */
 void *Q_memccpy(void *dst, const void *src, int c, size_t size)
 {
-    byte *d = dst;
-    const byte *s = src;
+	byte *d = dst;
+	const byte *s = src;
 
-	while (size--) {
-		if ((*d++ = *s++) == c) {
+	while (size--)
+	{
+		if ((*d++ = *s++) == c)
 			return d;
-		}
 	}
 
 	return NULL;
@@ -844,20 +912,22 @@ void *Q_memccpy(void *dst, const void *src, int c, size_t size)
 void Q_setenv(const char *name, const char *value)
 {
 #ifdef _WIN32
-	if (!value) {
+
+	if (!value)
 		value = "";
-	}
+
 #if (_MSC_VER >= 1400)
 	_putenv_s(name, value);
 #else
 	_putenv(va("%s=%s", name, value));
 #endif
 #else // _WIN32
-	if (value) {
+
+	if (value)
 		setenv(name, value, 1);
-    } else {
+	else
 		unsetenv(name);
-	}
+
 #endif // !_WIN32
 }
 
@@ -884,10 +954,11 @@ Seed PRNG with initial value
 */
 void Q_srand(uint32_t seed)
 {
-    mt_index = N;
-    mt_state[0] = seed;
-    for (int i = 1; i < N; i++)
-        mt_state[i] = seed = 1812433253U * (seed ^ seed >> 30) + i;
+	mt_index = N;
+	mt_state[0] = seed;
+
+	for (int i = 1; i < N; i++)
+		mt_state[i] = seed = 1812433253U * (seed ^ seed >> 30) + i;
 }
 
 /*
@@ -899,34 +970,35 @@ Generate random integer in range [0, 2^32)
 */
 uint32_t Q_rand(void)
 {
-    uint32_t x, y;
-    int i;
+	uint32_t x, y;
+	int i;
 
-    if (mt_index >= N) {
-        mt_index = 0;
-
+	if (mt_index >= N)
+	{
+		mt_index = 0;
 #define STEP(j, k) do {                         \
-        x  = mt_state[i] &  (1U << 31);         \
-        x += mt_state[j] & ((1U << 31) - 1);    \
-        y  = x >> 1;                            \
-        y ^= 0x9908B0DF & (uint32_t)(-((int32_t)x & 1));             \
-        mt_state[i] = mt_state[k] ^ y;          \
-    } while (0)
+		x  = mt_state[i] &  (1U << 31);         \
+		x += mt_state[j] & ((1U << 31) - 1);    \
+		y  = x >> 1;                            \
+		y ^= 0x9908B0DF & (uint32_t)(-((int32_t)x & 1));             \
+		mt_state[i] = mt_state[k] ^ y;          \
+	} while (0)
 
-        for (i = 0; i < N - M; i++)
-            STEP(i + 1, i + M);
-        for (     ; i < N - 1; i++)
-            STEP(i + 1, i - N + M);
-        STEP(0, M - 1);
-    }
+		for (i = 0; i < N - M; i++)
+			STEP(i + 1, i + M);
 
-    y = mt_state[mt_index++];
-    y ^= y >> 11;
-    y ^= y <<  7 & 0x9D2C5680;
-    y ^= y << 15 & 0xEFC60000;
-    y ^= y >> 18;
+		for (; i < N - 1; i++)
+			STEP(i + 1, i - N + M);
 
-    return y;
+		STEP(0, M - 1);
+	}
+
+	y = mt_state[mt_index++];
+	y ^= y >> 11;
+	y ^= y <<  7 & 0x9D2C5680;
+	y ^= y << 15 & 0xEFC60000;
+	y ^= y >> 18;
+	return y;
 }
 
 /*
@@ -938,17 +1010,20 @@ Generate random integer in range [0, n) avoiding modulo bias
 */
 uint32_t Q_rand_uniform(uint32_t n)
 {
-    uint32_t r, m;
+	uint32_t r, m;
 
-    if (n < 2)
-        return 0;
+	if (n < 2)
+		return 0;
 
-    m = (uint32_t)(-(int32_t)n % n); // 2^32 mod n
-    do {
-        r = Q_rand();
-    } while (r < m);
+	m = (uint32_t)(-(int32_t)n % n); // 2^32 mod n
 
-    return r % n;
+	do
+	{
+		r = Q_rand();
+	}
+	while (r < m);
+
+	return r % n;
 }
 
 /*
@@ -974,24 +1049,30 @@ char *Info_ValueForKey(const char *s, const char *key)
 	static int  valueindex;
 	char        pkey[MAX_INFO_STRING];
 	char        *o;
-
 	valueindex++;
+
 	if (*s == '\\')
 		s++;
-	while (1) {
+
+	while (1)
+	{
 		o = pkey;
-		while (*s != '\\') {
+
+		while (*s != '\\')
+		{
 			if (!*s)
 				goto fail;
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
-
 		o = value[valueindex & 3];
-		while (*s != '\\' && *s) {
+
+		while (*s != '\\' && *s)
 			*o++ = *s++;
-		}
+
 		*o = 0;
 
 		if (!strcmp(key, pkey))
@@ -999,6 +1080,7 @@ char *Info_ValueForKey(const char *s, const char *key)
 
 		if (!*s)
 			goto fail;
+
 		s++;
 	}
 
@@ -1019,28 +1101,36 @@ void Info_RemoveKey(char *s, const char *key)
 	char    pkey[MAX_INFO_STRING];
 	char    *o;
 
-	while (1) {
+	while (1)
+	{
 		start = s;
+
 		if (*s == '\\')
 			s++;
+
 		o = pkey;
-		while (*s != '\\') {
+
+		while (*s != '\\')
+		{
 			if (!*s)
 				return;
+
 			*o++ = *s++;
 		}
+
 		*o = 0;
 		s++;
 
-		while (*s != '\\' && *s) {
+		while (*s != '\\' && *s)
 			s++;
-		}
 
-		if (!strcmp(key, pkey)) {
+		if (!strcmp(key, pkey))
+		{
 			o = start; // remove this part
-			while (*s) {
+
+			while (*s)
 				*o++ = *s++;
-			}
+
 			*o = 0;
 			s = start;
 			continue; // search for duplicates
@@ -1049,7 +1139,6 @@ void Info_RemoveKey(char *s, const char *key)
 		if (!*s)
 			return;
 	}
-
 }
 
 
@@ -1066,35 +1155,52 @@ bool Info_Validate(const char *s)
 {
 	size_t len, total;
 	int c;
-
 	total = 0;
-	while (1) {
+
+	while (1)
+	{
 		//
 		// validate key
 		//
-		if (*s == '\\') {
+		if (*s == '\\')
+		{
 			s++;
-			if (++total == MAX_INFO_STRING) {
-                return false;   // oversize infostring
+
+			if (++total == MAX_INFO_STRING)
+			{
+				return false;   // oversize infostring
 			}
 		}
-		if (!*s) {
-            return false;   // missing key
+
+		if (!*s)
+		{
+			return false;   // missing key
 		}
+
 		len = 0;
-		while (*s != '\\') {
+
+		while (*s != '\\')
+		{
 			c = *s++;
-			if (!Q_isprint(c) || c == '\"' || c == ';') {
-                return false;   // illegal characters
+
+			if (!Q_isprint(c) || c == '\"' || c == ';')
+			{
+				return false;   // illegal characters
 			}
-			if (++len == MAX_INFO_KEY) {
-                return false;   // oversize key
+
+			if (++len == MAX_INFO_KEY)
+			{
+				return false;   // oversize key
 			}
-			if (++total == MAX_INFO_STRING) {
-                return false;   // oversize infostring
+
+			if (++total == MAX_INFO_STRING)
+			{
+				return false;   // oversize infostring
 			}
-			if (!*s) {
-                return false;   // missing value
+
+			if (!*s)
+			{
+				return false;   // missing value
 			}
 		}
 
@@ -1102,31 +1208,46 @@ bool Info_Validate(const char *s)
 		// validate value
 		//
 		s++;
-		if (++total == MAX_INFO_STRING) {
-            return false;   // oversize infostring
+
+		if (++total == MAX_INFO_STRING)
+		{
+			return false;   // oversize infostring
 		}
-		if (!*s) {
-            return false;   // missing value
+
+		if (!*s)
+		{
+			return false;   // missing value
 		}
+
 		len = 0;
-		while (*s != '\\') {
+
+		while (*s != '\\')
+		{
 			c = *s++;
-			if (!Q_isprint(c) || c == '\"' || c == ';') {
-                return false;   // illegal characters
+
+			if (!Q_isprint(c) || c == '\"' || c == ';')
+			{
+				return false;   // illegal characters
 			}
-			if (++len == MAX_INFO_VALUE) {
-                return false;   // oversize value
+
+			if (++len == MAX_INFO_VALUE)
+			{
+				return false;   // oversize value
 			}
-			if (++total == MAX_INFO_STRING) {
-                return false;   // oversize infostring
+
+			if (++total == MAX_INFO_STRING)
+			{
+				return false;   // oversize infostring
 			}
-			if (!*s) {
-                return true;    // end of string
+
+			if (!*s)
+			{
+				return true;    // end of string
 			}
 		}
 	}
 
-    return false; // quiet compiler warning
+	return false; // quiet compiler warning
 }
 
 /*
@@ -1138,15 +1259,20 @@ size_t Info_SubValidate(const char *s)
 {
 	size_t len;
 	int c;
-
 	len = 0;
-	while (*s) {
+
+	while (*s)
+	{
 		c = *s++;
 		c &= 127;       // strip high bits
-		if (c == '\\' || c == '\"' || c == ';') {
+
+		if (c == '\\' || c == '\"' || c == ';')
+		{
 			return SIZE_MAX;  // illegal characters
 		}
-		if (++len == MAX_QPATH) {
+
+		if (++len == MAX_QPATH)
+		{
 			return MAX_QPATH;  // oversize value
 		}
 	}
@@ -1164,45 +1290,46 @@ bool Info_SetValueForKey(char *s, const char *key, const char *value)
 	char    newi[MAX_INFO_STRING], *v;
 	size_t  l, kl, vl;
 	int     c;
-
 	// validate key
 	kl = Info_SubValidate(key);
-	if (kl >= MAX_QPATH) {
+
+	if (kl >= MAX_QPATH)
 		return false;
-	}
 
 	// validate value
 	vl = Info_SubValidate(value);
-	if (vl >= MAX_QPATH) {
+
+	if (vl >= MAX_QPATH)
 		return false;
-	}
 
 	Info_RemoveKey(s, key);
-	if (!vl) {
+
+	if (!vl)
 		return true;
-	}
 
 	l = strlen(s);
-	if (l + kl + vl + 2 >= MAX_INFO_STRING) {
+
+	if (l + kl + vl + 2 >= MAX_INFO_STRING)
 		return false;
-	}
 
 	newi[0] = '\\';
 	memcpy(newi + 1, key, kl);
 	newi[kl + 1] = '\\';
 	memcpy(newi + kl + 2, value, vl + 1);
-
 	// only copy ascii values
 	s += l;
 	v = newi;
-	while (*v) {
+
+	while (*v)
+	{
 		c = *v++;
 		c &= 127;        // strip high bits
+
 		if (Q_isprint(c))
 			*s++ = c;
 	}
-	*s = 0;
 
+	*s = 0;
 	return true;
 }
 
@@ -1215,40 +1342,41 @@ void Info_NextPair(const char **string, char *key, char *value)
 {
 	char        *o;
 	const char  *s;
-
 	*value = *key = 0;
-
 	s = *string;
-	if (!s) {
+
+	if (!s)
 		return;
-	}
 
 	if (*s == '\\')
 		s++;
 
-	if (!*s) {
+	if (!*s)
+	{
 		*string = NULL;
 		return;
 	}
 
 	o = key;
-	while (*s && *s != '\\') {
+
+	while (*s && *s != '\\')
 		*o++ = *s++;
-	}
+
 	*o = 0;
 
-	if (!*s) {
+	if (!*s)
+	{
 		*string = NULL;
 		return;
 	}
 
 	o = value;
 	s++;
-	while (*s && *s != '\\') {
-		*o++ = *s++;
-	}
-	*o = 0;
 
+	while (*s && *s != '\\')
+		*o++ = *s++;
+
+	*o = 0;
 	*string = s;
 }
 
@@ -1262,8 +1390,10 @@ void Info_Print(const char *infostring)
 	char    key[MAX_INFO_STRING];
 	char    value[MAX_INFO_STRING];
 
-	while (1) {
+	while (1)
+	{
 		Info_NextPair(&infostring, key, value);
+
 		if (!infostring)
 			break;
 
@@ -1278,7 +1408,8 @@ void Info_Print(const char *infostring)
 }
 
 // Paril
-const char *gameNames[] = {
+const char *gameNames[] =
+{
 	"Quake 2",
 	"Quake 1",
 	"Doom",
@@ -1295,9 +1426,10 @@ Com_HashString
 unsigned Com_HashString(const char *s, unsigned size)
 {
 	unsigned hash, c;
-
 	hash = 0;
-	while (*s) {
+
+	while (*s)
+	{
 		c = *s++;
 		hash = 127 * hash + c;
 	}
@@ -1317,9 +1449,10 @@ characters.
 unsigned Com_HashStringLen(const char *s, size_t len, unsigned size)
 {
 	unsigned hash, c;
-
 	hash = 0;
-	while (*s && len--) {
+
+	while (*s && len--)
+	{
 		c = Q_tolower(*s++);
 		hash = 127 * hash + c;
 	}

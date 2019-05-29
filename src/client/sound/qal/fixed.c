@@ -22,9 +22,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "fixed.h"
 
 #ifdef __APPLE__
-#include <OpenAL/alc.h>
+	#include <OpenAL/alc.h>
 #else
-#include <AL/alc.h>
+	#include <AL/alc.h>
 #endif
 
 static cvar_t   *al_device;
@@ -34,46 +34,51 @@ static ALCcontext *context;
 
 void QAL_Shutdown(void)
 {
-    if (context) {
-        alcMakeContextCurrent(NULL);
-        alcDestroyContext(context);
-        context = NULL;
-    }
-    if (device) {
-        alcCloseDevice(device);
-        device = NULL;
-    }
+	if (context)
+	{
+		alcMakeContextCurrent(NULL);
+		alcDestroyContext(context);
+		context = NULL;
+	}
 
-    if (al_device)
-        al_device->flags &= ~CVAR_SOUND;
+	if (device)
+	{
+		alcCloseDevice(device);
+		device = NULL;
+	}
+
+	if (al_device)
+		al_device->flags &= ~CVAR_SOUND;
 }
 
 bool QAL_Init(void)
 {
-    al_device = Cvar_Get("al_device", "", 0);
+	al_device = Cvar_Get("al_device", "", 0);
+	device = alcOpenDevice(al_device->string[0] ? al_device->string : NULL);
 
-    device = alcOpenDevice(al_device->string[0] ? al_device->string : NULL);
-    if (!device) {
-        Com_SetLastError(va("alcOpenDevice(%s) failed", al_device->string));
-        goto fail;
-    }
+	if (!device)
+	{
+		Com_SetLastError(va("alcOpenDevice(%s) failed", al_device->string));
+		goto fail;
+	}
 
-    context = alcCreateContext(device, NULL);
-    if (!context) {
-        Com_SetLastError("alcCreateContext failed");
-        goto fail;
-    }
+	context = alcCreateContext(device, NULL);
 
-    if (!alcMakeContextCurrent(context)) {
-        Com_SetLastError("alcMakeContextCurrent failed");
-        goto fail;
-    }
+	if (!context)
+	{
+		Com_SetLastError("alcCreateContext failed");
+		goto fail;
+	}
 
-    al_device->flags |= CVAR_SOUND;
+	if (!alcMakeContextCurrent(context))
+	{
+		Com_SetLastError("alcMakeContextCurrent failed");
+		goto fail;
+	}
 
-    return true;
-
+	al_device->flags |= CVAR_SOUND;
+	return true;
 fail:
-    QAL_Shutdown();
-    return false;
+	QAL_Shutdown();
+	return false;
 }

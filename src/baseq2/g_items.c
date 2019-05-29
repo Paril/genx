@@ -33,7 +33,8 @@ void Weapon_GrenadeLauncher(edict_t *ent, gunindex_e gun);
 void Weapon_Railgun(edict_t *ent, gunindex_e gun);
 void Weapon_BFG(edict_t *ent, gunindex_e gun);
 
-typedef enum {
+typedef enum
+{
 	HEALTH_NONE			= 0,
 	HEALTH_IGNORE_MAX   = 1,
 	HEALTH_TIMED        = 2
@@ -63,12 +64,9 @@ static void InitGameInfoBase(game_iteminfo_t *info)
 static void InitQ2GameInfo(game_iteminfo_t *info)
 {
 	// no replacements
-	
 	GameInfoStartsWith(ITI_Q2_BLASTER, 1);
 	GameInfoStartsWith(ITI_Q2_SHOTGUN, 1);
-	
 	GameInfoDefaultItem(ITI_Q2_SHOTGUN);
-	
 	GameInfoAmmoPickup(ITI_Q2_SHOTGUN, 10);
 	GameInfoAmmoPickup(ITI_Q2_SUPER_SHOTGUN, 10);
 	GameInfoAmmoPickup(ITI_Q2_MACHINEGUN, 10);
@@ -79,16 +77,13 @@ static void InitQ2GameInfo(game_iteminfo_t *info)
 	GameInfoAmmoPickup(ITI_Q2_RAILGUN, 10);
 	GameInfoAmmoPickup(ITI_Q2_BFG10K, 10);
 	GameInfoAmmoPickup(ITI_Q2_GRENADES, 10);
-	
 	GameInfoHealthPickup(ITI_STIMPACK, 2);
 	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
 	GameInfoHealthPickup(ITI_LARGE_HEALTH, 25);
 	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);
-	
 	GameInfoArmorStats(ITI_JACKET_ARMOR, 25, 50, .30f, 0);
 	GameInfoArmorStats(ITI_COMBAT_ARMOR, 50, 100, .60f, .30f);
 	GameInfoArmorStats(ITI_BODY_ARMOR, 100, 200, .80f, .60f);
-	
 	GameInfoWeaponAmmo(ITI_Q2_SHOTGUN, 40);
 	GameInfoWeaponAmmo(ITI_Q2_SUPER_SHOTGUN, 20);
 	GameInfoWeaponAmmo(ITI_Q2_MACHINEGUN, 200);
@@ -106,7 +101,6 @@ static void InitQ1GameInfo(game_iteminfo_t *info)
 	// replace power screen/shield with invis
 	GameInfoReplaceItem(ITI_POWER_SCREEN, ITI_Q1_INVISIBILITY);
 	GameInfoReplaceItem(ITI_POWER_SHIELD, ITI_Q1_INVISIBILITY);
-
 	// dummy these
 	GameInfoDummyItem(ITI_ARMOR_SHARD);
 	GameInfoDummyItem(ITI_STIMPACK);
@@ -115,12 +109,9 @@ static void InitQ1GameInfo(game_iteminfo_t *info)
 	GameInfoDummyItem(ITI_ADRENALINE);
 	GameInfoDummyItem(ITI_BANDOLIER);
 	GameInfoDummyItem(ITI_AMMO_PACK);
-	
 	GameInfoStartsWith(ITI_Q1_AXE, 1);
 	GameInfoStartsWith(ITI_Q1_SHOTGUN, 1);
-
 	GameInfoDefaultItem(ITI_Q1_SHOTGUN);
-	
 	GameInfoAmmoPickup(ITI_Q1_SHOTGUN, 20);
 	GameInfoAmmoPickup(ITI_Q1_SUPER_SHOTGUN, 10);
 	GameInfoAmmoPickup(ITI_Q1_NAILGUN, 50);
@@ -128,15 +119,12 @@ static void InitQ1GameInfo(game_iteminfo_t *info)
 	GameInfoAmmoPickup(ITI_Q1_GRENADE_LAUNCHER, 5);
 	GameInfoAmmoPickup(ITI_Q1_ROCKET_LAUNCHER, 5);
 	GameInfoAmmoPickup(ITI_Q1_THUNDERBOLT, 25);
-	
 	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
 	GameInfoHealthPickup(ITI_LARGE_HEALTH, 25);
-	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);		
-	
+	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);
 	GameInfoArmorStats(ITI_JACKET_ARMOR, 100, 100, .30f, .30f);
 	GameInfoArmorStats(ITI_COMBAT_ARMOR, 150, 150, .60f, .60f);
 	GameInfoArmorStats(ITI_BODY_ARMOR, 200, 200, .80f, .80f);
-	
 	GameInfoWeaponAmmo(ITI_Q1_SHOTGUN, 40);
 	GameInfoWeaponAmmo(ITI_Q1_SUPER_SHOTGUN, 20);
 	GameInfoWeaponAmmo(ITI_Q1_NAILGUN, 200);
@@ -150,21 +138,16 @@ static void InitDoomGameInfo(game_iteminfo_t *info)
 {
 	// replace combat with jacket
 	GameInfoReplaceItem(ITI_COMBAT_ARMOR, ITI_DOOM_ARMOR);
-	
 	// replace power screen/shield with invis
 	GameInfoReplaceItem(ITI_POWER_SCREEN, ITI_DOOM_INVISIBILITY);
 	GameInfoReplaceItem(ITI_POWER_SHIELD, ITI_DOOM_INVISIBILITY);
-
 	// dummied items
 	GameInfoDummyItem(ITI_SILENCER);
 	GameInfoDummyItem(ITI_ANCIENT_HEAD);
 	GameInfoDummyItem(ITI_BANDOLIER);
-	
 	GameInfoStartsWith(ITI_DOOM_FIST, 1);
 	GameInfoStartsWith(ITI_DOOM_PISTOL, 1);
-
 	GameInfoDefaultItem(ITI_DOOM_PISTOL);
-
 	// weapon pickups
 	GameInfoAmmoPickup(ITI_DOOM_SHOTGUN, 15);
 	GameInfoAmmoPickup(ITI_DOOM_SUPER_SHOTGUN, 5);
@@ -173,16 +156,13 @@ static void InitDoomGameInfo(game_iteminfo_t *info)
 	GameInfoAmmoPickup(ITI_DOOM_ROCKET_LAUNCHER, 5);
 	GameInfoAmmoPickup(ITI_DOOM_PLASMA_GUN, 50);
 	GameInfoAmmoPickup(ITI_DOOM_BFG, 1);
-
 	// health
 	GameInfoHealthPickup(ITI_STIMPACK, 2);
 	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
 	GameInfoHealthPickup(ITI_LARGE_HEALTH, 25);
 	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);
-	
 	GameInfoArmorStats(ITI_JACKET_ARMOR, 100,  100, .33f, .33f);
 	GameInfoArmorStats(ITI_BODY_ARMOR, 200, 200, .50f, .50f);
-
 	GameInfoWeaponAmmo(ITI_DOOM_SHOTGUN, 40);
 	GameInfoWeaponAmmo(ITI_DOOM_SUPER_SHOTGUN, 20);
 	GameInfoWeaponAmmo(ITI_DOOM_CHAINGUN, 150);
@@ -197,16 +177,12 @@ static void InitDukeGameInfo(game_iteminfo_t *info)
 	// replace all armors
 	GameInfoReplaceItem(ITI_BODY_ARMOR, ITI_DUKE_ARMOR);
 	GameInfoReplaceItem(ITI_COMBAT_ARMOR, ITI_DUKE_ARMOR);
-
 	// nulled items
 	GameInfoDummyItem(ITI_ARMOR_SHARD);
 	GameInfoDummyItem(ITI_STIMPACK);
-	
 	GameInfoStartsWith(ITI_DUKE_FOOT, 1);
 	GameInfoStartsWith(ITI_DUKE_PISTOL, 1);
-
 	GameInfoDefaultItem(ITI_DUKE_PISTOL);
-
 	// weapon pickups
 	GameInfoAmmoPickup(ITI_DUKE_PISTOL, 35);
 	GameInfoAmmoPickup(ITI_DUKE_CANNON, 50);
@@ -216,14 +192,11 @@ static void InitDukeGameInfo(game_iteminfo_t *info)
 	GameInfoAmmoPickup(ITI_DUKE_PIPEBOMBS, 5);
 	GameInfoAmmoPickup(ITI_DUKE_TRIPWIRES, 5);
 	GameInfoAmmoPickup(ITI_DUKE_FREEZER, 5);
-	
 	// health
 	GameInfoHealthPickup(ITI_MEDIUM_HEALTH, 10);
 	GameInfoHealthPickup(ITI_LARGE_HEALTH, 30);
 	GameInfoHealthPickup(ITI_MEGA_HEALTH, 50);
-
 	GameInfoArmorStats(ITI_JACKET_ARMOR, 100, 100, .50f, .50f);
-
 	GameInfoWeaponAmmo(ITI_DUKE_PISTOL, 150);
 	GameInfoWeaponAmmo(ITI_DUKE_CANNON, 150);
 	GameInfoWeaponAmmo(ITI_DUKE_SHOTGUN, 45);
@@ -253,14 +226,12 @@ static void InitWeaponMap()
 {
 	memset(game_weaponmap, 0, sizeof(game_weaponmap));
 	// start by mapping all Q2 weapons to game weapons
-
 	// map Q2 -> Q1
 	MapWeapons(GAME_Q1, ITI_Q1_AXE, ITI_Q1_SHOTGUN, ITI_Q1_SUPER_SHOTGUN, ITI_Q1_NAILGUN, ITI_Q1_SUPER_NAILGUN, ITI_Q1_GRENADE_LAUNCHER, ITI_Q1_ROCKET_LAUNCHER, ITI_Q1_THUNDERBOLT, ITI_UNUSED, ITI_UNUSED, ITI_UNUSED);
 	// map Q2 -> Doom
 	MapWeapons(GAME_DOOM, ITI_DOOM_FIST, ITI_DOOM_SHOTGUN, ITI_DOOM_SUPER_SHOTGUN, ITI_DOOM_PISTOL, ITI_DOOM_CHAINGUN, ITI_UNUSED, ITI_DOOM_ROCKET_LAUNCHER, ITI_DOOM_PLASMA_GUN, ITI_DOOM_CHAINSAW, ITI_DOOM_BFG, ITI_UNUSED);
 	// map Q2 -> Duke
 	MapWeapons(GAME_DUKE, ITI_DUKE_FOOT, ITI_DUKE_SHOTGUN, ITI_UNUSED, ITI_DUKE_PISTOL, ITI_DUKE_CANNON, ITI_DUKE_DEVASTATOR, ITI_DUKE_RPG, ITI_DUKE_FREEZER, ITI_DUKE_TRIPWIRES, ITI_UNUSED, ITI_DUKE_PIPEBOMBS);
-
 	gametype_t game;
 	itemid_e this_weapon;
 
@@ -318,7 +289,6 @@ static void InitGameInfos()
 	InitQ1GameInfo(&game_iteminfos[GAME_Q1]);
 	InitDoomGameInfo(&game_iteminfos[GAME_DOOM]);
 	InitDukeGameInfo(&game_iteminfos[GAME_DUKE]);
-
 	InitWeaponMap();
 }
 
@@ -332,20 +302,24 @@ gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 	// Q2 and Q1 are all good the way they are
 	switch (ent->s.game)
 	{
-	default:
-		break;
-	case GAME_DOOM:
-		switch (itemid)
-		{
-		case ITI_WEAPON_1:
-			if (currentWeapon == ITI_DOOM_CHAINSAW)
-				return GetItemByIndex(ITI_DOOM_FIST);
-			return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_CHAINSAW] > 0 ? ITI_DOOM_CHAINSAW : ITI_DOOM_FIST);
-		case ITI_WEAPON_3:
-			if (currentWeapon == ITI_DOOM_SUPER_SHOTGUN)
-				return GetItemByIndex(ITI_DOOM_SHOTGUN);
-			return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN] > 0 ? ITI_DOOM_SUPER_SHOTGUN : ITI_DOOM_SHOTGUN);
-		}
+		default:
+			break;
+
+		case GAME_DOOM:
+			switch (itemid)
+			{
+				case ITI_WEAPON_1:
+					if (currentWeapon == ITI_DOOM_CHAINSAW)
+						return GetItemByIndex(ITI_DOOM_FIST);
+
+					return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_CHAINSAW] > 0 ? ITI_DOOM_CHAINSAW : ITI_DOOM_FIST);
+
+				case ITI_WEAPON_3:
+					if (currentWeapon == ITI_DOOM_SUPER_SHOTGUN)
+						return GetItemByIndex(ITI_DOOM_SHOTGUN);
+
+					return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN] > 0 ? ITI_DOOM_SUPER_SHOTGUN : ITI_DOOM_SHOTGUN);
+			}
 	}
 
 	return NULL;
@@ -394,6 +368,7 @@ float GetMaxAmmo(edict_t *ent, int has_bandolier, int has_ammo_pack)
 
 	if (has_bandolier == -1)
 		has_bandolier = ent->client->pers.inventory[ITI_BANDOLIER];
+
 	if (has_ammo_pack == -1)
 		has_ammo_pack = ent->client->pers.inventory[ITI_AMMO_PACK];
 
@@ -446,11 +421,13 @@ gitem_t *FindItemByClassname(const char *classname)
 {
 	int     i;
 	gitem_t *it;
-
 	it = itemlist;
-    for (i = 0 ; i < game.num_items ; i++, it++) {
+
+	for (i = 0 ; i < game.num_items ; i++, it++)
+	{
 		if (!it->classname)
 			continue;
+
 		if (!Q_stricmp(it->classname, classname))
 			return it;
 	}
@@ -483,11 +460,13 @@ gitem_t *FindItem(const char *pickup_name)
 			return GetItemByIndex(ITI_WEAPONS_START + i);
 
 	gitem_t *it;
-
 	it = itemlist;
-    for (i = 0 ; i < game.num_items ; i++, it++) {
+
+	for (i = 0 ; i < game.num_items ; i++, it++)
+	{
 		if (!it->pickup_name)
 			continue;
+
 		if (!Q_stricmp(it->pickup_name, pickup_name))
 			return it;
 	}
@@ -499,17 +478,17 @@ gitem_t *FindItem(const char *pickup_name)
 
 void DoRespawn(edict_t *ent)
 {
-	if (ent->team) {
+	if (ent->team)
+	{
 		edict_t *master;
 		int count;
 		int choice;
-
 		master = ent->teammaster;
 
 		for (count = 0, ent = master; ent; ent = ent->chain, count++)
 			;
 
-        choice = Q_rand_uniform(count);
+		choice = Q_rand_uniform(count);
 
 		for (count = 0, ent = master; count < choice; ent = ent->chain, count++)
 			;
@@ -518,7 +497,6 @@ void DoRespawn(edict_t *ent)
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->solid = SOLID_TRIGGER;
 	gi.linkentity(ent);
-
 	// send an effect
 	ent->s.event = EV_ITEM_RESPAWN;
 }
@@ -540,30 +518,29 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 {
 	int			quantity;
 	bool		instant;
-
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
 
 	switch (other->s.game)
 	{
-	case GAME_Q2:
-		if ((skill->value == 1 && quantity >= 2) || (skill->value >= 2 && quantity >= 1))
-			return false;
+		case GAME_Q2:
+			if ((skill->value == 1 && quantity >= 2) || (skill->value >= 2 && quantity >= 1))
+				return false;
 
-		if ((coop->value) && (ent->item->flags & IT_STAY_COOP) && (quantity > 0))
-			return false;
+			if ((coop->value) && (ent->item->flags & IT_STAY_COOP) && (quantity > 0))
+				return false;
 
-		other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+			other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+			instant = ((int)dmflags->value & DF_INSTANT_ITEMS) || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM));
+			break;
 
-		instant = ((int)dmflags->value & DF_INSTANT_ITEMS) || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM));
-		break;
-	case GAME_DUKE:
-		if (quantity > 100)
-			return false;
+		case GAME_DUKE:
+			if (quantity > 100)
+				return false;
 
 		// intentional fallthrough
-	default:
-		instant = true;
-		break;
+		default:
+			instant = true;
+			break;
 	}
 
 	if (deathmatch->value && !(ent->spawnflags & DROPPED_ITEM))
@@ -573,7 +550,7 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 	{
 		if (other->s.game == GAME_Q2 && (ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM))
 			quad_drop_timeout_hack = (ent->nextthink - level.time);
-		
+
 		ent->item->use(other, ent->item);
 	}
 
@@ -594,20 +571,22 @@ bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
 {
 	switch (other->s.game)
 	{
-	case GAME_Q2:
-		if (!deathmatch->value)
-			other->max_health += 1;
+		case GAME_Q2:
+			if (!deathmatch->value)
+				other->max_health += 1;
 
-		if (other->health < other->max_health)
-			other->health = other->max_health;
+			if (other->health < other->max_health)
+				other->health = other->max_health;
 
-		break;
-	case GAME_DOOM:
-		other->health += 100;
+			break;
 
-		if (other->health > 200)
-			other->health = 200;
-		break;
+		case GAME_DOOM:
+			other->health += 100;
+
+			if (other->health > 200)
+				other->health = 200;
+
+			break;
 	}
 
 	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
@@ -634,7 +613,6 @@ bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 		SetRespawn(ent, ent->item->respawn_time);
 
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
-
 	return true;
 }
 
@@ -646,7 +624,6 @@ bool Pickup_Pack(edict_t *ent, edict_t *other)
 		SetRespawn(ent, ent->item->respawn_time);
 
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
-
 	return true;
 }
 
@@ -655,17 +632,16 @@ bool Pickup_Pack(edict_t *ent, edict_t *other)
 void Use_Quad(edict_t *ent, gitem_t *item)
 {
 	int     timeout;
-
 	ent->client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 
-	if (quad_drop_timeout_hack) {
+	if (quad_drop_timeout_hack)
+	{
 		timeout = quad_drop_timeout_hack;
 		quad_drop_timeout_hack = 0;
 	}
-	else {
+	else
 		timeout = 30000;
-	}
 
 	if (ent->client->quad_time > level.time)
 		ent->client->quad_time += timeout;
@@ -693,7 +669,7 @@ void Use_Breather(edict_t *ent, gitem_t *item)
 	if (ent->s.game == GAME_Q1)
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("q1/items/inv1.wav"), 1, ATTN_NORM, 0);
 
-//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+	//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -705,13 +681,13 @@ void Use_Envirosuit(edict_t *ent, gitem_t *item)
 
 	if (ent->client->enviro_time > level.time)
 		ent->client->enviro_time += 30000;
-	else					
+	else
 		ent->client->enviro_time = level.time + 30000;
 
 	if (ent->s.game == GAME_Q1)
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("q1/items/suit.wav"), 1, ATTN_NORM, 0);
 
-//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+	//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
@@ -723,7 +699,7 @@ void    Use_Invulnerability(edict_t *ent, gitem_t *item)
 
 	if (ent->client->invincible_time > level.time)
 		ent->client->invincible_time += 30000;
-	else					   
+	else
 		ent->client->invincible_time = level.time + 30000;
 
 	if (ent->s.game == GAME_Q1 || ent->s.game == GAME_Q2)
@@ -737,28 +713,34 @@ void    Use_Silencer(edict_t *ent, gitem_t *item)
 	ent->client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 	ent->client->silencer_shots += 30;
-
-//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
+	//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
 //======================================================================
 
 bool Pickup_Key(edict_t *ent, edict_t *other)
 {
-	if (coop->value) {
-		if (GetIndexByItem(ent->item) == ITI_POWER_CUBE) {
+	if (coop->value)
+	{
+		if (GetIndexByItem(ent->item) == ITI_POWER_CUBE)
+		{
 			if (other->client->pers.power_cubes & ((ent->spawnflags & 0x0000ff00) >> 8))
 				return false;
+
 			other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 			other->client->pers.power_cubes |= ((ent->spawnflags & 0x0000ff00) >> 8);
 		}
-		else {
+		else
+		{
 			if (other->client->pers.inventory[ITEM_INDEX(ent->item)])
 				return false;
+
 			other->client->pers.inventory[ITEM_INDEX(ent->item)] = 1;
 		}
+
 		return true;
 	}
+
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
 }
@@ -789,7 +771,6 @@ bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup)
 	}
 
 	ent->client->pers.ammo = min(max_ammo, ent->client->pers.ammo + count);
-
 	return true;
 }
 
@@ -799,7 +780,6 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 	float       count;
 	bool        weapon;
 	gitem_t		*item = ent->item;
-
 	weapon = (item->flags & IT_WEAPON);
 
 	if ((weapon) && ((int)dmflags->value & DF_INFINITE_AMMO))
@@ -832,6 +812,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 				int i;
 				// in invasion, propagate item to other clients
 				do_propagate = false;
+
 				for (i = 0; i < game.maxclients; ++i)
 				{
 					edict_t *cl = &g_edicts[i + 1];
@@ -841,6 +822,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 
 					Pickup_Ammo(ent, cl);
 				}
+
 				do_propagate = true;
 			}
 		}
@@ -881,7 +863,8 @@ void Drop_Ammo(edict_t *ent, gitem_t *item)
 
 void MegaHealth_think(edict_t *self)
 {
-	if (self->owner->health > self->owner->max_health) {
+	if (self->owner->health > self->owner->max_health)
+	{
 		self->nextthink = level.time + 1000;
 		self->owner->health -= 1;
 		return;
@@ -899,17 +882,19 @@ bool Pickup_Health(edict_t *ent, edict_t *other)
 
 	switch (GetIndexByItem(ent->item))
 	{
-	case ITI_STIMPACK:
-		flags = HEALTH_IGNORE_MAX;
-		break;
-	case ITI_MEGA_HEALTH:
-		flags = HEALTH_IGNORE_MAX;
+		case ITI_STIMPACK:
+			flags = HEALTH_IGNORE_MAX;
+			break;
 
-		if (other->s.game == GAME_Q2 || other->s.game == GAME_Q1)
-			flags |= HEALTH_TIMED;
-		else if (other->s.game == GAME_DUKE && other->health >= 200)
-			return false;
-		break;
+		case ITI_MEGA_HEALTH:
+			flags = HEALTH_IGNORE_MAX;
+
+			if (other->s.game == GAME_Q2 || other->s.game == GAME_Q1)
+				flags |= HEALTH_TIMED;
+			else if (other->s.game == GAME_DUKE && other->health >= 200)
+				return false;
+
+			break;
 	}
 
 	if (!(flags & HEALTH_IGNORE_MAX) && (other->health >= other->max_health))
@@ -965,6 +950,7 @@ itemid_e ArmorIndex(edict_t *ent)
 	if (ent->client)
 	{
 		itemid_e i;
+
 		for (i = ITI_JACKET_ARMOR; i <= ITI_BODY_ARMOR; i++)
 		{
 			if (ent->client->pers.inventory[i] > 0)
@@ -1003,33 +989,34 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 	{
 		switch (ent->s.game)
 		{
-		case GAME_Q2:
-		case GAME_DOOM:
-			if (!result->old_armor_index)
-			{
-				result->new_armor_index = ITI_JACKET_ARMOR;
-				result->new_armor = &game_iteminfos[ent->s.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
-			}
-			else
-			{
-				result->new_armor_index = ITI_NULL;
-				result->new_armor = NULL;
-			}
+			case GAME_Q2:
+			case GAME_DOOM:
+				if (!result->old_armor_index)
+				{
+					result->new_armor_index = ITI_JACKET_ARMOR;
+					result->new_armor = &game_iteminfos[ent->s.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
+				}
+				else
+				{
+					result->new_armor_index = ITI_NULL;
+					result->new_armor = NULL;
+				}
 
-			result->new_armor_count = result->old_armor_count + ((ent->s.game == GAME_Q2) ? 2 : 1);
+				result->new_armor_count = result->old_armor_count + ((ent->s.game == GAME_Q2) ? 2 : 1);
 
-			if (ent->s.game == GAME_DOOM)
-			{
-				if (result->old_armor_count >= 200)
-					return false;
+				if (ent->s.game == GAME_DOOM)
+				{
+					if (result->old_armor_count >= 200)
+						return false;
 
-				if (result->new_armor_count > 200)
-					result->new_armor_count = 200;
-			}
+					if (result->new_armor_count > 200)
+						result->new_armor_count = 200;
+				}
 
-			return true;
-		case GAME_Q1:
-			return false;
+				return true;
+
+			case GAME_Q1:
+				return false;
 		}
 	}
 
@@ -1040,7 +1027,6 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 		result->new_armor_index = ITEM_INDEX(armor);
 		result->new_armor = &game_iteminfos[ent->s.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
 		result->new_armor_count = result->new_armor->base_count;
-
 		return true;
 	}
 	else
@@ -1052,112 +1038,123 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 		// different games have different algorithms
 		switch (ent->s.game)
 		{
-		case GAME_Q2:
-			if (result->new_armor->normal_protection > result->old_armor->normal_protection)
-			{
-				// calc new armor values
-				float salvage = result->old_armor->normal_protection / result->new_armor->normal_protection;
-				float salvagecount = salvage * ent->client->pers.inventory[result->old_armor_index];
-				int newcount = result->new_armor->base_count + salvagecount;
-
-				if (newcount > result->new_armor->max_count)
-					newcount = result->new_armor->max_count;
-
-				// change armor to new item with computed value
-				result->new_armor_count = newcount;
-			}
-			else
-			{
-				// calc new armor values
-				float salvage = result->new_armor->normal_protection / result->old_armor->normal_protection;
-				float salvagecount = salvage * result->new_armor->base_count;
-				int newcount = ent->client->pers.inventory[result->old_armor_index] + salvagecount;
-
-				if (newcount > result->old_armor->max_count)
-					newcount = result->old_armor->max_count;
-
-				// if we're already maxed out then we don't need the new armor
-				if (ent->client->pers.inventory[result->old_armor_index] >= newcount)
-					return false;
-
-				// update current armor value
-				result->new_armor_index = result->old_armor_index;
-				result->new_armor = result->old_armor;
-				result->new_armor_count = newcount;
-			}
-			return true;
-		case GAME_Q1:
-			// in Q1, if we're picking up new/existing armor, always good.
-			if (result->new_armor_index >= result->old_armor_index)
-			{
-				result->new_armor_count = result->new_armor->base_count;
-
-				// if we have existing armor though, don't pick up beyond max
-				if (result->new_armor_index == result->old_armor_index)
-					return result->old_armor_count < result->new_armor_count;
-			}
-			else
-			{
-				// picking up lower-levelled armor is weird in Q1.
-				switch (result->old_armor_index)
+			case GAME_Q2:
+				if (result->new_armor->normal_protection > result->old_armor->normal_protection)
 				{
-				case ITI_Q1_YELLOW_ARMOR:
-					// can only pick up green if we have < 50
-					if (result->old_armor_count >= 50)
+					// calc new armor values
+					float salvage = result->old_armor->normal_protection / result->new_armor->normal_protection;
+					float salvagecount = salvage * ent->client->pers.inventory[result->old_armor_index];
+					int newcount = result->new_armor->base_count + salvagecount;
+
+					if (newcount > result->new_armor->max_count)
+						newcount = result->new_armor->max_count;
+
+					// change armor to new item with computed value
+					result->new_armor_count = newcount;
+				}
+				else
+				{
+					// calc new armor values
+					float salvage = result->new_armor->normal_protection / result->old_armor->normal_protection;
+					float salvagecount = salvage * result->new_armor->base_count;
+					int newcount = ent->client->pers.inventory[result->old_armor_index] + salvagecount;
+
+					if (newcount > result->old_armor->max_count)
+						newcount = result->old_armor->max_count;
+
+					// if we're already maxed out then we don't need the new armor
+					if (ent->client->pers.inventory[result->old_armor_index] >= newcount)
 						return false;
 
-					break;
-				case ITI_Q1_RED_ARMOR:
-					switch (result->new_armor_index)
+					// update current armor value
+					result->new_armor_index = result->old_armor_index;
+					result->new_armor = result->old_armor;
+					result->new_armor_count = newcount;
+				}
+
+				return true;
+
+			case GAME_Q1:
+
+				// in Q1, if we're picking up new/existing armor, always good.
+				if (result->new_armor_index >= result->old_armor_index)
+				{
+					result->new_armor_count = result->new_armor->base_count;
+
+					// if we have existing armor though, don't pick up beyond max
+					if (result->new_armor_index == result->old_armor_index)
+						return result->old_armor_count < result->new_armor_count;
+				}
+				else
+				{
+					// picking up lower-levelled armor is weird in Q1.
+					switch (result->old_armor_index)
 					{
-					case ITI_Q1_YELLOW_ARMOR:
-						// can only pick up yellow if we have < 50
-						if (result->old_armor_count >= 50)
-							return false;
+						case ITI_Q1_YELLOW_ARMOR:
 
-						break;
-					case ITI_Q1_GREEN_ARMOR:
-						// can only pick up green if we have < 40
-						if (result->old_armor_count >= 40)
-							return false;
+							// can only pick up green if we have < 50
+							if (result->old_armor_count >= 50)
+								return false;
 
-						break;
+							break;
+
+						case ITI_Q1_RED_ARMOR:
+							switch (result->new_armor_index)
+							{
+								case ITI_Q1_YELLOW_ARMOR:
+
+									// can only pick up yellow if we have < 50
+									if (result->old_armor_count >= 50)
+										return false;
+
+									break;
+
+								case ITI_Q1_GREEN_ARMOR:
+
+									// can only pick up green if we have < 40
+									if (result->old_armor_count >= 40)
+										return false;
+
+									break;
+							}
+
+							break;
 					}
-					break;
+
+					// passed, so replace it
+					result->new_armor_count = result->new_armor->base_count;
 				}
 
-				// passed, so replace it
-				result->new_armor_count = result->new_armor->base_count;
-			}
+				return true;
 
-			return true;
-		case GAME_DOOM:
-			// in Q1, if we're picking up new/existing armor, always good.
-			if (result->new_armor_index >= result->old_armor_index)
-			{
-				result->new_armor_count = result->new_armor->base_count;
+			case GAME_DOOM:
 
-				// if we have existing armor though, don't pick up beyond max
-				if (result->new_armor_index == result->old_armor_index)
-					return result->old_armor_count < result->new_armor_count;
-			}
-			else
-			{
-				// picking up lower-levelled armor
-				switch (result->old_armor_index)
+				// in Q1, if we're picking up new/existing armor, always good.
+				if (result->new_armor_index >= result->old_armor_index)
 				{
-				case ITI_DOOM_MEGA_ARMOR:
-					// can only pick up mega if we have < 100
-					if (result->old_armor_count >= 100)
-						return false;
+					result->new_armor_count = result->new_armor->base_count;
 
+					// if we have existing armor though, don't pick up beyond max
+					if (result->new_armor_index == result->old_armor_index)
+						return result->old_armor_count < result->new_armor_count;
+				}
+				else
+				{
+					// picking up lower-levelled armor
+					switch (result->old_armor_index)
+					{
+						case ITI_DOOM_MEGA_ARMOR:
+
+							// can only pick up mega if we have < 100
+							if (result->old_armor_count >= 100)
+								return false;
+					}
+
+					// passed, so replace it
+					result->new_armor_count = result->new_armor->base_count;
 				}
 
-				// passed, so replace it
-				result->new_armor_count = result->new_armor->base_count;
-			}
-
-			return true;
+				return true;
 		}
 	}
 
@@ -1213,14 +1210,19 @@ power_armor_type_e PowerArmorType(edict_t *ent)
 
 void Use_PowerArmor(edict_t *ent, gitem_t *item)
 {
-	if (ent->flags & FL_POWER_ARMOR) {
+	if (ent->flags & FL_POWER_ARMOR)
+	{
 		ent->flags &= ~FL_POWER_ARMOR;
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power2.wav"), 1, ATTN_NORM, 0);
-	} else {
-		if (ent->client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB) {
+	}
+	else
+	{
+		if (ent->client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB)
+		{
 			gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
 			return;
 		}
+
 		ent->flags |= FL_POWER_ARMOR;
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("misc/power1.wav"), 1, ATTN_NORM, 0);
 	}
@@ -1229,14 +1231,14 @@ void Use_PowerArmor(edict_t *ent, gitem_t *item)
 bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 {
 	int     quantity;
-
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
-
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 
-	if (deathmatch->value) {
+	if (deathmatch->value)
+	{
 		if (!(ent->spawnflags & DROPPED_ITEM))
 			SetRespawn(ent, ent->item->respawn_time);
+
 		// auto-use for DM only if we didn't already have one
 		if (!quantity)
 			ent->item->use(other, ent->item);
@@ -1249,6 +1251,7 @@ void Drop_PowerArmor(edict_t *ent, gitem_t *item)
 {
 	if ((ent->flags & FL_POWER_ARMOR) && (ent->client->pers.inventory[ITEM_INDEX(item)] == 1))
 		Use_PowerArmor(ent, item);
+
 	Drop_General(ent, item);
 }
 
@@ -1266,6 +1269,7 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 
 	if (!other->client)
 		return;
+
 	if (other->health < 1)
 		return;     // dead people can't pickup
 
@@ -1276,7 +1280,6 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 		return;     // not a grabbable item?
 
 	bool had = !other->client->pers.inventory[ITEM_INDEX(item)];
-
 	ent->real_item = ent->item;
 	ent->item = item;
 	taken = item->pickup(ent, other);
@@ -1286,7 +1289,6 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 	{
 		// flash the screen
 		other->client->bonus_alpha = 0.25f;
-
 		// show icon and name on status bar
 		other->client->pickup_msg_time = level.time + 3000;
 		other->client->pickup_item = item;
@@ -1299,7 +1301,8 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 		gi.sound(other, CHAN_ITEM, gi.soundindex(item->pickup_sound), 1, ATTN_NORM, 0);
 	}
 
-	if (!(ent->spawnflags & ITEM_TARGETS_USED)) {
+	if (!(ent->spawnflags & ITEM_TARGETS_USED))
+	{
 		G_UseTargets(ent, other);
 		ent->spawnflags |= ITEM_TARGETS_USED;
 	}
@@ -1307,7 +1310,8 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 	if (!taken)
 		return;
 
-	if (invasion->value || !((coop->value) && (item->flags & IT_STAY_COOP)) || (ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM))) {
+	if (invasion->value || !((coop->value) && (item->flags & IT_STAY_COOP)) || (ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM)))
+	{
 		if (ent->flags & FL_RESPAWN)
 			ent->flags &= ~FL_RESPAWN;
 		else
@@ -1328,7 +1332,9 @@ void drop_temp_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *
 void drop_make_touchable(edict_t *ent)
 {
 	ent->touch = Touch_Item;
-	if (deathmatch->value) {
+
+	if (deathmatch->value)
+	{
 		ent->nextthink = level.time + 29000;
 		ent->think = G_FreeEdict;
 	}
@@ -1339,9 +1345,7 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
 	edict_t *dropped;
 	vec3_t  forward, right, up;
 	vec3_t  offset;
-
 	dropped = G_Spawn();
-
 	dropped->entitytype = ET_ITEM;
 	dropped->item = item;
 	dropped->spawnflags = DROPPED_ITEM;
@@ -1354,24 +1358,24 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
 	dropped->touch = drop_temp_touch;
 	dropped->owner = ent;
 
-	if (ent->client) {
+	if (ent->client)
+	{
 		trace_t trace;
-
 		AngleVectors(ent->client->v_angle, forward, right, up);
 		VectorSet(offset, 24, 0, -16);
 		G_ProjectSource(ent->s.origin, offset, forward, right, dropped->s.origin);
 		trace = gi.trace(ent->s.origin, dropped->mins, dropped->maxs,
-			dropped->s.origin, ent, CONTENTS_SOLID);
+				dropped->s.origin, ent, CONTENTS_SOLID);
 		VectorCopy(trace.endpos, dropped->s.origin);
-	} else {
+	}
+	else
+	{
 		AngleVectors(ent->s.angles, forward, right, up);
 		VectorCopy(ent->s.origin, dropped->s.origin);
 	}
 
 	if (ent->health <= 0 && ent->s.game == GAME_DOOM)
-	{
 		dropped->velocity[2] = 300;
-	}
 	else
 	{
 		VectorScale(forward, 100, dropped->velocity);
@@ -1380,9 +1384,7 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
 
 	dropped->think = drop_make_touchable;
 	dropped->nextthink = level.time + 1000;
-
 	gi.linkentity(dropped);
-
 	return dropped;
 }
 
@@ -1391,10 +1393,13 @@ void Use_Item(edict_t *ent, edict_t *other, edict_t *activator)
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->use = NULL;
 
-	if (ent->spawnflags & ITEM_NO_TOUCH) {
+	if (ent->spawnflags & ITEM_NO_TOUCH)
+	{
 		ent->solid = SOLID_BBOX;
 		ent->touch = NULL;
-    } else {
+	}
+	else
+	{
 		ent->solid = SOLID_TRIGGER;
 		ent->touch = Touch_Item;
 	}
@@ -1427,35 +1432,39 @@ void droptofloor(edict_t *ent)
 			gi.setmodel(ent, ent->model);
 		else
 			gi.setmodel(ent, ent->item->world_model);
+
 		ent->touch = Touch_Item;
 	}
 
 	ent->solid = SOLID_TRIGGER;
 	ent->movetype = MOVETYPE_TOSS;
-
 	v = tv(0, 0, -128);
 	VectorAdd(ent->s.origin, v, dest);
-
 	tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
-	if (tr.startsolid) {
+
+	if (tr.startsolid)
+	{
 		if (ent->item)
 			gi.dprintf("droptofloor: %s startsolid at %s\n", ent->item->classname, vtos(ent->s.origin));
 		else
 			gi.dprintf("droptofloor: entityid %i startsolid at %s\n", ent->entitytype, vtos(ent->s.origin));
+
 		G_FreeEdict(ent);
 		return;
 	}
 
 	VectorCopy(tr.endpos, ent->s.origin);
 
-	if (ent->team) {
+	if (ent->team)
+	{
 		ent->flags &= ~FL_TEAMSLAVE;
 		ent->chain = ent->teamchain;
 		ent->teamchain = NULL;
-
 		ent->svflags |= SVF_NOCLIENT;
 		ent->solid = SOLID_NOT;
-		if (ent == ent->teammaster) {
+
+		if (ent == ent->teammaster)
+		{
 			ent->nextthink = level.time + 1;
 			ent->think = DoRespawn;
 		}
@@ -1463,12 +1472,14 @@ void droptofloor(edict_t *ent)
 
 	if (startIndex)
 	{
-		if (ent->spawnflags & ITEM_NO_TOUCH) {
+		if (ent->spawnflags & ITEM_NO_TOUCH)
+		{
 			ent->solid = SOLID_BBOX;
 			ent->touch = NULL;
 		}
 
-		if (ent->spawnflags & ITEM_TRIGGER_SPAWN) {
+		if (ent->spawnflags & ITEM_TRIGGER_SPAWN)
+		{
 			ent->svflags |= SVF_NOCLIENT;
 			ent->solid = SOLID_NOT;
 			ent->use = Use_Item;
@@ -1499,32 +1510,43 @@ void PrecacheItem(gitem_t *it)
 
 	if (it->pickup_sound)
 		gi.soundindex(it->pickup_sound);
+
 	if (it->world_model)
 		gi.modelindex(it->world_model);
+
 	if (it->view_model)
 		gi.modelindex(it->view_model);
+
 	if (it->icon)
 		gi.imageindex(it->icon);
+
 	if (it->ammo_model)
 		gi.modelindex(it->ammo_model);
+
 	if (it->ammo_icon)
 		gi.modelindex(it->ammo_icon);
 
 	// parse the space seperated precache string for other items
 	s = it->precaches;
+
 	if (!s || !s[0])
 		return;
 
-	while (*s) {
+	while (*s)
+	{
 		start = s;
+
 		while (*s && *s != ' ')
 			s++;
 
 		len = s - start;
+
 		if (len >= MAX_QPATH || len < 5)
 			gi.error("PrecacheItem: %s has bad precache string", it->classname);
+
 		memcpy(data, start, len);
 		data[len] = 0;
+
 		if (*s)
 			s++;
 
@@ -1535,6 +1557,7 @@ void PrecacheItem(gitem_t *it)
 			gi.modelindex(data);
 		else if (!strcmp(data + len - 3, "wav"))
 			gi.soundindex(data);
+
 		if (!strcmp(data + len - 3, "pcx"))
 			gi.imageindex(data);
 	}
@@ -1555,50 +1578,64 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 	ent->entitytype = ET_ITEM;
 	PrecacheItem(item);
 
-	if (ent->spawnflags) {
-		if (GetIndexByItem(item) != ITI_POWER_CUBE) {
+	if (ent->spawnflags)
+	{
+		if (GetIndexByItem(item) != ITI_POWER_CUBE)
+		{
 			ent->spawnflags = 0;
 			gi.dprintf("%s at %s has invalid spawnflags set\n", item->classname, vtos(ent->s.origin));
 		}
 	}
 
 	// some items will be prevented in deathmatch
-	if (deathmatch->value) {
-		if ((int)dmflags->value & DF_NO_ARMOR) {
-			if (item->flags & IT_ARMOR) {
+	if (deathmatch->value)
+	{
+		if ((int)dmflags->value & DF_NO_ARMOR)
+		{
+			if (item->flags & IT_ARMOR)
+			{
 				G_FreeEdict(ent);
 				return;
 			}
 		}
-		if ((int)dmflags->value & DF_NO_ITEMS) {
-			if (item->flags & IT_POWERUP) {
+
+		if ((int)dmflags->value & DF_NO_ITEMS)
+		{
+			if (item->flags & IT_POWERUP)
+			{
 				G_FreeEdict(ent);
 				return;
 			}
 		}
-		if ((int)dmflags->value & DF_NO_HEALTH) {
-			if (item->flags & IT_HEALTH) {
+
+		if ((int)dmflags->value & DF_NO_HEALTH)
+		{
+			if (item->flags & IT_HEALTH)
+			{
 				G_FreeEdict(ent);
 				return;
 			}
 		}
-		if ((int)dmflags->value & DF_INFINITE_AMMO) {
-			if (item->flags == IT_AMMO) {
+
+		if ((int)dmflags->value & DF_INFINITE_AMMO)
+		{
+			if (item->flags == IT_AMMO)
+			{
 				G_FreeEdict(ent);
 				return;
 			}
 		}
 	}
 
-	if (coop->value && GetIndexByItem(item) == ITI_POWER_CUBE) {
+	if (coop->value && GetIndexByItem(item) == ITI_POWER_CUBE)
+	{
 		ent->spawnflags |= (1 << (8 + level.power_cubes));
 		level.power_cubes++;
 	}
 
 	// don't let them drop items that stay in a coop game
-	if ((coop->value) && (item->flags & IT_STAY_COOP)) {
+	if ((coop->value) && (item->flags & IT_STAY_COOP))
 		item->drop = NULL;
-	}
 
 	ent->item = item;
 	ent->nextthink = level.time + game.frametime * 2;    // items start after other solids
@@ -1615,11 +1652,12 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 gitem_t itemlist[ITI_TOTAL];
 
 static inline void InitItem(itemid_e id, const char *classname, item_pickup_func pickup, item_use_func use, item_drop_func drop,
-							const char *pickup_sound, const char *world_model, int world_model_flags, const char *view_model, const char *icon,
-							const char *pickup_name, int flags, const char *weapmodel, const char *precaches, int respawn_time, const char *ammo_model,
-							const char *ammo_icon)
+	const char *pickup_sound, const char *world_model, int world_model_flags, const char *view_model, const char *icon,
+	const char *pickup_name, int flags, const char *weapmodel, const char *precaches, int respawn_time, const char *ammo_model,
+	const char *ammo_icon)
 {
-	itemlist[id] = (gitem_t) {
+	itemlist[id] = (gitem_t)
+	{
 		.classname = classname,
 		.pickup = pickup,
 		.use = use,
@@ -1645,13 +1683,13 @@ static inline void InitArmor(itemid_e id, const char *classname, const char *pic
 }
 
 static inline void InitPowerup(itemid_e id, const char *classname, item_pickup_func pickup, item_use_func use, item_drop_func drop, const char *pickup_sound,
-							   const char *world_model, const char *icon, const char *pickup_name, int flags, const char *precaches, int respawn_time)
+	const char *world_model, const char *icon, const char *pickup_name, int flags, const char *precaches, int respawn_time)
 {
 	InitItem(id, classname, pickup, use, drop, pickup_sound, world_model, 0, NULL, icon, pickup_name, flags, NULL, precaches, respawn_time, NULL, NULL);
 }
 
 static inline void InitWeapon(itemid_e id, const char *classname, const char *world_model, const char *view_model, const char *icon, const char *pickup_name,
-							  const char *weapmodel, const char *precaches, const char *ammo_model, const char *ammo_icon)
+	const char *weapmodel, const char *precaches, const char *ammo_model, const char *ammo_icon)
 {
 	InitItem(id, classname, world_model ? Pickup_Weapon : NULL, Use_Weapon, world_model ? Drop_Weapon : NULL, world_model ? "%s_weappickup" : NULL, world_model, 0, view_model, icon, pickup_name, IT_WEAPON | IT_STAY_COOP, weapmodel, precaches, 0, ammo_model, ammo_icon);
 }
@@ -1678,10 +1716,8 @@ static void InitItemList()
 	InitArmor(ITI_COMBAT_ARMOR, "item_armor_combat", "%i_armor", "%i_combat_armor", "%i_combatarmor", "Combat Armor");
 	InitArmor(ITI_BODY_ARMOR, "item_armor_body", "%i_armor", "%i_body_armor", "%i_bodyarmor", "Body Armor");
 	InitArmor(ITI_ARMOR_SHARD, "item_armor_shard", "%i_armorshard", "%i_armorshard", "%i_jacketarmor", "Armor Shard");
-
 	InitPowerup(ITI_POWER_SCREEN, "item_power_screen", Pickup_PowerArmor, Use_PowerArmor, Drop_PowerArmor, "misc/ar3_pkup.wav", "%i_powerscreen", "i_powerscreen", "Power Screen", IT_ARMOR, "misc/power2.wav misc/power1.wav", 60);
 	InitPowerup(ITI_POWER_SHIELD, "item_power_shield", Pickup_PowerArmor, Use_PowerArmor, Drop_PowerArmor, "misc/ar3_pkup.wav", "%i_powershield", "i_powershield", "Power Shield", IT_ARMOR, "misc/power2.wav misc/power1.wav", 60);
-	
 	InitWeaponInitialQuick(1, "#w_blaster.md2", "misc/lasfly.wav");
 	InitWeaponQuick(2, "#w_shotgun.md2", "");
 	InitWeaponQuick(3, "#w_sshotgun.md2", "");
@@ -1693,14 +1729,11 @@ static void InitItemList()
 	InitWeaponQuick(9, "#w_railgun.md2", "weapons/rg_hum.wav");
 	InitWeaponQuick(0, "#w_bfg.md2", "sprites/s_bfg1.sp2 sprites/s_bfg2.sp2 sprites/s_bfg3.sp2 weapons/bfg__l1a.wav weapons/bfg__x1b.wav weapons/bfg_hum.wav");
 	InitWeaponQuick(G, "#a_grenades.md2", "weapons/hgrent1a.wav weapons/hgrena1b.wav weapons/hgrenc1b.wav weapons/hgrenb1a.wav weapons/hgrenb2a.wav");
-
 	InitItem(ITI_AMMO, "ammo", Pickup_Ammo, NULL, Drop_Ammo, "%s_ammopickup", NULL, 0, NULL, NULL, "Ammo", IT_AMMO, NULL, NULL, 0, NULL, NULL);
-	
 	InitHealth(ITI_STIMPACK, "item_health_small", "%i_stimpack", "%i_stimpack");
 	InitHealth(ITI_MEDIUM_HEALTH, "item_health", "%i_smhealth", "%i_smhealth");
 	InitHealth(ITI_LARGE_HEALTH, "item_health_large", "%i_lghealth", "%i_lghealth");
 	InitHealth(ITI_MEGA_HEALTH, "item_health_mega", "%i_megahealth", "%i_megahealth");
-	
 	InitPowerup(ITI_QUAD_DAMAGE, "item_quad", Pickup_Powerup, Use_Quad, Drop_General, "%s_powerup", "%i_quaddamage", "p_quad", "Quad Damage", IT_POWERUP, "items/damage.wav items/damage2.wav items/damage3.wav", 60);
 	InitPowerup(ITI_INVULNERABILITY, "item_invulnerability", Pickup_Powerup, Use_Invulnerability, Drop_General, "%s_powerup", "%i_invulnerability", "p_invulnerability", "Invulnerability", IT_POWERUP, "items/protect.wav items/protect2.wav items/protect4.wav", 300);
 	InitPowerup(ITI_ENVIRONMENT_SUIT, "item_enviro", Pickup_Powerup, Use_Envirosuit, Drop_General, "%s_powerup", "%i_environmentsuit", "p_envirosuit", "Environment Suit", IT_STAY_COOP | IT_POWERUP, "", 60);
@@ -1710,7 +1743,6 @@ static void InitItemList()
 	InitPowerup(ITI_ADRENALINE, "item_adrenaline", Pickup_Adrenaline, NULL, NULL, "%s_powerup", "%i_adrenaline", "p_adrenaline", "Adrenaline", IT_NONE, NULL, 60);
 	InitPowerup(ITI_BANDOLIER, "item_bandolier", Pickup_Bandolier, NULL, NULL, "%s_powerup", "%i_bandolier", "p_bandolier", "Bandolier", IT_NONE, NULL, 60);
 	InitPowerup(ITI_AMMO_PACK, "item_pack", Pickup_Bandolier, NULL, NULL, "%s_powerup", "%i_backpack", "i_pack", "Ammo Pack", IT_NONE, NULL, 180);
-	
 	InitKey(ITI_DATA_CD, "key_data_cd", "models/items/keys/data_cd/tris.md2", "k_datacd", "Data CD");
 	InitKey(ITI_POWER_CUBE, "key_power_cube", "models/items/keys/power/tris.md2", "k_powercube", "Power Cube");
 	InitKey(ITI_PYRAMID_KEY, "key_pyramid", "models/items/keys/pyramid/tris.md2", "k_pyramid", "Pyramid Key");
@@ -1724,7 +1756,8 @@ static void InitItemList()
 
 void Weapons_Init();
 
-const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] = {
+const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] =
+{
 	{
 		NULL
 	}, // null
@@ -1786,7 +1819,8 @@ const char *weapon_names[GAME_TOTAL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1] = 
 	}
 };
 
-const char *game_names[GAME_TOTAL] = {
+const char *game_names[GAME_TOTAL] =
+{
 	NULL,
 	"q2",
 	"q1",
@@ -1811,9 +1845,7 @@ void CheckWeaponBalanceCvars()
 				continue;
 
 			char cvar_name[MAX_QPATH];
-
 			Q_snprintf(cvar_name, sizeof(cvar_name), "balance_%s_%s", game_names[game], weapon_name);
-
 			cvar_t *cvar = gi.cvar(cvar_name, "", CVAR_ARCHIVE);
 
 			if (!cvar->value)
@@ -1829,11 +1861,8 @@ void CheckWeaponBalanceCvars()
 void InitItems(void)
 {
 	game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
-	
 	InitItemList();
-
 	InitGameInfos();
-
 	CheckWeaponBalanceCvars();
 }
 
@@ -1847,10 +1876,13 @@ static void RecursiveLinkAmmo(edict_t *from, edict_t *weapon)
 	{
 		if (ammo == from)
 			continue;
+
 		if (ammo->entitytype != ET_AMMO)
 			continue;
+
 		if (ammo->entity_prev)
 			continue;
+
 		if (DistanceSquared(weapon->s.origin, ammo->s.origin) > AMMO_LINK_RADIUS * AMMO_LINK_RADIUS)
 			continue;
 
@@ -1858,12 +1890,13 @@ static void RecursiveLinkAmmo(edict_t *from, edict_t *weapon)
 		// weapon <-> old_next
 		// weapon <-> [ammo <->] old_next
 		edict_t *old_next = weapon->entity_next;
+
 		if (old_next)
 			old_next->entity_prev = ammo;
+
 		ammo->entity_next = old_next;
 		ammo->entity_prev = weapon;
 		weapon->entity_next = ammo;
-
 		RecursiveLinkAmmo(ammo, weapon);
 	}
 }
@@ -1876,6 +1909,7 @@ static void Set_Ammo_Model(edict_t *ammo, gitem_t *weapon)
 static void Set_Weapons_Ammo(edict_t *weapon)
 {
 	edict_t *ammo;
+
 	for (ammo = weapon->entity_next; ammo; ammo = ammo->entity_next)
 	{
 		SpawnItem(ammo, GetItemByIndex(ITI_AMMO));
@@ -1887,9 +1921,9 @@ void Spawn_Weapons()
 {
 	level.weapon_spawn_id = Q_rand_uniform(ITI_WEAPONS_END - ITI_WEAPONS_START);
 	level.ammo_spawn_id = Q_rand_uniform(ITI_WEAPONS_END - ITI_WEAPONS_START);
-
 	// link up ammo
 	edict_t *weapon = NULL;
+
 	while ((weapon = G_FindByType(weapon, ET_WEAPON)))
 	{
 		RecursiveLinkAmmo(weapon, weapon);
@@ -1900,11 +1934,12 @@ void Spawn_Weapons()
 
 	// link up ammo
 	edict_t *ammo = NULL;
+
 	while ((ammo = G_FindByType(ammo, ET_AMMO)))
 	{
 		if (ammo->entity_next)
 			continue;
-		
+
 		SpawnItem(ammo, GetItemByIndex(ITI_AMMO));
 		Set_Ammo_Model(ammo, GetItemByIndex(ITI_WEAPON_2 + level.ammo_spawn_id));
 		level.ammo_spawn_id = (level.ammo_spawn_id + 1) % (ITI_WEAPONS_END - ITI_WEAPONS_START);

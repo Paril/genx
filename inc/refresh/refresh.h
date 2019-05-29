@@ -52,11 +52,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define RF_NOSHADOW         0x80000000
 
 #define RF_SHELL_MASK       (RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | \
-                             RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM)
+	RF_SHELL_DOUBLE | RF_SHELL_HALF_DAM)
 
 #define DLIGHT_CUTOFF       64
 
-typedef struct entity_s {
+typedef struct entity_s
+{
 	qhandle_t	    model;          // opaque type outside refresh
 	vec3_t          angles;
 
@@ -77,7 +78,7 @@ typedef struct entity_s {
 	*/
 	float			backlerp;               // 0.0 = current, 1.0 = old
 	int				skinnum;                // also used as RF_BEAM's palette index,
-									// -1 => use rgba
+	// -1 => use rgba
 
 	float			alpha;                  // ignore if RF_TRANSLUCENT isn't set
 	color_t			rgba;
@@ -91,7 +92,8 @@ typedef struct entity_s {
 	vec3_t			mins, maxs;
 } entity_t;
 
-typedef struct dlight_s {
+typedef struct dlight_s
+{
 	vec3_t  origin;
 	vec3_t  transformed;
 	vec3_t  color;
@@ -104,7 +106,8 @@ typedef enum
 	PARTICLE_OLDSCHOOL
 } particlerendertype_t;
 
-typedef struct particle_s {
+typedef struct particle_s
+{
 	vec3_t		origin;
 	int			color;              // -1 => use rgba
 	float		alpha;
@@ -112,12 +115,14 @@ typedef struct particle_s {
 	particlerendertype_t type;
 } particle_t;
 
-typedef struct lightstyle_s {
+typedef struct lightstyle_s
+{
 	float           white;          // highest of RGB
 	vec3_t          rgb;            // 0.0 - 2.0
 } lightstyle_t;
 
-typedef struct refdef_s {
+typedef struct refdef_s
+{
 	int				x, y, width, height;// in virtual screen coordinates
 	float			fov_x, fov_y;
 	vec3_t			vieworg;
@@ -140,20 +145,23 @@ typedef struct refdef_s {
 	particle_t		*particles;
 } refdef_t;
 
-typedef enum {
+typedef enum
+{
 	QVF_ACCELERATED     = (1 << 0),
 	QVF_GAMMARAMP       = (1 << 1),
-    QVF_FULLSCREEN      = (1 << 2),
+	QVF_FULLSCREEN      = (1 << 2),
 	QVF_BORDERLESS		= (1 << 3)
 } vidFlags_t;
 
-typedef enum {
+typedef enum
+{
 	VM_WINDOWED,
 	VM_BORDERLESS,
 	VM_FULLSCREEN
 } vidMode_t;
 
-typedef struct {
+typedef struct
+{
 	int         width;
 	int         height;
 	vidFlags_t  flags;
@@ -161,11 +169,13 @@ typedef struct {
 
 extern refcfg_t r_config;
 
-typedef struct {
+typedef struct
+{
 	int left, right, top, bottom;
 } clipRect_t;
 
-typedef enum {
+typedef enum
+{
 	IF_NONE         = 0,
 	IF_PERMANENT    = (1 << 0),
 	IF_TRANSPARENT  = (1 << 1),
@@ -183,7 +193,8 @@ typedef enum {
 	IF_CRISPY		= (1 << 11)
 } imageflags_t;
 
-typedef enum {
+typedef enum
+{
 	IT_PIC,
 	IT_FONT,
 	IT_SKIN,
@@ -216,7 +227,7 @@ void    R_Shutdown(bool total);
 void    R_BeginRegistration(const char *map);
 qhandle_t R_RegisterModel(const char *name);
 qhandle_t R_RegisterImage(const char *name, imagetype_t type,
-						  imageflags_t flags, int *err_p);
+	imageflags_t flags, int *err_p);
 void    R_SetSky(const char *name, float rotate, vec3_t axis);
 void    R_EndRegistration(void);
 
@@ -238,7 +249,7 @@ float   R_ClampScale(cvar_t *var);
 void    R_SetScale(float scale);
 void    R_DrawChar(int x, int y, int flags, int ch, qhandle_t font, gametype_t game);
 int     R_DrawString(int x, int y, int flags, size_t maxChars,
-					 const char *string, qhandle_t font, gametype_t game);  // returns advanced x coord
+	const char *string, qhandle_t font, gametype_t game);  // returns advanced x coord
 int		R_StringWidth(size_t maxlen, const char *s, qhandle_t font, gametype_t game);
 bool	R_GetPicSize(int *w, int *h, qhandle_t pic, gametype_t game);   // returns transparency bit
 void    R_DrawPic(int x, int y, qhandle_t pic, gametype_t game);

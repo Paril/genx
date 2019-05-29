@@ -25,11 +25,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MAX_FIELD_TEXT  256
 
-typedef struct inputField_s {
-    char    text[MAX_FIELD_TEXT];
-    size_t  maxChars;
-    size_t  visibleChars;
-    size_t  cursorPos;
+typedef struct inputField_s
+{
+	char    text[MAX_FIELD_TEXT];
+	size_t  maxChars;
+	size_t  visibleChars;
+	size_t  cursorPos;
 } inputField_t;
 
 bool        IF_KeyEvent(inputField_t *field, int key);

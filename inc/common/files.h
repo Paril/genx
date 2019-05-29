@@ -27,11 +27,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_LISTED_FILES    250000000
 #define MAX_LISTED_DEPTH    8
 
-typedef struct file_info_s {
-    int64_t size;
-    time_t  ctime;
-    time_t  mtime;
-    char    name[1];
+typedef struct file_info_s
+{
+	int64_t size;
+	time_t  ctime;
+	time_t  mtime;
+	char    name[1];
 } file_info_t;
 
 // bits 0 - 1, enum
@@ -107,7 +108,7 @@ void    FS_Shutdown(void);
 void    FS_Restart(bool total);
 
 #if USE_CLIENT
-int FS_RenameFile(const char *from, const char *to);
+	int FS_RenameFile(const char *from, const char *to);
 #endif
 
 int FS_CreatePath(char *path);
@@ -117,12 +118,12 @@ char    *FS_CopyExtraInfo(const char *name, const file_info_t *info);
 int64_t FS_FOpenFile(const char *filename, qhandle_t *f, unsigned mode);
 int     FS_FCloseFile(qhandle_t f);
 qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
-                          const char *dir, const char *name, const char *ext);
+	const char *dir, const char *name, const char *ext);
 
 #define FS_FileExistsEx(path, flags) \
-    (FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT)
+	(FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT)
 #define FS_FileExists(path) \
-    FS_FileExistsEx(path, 0)
+	FS_FileExistsEx(path, 0)
 
 int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag);
 // a NULL buffer will just return the file length without loading
@@ -131,8 +132,8 @@ int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag)
 int FS_WriteFile(const char *path, const void *data, size_t len);
 
 bool FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
-                          const char *dir, const char *name, const char *ext,
-                          const void *data, size_t len);
+	const char *dir, const char *name, const char *ext,
+	const void *data, size_t len);
 
 int FS_Read(void *buffer, size_t len, qhandle_t f);
 int FS_Write(const void *buffer, size_t len, qhandle_t f);
@@ -152,7 +153,7 @@ bool FS_WildCmp(const char *filter, const char *string);
 bool FS_ExtCmp(const char *extension, const char *string);
 
 #define FS_ReallocList(list, count) \
-    Z_Realloc(list, ALIGN(count, MIN_LISTED_FILES) * sizeof(void *))
+	Z_Realloc(list, ALIGN(count, MIN_LISTED_FILES) * sizeof(void *))
 
 void    **FS_ListFiles(const char *path, const char *filter, unsigned flags, int *count_p);
 void    **FS_CopyList(void **list, int count);
@@ -172,7 +173,7 @@ void FS_CleanupPath(char *s);
 void FS_SanitizeFilenameVariable(cvar_t *var);
 
 #ifdef _WIN32
-char *FS_ReplaceSeparators(char *s, int separator);
+	char *FS_ReplaceSeparators(char *s, int separator);
 #endif
 
 void FS_File_g(const char *path, const char *ext, unsigned flags, genctx_t *ctx);

@@ -7,7 +7,8 @@ static int sound_death;
 static int sound_shoot;
 static int sound_claw;
 
-enum {
+enum
+{
 	frames_stand_start,
 	frames_stand_end = frames_stand_start + 5,
 	frames_run_start,
@@ -46,7 +47,8 @@ void dboss_idle(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_action, 1, ATTN_NORM, 0);
 }
 
-mframe_t boss_frames_stand1[FRAME_COUNT(stand)] = {
+mframe_t boss_frames_stand1[FRAME_COUNT(stand)] =
+{
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
 	{ ai_stand, 0,  NULL, frames_run1 },
@@ -64,7 +66,8 @@ void boss_stand(edict_t *self)
 #define MOVE_SPEED 9.3f
 #define WALK_SPEED MOVE_SPEED / 2
 
-mframe_t boss_frames_run1[FRAME_COUNT(run)] = {
+mframe_t boss_frames_run1[FRAME_COUNT(run)] =
+{
 	{ ai_run, MOVE_SPEED,  dboss_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  dboss_idle, frames_run1 },
 	{ ai_run, MOVE_SPEED,  dboss_idle, frames_run2 },
@@ -81,7 +84,8 @@ void boss_run(edict_t *self)
 	self->monsterinfo.currentmove = &boss_run1;
 }
 
-mframe_t boss_frames_walk1[FRAME_COUNT(walk)] = {
+mframe_t boss_frames_walk1[FRAME_COUNT(walk)] =
+{
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run1 },
 	{ ai_walk, WALK_SPEED,  NULL, frames_run2 },
@@ -104,7 +108,8 @@ void dboss_dead(edict_t *self)
 	self->svflags |= SVF_DEADMONSTER;
 }
 
-mframe_t boss_frames_die1[FRAME_COUNT(die)] = {
+mframe_t boss_frames_die1[FRAME_COUNT(die)] =
+{
 	{ ai_move, 0,  NULL, frames_death1 },
 	{ ai_move, 0,  NULL, frames_death2 },
 	{ ai_move, 0,  NULL, frames_death3 },
@@ -121,17 +126,16 @@ void dboss_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 		return;
 
 	self->deadflag = DEAD_DEAD;
-
 	// check for gib
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &boss_die1;
-
 	self->takedamage = DAMAGE_NO;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-mframe_t boss_frames_pain1[FRAME_COUNT(pain)] = {
+mframe_t boss_frames_pain1[FRAME_COUNT(pain)] =
+{
 	{ ai_move, 0,  NULL, frames_pain },
 	{ ai_move, 0,  NULL, frames_pain }
 };
@@ -164,7 +168,8 @@ void doom_boss_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurfac
 	if (other == ent->owner)
 		return;
 
-	if (surf && (surf->flags & SURF_SKY)) {
+	if (surf && (surf->flags & SURF_SKY))
+	{
 		G_FreeEdict(ent);
 		return;
 	}
@@ -177,19 +182,16 @@ void doom_boss_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurfac
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-
 	gi.WriteByte(svc_temp_entity);
 	gi.WriteByte(TE_DOOM_BOSS_BOOM);
 	gi.WritePosition(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
-
 	G_FreeEdict(ent);
 }
 
 void fire_doom_boss_ball(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed)
 {
 	edict_t *rocket;
-
 	rocket = G_Spawn();
 	VectorCopy(start, rocket->s.origin);
 	VectorCopy(dir, rocket->movedir);
@@ -209,9 +211,7 @@ void fire_doom_boss_ball(edict_t *self, vec3_t start, vec3_t dir, int damage, in
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
 	rocket->dmg = damage;
-
 	rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT);
-
 	gi.linkentity(rocket);
 }
 
@@ -227,7 +227,6 @@ void boss_fire_gun(edict_t *self)
 	}
 
 	gi.sound(self, CHAN_WEAPON, sound_shoot, 1, ATTN_NORM, 0);
-
 	vec3_t org, v_forward, v_right;
 	AngleVectors(self->s.angles, v_forward, v_right, NULL);
 
@@ -235,19 +234,17 @@ void boss_fire_gun(edict_t *self)
 		org[i] = self->s.origin[i] + v_forward[i] * 0 + v_right[i] * 0;
 
 	org[2] += 16;
-
 	vec3_t dir;
-
 	vec3_t enemy_org;
 	VectorCopy(self->enemy->s.origin, enemy_org);
 	enemy_org[2] += self->enemy->viewheight;
-
 	VectorSubtract(enemy_org, org, dir);
 	VectorNormalize(dir);
 	fire_doom_boss_ball(self, org, dir, Doom_MissileDamageRandomizer(8), 525);
 }
 
-mframe_t boss_frames_shoot1[FRAME_COUNT(shoot)] = {
+mframe_t boss_frames_shoot1[FRAME_COUNT(shoot)] =
+{
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack1 },
 	{ ai_charge, 0,  NULL, frames_attack2 },
@@ -282,15 +279,12 @@ void doom_monster_boss(edict_t *self)
 
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	sound_alert = gi.soundindex("doom/BRSSIT.wav");
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/BRSDTH.wav");
-
 	sound_shoot = gi.soundindex("doom/FIRSHT.wav");
 	sound_claw = gi.soundindex("doom/CLAW.wav");
-
 	VectorSet(self->mins, -24, -24, -4);
 	VectorSet(self->maxs, 24, 24, 60);
 
@@ -317,11 +311,8 @@ void doom_monster_boss(edict_t *self)
 	self->monsterinfo.melee = boss_attack;
 	self->monsterinfo.special_frames = true;
 	self->s.game = GAME_DOOM;
-
 	gi.linkentity(self);
-
 	self->monsterinfo.currentmove = &boss_stand1;
 	self->monsterinfo.scale = 1;
-
 	walkmonster_start(self);
 }

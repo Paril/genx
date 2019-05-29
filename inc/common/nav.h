@@ -23,7 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // nav.h --- navigation routines
 //
 
-typedef struct {
+typedef struct
+{
 	vec3_t				position;
 	uint8_t				type;
 	nav_node_id			connections[MAX_NODE_CONNECTIONS];
@@ -39,13 +40,15 @@ extern uint32_t		num_allocated_nodes;
 nav_node_t *Nav_NodeIDToNode(nav_node_id id);
 nav_node_id Nav_NodeToNodeID(nav_node_t *node);
 
-typedef enum {
+typedef enum
+{
 	NODE_UNDISCOVERED,
 	NODE_OPEN,
 	NODE_CLOSED
 } node_state_t;
 
-typedef struct nav_igator_s {
+typedef struct nav_igator_s
+{
 	nav_node_t					*start;
 	nav_node_t					*goal;
 	nav_igator_heuristic_func	heuristic_func;
@@ -60,7 +63,8 @@ typedef struct nav_igator_s {
 	struct Node_Ident_s			*node_redirections;
 } nav_igator_t;
 
-typedef struct {
+typedef struct
+{
 	bool				is_running;
 	bool				nodes_loaded;
 	bool				debug_mode;

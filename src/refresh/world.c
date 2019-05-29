@@ -20,411 +20,442 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void GL_SampleLightPoint(vec3_t color)
 {
-    mface_t         *surf;
-    int             s, t, i;
-    byte            *lightmap;
-    byte            *b1, *b2, *b3, *b4;
-    int             fracu, fracv;
-    int             w1, w2, w3, w4;
-    byte            temp[3];
-    int             smax, tmax, size;
-    lightstyle_t    *style;
+	mface_t         *surf;
+	int             s, t, i;
+	byte            *lightmap;
+	byte            *b1, *b2, *b3, *b4;
+	int             fracu, fracv;
+	int             w1, w2, w3, w4;
+	byte            temp[3];
+	int             smax, tmax, size;
+	lightstyle_t    *style;
+	fracu = glr.lightpoint.s & 15;
+	fracv = glr.lightpoint.t & 15;
+	// compute weights of lightmap blocks
+	w1 = (16 - fracu) * (16 - fracv);
+	w2 = fracu * (16 - fracv);
+	w3 = fracu * fracv;
+	w4 = (16 - fracu) * fracv;
+	s = glr.lightpoint.s >> 4;
+	t = glr.lightpoint.t >> 4;
+	surf = glr.lightpoint.surf;
+	smax = S_MAX(surf);
+	tmax = T_MAX(surf);
+	size = smax * tmax * 3;
+	VectorClear(color);
+	// add all the lightmaps with bilinear filtering
+	lightmap = surf->lightmap;
 
-    fracu = glr.lightpoint.s & 15;
-    fracv = glr.lightpoint.t & 15;
-
-    // compute weights of lightmap blocks
-    w1 = (16 - fracu) * (16 - fracv);
-    w2 = fracu * (16 - fracv);
-    w3 = fracu * fracv;
-    w4 = (16 - fracu) * fracv;
-
-    s = glr.lightpoint.s >> 4;
-    t = glr.lightpoint.t >> 4;
-
-    surf = glr.lightpoint.surf;
-
-    smax = S_MAX(surf);
-    tmax = T_MAX(surf);
-    size = smax * tmax * 3;
-
-    VectorClear(color);
-
-    // add all the lightmaps with bilinear filtering
-    lightmap = surf->lightmap;
-    for (i = 0; i < surf->numstyles; i++) {
-        b1 = &lightmap[3 * ((t + 0) * smax + (s + 0))];
-        b2 = &lightmap[3 * ((t + 0) * smax + (s + 1))];
-        b3 = &lightmap[3 * ((t + 1) * smax + (s + 1))];
-        b4 = &lightmap[3 * ((t + 1) * smax + (s + 0))];
-
-        temp[0] = (w1 * b1[0] + w2 * b2[0] + w3 * b3[0] + w4 * b4[0]) >> 8;
-        temp[1] = (w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1]) >> 8;
-        temp[2] = (w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2]) >> 8;
-
-        style = LIGHT_STYLE(surf, i);
-
-        color[0] += temp[0] * style->rgb[0];
-        color[1] += temp[1] * style->rgb[1];
-        color[2] += temp[2] * style->rgb[2];
-
-        lightmap += size;
-    }
+	for (i = 0; i < surf->numstyles; i++)
+	{
+		b1 = &lightmap[3 * ((t + 0) * smax + (s + 0))];
+		b2 = &lightmap[3 * ((t + 0) * smax + (s + 1))];
+		b3 = &lightmap[3 * ((t + 1) * smax + (s + 1))];
+		b4 = &lightmap[3 * ((t + 1) * smax + (s + 0))];
+		temp[0] = (w1 * b1[0] + w2 * b2[0] + w3 * b3[0] + w4 * b4[0]) >> 8;
+		temp[1] = (w1 * b1[1] + w2 * b2[1] + w3 * b3[1] + w4 * b4[1]) >> 8;
+		temp[2] = (w1 * b1[2] + w2 * b2[2] + w3 * b3[2] + w4 * b4[2]) >> 8;
+		style = LIGHT_STYLE(surf, i);
+		color[0] += temp[0] * style->rgb[0];
+		color[1] += temp[1] * style->rgb[1];
+		color[2] += temp[2] * style->rgb[2];
+		lightmap += size;
+	}
 }
 
 static bool _GL_LightPoint(vec3_t start, vec3_t color)
 {
-    bsp_t           *bsp;
+	bsp_t           *bsp;
 	// Generations
-    int             i;
+	int             i;
 	qhandle_t		index;
-    lightpoint_t    pt;
-    vec3_t          end, mins, maxs;
-    entity_t        *ent;
-    mmodel_t        *model;
-    vec_t           *angles;
+	lightpoint_t    pt;
+	vec3_t          end, mins, maxs;
+	entity_t        *ent;
+	mmodel_t        *model;
+	vec_t           *angles;
+	bsp = gl_static.world.cache;
 
-    bsp = gl_static.world.cache;
-    if (!bsp || !bsp->lightmap)
-        return false;
+	if (!bsp || !bsp->lightmap)
+		return false;
 
-    end[0] = start[0];
-    end[1] = start[1];
-    end[2] = start[2] - 8192;
+	end[0] = start[0];
+	end[1] = start[1];
+	end[2] = start[2] - 8192;
+	// get base lightpoint from world
+	BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes);
 
-    // get base lightpoint from world
-    BSP_LightPoint(&glr.lightpoint, start, end, bsp->nodes);
-
-    // trace to other BSP models
-    for (i = 0; i < glr.fd.num_entities; i++) {
-        ent = &glr.fd.entities[i];
-        index = ent->model;
-		// Generations
-        if (MODEL_HANDLE_TYPE(index) != MODELHANDLE_BSP)
-            break;  // BSP models are at the start of entity array
+	// trace to other BSP models
+	for (i = 0; i < glr.fd.num_entities; i++)
+	{
+		ent = &glr.fd.entities[i];
+		index = ent->model;
 
 		// Generations
-        if (MODEL_HANDLE_ID(index) < 1 || MODEL_HANDLE_ID(index) >= bsp->nummodels)
-            continue;
+		if (MODEL_HANDLE_TYPE(index) != MODELHANDLE_BSP)
+			break;  // BSP models are at the start of entity array
 
 		// Generations
-        model = &bsp->models[MODEL_HANDLE_ID(index)];
-        if (!model->numfaces)
-            continue;
+		if (MODEL_HANDLE_ID(index) < 1 || MODEL_HANDLE_ID(index) >= bsp->nummodels)
+			continue;
 
-        // cull in X/Y plane
-        if (!VectorEmpty(ent->angles)) {
-            if (fabsf(start[0] - ent->origin[0]) > model->radius)
-                continue;
-            if (fabsf(start[1] - ent->origin[1]) > model->radius)
-                continue;
-            angles = ent->angles;
-        } else {
-            VectorAdd(model->mins, ent->origin, mins);
-            VectorAdd(model->maxs, ent->origin, maxs);
-            if (start[0] < mins[0] || start[0] > maxs[0])
-                continue;
-            if (start[1] < mins[1] || start[1] > maxs[1])
-                continue;
-            angles = NULL;
-        }
+		// Generations
+		model = &bsp->models[MODEL_HANDLE_ID(index)];
 
-        BSP_TransformedLightPoint(&pt, start, end, model->headnode,
-                                  ent->origin, angles);
+		if (!model->numfaces)
+			continue;
 
-        if (pt.fraction < glr.lightpoint.fraction)
-            glr.lightpoint = pt;
-    }
+		// cull in X/Y plane
+		if (!VectorEmpty(ent->angles))
+		{
+			if (fabsf(start[0] - ent->origin[0]) > model->radius)
+				continue;
 
-    if (!glr.lightpoint.surf)
-        return false;
+			if (fabsf(start[1] - ent->origin[1]) > model->radius)
+				continue;
 
-    GL_SampleLightPoint(color);
+			angles = ent->angles;
+		}
+		else
+		{
+			VectorAdd(model->mins, ent->origin, mins);
+			VectorAdd(model->maxs, ent->origin, maxs);
 
-    GL_AdjustColor(color);
+			if (start[0] < mins[0] || start[0] > maxs[0])
+				continue;
 
-    return true;
+			if (start[1] < mins[1] || start[1] > maxs[1])
+				continue;
+
+			angles = NULL;
+		}
+
+		BSP_TransformedLightPoint(&pt, start, end, model->headnode,
+			ent->origin, angles);
+
+		if (pt.fraction < glr.lightpoint.fraction)
+			glr.lightpoint = pt;
+	}
+
+	if (!glr.lightpoint.surf)
+		return false;
+
+	GL_SampleLightPoint(color);
+	GL_AdjustColor(color);
+	return true;
 }
 
 static void GL_MarkLights_r(mnode_t *node, dlight_t *light, int lightbit)
 {
-    vec_t dot;
-    int count;
-    mface_t *face;
+	vec_t dot;
+	int count;
+	mface_t *face;
 
-    while (node->plane) {
-        dot = PlaneDiffFast(light->transformed, node->plane);
-        if (dot > light->intensity - DLIGHT_CUTOFF) {
-            node = node->children[0];
-            continue;
-        }
-        if (dot < -light->intensity + DLIGHT_CUTOFF) {
-            node = node->children[1];
-            continue;
-        }
+	while (node->plane)
+	{
+		dot = PlaneDiffFast(light->transformed, node->plane);
 
-        face = node->firstface;
-        count = node->numfaces;
-        while (count--) {
-            if (!(face->drawflags & SURF_NOLM_MASK)) {
-                if (face->dlightframe != glr.dlightframe) {
-                    face->dlightframe = glr.dlightframe;
-                    face->dlightbits = 0;
-                }
+		if (dot > light->intensity - DLIGHT_CUTOFF)
+		{
+			node = node->children[0];
+			continue;
+		}
 
-                face->dlightbits |= lightbit;
-            }
+		if (dot < -light->intensity + DLIGHT_CUTOFF)
+		{
+			node = node->children[1];
+			continue;
+		}
 
-            face++;
-        }
+		face = node->firstface;
+		count = node->numfaces;
 
-        GL_MarkLights_r(node->children[0], light, lightbit);
-        node = node->children[1];
-    }
+		while (count--)
+		{
+			if (!(face->drawflags & SURF_NOLM_MASK))
+			{
+				if (face->dlightframe != glr.dlightframe)
+				{
+					face->dlightframe = glr.dlightframe;
+					face->dlightbits = 0;
+				}
+
+				face->dlightbits |= lightbit;
+			}
+
+			face++;
+		}
+
+		GL_MarkLights_r(node->children[0], light, lightbit);
+		node = node->children[1];
+	}
 }
 
 static void GL_MarkLights(void)
 {
-    int i;
-    dlight_t *light;
+	int i;
+	dlight_t *light;
+	glr.dlightframe++;
 
-    glr.dlightframe++;
-
-    for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
-        VectorCopy(light->origin, light->transformed);
-        GL_MarkLights_r(gl_static.world.cache->nodes, light, 1U << i);
-    }
+	for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++)
+	{
+		VectorCopy(light->origin, light->transformed);
+		GL_MarkLights_r(gl_static.world.cache->nodes, light, 1U << i);
+	}
 }
 
 static void GL_TransformLights(mmodel_t *model)
 {
-    int i;
-    dlight_t *light;
-    vec3_t temp;
+	int i;
+	dlight_t *light;
+	vec3_t temp;
+	glr.dlightframe++;
 
-    glr.dlightframe++;
-
-    for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
-        VectorSubtract(light->origin, glr.ent->origin, temp);
-        light->transformed[0] = DotProduct(temp, glr.entaxis[0]);
-        light->transformed[1] = DotProduct(temp, glr.entaxis[1]);
-        light->transformed[2] = DotProduct(temp, glr.entaxis[2]);
-        GL_MarkLights_r(model->headnode, light, 1U << i);
-    }
+	for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++)
+	{
+		VectorSubtract(light->origin, glr.ent->origin, temp);
+		light->transformed[0] = DotProduct(temp, glr.entaxis[0]);
+		light->transformed[1] = DotProduct(temp, glr.entaxis[1]);
+		light->transformed[2] = DotProduct(temp, glr.entaxis[2]);
+		GL_MarkLights_r(model->headnode, light, 1U << i);
+	}
 }
 
 static void GL_AddLights(vec3_t origin, vec3_t color)
 {
-    dlight_t *light;
-    vec_t f;
-    int i;
+	dlight_t *light;
+	vec_t f;
+	int i;
 
-    for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++) {
-        f = light->intensity - DLIGHT_CUTOFF - Distance(light->origin, origin);
-        if (f > 0) {
-            f *= (1.0f / 255);
-            VectorMA(color, f, light->color, color);
-        }
-    }
+	for (i = 0, light = glr.fd.dlights; i < glr.fd.num_dlights; i++, light++)
+	{
+		f = light->intensity - DLIGHT_CUTOFF - Distance(light->origin, origin);
+
+		if (f > 0)
+		{
+			f *= (1.0f / 255);
+			VectorMA(color, f, light->color, color);
+		}
+	}
 }
 
 void GL_LightPoint(vec3_t origin, vec3_t color)
 {
-    if (gl_fullbright->integer) {
-        VectorSet(color, 1, 1, 1);
-        return;
-    }
+	if (gl_fullbright->integer)
+	{
+		VectorSet(color, 1, 1, 1);
+		return;
+	}
 
-    // get lighting from world
-    if (!_GL_LightPoint(origin, color)) {
-        VectorSet(color, 1, 1, 1);
-    }
+	// get lighting from world
+	if (!_GL_LightPoint(origin, color))
+		VectorSet(color, 1, 1, 1);
 
-    // add dynamic lights
-    GL_AddLights(origin, color);
+	// add dynamic lights
+	GL_AddLights(origin, color);
 
-    if (gl_doublelight_entities->integer) {
-        // apply modulate twice to mimic original ref_gl behavior
-        VectorScale(color, gl_static.entity_modulate, color);
-    }
+	if (gl_doublelight_entities->integer)
+	{
+		// apply modulate twice to mimic original ref_gl behavior
+		VectorScale(color, gl_static.entity_modulate, color);
+	}
 }
 
 static void GL_MarkLeaves(void)
 {
-    static int lastNodesVisible;
-    byte vis1[VIS_MAX_BYTES];
-    byte vis2[VIS_MAX_BYTES];
-    mleaf_t *leaf;
-    mnode_t *node;
-    size_t *src1, *src2;
-    int cluster1, cluster2, longs;
-    vec3_t tmp;
-    int i;
-    bsp_t *bsp = gl_static.world.cache;
+	static int lastNodesVisible;
+	byte vis1[VIS_MAX_BYTES];
+	byte vis2[VIS_MAX_BYTES];
+	mleaf_t *leaf;
+	mnode_t *node;
+	size_t *src1, *src2;
+	int cluster1, cluster2, longs;
+	vec3_t tmp;
+	int i;
+	bsp_t *bsp = gl_static.world.cache;
+	leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
+	cluster1 = cluster2 = leaf->cluster;
+	VectorCopy(glr.fd.vieworg, tmp);
 
-    leaf = BSP_PointLeaf(bsp->nodes, glr.fd.vieworg);
-    cluster1 = cluster2 = leaf->cluster;
-    VectorCopy(glr.fd.vieworg, tmp);
-    if (!leaf->contents) {
-        tmp[2] -= 16;
-    } else {
-        tmp[2] += 16;
-    }
-    leaf = BSP_PointLeaf(bsp->nodes, tmp);
-    if (!(leaf->contents & CONTENTS_SOLID)) {
-        cluster2 = leaf->cluster;
-    }
+	if (!leaf->contents)
+		tmp[2] -= 16;
+	else
+		tmp[2] += 16;
 
-    if (cluster1 == glr.viewcluster1 && cluster2 == glr.viewcluster2) {
-        goto finish;
-    }
+	leaf = BSP_PointLeaf(bsp->nodes, tmp);
 
-    if (gl_lockpvs->integer) {
-        goto finish;
-    }
+	if (!(leaf->contents & CONTENTS_SOLID))
+		cluster2 = leaf->cluster;
 
-    glr.visframe++;
-    glr.viewcluster1 = cluster1;
-    glr.viewcluster2 = cluster2;
+	if (cluster1 == glr.viewcluster1 && cluster2 == glr.viewcluster2)
+		goto finish;
 
-    if (!bsp->vis || gl_novis->integer || cluster1 == -1) {
-        // mark everything visible
-        for (i = 0; i < bsp->numnodes; i++) {
-            bsp->nodes[i].visframe = glr.visframe;
-        }
-        for (i = 0; i < bsp->numleafs; i++) {
-            bsp->leafs[i].visframe = glr.visframe;
-        }
-        lastNodesVisible = bsp->numnodes;
-        goto finish;
-    }
+	if (gl_lockpvs->integer)
+		goto finish;
 
-    BSP_ClusterVis(bsp, vis1, cluster1, DVIS_PVS);
-    if (cluster1 != cluster2) {
-        BSP_ClusterVis(bsp, vis2, cluster2, DVIS_PVS);
-        longs = VIS_FAST_LONGS(bsp);
-        src1 = (size_t *)vis1;
-        src2 = (size_t *)vis2;
-        while (longs--) {
-            *src1++ |= *src2++;
-        }
-    }
+	glr.visframe++;
+	glr.viewcluster1 = cluster1;
+	glr.viewcluster2 = cluster2;
 
-    lastNodesVisible = 0;
-    for (i = 0, leaf = bsp->leafs; i < bsp->numleafs; i++, leaf++) {
-        cluster1 = leaf->cluster;
-        if (cluster1 == -1) {
-            continue;
-        }
-        if (Q_IsBitSet(vis1, cluster1)) {
-            node = (mnode_t *)leaf;
+	if (!bsp->vis || gl_novis->integer || cluster1 == -1)
+	{
+		// mark everything visible
+		for (i = 0; i < bsp->numnodes; i++)
+			bsp->nodes[i].visframe = glr.visframe;
 
-            // mark parent nodes visible
-            do {
-                if (node->visframe == glr.visframe) {
-                    break;
-                }
-                node->visframe = glr.visframe;
-                node = node->parent;
-                lastNodesVisible++;
-            } while (node);
-        }
-    }
+		for (i = 0; i < bsp->numleafs; i++)
+			bsp->leafs[i].visframe = glr.visframe;
+
+		lastNodesVisible = bsp->numnodes;
+		goto finish;
+	}
+
+	BSP_ClusterVis(bsp, vis1, cluster1, DVIS_PVS);
+
+	if (cluster1 != cluster2)
+	{
+		BSP_ClusterVis(bsp, vis2, cluster2, DVIS_PVS);
+		longs = VIS_FAST_LONGS(bsp);
+		src1 = (size_t *)vis1;
+		src2 = (size_t *)vis2;
+
+		while (longs--)
+			*src1++ |= *src2++;
+	}
+
+	lastNodesVisible = 0;
+
+	for (i = 0, leaf = bsp->leafs; i < bsp->numleafs; i++, leaf++)
+	{
+		cluster1 = leaf->cluster;
+
+		if (cluster1 == -1)
+			continue;
+
+		if (Q_IsBitSet(vis1, cluster1))
+		{
+			node = (mnode_t *)leaf;
+
+			// mark parent nodes visible
+			do
+			{
+				if (node->visframe == glr.visframe)
+					break;
+
+				node->visframe = glr.visframe;
+				node = node->parent;
+				lastNodesVisible++;
+			}
+			while (node);
+		}
+	}
 
 finish:
-    c.nodesVisible = lastNodesVisible;
-
+	c.nodesVisible = lastNodesVisible;
 }
 
 #define BACKFACE_EPSILON    0.01f
 
 #define BSP_CullFace(face, dot) \
-    (((dot) < -BACKFACE_EPSILON && !((face)->drawflags & DSURF_PLANEBACK)) || \
-     ((dot) >  BACKFACE_EPSILON &&  ((face)->drawflags & DSURF_PLANEBACK)))
+	(((dot) < -BACKFACE_EPSILON && !((face)->drawflags & DSURF_PLANEBACK)) || \
+		((dot) >  BACKFACE_EPSILON &&  ((face)->drawflags & DSURF_PLANEBACK)))
 
 void GL_DrawBspModel(mmodel_t *model)
 {
-    mface_t *face, *last;
-    vec3_t bounds[2];
-    vec_t dot;
-    vec3_t transformed, temp;
-    entity_t *ent = glr.ent;
-    glCullResult_t cull;
+	mface_t *face, *last;
+	vec3_t bounds[2];
+	vec_t dot;
+	vec3_t transformed, temp;
+	entity_t *ent = glr.ent;
+	glCullResult_t cull;
 
-    if (!model->numfaces)
-        return;
+	if (!model->numfaces)
+		return;
 
-    if (glr.entrotated) {
-        cull = GL_CullSphere(ent->origin, model->radius);
-        if (cull == CULL_OUT) {
-            c.spheresCulled++;
-            return;
-        }
-        if (cull == CULL_CLIP) {
-            VectorCopy(model->mins, bounds[0]);
-            VectorCopy(model->maxs, bounds[1]);
-            cull = GL_CullLocalBox(ent->origin, bounds);
-            if (cull == CULL_OUT) {
-                c.rotatedBoxesCulled++;
-                return;
-            }
-        }
-        VectorSubtract(glr.fd.vieworg, ent->origin, temp);
-        transformed[0] = DotProduct(temp, glr.entaxis[0]);
-        transformed[1] = DotProduct(temp, glr.entaxis[1]);
-        transformed[2] = DotProduct(temp, glr.entaxis[2]);
-    } else {
-        VectorAdd(model->mins, ent->origin, bounds[0]);
-        VectorAdd(model->maxs, ent->origin, bounds[1]);
-        cull = GL_CullBox(bounds);
-        if (cull == CULL_OUT) {
-            c.boxesCulled++;
-            return;
-        }
-        VectorSubtract(glr.fd.vieworg, ent->origin, transformed);
-    }
+	if (glr.entrotated)
+	{
+		cull = GL_CullSphere(ent->origin, model->radius);
 
-    GL_TransformLights(model);
+		if (cull == CULL_OUT)
+		{
+			c.spheresCulled++;
+			return;
+		}
 
-    GL_RotateForEntity(ent->origin);
+		if (cull == CULL_CLIP)
+		{
+			VectorCopy(model->mins, bounds[0]);
+			VectorCopy(model->maxs, bounds[1]);
+			cull = GL_CullLocalBox(ent->origin, bounds);
 
-    GL_BindArrays();
+			if (cull == CULL_OUT)
+			{
+				c.rotatedBoxesCulled++;
+				return;
+			}
+		}
 
-    // draw visible faces
-    last = model->firstface + model->numfaces;
-    for (face = model->firstface; face < last; face++) {
-        dot = PlaneDiffFast(transformed, face->plane);
-        if (BSP_CullFace(face, dot)) {
-            c.facesCulled++;
-            continue;
-        }
+		VectorSubtract(glr.fd.vieworg, ent->origin, temp);
+		transformed[0] = DotProduct(temp, glr.entaxis[0]);
+		transformed[1] = DotProduct(temp, glr.entaxis[1]);
+		transformed[2] = DotProduct(temp, glr.entaxis[2]);
+	}
+	else
+	{
+		VectorAdd(model->mins, ent->origin, bounds[0]);
+		VectorAdd(model->maxs, ent->origin, bounds[1]);
+		cull = GL_CullBox(bounds);
 
-        // sky faces don't have their polygon built
-        if (face->drawflags & SURF_SKY) {
-            continue;
-        }
+		if (cull == CULL_OUT)
+		{
+			c.boxesCulled++;
+			return;
+		}
 
-        // alpha faces on transformed inline models are drawn with world GL
-        // matrix. this Q2 bug is not fixed intentionally: some maps exploit it
-        // to hide surfaces that would otherwise be visible.
-        if (face->drawflags & SURF_TRANS_MASK) {
-            if (model->drawframe != glr.drawframe)
-                GL_AddAlphaFace(face);
-            continue;
-        }
+		VectorSubtract(glr.fd.vieworg, ent->origin, transformed);
+	}
 
-        if (gl_dynamic->integer) {
-            GL_PushLights(face);
-        }
+	GL_TransformLights(model);
+	GL_RotateForEntity(ent->origin);
+	GL_BindArrays();
+	// draw visible faces
+	last = model->firstface + model->numfaces;
 
-        GL_DrawFace(face);
-    }
+	for (face = model->firstface; face < last; face++)
+	{
+		dot = PlaneDiffFast(transformed, face->plane);
 
-    GL_Flush3D();
+		if (BSP_CullFace(face, dot))
+		{
+			c.facesCulled++;
+			continue;
+		}
 
-    // protect against infinite loop if the same inline model
-    // with alpha faces is referenced by multiple entities
-    model->drawframe = glr.drawframe;
+		// sky faces don't have their polygon built
+		if (face->drawflags & SURF_SKY)
+			continue;
+
+		// alpha faces on transformed inline models are drawn with world GL
+		// matrix. this Q2 bug is not fixed intentionally: some maps exploit it
+		// to hide surfaces that would otherwise be visible.
+		if (face->drawflags & SURF_TRANS_MASK)
+		{
+			if (model->drawframe != glr.drawframe)
+				GL_AddAlphaFace(face);
+
+			continue;
+		}
+
+		if (gl_dynamic->integer)
+			GL_PushLights(face);
+
+		GL_DrawFace(face);
+	}
+
+	GL_Flush3D();
+	// protect against infinite loop if the same inline model
+	// with alpha faces is referenced by multiple entities
+	model->drawframe = glr.drawframe;
 }
 
 #define NODE_CLIPPED    0
@@ -432,135 +463,127 @@ void GL_DrawBspModel(mmodel_t *model)
 
 static inline bool GL_ClipNode(mnode_t *node, int *clipflags)
 {
-    int flags = *clipflags;
-    int i, bits, mask;
+	int flags = *clipflags;
+	int i, bits, mask;
 
-    if (flags == NODE_UNCLIPPED) {
-        return true;
-    }
-    for (i = 0, mask = 1; i < 4; i++, mask <<= 1) {
-        if (flags & mask) {
-            continue;
-        }
-        bits = BoxOnPlaneSide(node->mins, node->maxs,
-                              &glr.frustumPlanes[i]);
-        if (bits == BOX_BEHIND) {
-            return false;
-        }
-        if (bits == BOX_INFRONT) {
-            flags |= mask;
-        }
-    }
+	if (flags == NODE_UNCLIPPED)
+		return true;
 
-    *clipflags = flags;
+	for (i = 0, mask = 1; i < 4; i++, mask <<= 1)
+	{
+		if (flags & mask)
+			continue;
 
-    return true;
+		bits = BoxOnPlaneSide(node->mins, node->maxs,
+				&glr.frustumPlanes[i]);
+
+		if (bits == BOX_BEHIND)
+			return false;
+
+		if (bits == BOX_INFRONT)
+			flags |= mask;
+	}
+
+	*clipflags = flags;
+	return true;
 }
 
 static inline void GL_DrawLeaf(mleaf_t *leaf)
 {
-    mface_t **face, **last;
+	mface_t **face, **last;
 
-    if (leaf->contents == CONTENTS_SOLID) {
-        return; // solid leaf
-    }
-    if (glr.fd.areabits && !Q_IsBitSet(glr.fd.areabits, leaf->area)) {
-        return; // door blocks sight
-    }
+	if (leaf->contents == CONTENTS_SOLID)
+	{
+		return; // solid leaf
+	}
 
-    last = leaf->firstleafface + leaf->numleaffaces;
-    for (face = leaf->firstleafface; face < last; face++) {
-        (*face)->drawframe = glr.drawframe;
-    }
+	if (glr.fd.areabits && !Q_IsBitSet(glr.fd.areabits, leaf->area))
+	{
+		return; // door blocks sight
+	}
 
-    c.leavesDrawn++;
+	last = leaf->firstleafface + leaf->numleaffaces;
+
+	for (face = leaf->firstleafface; face < last; face++)
+		(*face)->drawframe = glr.drawframe;
+
+	c.leavesDrawn++;
 }
 
 static inline void GL_DrawNode(mnode_t *node)
 {
-    mface_t *face, *last = node->firstface + node->numfaces;
+	mface_t *face, *last = node->firstface + node->numfaces;
 
-    for (face = node->firstface; face < last; face++) {
-        if (face->drawframe != glr.drawframe) {
-            continue;
-        }
+	for (face = node->firstface; face < last; face++)
+	{
+		if (face->drawframe != glr.drawframe)
+			continue;
 
-        if (face->drawflags & SURF_SKY) {
-            R_AddSkySurface(face);
-            continue;
-        }
+		if (face->drawflags & SURF_SKY)
+		{
+			R_AddSkySurface(face);
+			continue;
+		}
 
-        if (face->drawflags & SURF_TRANS_MASK) {
-            GL_AddAlphaFace(face);
-            continue;
-        }
+		if (face->drawflags & SURF_TRANS_MASK)
+		{
+			GL_AddAlphaFace(face);
+			continue;
+		}
 
-        if (gl_dynamic->integer) {
-            GL_PushLights(face);
-        }
+		if (gl_dynamic->integer)
+			GL_PushLights(face);
 
-        if (gl_hash_faces->integer) {
-            GL_AddSolidFace(face);
-        } else {
-            GL_DrawFace(face);
-        }
-    }
+		if (gl_hash_faces->integer)
+			GL_AddSolidFace(face);
+		else
+			GL_DrawFace(face);
+	}
 
-    c.nodesDrawn++;
+	c.nodesDrawn++;
 }
 
 static void GL_WorldNode_r(mnode_t *node, int clipflags)
 {
-    int side;
-    vec_t dot;
+	int side;
+	vec_t dot;
 
-    while (node->visframe == glr.visframe) {
-        if (!GL_ClipNode(node, &clipflags)) {
-            c.nodesCulled++;
-            break;
-        }
+	while (node->visframe == glr.visframe)
+	{
+		if (!GL_ClipNode(node, &clipflags))
+		{
+			c.nodesCulled++;
+			break;
+		}
 
-        if (!node->plane) {
-            GL_DrawLeaf((mleaf_t *)node);
-            break;
-        }
+		if (!node->plane)
+		{
+			GL_DrawLeaf((mleaf_t *)node);
+			break;
+		}
 
-        dot = PlaneDiffFast(glr.fd.vieworg, node->plane);
-        side = dot < 0;
-
-        GL_WorldNode_r(node->children[side], clipflags);
-
-        GL_DrawNode(node);
-
-        node = node->children[side ^ 1];
-    }
+		dot = PlaneDiffFast(glr.fd.vieworg, node->plane);
+		side = dot < 0;
+		GL_WorldNode_r(node->children[side], clipflags);
+		GL_DrawNode(node);
+		node = node->children[side ^ 1];
+	}
 }
 
 void GL_DrawWorld(void)
 {
-    // auto cycle the world frame for texture animation
-    gl_world.frame = (int)(glr.fd.time * 2);
-
-    glr.ent = &gl_world;
-
-    GL_MarkLeaves();
-
-    GL_MarkLights();
-
-    R_ClearSkyBox();
-
-    GL_LoadMatrix(glr.viewmatrix);
-
-    GL_BindArrays();
-
-    GL_ClearSolidFaces();
-
-    GL_WorldNode_r(gl_static.world.cache->nodes,
-                   gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
-
-    GL_DrawSolidFaces();
-
-    GL_Flush3D();
-
-    R_DrawSkyBox();
+	// auto cycle the world frame for texture animation
+	gl_world.frame = (int)(glr.fd.time * 2);
+	glr.ent = &gl_world;
+	GL_MarkLeaves();
+	GL_MarkLights();
+	R_ClearSkyBox();
+	GL_LoadMatrix(glr.viewmatrix);
+	GL_BindArrays();
+	GL_ClearSolidFaces();
+	GL_WorldNode_r(gl_static.world.cache->nodes,
+		gl_cull_nodes->integer ? NODE_CLIPPED : NODE_UNCLIPPED);
+	GL_DrawSolidFaces();
+	GL_Flush3D();
+	R_DrawSkyBox();
 }

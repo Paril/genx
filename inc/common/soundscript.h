@@ -1,6 +1,7 @@
 #define MAX_SOUND_SCRIPTS 256
 
-typedef struct {
+typedef struct
+{
 	char			path[MAX_QPATH];
 
 	bool			loaded;
@@ -8,7 +9,8 @@ typedef struct {
 	int				pitch_min, pitch_max;
 } soundentry_t;
 
-typedef struct {
+typedef struct
+{
 	char			name[MAX_QPATH];
 	soundentry_t	entries[GAME_TOTAL];
 } soundscript_t;

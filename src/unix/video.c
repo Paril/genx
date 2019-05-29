@@ -49,60 +49,63 @@ OPENGL STUFF
 
 static void gl_swapinterval_changed(cvar_t *self)
 {
-    if (SDL_GL_SetSwapInterval(self->integer) < 0) {
-        Com_EPrintf("Couldn't set swap interval %d: %s\n", self->integer, SDL_GetError());
-    }
+	if (SDL_GL_SetSwapInterval(self->integer) < 0)
+		Com_EPrintf("Couldn't set swap interval %d: %s\n", self->integer, SDL_GetError());
 }
 
 static void VID_SDL_GL_SetAttributes(void)
 {
-    int colorbits = Cvar_ClampInteger(
-        Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
-    int depthbits = Cvar_ClampInteger(
-        Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
-    int stencilbits = Cvar_ClampInteger(
-        Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
-    int multisamples = Cvar_ClampInteger(
-        Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
+	int colorbits = Cvar_ClampInteger(
+			Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
+	int depthbits = Cvar_ClampInteger(
+			Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
+	int stencilbits = Cvar_ClampInteger(
+			Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
+	int multisamples = Cvar_ClampInteger(
+			Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
 
-    if (colorbits == 0)
-        colorbits = 24;
+	if (colorbits == 0)
+		colorbits = 24;
 
-    if (depthbits == 0)
-        depthbits = colorbits > 16 ? 24 : 16;
+	if (depthbits == 0)
+		depthbits = colorbits > 16 ? 24 : 16;
 
-    if (depthbits < 24)
-        stencilbits = 0;
+	if (depthbits < 24)
+		stencilbits = 0;
 
-    if (colorbits > 16) {
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    } else {
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-    }
+	if (colorbits > 16)
+	{
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+	}
+	else
+	{
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+	}
 
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depthbits);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, stencilbits);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, depthbits);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, stencilbits);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    if (multisamples > 1) {
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, multisamples);
-    }
+	if (multisamples > 1)
+	{
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+		SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, multisamples);
+	}
 
 #if USE_GLES
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 }
 
 void *VID_GetProcAddr(const char *sym)
 {
-    return SDL_GL_GetProcAddress(sym);
+	return SDL_GL_GetProcAddress(sym);
 }
 
 /*
@@ -115,54 +118,61 @@ VIDEO
 
 static void VID_SDL_ModeChanged(void)
 {
-    int width, height;
-    SDL_GetWindowSize(sdl_window, &width, &height);
+	int width, height;
+	SDL_GetWindowSize(sdl_window, &width, &height);
+	Uint32 flags = SDL_GetWindowFlags(sdl_window);
 
-    Uint32 flags = SDL_GetWindowFlags(sdl_window);
-    if (flags & SDL_WINDOW_FULLSCREEN)
-        sdl_flags |= QVF_FULLSCREEN;
-    else
-        sdl_flags &= ~QVF_FULLSCREEN;
+	if (flags & SDL_WINDOW_FULLSCREEN)
+		sdl_flags |= QVF_FULLSCREEN;
+	else
+		sdl_flags &= ~QVF_FULLSCREEN;
 
-    R_ModeChanged(width, height, sdl_flags);
-    SCR_ModeChanged();
+	R_ModeChanged(width, height, sdl_flags);
+	SCR_ModeChanged();
 }
 
 static void VID_SDL_SetMode(void)
 {
-    Uint32 flags;
-    vrect_t rc;
-    int freq;
+	Uint32 flags;
+	vrect_t rc;
+	int freq;
 
-    if (vid_fullscreen->integer) {
-        if (VID_GetFullscreen(&rc, &freq, NULL)) {
-            SDL_DisplayMode mode = {
-                .format         = SDL_PIXELFORMAT_UNKNOWN,
-                .w              = rc.width,
-                .h              = rc.height,
-                .refresh_rate   = freq,
-                .driverdata     = NULL
-            };
-            SDL_SetWindowDisplayMode(sdl_window, &mode);
-            flags = SDL_WINDOW_FULLSCREEN;
-        } else {
-            flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
-        }
-    } else {
-        if (VID_GetGeometry(&rc)) {
-            SDL_SetWindowSize(sdl_window, rc.width, rc.height);
-            SDL_SetWindowPosition(sdl_window, rc.x, rc.y);
-        }
-        flags = 0;
-    }
+	if (vid_fullscreen->integer)
+	{
+		if (VID_GetFullscreen(&rc, &freq, NULL))
+		{
+			SDL_DisplayMode mode =
+			{
+				.format         = SDL_PIXELFORMAT_UNKNOWN,
+				.w              = rc.width,
+				.h              = rc.height,
+				.refresh_rate   = freq,
+				.driverdata     = NULL
+			};
+			SDL_SetWindowDisplayMode(sdl_window, &mode);
+			flags = SDL_WINDOW_FULLSCREEN;
+		}
+		else
+			flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+	}
+	else
+	{
+		if (VID_GetGeometry(&rc))
+		{
+			SDL_SetWindowSize(sdl_window, rc.width, rc.height);
+			SDL_SetWindowPosition(sdl_window, rc.x, rc.y);
+		}
 
-    SDL_SetWindowFullscreen(sdl_window, flags);
+		flags = 0;
+	}
+
+	SDL_SetWindowFullscreen(sdl_window, flags);
 }
 
 void VID_SetMode(void)
 {
-    VID_SDL_SetMode();
-    VID_SDL_ModeChanged();
+	VID_SDL_SetMode();
+	VID_SDL_ModeChanged();
 }
 
 void VID_BeginFrame(void)
@@ -171,186 +181,202 @@ void VID_BeginFrame(void)
 
 void VID_EndFrame(void)
 {
-    SDL_GL_SwapWindow(sdl_window);
+	SDL_GL_SwapWindow(sdl_window);
 }
 
 void VID_FatalShutdown(void)
 {
-    SDL_SetWindowGrab(sdl_window, SDL_FALSE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
-    SDL_ShowCursor(SDL_ENABLE);
-    SDL_Quit();
+	SDL_SetWindowGrab(sdl_window, SDL_FALSE);
+	SDL_SetRelativeMouseMode(SDL_FALSE);
+	SDL_ShowCursor(SDL_ENABLE);
+	SDL_Quit();
 }
 
 char *VID_GetClipboardData(void)
 {
-    // returned data must be Z_Free'd
-    char *text = SDL_GetClipboardText();
-    char *copy = Z_CopyString(text);
-    SDL_free(text);
-    return copy;
+	// returned data must be Z_Free'd
+	char *text = SDL_GetClipboardText();
+	char *copy = Z_CopyString(text);
+	SDL_free(text);
+	return copy;
 }
 
 void VID_SetClipboardData(const char *data)
 {
-    SDL_SetClipboardText(data);
+	SDL_SetClipboardText(data);
 }
 
 void VID_UpdateGamma(const byte *table)
 {
-    Uint16 ramp[256];
-    int i;
+	Uint16 ramp[256];
+	int i;
 
-    if (sdl_flags & QVF_GAMMARAMP) {
-        for (i = 0; i < 256; i++) {
-            ramp[i] = table[i] << 8;
-        }
-        SDL_SetWindowGammaRamp(sdl_window, ramp, ramp, ramp);
-    }
+	if (sdl_flags & QVF_GAMMARAMP)
+	{
+		for (i = 0; i < 256; i++)
+			ramp[i] = table[i] << 8;
+
+		SDL_SetWindowGammaRamp(sdl_window, ramp, ramp, ramp);
+	}
 }
 
 static int VID_SDL_InitSubSystem(void)
 {
-    int ret;
+	int ret;
 
-    if (SDL_WasInit(SDL_INIT_VIDEO))
-        return 0;
+	if (SDL_WasInit(SDL_INIT_VIDEO))
+		return 0;
 
-    ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
-    if (ret == -1)
-        Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
+	ret = SDL_InitSubSystem(SDL_INIT_VIDEO);
 
-    return ret;
+	if (ret == -1)
+		Com_EPrintf("Couldn't initialize SDL video: %s\n", SDL_GetError());
+
+	return ret;
 }
 
 static int VID_SDL_EventFilter(void *userdata, SDL_Event *event)
 {
-    // SDL uses relative time, we need absolute
-    event->common.timestamp = Sys_Milliseconds();
-    return 1;
+	// SDL uses relative time, we need absolute
+	event->common.timestamp = Sys_Milliseconds();
+	return 1;
 }
 
 char *VID_GetDefaultModeList(void)
 {
-    SDL_DisplayMode mode;
-    size_t size, len;
-    char *buf;
-    int i, num_modes;
+	SDL_DisplayMode mode;
+	size_t size, len;
+	char *buf;
+	int i, num_modes;
 
-    if (VID_SDL_InitSubSystem())
-        return NULL;
+	if (VID_SDL_InitSubSystem())
+		return NULL;
 
-    num_modes = SDL_GetNumDisplayModes(0);
-    if (num_modes < 1)
-        return Z_CopyString(VID_MODELIST);
+	num_modes = SDL_GetNumDisplayModes(0);
 
-    size = 8 + num_modes * 32 + 1;
-    buf = Z_Malloc(size);
+	if (num_modes < 1)
+		return Z_CopyString(VID_MODELIST);
 
-    len = Q_strlcpy(buf, "desktop ", size);
-    for (i = 0; i < num_modes; i++) {
-        if (SDL_GetDisplayMode(0, i, &mode) < 0)
-            break;
-        if (mode.refresh_rate == 0)
-            continue;
-        len += Q_scnprintf(buf + len, size - len, "%dx%d@%d ",
-                           mode.w, mode.h, mode.refresh_rate);
-    }
+	size = 8 + num_modes * 32 + 1;
+	buf = Z_Malloc(size);
+	len = Q_strlcpy(buf, "desktop ", size);
 
-    if (len == 0)
-        buf[0] = 0;
-    else if (buf[len - 1] == ' ')
-        buf[len - 1] = 0;
+	for (i = 0; i < num_modes; i++)
+	{
+		if (SDL_GetDisplayMode(0, i, &mode) < 0)
+			break;
 
-    return buf;
+		if (mode.refresh_rate == 0)
+			continue;
+
+		len += Q_scnprintf(buf + len, size - len, "%dx%d@%d ",
+				mode.w, mode.h, mode.refresh_rate);
+	}
+
+	if (len == 0)
+		buf[0] = 0;
+	else if (buf[len - 1] == ' ')
+		buf[len - 1] = 0;
+
+	return buf;
 }
 
 bool VID_Init(void)
 {
-    vrect_t rc;
+	vrect_t rc;
 
-    if (VID_SDL_InitSubSystem()) {
-        return false;
-    }
+	if (VID_SDL_InitSubSystem())
+		return false;
 
-    VID_SDL_GL_SetAttributes();
+	VID_SDL_GL_SetAttributes();
+	Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
+	SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
 
-    Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
+	if (!VID_GetGeometry(&rc))
+	{
+		rc.x = SDL_WINDOWPOS_UNDEFINED;
+		rc.y = SDL_WINDOWPOS_UNDEFINED;
+	}
 
-    SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
+	sdl_window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 
-    if (!VID_GetGeometry(&rc)) {
-        rc.x = SDL_WINDOWPOS_UNDEFINED;
-        rc.y = SDL_WINDOWPOS_UNDEFINED;
-    }
+	if (!sdl_window)
+	{
+		Com_EPrintf("Couldn't create SDL window: %s\n", SDL_GetError());
+		goto fail;
+	}
 
-    sdl_window = SDL_CreateWindow(PRODUCT, rc.x, rc.y, rc.width, rc.height, SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
-    if (!sdl_window) {
-        Com_EPrintf("Couldn't create SDL window: %s\n", SDL_GetError());
-        goto fail;
-    }
+	SDL_SetWindowMinimumSize(sdl_window, 320, 240);
+	SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(q2icon_bits, q2icon_width, q2icon_height,
+			1, q2icon_width / 8, 0, 0, 0, 0);
 
-    SDL_SetWindowMinimumSize(sdl_window, 320, 240);
+	if (icon)
+	{
+		SDL_Color colors[2] =
+		{
+			{ 255, 255, 255 },
+			{   0, 128, 128 }
+		};
+		SDL_SetPaletteColors(icon->format->palette, colors, 0, 2);
+		SDL_SetColorKey(icon, SDL_TRUE, 0);
+		SDL_SetWindowIcon(sdl_window, icon);
+		SDL_FreeSurface(icon);
+	}
 
-    SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(q2icon_bits, q2icon_width, q2icon_height,
-                                                 1, q2icon_width / 8, 0, 0, 0, 0);
-    if (icon) {
-        SDL_Color colors[2] = {
-            { 255, 255, 255 },
-            {   0, 128, 128 }
-        };
-        SDL_SetPaletteColors(icon->format->palette, colors, 0, 2);
-        SDL_SetColorKey(icon, SDL_TRUE, 0);
-        SDL_SetWindowIcon(sdl_window, icon);
-        SDL_FreeSurface(icon);
-    }
+	VID_SDL_SetMode();
+	sdl_context = SDL_GL_CreateContext(sdl_window);
 
-    VID_SDL_SetMode();
+	if (!sdl_context)
+	{
+		Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
+		goto fail;
+	}
 
-    sdl_context = SDL_GL_CreateContext(sdl_window);
-    if (!sdl_context) {
-        Com_EPrintf("Couldn't create OpenGL context: %s\n", SDL_GetError());
-        goto fail;
-    }
+	cvar_t *gl_swapinterval = Cvar_Get("gl_swapinterval", "0", 0);
+	gl_swapinterval->changed = gl_swapinterval_changed;
+	gl_swapinterval_changed(gl_swapinterval);
+	cvar_t *vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
 
-    cvar_t *gl_swapinterval = Cvar_Get("gl_swapinterval", "0", 0);
-    gl_swapinterval->changed = gl_swapinterval_changed;
-    gl_swapinterval_changed(gl_swapinterval);
+	if (vid_hwgamma->integer)
+	{
+		Uint16  gamma[3][256];
 
-    cvar_t *vid_hwgamma = Cvar_Get("vid_hwgamma", "0", CVAR_REFRESH);
-    if (vid_hwgamma->integer) {
-        Uint16  gamma[3][256];
+		if (SDL_GetWindowGammaRamp(sdl_window, gamma[0], gamma[1], gamma[2]) == 0 &&
+			SDL_SetWindowGammaRamp(sdl_window, gamma[0], gamma[1], gamma[2]) == 0)
+		{
+			Com_Printf("...enabling hardware gamma\n");
+			sdl_flags |= QVF_GAMMARAMP;
+		}
+		else
+		{
+			Com_Printf("...hardware gamma not supported\n");
+			Cvar_Reset(vid_hwgamma);
+		}
+	}
 
-        if (SDL_GetWindowGammaRamp(sdl_window, gamma[0], gamma[1], gamma[2]) == 0 &&
-            SDL_SetWindowGammaRamp(sdl_window, gamma[0], gamma[1], gamma[2]) == 0) {
-            Com_Printf("...enabling hardware gamma\n");
-            sdl_flags |= QVF_GAMMARAMP;
-        } else {
-            Com_Printf("...hardware gamma not supported\n");
-            Cvar_Reset(vid_hwgamma);
-        }
-    }
-
-    VID_SDL_ModeChanged();
-    return true;
-
+	VID_SDL_ModeChanged();
+	return true;
 fail:
-    VID_Shutdown();
-    return false;
+	VID_Shutdown();
+	return false;
 }
 
 void VID_Shutdown(void)
 {
-    if (sdl_context) {
-        SDL_GL_DeleteContext(sdl_context);
-        sdl_context = NULL;
-    }
-    if (sdl_window) {
-        SDL_DestroyWindow(sdl_window);
-        sdl_window = NULL;
-    }
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    sdl_flags = 0;
+	if (sdl_context)
+	{
+		SDL_GL_DeleteContext(sdl_context);
+		sdl_context = NULL;
+	}
+
+	if (sdl_window)
+	{
+		SDL_DestroyWindow(sdl_window);
+		sdl_window = NULL;
+	}
+
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	sdl_flags = 0;
 }
 
 /*
@@ -363,140 +389,159 @@ EVENTS
 
 static void window_event(SDL_WindowEvent *event)
 {
-    Uint32 flags = SDL_GetWindowFlags(sdl_window);
-    active_t active;
-    vrect_t rc;
+	Uint32 flags = SDL_GetWindowFlags(sdl_window);
+	active_t active;
+	vrect_t rc;
 
-    switch (event->event) {
-    case SDL_WINDOWEVENT_MINIMIZED:
-    case SDL_WINDOWEVENT_RESTORED:
-    case SDL_WINDOWEVENT_ENTER:
-    case SDL_WINDOWEVENT_LEAVE:
-    case SDL_WINDOWEVENT_FOCUS_GAINED:
-    case SDL_WINDOWEVENT_FOCUS_LOST:
-        if (flags & (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS)) {
-            active = ACT_ACTIVATED;
-        } else if (flags & SDL_WINDOW_MINIMIZED) {
-            active = ACT_MINIMIZED;
-        } else {
-            active = ACT_RESTORED;
-        }
-        CL_Activate(active);
-        break;
+	switch (event->event)
+	{
+		case SDL_WINDOWEVENT_MINIMIZED:
+		case SDL_WINDOWEVENT_RESTORED:
+		case SDL_WINDOWEVENT_ENTER:
+		case SDL_WINDOWEVENT_LEAVE:
+		case SDL_WINDOWEVENT_FOCUS_GAINED:
+		case SDL_WINDOWEVENT_FOCUS_LOST:
+			if (flags & (SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS))
+				active = ACT_ACTIVATED;
+			else if (flags & SDL_WINDOW_MINIMIZED)
+				active = ACT_MINIMIZED;
+			else
+				active = ACT_RESTORED;
 
-    case SDL_WINDOWEVENT_MOVED:
-        if (!(flags & SDL_WINDOW_FULLSCREEN)) {
-            SDL_GetWindowSize(sdl_window, &rc.width, &rc.height);
-            rc.x = event->data1;
-            rc.y = event->data2;
-            VID_SetGeometry(&rc);
-        }
-        break;
+			CL_Activate(active);
+			break;
 
-    case SDL_WINDOWEVENT_RESIZED:
-        if (!(flags & SDL_WINDOW_FULLSCREEN)) {
-            SDL_GetWindowPosition(sdl_window, &rc.x, &rc.y);
-            rc.width = event->data1;
-            rc.height = event->data2;
-            VID_SetGeometry(&rc);
-        }
-        VID_SDL_ModeChanged();
-        break;
-    }
+		case SDL_WINDOWEVENT_MOVED:
+			if (!(flags & SDL_WINDOW_FULLSCREEN))
+			{
+				SDL_GetWindowSize(sdl_window, &rc.width, &rc.height);
+				rc.x = event->data1;
+				rc.y = event->data2;
+				VID_SetGeometry(&rc);
+			}
+
+			break;
+
+		case SDL_WINDOWEVENT_RESIZED:
+			if (!(flags & SDL_WINDOW_FULLSCREEN))
+			{
+				SDL_GetWindowPosition(sdl_window, &rc.x, &rc.y);
+				rc.width = event->data1;
+				rc.height = event->data2;
+				VID_SetGeometry(&rc);
+			}
+
+			VID_SDL_ModeChanged();
+			break;
+	}
 }
 
-static const byte scantokey[128] = {
-//  0               1               2               3               4               5               6                   7
-//  8               9               A               B               C               D               E                   F
-    0,              0,              0,              0,              'a',            'b',            'c',                'd',            // 0
-    'e',            'f',            'g',            'h',            'i',            'j',            'k',                'l',
-    'm',            'n',            'o',            'p',            'q',            'r',            's',                't',            // 1
-    'u',            'v',            'w',            'x',            'y',            'z',            '1',                '2',
-    '3',            '4',            '5',            '6',            '7',            '8',            '9',                '0',            // 2
-    K_ENTER,        K_ESCAPE,       K_BACKSPACE,    K_TAB,          K_SPACE,        '-',            '=',                '[',
-    ']',            '\\',           0,              ';',            '\'',           '`',            ',',                '.',            // 3
-    '/' ,           K_CAPSLOCK,     K_F1,           K_F2,           K_F3,           K_F4,           K_F5,               K_F6,
-    K_F7,           K_F8,           K_F9,           K_F10,          K_F11,          K_F12,          K_PRINTSCREEN,      K_SCROLLOCK,    // 4
-    K_PAUSE,        K_INS,          K_HOME,         K_PGUP,         K_DEL,          K_END,          K_PGDN,             K_RIGHTARROW,
-    K_LEFTARROW,    K_DOWNARROW,    K_UPARROW,      K_NUMLOCK,      K_KP_SLASH,     K_KP_MULTIPLY,  K_KP_MINUS,         K_KP_PLUS,      // 5
-    K_KP_ENTER,     K_KP_END,       K_KP_DOWNARROW, K_KP_PGDN,      K_KP_LEFTARROW, K_KP_5,         K_KP_RIGHTARROW,    K_KP_HOME,
-    K_KP_UPARROW,   K_KP_PGUP,      K_KP_INS,       K_KP_DEL,       K_102ND,        0,              0,                  0,              // 6
-    0,              0,              0,              0,              0,              0,              0,                  0,
-    0,              0,              0,              0,              0,              0,              K_MENU,             0,              // 7
-    K_LCTRL,        K_LSHIFT,       K_LALT,         K_LWINKEY,      K_RCTRL,        K_RSHIFT,       K_RALT,             K_RWINKEY,      // E
+static const byte scantokey[128] =
+{
+	//  0               1               2               3               4               5               6                   7
+	//  8               9               A               B               C               D               E                   F
+	0,              0,              0,              0,              'a',            'b',            'c',                'd',            // 0
+	'e',            'f',            'g',            'h',            'i',            'j',            'k',                'l',
+	'm',            'n',            'o',            'p',            'q',            'r',            's',                't',            // 1
+	'u',            'v',            'w',            'x',            'y',            'z',            '1',                '2',
+	'3',            '4',            '5',            '6',            '7',            '8',            '9',                '0',            // 2
+	K_ENTER,        K_ESCAPE,       K_BACKSPACE,    K_TAB,          K_SPACE,        '-',            '=',                '[',
+	']',            '\\',           0,              ';',            '\'',           '`',            ',',                '.',            // 3
+	'/',           K_CAPSLOCK,     K_F1,           K_F2,           K_F3,           K_F4,           K_F5,               K_F6,
+	K_F7,           K_F8,           K_F9,           K_F10,          K_F11,          K_F12,          K_PRINTSCREEN,      K_SCROLLOCK,    // 4
+	K_PAUSE,        K_INS,          K_HOME,         K_PGUP,         K_DEL,          K_END,          K_PGDN,             K_RIGHTARROW,
+	K_LEFTARROW,    K_DOWNARROW,    K_UPARROW,      K_NUMLOCK,      K_KP_SLASH,     K_KP_MULTIPLY,  K_KP_MINUS,         K_KP_PLUS,      // 5
+	K_KP_ENTER,     K_KP_END,       K_KP_DOWNARROW, K_KP_PGDN,      K_KP_LEFTARROW, K_KP_5,         K_KP_RIGHTARROW,    K_KP_HOME,
+	K_KP_UPARROW,   K_KP_PGUP,      K_KP_INS,       K_KP_DEL,       K_102ND,        0,              0,                  0,              // 6
+	0,              0,              0,              0,              0,              0,              0,                  0,
+	0,              0,              0,              0,              0,              0,              K_MENU,             0,              // 7
+	K_LCTRL,        K_LSHIFT,       K_LALT,         K_LWINKEY,      K_RCTRL,        K_RSHIFT,       K_RALT,             K_RWINKEY,      // E
 };
 
 static void key_event(SDL_KeyboardEvent *event)
 {
-    byte result;
+	byte result;
 
-    if (event->keysym.scancode < 120)
-        result = scantokey[event->keysym.scancode];
-    else if (event->keysym.scancode >= 224 && event->keysym.scancode < 224 + 8)
-        result = scantokey[event->keysym.scancode - 104];
-    else
-        result = 0;
+	if (event->keysym.scancode < 120)
+		result = scantokey[event->keysym.scancode];
+	else if (event->keysym.scancode >= 224 && event->keysym.scancode < 224 + 8)
+		result = scantokey[event->keysym.scancode - 104];
+	else
+		result = 0;
 
-    if (result == 0) {
-        Com_DPrintf("%s: unknown scancode %d\n", __func__, event->keysym.scancode);
-        return;
-    }
+	if (result == 0)
+	{
+		Com_DPrintf("%s: unknown scancode %d\n", __func__, event->keysym.scancode);
+		return;
+	}
 
-    if (result == K_LALT || result == K_RALT)
-        Key_Event(K_ALT, event->state, event->timestamp);
-    else if (result == K_LCTRL || result == K_RCTRL)
-        Key_Event(K_CTRL, event->state, event->timestamp);
-    else if (result == K_LSHIFT || result == K_RSHIFT)
-        Key_Event(K_SHIFT, event->state, event->timestamp);
+	if (result == K_LALT || result == K_RALT)
+		Key_Event(K_ALT, event->state, event->timestamp);
+	else if (result == K_LCTRL || result == K_RCTRL)
+		Key_Event(K_CTRL, event->state, event->timestamp);
+	else if (result == K_LSHIFT || result == K_RSHIFT)
+		Key_Event(K_SHIFT, event->state, event->timestamp);
 
-    Key_Event(result, event->state, event->timestamp);
+	Key_Event(result, event->state, event->timestamp);
 }
 
 static void mouse_button_event(SDL_MouseButtonEvent *event)
 {
-    unsigned key;
+	unsigned key;
 
-    switch (event->button) {
-    case SDL_BUTTON_LEFT:
-        key = K_MOUSE1;
-        break;
-    case SDL_BUTTON_RIGHT:
-        key = K_MOUSE2;
-        break;
-    case SDL_BUTTON_MIDDLE:
-        key = K_MOUSE3;
-        break;
-    case SDL_BUTTON_X1:
-        key = K_MOUSE4;
-        break;
-    case SDL_BUTTON_X2:
-        key = K_MOUSE5;
-        break;
-    default:
-        Com_DPrintf("%s: unknown button %d\n", __func__, event->button);
-        return;
-    }
+	switch (event->button)
+	{
+		case SDL_BUTTON_LEFT:
+			key = K_MOUSE1;
+			break;
 
-    Key_Event(key, event->state, event->timestamp);
+		case SDL_BUTTON_RIGHT:
+			key = K_MOUSE2;
+			break;
+
+		case SDL_BUTTON_MIDDLE:
+			key = K_MOUSE3;
+			break;
+
+		case SDL_BUTTON_X1:
+			key = K_MOUSE4;
+			break;
+
+		case SDL_BUTTON_X2:
+			key = K_MOUSE5;
+			break;
+
+		default:
+			Com_DPrintf("%s: unknown button %d\n", __func__, event->button);
+			return;
+	}
+
+	Key_Event(key, event->state, event->timestamp);
 }
 
 static void mouse_wheel_event(SDL_MouseWheelEvent *event)
 {
-    if (event->x > 0) {
-        Key_Event(K_MWHEELRIGHT, true, event->timestamp);
-        Key_Event(K_MWHEELRIGHT, false, event->timestamp);
-    } else if (event->x < 0) {
-        Key_Event(K_MWHEELLEFT, true, event->timestamp);
-        Key_Event(K_MWHEELLEFT, false, event->timestamp);
-    }
+	if (event->x > 0)
+	{
+		Key_Event(K_MWHEELRIGHT, true, event->timestamp);
+		Key_Event(K_MWHEELRIGHT, false, event->timestamp);
+	}
+	else if (event->x < 0)
+	{
+		Key_Event(K_MWHEELLEFT, true, event->timestamp);
+		Key_Event(K_MWHEELLEFT, false, event->timestamp);
+	}
 
-    if (event->y > 0) {
-        Key_Event(K_MWHEELUP, true, event->timestamp);
-        Key_Event(K_MWHEELUP, false, event->timestamp);
-    } else if (event->y < 0) {
-        Key_Event(K_MWHEELDOWN, true, event->timestamp);
-        Key_Event(K_MWHEELDOWN, false, event->timestamp);
-    }
+	if (event->y > 0)
+	{
+		Key_Event(K_MWHEELUP, true, event->timestamp);
+		Key_Event(K_MWHEELUP, false, event->timestamp);
+	}
+	else if (event->y < 0)
+	{
+		Key_Event(K_MWHEELDOWN, true, event->timestamp);
+		Key_Event(K_MWHEELDOWN, false, event->timestamp);
+	}
 }
 
 /*
@@ -506,32 +551,39 @@ VID_PumpEvents
 */
 void VID_PumpEvents(void)
 {
-    SDL_Event    event;
+	SDL_Event    event;
 
-    while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-        case SDL_QUIT:
-            Com_Quit(NULL, ERR_DISCONNECT);
-            break;
-        case SDL_WINDOWEVENT:
-            window_event(&event.window);
-            break;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            key_event(&event.key);
-            break;
-        case SDL_MOUSEMOTION:
-            UI_MouseEvent(event.motion.x, event.motion.y);
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-            mouse_button_event(&event.button);
-            break;
-        case SDL_MOUSEWHEEL:
-            mouse_wheel_event(&event.wheel);
-            break;
-        }
-    }
+	while (SDL_PollEvent(&event))
+	{
+		switch (event.type)
+		{
+			case SDL_QUIT:
+				Com_Quit(NULL, ERR_DISCONNECT);
+				break;
+
+			case SDL_WINDOWEVENT:
+				window_event(&event.window);
+				break;
+
+			case SDL_KEYDOWN:
+			case SDL_KEYUP:
+				key_event(&event.key);
+				break;
+
+			case SDL_MOUSEMOTION:
+				UI_MouseEvent(event.motion.x, event.motion.y);
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+				mouse_button_event(&event.button);
+				break;
+
+			case SDL_MOUSEWHEEL:
+				mouse_wheel_event(&event.wheel);
+				break;
+		}
+	}
 }
 
 /*
@@ -544,42 +596,41 @@ MOUSE
 
 static bool GetMouseMotion(int *dx, int *dy)
 {
-    if (!SDL_GetRelativeMouseMode()) {
-        return false;
-    }
-    SDL_GetRelativeMouseState(dx, dy);
-    return true;
+	if (!SDL_GetRelativeMouseMode())
+		return false;
+
+	SDL_GetRelativeMouseState(dx, dy);
+	return true;
 }
 
 static void WarpMouse(int x, int y)
 {
-    SDL_WarpMouseInWindow(sdl_window, x, y);
-    SDL_GetRelativeMouseState(NULL, NULL);
+	SDL_WarpMouseInWindow(sdl_window, x, y);
+	SDL_GetRelativeMouseState(NULL, NULL);
 }
 
 static void ShutdownMouse(void)
 {
-    SDL_SetWindowGrab(sdl_window, SDL_FALSE);
-    SDL_SetRelativeMouseMode(SDL_FALSE);
-    SDL_ShowCursor(SDL_ENABLE);
+	SDL_SetWindowGrab(sdl_window, SDL_FALSE);
+	SDL_SetRelativeMouseMode(SDL_FALSE);
+	SDL_ShowCursor(SDL_ENABLE);
 }
 
 static bool InitMouse(void)
 {
-    if (!SDL_WasInit(SDL_INIT_VIDEO)) {
-        return false;
-    }
+	if (!SDL_WasInit(SDL_INIT_VIDEO))
+		return false;
 
-    Com_Printf("SDL mouse initialized.\n");
-    return true;
+	Com_Printf("SDL mouse initialized.\n");
+	return true;
 }
 
 static void GrabMouse(bool grab)
 {
-    SDL_SetWindowGrab(sdl_window, grab);
-    SDL_SetRelativeMouseMode(grab && !(Key_GetDest() & KEY_MENU));
-    SDL_GetRelativeMouseState(NULL, NULL);
-    SDL_ShowCursor(!(sdl_flags & QVF_FULLSCREEN));
+	SDL_SetWindowGrab(sdl_window, grab);
+	SDL_SetRelativeMouseMode(grab && !(Key_GetDest() & KEY_MENU));
+	SDL_GetRelativeMouseState(NULL, NULL);
+	SDL_ShowCursor(!(sdl_flags & QVF_FULLSCREEN));
 }
 
 /*
@@ -589,10 +640,10 @@ VID_FillInputAPI
 */
 void VID_FillInputAPI(inputAPI_t *api)
 {
-    api->Init = InitMouse;
-    api->Shutdown = ShutdownMouse;
-    api->Grab = GrabMouse;
-    api->Warp = WarpMouse;
-    api->GetEvents = NULL;
-    api->GetMotion = GetMouseMotion;
+	api->Init = InitMouse;
+	api->Shutdown = ShutdownMouse;
+	api->Grab = GrabMouse;
+	api->Warp = WarpMouse;
+	api->GetEvents = NULL;
+	api->GetMotion = GetMouseMotion;
 }

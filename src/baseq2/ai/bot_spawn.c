@@ -8,7 +8,7 @@ of the License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 See the GNU General Public License for more details.
 
@@ -38,21 +38,16 @@ in NO WAY supported by Steve Yeager.
 ///////////////////////////////////////////////////////////////////////
 // Respawn the bot
 ///////////////////////////////////////////////////////////////////////
-void BOT_Respawn (edict_t *self)
+void BOT_Respawn(edict_t *self)
 {
-	CopyToBodyQue (self);
-
-	PutClientInServer (self);
-
+	CopyToBodyQue(self);
+	PutClientInServer(self);
 	// add a teleportation effect
 	self->s.event = EV_PLAYER_TELEPORT;
-
-		// hold in place briefly
+	// hold in place briefly
 	self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 	self->client->ps.pmove.pm_time = 14;
-
 	self->client->respawn_time = level.time;
-
 	AI_ResetWeights(self);
 	AI_ResetNavigation(self);
 }
@@ -61,25 +56,25 @@ void BOT_Respawn (edict_t *self)
 ///////////////////////////////////////////////////////////////////////
 // Find a free client spot - //jabot092(2)
 ///////////////////////////////////////////////////////////////////////
-static edict_t *BOT_FindFreeClient (void)
+static edict_t *BOT_FindFreeClient(void)
 {
 	edict_t *bot;
 	edict_t	*ent;
 	int	i;
-	int max_count=0;
-
+	int max_count = 0;
 	bot = NULL;
-	for( i = 0, ent = g_edicts + 1; i < game.maxclients; i++, ent++ ) 
+
+	for (i = 0, ent = g_edicts + 1; i < game.maxclients; i++, ent++)
 	{
-		if( !ent->inuse && bot == NULL )
+		if (!ent->inuse && bot == NULL)
 			bot = ent;
 
 		//count bots for bot names
-		if( ent->count > max_count )
+		if (ent->count > max_count)
 			max_count = ent->count;
 	}
 
-	if (bot == NULL || (max_count + 2) >= game.maxclients ) //always leave room for 1 player
+	if (bot == NULL || (max_count + 2) >= game.maxclients)  //always leave room for 1 player
 		return NULL;
 
 	bot->count = max_count + 1; // Will become bot name...
@@ -98,89 +93,89 @@ static void BOT_SetName(edict_t *bot, char *name, char *skin, char *team)
 
 	// Set the name for the bot.
 	// name
-	if(strlen(name) == 0)
-		sprintf(bot_name,"Bot%d",bot->count);
+	if (strlen(name) == 0)
+		sprintf(bot_name, "Bot%d", bot->count);
 	else
-		strcpy(bot_name,name);
+		strcpy(bot_name, name);
 
 	// skin
-	if(strlen(skin) == 0)
+	if (strlen(skin) == 0)
 	{
-		// randomly choose skin 
+		// randomly choose skin
 		rnd = random();
-		if(rnd  < 0.05f)
-			sprintf(bot_skin,"female/athena");
-		else if(rnd < 0.1f)
-			sprintf(bot_skin,"female/brianna");
-		else if(rnd < 0.15f)
-			sprintf(bot_skin,"female/cobalt");
-		else if(rnd < 0.2f)
-			sprintf(bot_skin,"female/ensign");
-		else if(rnd < 0.25f)
-			sprintf(bot_skin,"female/jezebel");
-		else if(rnd < 0.3f)
-			sprintf(bot_skin,"female/jungle");
-		else if(rnd < 0.35f)
-			sprintf(bot_skin,"female/lotus");
-		else if(rnd < 0.4f)
-			sprintf(bot_skin,"female/stiletto");
-		else if(rnd < 0.45f)
-			sprintf(bot_skin,"female/venus");
-		else if(rnd < 0.5f)
-			sprintf(bot_skin,"female/voodoo");
-		else if(rnd < 0.55f)
-			sprintf(bot_skin,"male/cipher");
-		else if(rnd < 0.6f)
-			sprintf(bot_skin,"male/flak");
-		else if(rnd < 0.65f)
-			sprintf(bot_skin,"male/grunt");
-		else if(rnd < 0.7f)
-			sprintf(bot_skin,"male/howitzer");
-		else if(rnd < 0.75f)
-			sprintf(bot_skin,"male/major");
-		else if(rnd < 0.8f)
-			sprintf(bot_skin,"male/nightops");
-		else if(rnd < 0.85f)
-			sprintf(bot_skin,"male/pointman");
-		else if(rnd < 0.9f)
-			sprintf(bot_skin,"male/psycho");
-		else if(rnd < 0.95f)
-			sprintf(bot_skin,"male/razor");
-		else 
-			sprintf(bot_skin,"male/sniper");
+
+		if (rnd  < 0.05f)
+			sprintf(bot_skin, "female/athena");
+		else if (rnd < 0.1f)
+			sprintf(bot_skin, "female/brianna");
+		else if (rnd < 0.15f)
+			sprintf(bot_skin, "female/cobalt");
+		else if (rnd < 0.2f)
+			sprintf(bot_skin, "female/ensign");
+		else if (rnd < 0.25f)
+			sprintf(bot_skin, "female/jezebel");
+		else if (rnd < 0.3f)
+			sprintf(bot_skin, "female/jungle");
+		else if (rnd < 0.35f)
+			sprintf(bot_skin, "female/lotus");
+		else if (rnd < 0.4f)
+			sprintf(bot_skin, "female/stiletto");
+		else if (rnd < 0.45f)
+			sprintf(bot_skin, "female/venus");
+		else if (rnd < 0.5f)
+			sprintf(bot_skin, "female/voodoo");
+		else if (rnd < 0.55f)
+			sprintf(bot_skin, "male/cipher");
+		else if (rnd < 0.6f)
+			sprintf(bot_skin, "male/flak");
+		else if (rnd < 0.65f)
+			sprintf(bot_skin, "male/grunt");
+		else if (rnd < 0.7f)
+			sprintf(bot_skin, "male/howitzer");
+		else if (rnd < 0.75f)
+			sprintf(bot_skin, "male/major");
+		else if (rnd < 0.8f)
+			sprintf(bot_skin, "male/nightops");
+		else if (rnd < 0.85f)
+			sprintf(bot_skin, "male/pointman");
+		else if (rnd < 0.9f)
+			sprintf(bot_skin, "male/psycho");
+		else if (rnd < 0.95f)
+			sprintf(bot_skin, "male/razor");
+		else
+			sprintf(bot_skin, "male/sniper");
 	}
 	else
-		strcpy(bot_skin,skin);
+		strcpy(bot_skin, skin);
 
 	// initialise userinfo
-	memset (userinfo, 0, sizeof(userinfo));
-
+	memset(userinfo, 0, sizeof(userinfo));
 	// add bot's name/skin/hand to userinfo
-	Info_SetValueForKey (userinfo, "name", bot_name);
-	Info_SetValueForKey (userinfo, "skin", bot_skin);
-	Info_SetValueForKey (userinfo, "hand", "2"); // bot is center handed for now!
-
+	Info_SetValueForKey(userinfo, "name", bot_name);
+	Info_SetValueForKey(userinfo, "skin", bot_skin);
+	Info_SetValueForKey(userinfo, "hand", "2");  // bot is center handed for now!
 	int r = Q_rand() % 3;
 
 	switch (r)
 	{
-	case 0:
-		Info_SetValueForKey(userinfo, "gameclass", "q2");
-		Info_SetValueForKey(userinfo, "name", "Grunt");
-		break;
-	case 1:
-		Info_SetValueForKey(userinfo, "gameclass", "q1");
-		Info_SetValueForKey(userinfo, "name", "Ranger");
-		break;
-	case 2:
-		Info_SetValueForKey(userinfo, "gameclass", "doom");
-		Info_SetValueForKey(userinfo, "name", "Crash");
-		break;
+		case 0:
+			Info_SetValueForKey(userinfo, "gameclass", "q2");
+			Info_SetValueForKey(userinfo, "name", "Grunt");
+			break;
+
+		case 1:
+			Info_SetValueForKey(userinfo, "gameclass", "q1");
+			Info_SetValueForKey(userinfo, "name", "Ranger");
+			break;
+
+		case 2:
+			Info_SetValueForKey(userinfo, "gameclass", "doom");
+			Info_SetValueForKey(userinfo, "name", "Crash");
+			break;
 	}
 
-	ClientConnect (bot, userinfo);
-
-//	ACESP_SaveBots(); // make sure to save the bots
+	ClientConnect(bot, userinfo);
+	//	ACESP_SaveBots(); // make sure to save the bots
 }
 
 #if CTF
@@ -201,7 +196,8 @@ int	BOT_NextCTFTeam()
 
 	for (i = 0; i < game.maxclients + 1; i++)
 	{
-		self = g_edicts +i + 1;
+		self = g_edicts + i + 1;
+
 		if (self->inuse && self->client)
 		{
 			if (self->client->resp.ctf_team == CTF_TEAM1)
@@ -223,43 +219,38 @@ int	BOT_NextCTFTeam()
 // BOT_JoinCTFTeam
 // Assign a team for the bot
 //==========================================
-qboolean BOT_JoinCTFTeam (edict_t *ent, char *team_name)
+qboolean BOT_JoinCTFTeam(edict_t *ent, char *team_name)
 {
 	char	*s;
 	int		team;
-//	edict_t	*event;
-
+	//	edict_t	*event;
 
 	if (ent->client->resp.ctf_team != CTF_NOTEAM)
 		return false;
-	
+
 	// find what ctf team
-	if ((team_name !=NULL) && (strcmp(team_name, "blue") == 0))
+	if ((team_name != NULL) && (strcmp(team_name, "blue") == 0))
 		team = CTF_TEAM2;
-	else if ((team_name !=NULL) && (strcmp(team_name, "red") == 0))
+	else if ((team_name != NULL) && (strcmp(team_name, "red") == 0))
 		team = CTF_TEAM1;
 	else
 		team = BOT_NextCTFTeam();
 
 	if (team == CTF_NOTEAM)
 		return false;
-	
+
 	//join ctf team
 	ent->svflags &= ~SVF_NOCLIENT;
 	ent->client->resp.ctf_state = 1;//0?
 	ent->client->resp.ctf_team = team;
-	s = Info_ValueForKey (ent->client->pers.userinfo, "skin");
+	s = Info_ValueForKey(ent->client->pers.userinfo, "skin");
 	CTFAssignSkin(ent, s);
-
 	PutClientInServer(ent);
-
 	// hold in place briefly
 	ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
 	ent->client->ps.pmove.pm_time = 14;
-
-	Com_Printf ( "%s joined the %s team.\n",
+	Com_Printf("%s joined the %s team.\n",
 		ent->client->pers.netname, CTFTeamName(ent->client->resp.ctf_team));
-
 	return true;
 }
 #endif
@@ -268,33 +259,35 @@ qboolean BOT_JoinCTFTeam (edict_t *ent, char *team_name)
 // BOT_DMClass_JoinGame
 // put the bot into the game.
 //==========================================
-static void BOT_DMClass_JoinGame (edict_t *ent, char *team_name)
+static void BOT_DMClass_JoinGame(edict_t *ent, char *team_name)
 {
 #if CTF
-	if ( !BOT_JoinCTFTeam(ent, team_name) )
+
+	if (!BOT_JoinCTFTeam(ent, team_name))
 #endif
-		Com_Printf ( "%s joined the game.\n",
-		ent->client->pers.netname);
+		Com_Printf("%s joined the game.\n",
+			ent->client->pers.netname);
 
 	ent->think = AI_Think;
 	ent->nextthink = level.time + 1;
-
 	//join game
 	ent->movetype = MOVETYPE_WALK;
 	ent->solid = SOLID_BBOX;
 	ent->svflags &= ~SVF_NOCLIENT;
 	memset(ent->client->ps.guns, 0, sizeof(ent->client->ps.guns));
 
-	if (!KillBox (ent))
-	{	// could't spawn in?
+	if (!KillBox(ent))
+	{
+		// could't spawn in?
 	}
-	gi.linkentity (ent);
+
+	gi.linkentity(ent);
 }
 
 //==========================================
 // BOT_StartAsSpectator
 //==========================================
-static void BOT_StartAsSpectator (edict_t *ent)
+static void BOT_StartAsSpectator(edict_t *ent)
 {
 	// start as 'observer'
 	ent->movetype = MOVETYPE_NOCLIP;
@@ -304,7 +297,7 @@ static void BOT_StartAsSpectator (edict_t *ent)
 	ent->client->resp.ctf_team = CTF_NOTEAM;
 #endif
 	memset(ent->client->ps.guns, 0, sizeof(ent->client->ps.guns));
-	gi.linkentity (ent);
+	gi.linkentity(ent);
 }
 
 
@@ -313,37 +306,38 @@ static void BOT_StartAsSpectator (edict_t *ent)
 // 3 for teams and such
 //==========================================
 #if CTF
-static void BOT_JoinBlue (edict_t *ent)
+static void BOT_JoinBlue(edict_t *ent)
 {
-	BOT_DMClass_JoinGame( ent, "blue" );
+	BOT_DMClass_JoinGame(ent, "blue");
 }
-static void BOT_JoinRed (edict_t *ent)
+static void BOT_JoinRed(edict_t *ent)
 {
-	BOT_DMClass_JoinGame( ent, "red" );
+	BOT_DMClass_JoinGame(ent, "red");
 }
 #endif
-static void BOT_JoinGame (edict_t *ent)
+static void BOT_JoinGame(edict_t *ent)
 {
-	BOT_DMClass_JoinGame( ent, NULL );
+	BOT_DMClass_JoinGame(ent, NULL);
 }
 
 ///////////////////////////////////////////////////////////////////////
 // Spawn the bot
 ///////////////////////////////////////////////////////////////////////
-void BOT_SpawnBot (char *team, char *name, char *skin, char *userinfo)
+void BOT_SpawnBot(char *team, char *name, char *skin, char *userinfo)
 {
 	edict_t	*bot;
 
-	if( !nav.loaded ) {
+	if (!nav.loaded)
+	{
 		Com_Printf("Can't spawn bots without a valid navigation file\n");
 		return;
 	}
-	
-	bot = BOT_FindFreeClient ();
-	
+
+	bot = BOT_FindFreeClient();
+
 	if (!bot)
 	{
-		safe_bprintf (PRINT_MEDIUM, "Server is full, increase Maxclients.\n");
+		safe_bprintf(PRINT_MEDIUM, "Server is full, increase Maxclients.\n");
 		return;
 	}
 
@@ -352,43 +346,40 @@ void BOT_SpawnBot (char *team, char *name, char *skin, char *userinfo)
 	bot->yaw_speed = 100;
 
 	// To allow bots to respawn
-	if(userinfo == NULL)
+	if (userinfo == NULL)
 		BOT_SetName(bot, name, skin, team);
 	else
-		ClientConnect (bot, userinfo);
-	
-	G_InitEdict (bot);
+		ClientConnect(bot, userinfo);
+
+	G_InitEdict(bot);
 	G_SpawnAI(bot); //jabot092(2)
 	bot->ai->is_bot = true;
-	InitClientResp (bot->client);
-
+	InitClientResp(bot->client);
 	PutClientInServer(bot);
-	BOT_StartAsSpectator (bot);
-
+	BOT_StartAsSpectator(bot);
 	//skill
 	bot->ai->pers.skillLevel = MAX_BOT_SKILL;/*(int)(random()*MAX_BOT_SKILL);
 	if (bot->ai->pers.skillLevel > MAX_BOT_SKILL)	//fix if off-limits
 		bot->ai->pers.skillLevel =  MAX_BOT_SKILL;
 	else if (bot->ai->pers.skillLevel < 0)
 		bot->ai->pers.skillLevel =  0;*/
-
 	BOT_DMclass_InitPersistant(bot);
 	AI_ResetWeights(bot);
 	AI_ResetNavigation(bot);
-
 	bot->think = BOT_JoinGame;
 	bot->nextthink = level.time + (Q_rand() % 6000);
 #if CTF
-	if( ctf->value && team != NULL )
+
+	if (ctf->value && team != NULL)
 	{
-		if( !Q_stricmp( team, "blue" ) )
+		if (!Q_stricmp(team, "blue"))
 			bot->think = BOT_JoinBlue;
-		else if( !Q_stricmp( team, "red" ) )
+		else if (!Q_stricmp(team, "red"))
 			bot->think = BOT_JoinRed;
 	}
+
 #endif
-	
-	AI_EnemyAdded (bot); // let the ai know we added another
+	AI_EnemyAdded(bot);  // let the ai know we added another
 }
 
 
@@ -398,29 +389,30 @@ void BOT_SpawnBot (char *team, char *name, char *skin, char *userinfo)
 void BOT_RemoveBot(char *name)
 {
 	int i;
-	bool freed=false;
+	bool freed = false;
 	edict_t *bot;
 
-	for(i=0;i<maxclients->value;i++)
+	for (i = 0; i < maxclients->value; i++)
 	{
 		bot = g_edicts + i + 1;
-		if( !bot->inuse || !bot->ai )  //jabot092(2)
+
+		if (!bot->inuse || !bot->ai)   //jabot092(2)
 			continue;
-		
-		if( bot->ai->is_bot && (!strcmp(bot->client->pers.netname,name) || !strcmp(name,"all")))
+
+		if (bot->ai->is_bot && (!strcmp(bot->client->pers.netname, name) || !strcmp(name, "all")))
 		{
 			bot->health = 0;
-			player_die (bot, bot, bot, 100000, vec3_origin);
+			player_die(bot, bot, bot, 100000, vec3_origin);
 			// don't even bother waiting for death frames
 			bot->deadflag = DEAD_DEAD;
 			bot->inuse = false;
 			freed = true;
-			AI_EnemyRemoved (bot);
-			G_FreeAI( bot ); //jabot092(2)
+			AI_EnemyRemoved(bot);
+			G_FreeAI(bot);   //jabot092(2)
 			//safe_bprintf (PRINT_MEDIUM, "%s removed\n", bot->client->pers.netname);
 		}
 	}
 
-//	if(!freed && !Q_stricmp( name, "all") )
-//		safe_bprintf (PRINT_MEDIUM, "%s not found\n", name);
+	//	if(!freed && !Q_stricmp( name, "all") )
+	//		safe_bprintf (PRINT_MEDIUM, "%s not found\n", name);
 }

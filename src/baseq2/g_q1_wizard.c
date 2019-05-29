@@ -8,7 +8,8 @@ WIZARD
 
 #include "g_local.h"
 
-enum {
+enum
+{
 	hover1, hover2, hover3, hover4, hover5, hover6, hover7, hover8,
 	hover9, hover10, hover11, hover12, hover13, hover14, hover15,
 
@@ -47,7 +48,6 @@ void LaunchMissile(edict_t *self, edict_t *missile, float mspeed, float accuracy
 {
 	vec3_t vec, move;
 	float	fly;
-
 	vec3_t v_forward, v_right, v_up;
 	AngleVectors(self->s.angles, v_forward, v_right, v_up);
 
@@ -57,24 +57,19 @@ void LaunchMissile(edict_t *self, edict_t *missile, float mspeed, float accuracy
 
 	// calc aproximate time for missile to reach vec
 	fly = VectorLength(vec) / mspeed;
-
 	// get the entities xy velocity
 	VectorCopy(self->enemy->velocity, move);
 	move[2] = 0;
-
 	// project the target forward in time
 	VectorMA(vec, fly, move, vec);
-
 	VectorNormalize(vec);
 
 	for (int i = 0; i < 3; ++i)
-		vec[i] = vec[i] + accuracy*v_up[i] *(random() - 0.5f) + accuracy*v_right[i] *(random() - 0.5f);
+		vec[i] = vec[i] + accuracy * v_up[i] * (random() - 0.5f) + accuracy * v_right[i] * (random() - 0.5f);
 
 	VectorScale(vec, mspeed, missile->velocity);
-
 	VectorClear(missile->s.angles);
 	missile->s.angles[1] = vectoyaw(missile->velocity);
-
 	// set missile duration
 	missile->nextthink = level.time + 5000;
 	missile->think = G_FreeEdict;
@@ -96,6 +91,7 @@ bool	WizardCheckAttack(edict_t *self)
 
 	if (level.time < self->monsterinfo.attack_finished)
 		return false;
+
 	if (!visible(self, self->enemy))
 		return false;
 
@@ -113,22 +109,22 @@ bool	WizardCheckAttack(edict_t *self)
 	}
 
 	targ = self->enemy;
-
 	// see if any entities are in the way of the shot
 	VectorCopy(self->s.origin, spot1);
 	VectorCopy(targ->s.origin, spot2);
 	spot1[2] += self->viewheight;
 	spot2[2] += targ->viewheight;
-
 	trace_t tr = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_SHOT);
 
 	if (tr.ent != targ)
-	{	// don't have a clear shot, so move to a side
+	{
+		// don't have a clear shot, so move to a side
 		if (self->monsterinfo.attack_state != AS_STRAIGHT)
 		{
 			self->monsterinfo.attack_state = AS_STRAIGHT;
 			wiz_run(self);
 		}
+
 		return false;
 	}
 
@@ -216,9 +212,7 @@ void Wiz_FastFire(edict_t *self)
 	if (self->owner->health > 0)
 	{
 		//self.owner.effects = self.owner.effects | EF_MUZZLEFLASH;
-
 		VectorMA(self->enemy->s.origin, -13, self->movedir, dst);
-
 		VectorSubtract(dst, self->s.origin, vec);
 		VectorNormalize(vec);
 		gi.sound(self, CHAN_WEAPON, sound_wattack, 1, ATTN_NORM, 0);
@@ -237,31 +231,32 @@ void Wiz_FastFire(edict_t *self)
 void Wiz_StartFast(edict_t *self)
 {
 	edict_t *missile;
-
 	gi.sound(self, CHAN_WEAPON, sound_wattack, 1, ATTN_NORM, 0);
 	vec3_t v_forward, v_right;
 	AngleVectors(self->s.angles, v_forward, v_right, NULL);
-
 	missile = G_Spawn();
 	missile->owner = self;
 	missile->nextthink = level.time + 600;
 	VectorClear(missile->mins);
 	VectorClear(missile->maxs);
+
 	for (int i = 0; i < 3; ++i)
 		missile->s.origin[i] = self->s.origin[i] + v_forward[i] * 14 + v_right[i] * 14;
+
 	missile->s.origin[2] += 30;
 	missile->enemy = self->enemy;
 	missile->nextthink = level.time + 800;
 	missile->think = Wiz_FastFire;
 	VectorCopy(v_right, missile->movedir);
-
 	missile = G_Spawn();
 	missile->owner = self;
 	missile->nextthink = level.time + 1000;
 	VectorClear(missile->mins);
 	VectorClear(missile->maxs);
+
 	for (int i = 0; i < 3; ++i)
 		missile->s.origin[i] = self->s.origin[i] + v_forward[i] * 14 + v_right[i] * -14;
+
 	missile->s.origin[2] += 30;
 	missile->enemy = self->enemy;
 	missile->nextthink = level.time + 300;
@@ -278,14 +273,17 @@ void Wiz_idlesound(edict_t *self)
 	if (self->touch_debounce_time < level.time)
 	{
 		self->touch_debounce_time = level.time + 2000;
+
 		if (wr > 4.5f)
 			gi.sound(self, CHAN_VOICE, sound_widle1, 1,  ATTN_IDLE, 0);
+
 		if (wr < 1.5f)
 			gi.sound(self, CHAN_VOICE, sound_widle2, 1, ATTN_IDLE, 0);
 	}
 }
 
-mframe_t wiz_frames_stand[] = {
+mframe_t wiz_frames_stand[] =
+{
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
 	{ ai_stand, 0,   NULL },
@@ -302,7 +300,8 @@ void wiz_stand(edict_t *self)
 	self->monsterinfo.currentmove = &wiz_stand1;
 }
 
-mframe_t wiz_frames_walk[] = {
+mframe_t wiz_frames_walk[] =
+{
 	{ ai_walk, 8,   Wiz_idlesound },
 	{ ai_walk, 8,   NULL },
 	{ ai_walk, 8,   NULL },
@@ -319,7 +318,8 @@ void wiz_walk(edict_t *self)
 	self->monsterinfo.currentmove = &wiz_walk1;
 }
 
-mframe_t wiz_frames_side[] = {
+mframe_t wiz_frames_side[] =
+{
 	{ ai_run, 8,   Wiz_idlesound },
 	{ ai_run, 8,   NULL },
 	{ ai_run, 8,   NULL },
@@ -336,7 +336,8 @@ void wiz_side(edict_t *self)
 	self->monsterinfo.currentmove = &wiz_side1;
 }
 
-mframe_t wiz_frames_run[] = {
+mframe_t wiz_frames_run[] =
+{
 	{ ai_run, 16,   Wiz_idlesound },
 	{ ai_run, 16,   NULL },
 	{ ai_run, 16,   NULL },
@@ -365,7 +366,8 @@ void wiz_fastfinish(edict_t *self)
 	wiz_run(self);
 }
 
-mframe_t wiz_frames_fast2[] = {
+mframe_t wiz_frames_fast2[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -378,7 +380,8 @@ void wiz_fastb(edict_t *self)
 	self->monsterinfo.currentmove = &wiz_fast2;
 }
 
-mframe_t wiz_frames_fast[] = {
+mframe_t wiz_frames_fast[] =
+{
 	{ ai_move, 0,   Wiz_StartFast },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -393,7 +396,8 @@ void wiz_fast(edict_t *self)
 	self->monsterinfo.currentmove = &wiz_fast1;
 }
 
-mframe_t wiz_frames_pain[] = {
+mframe_t wiz_frames_pain[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
@@ -419,7 +423,8 @@ void wiz_dead(edict_t *self)
 	self->nextthink = 0;
 }
 
-mframe_t wiz_frames_death[] = {
+mframe_t wiz_frames_death[] =
+{
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   NULL },
 	{ ai_move, 0,   wiz_unsolid },
@@ -450,7 +455,6 @@ void wiz_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, v
 
 	self->deadflag = DEAD_DEAD;
 	self->monsterinfo.currentmove = &wiz_death1;
-
 	self->velocity[0] = -200 + 400 * random();
 	self->velocity[1] = -200 + 400 * random();
 	self->velocity[2] = 100 + 100 * random();
@@ -492,7 +496,6 @@ void q1_monster_wizard(edict_t *self)
 	gi.modelindex("models/q1/wizard.mdl");
 	gi.modelindex("models/q1h_wizard.mdl");
 	gi.modelindex("models/q1w_spike.mdl");
-
 	sound_wattack = gi.soundindex("q1/wizard/wattack.wav");
 	sound_wdeath = gi.soundindex("q1/wizard/wdeath.wav");
 	sound_widle1 = gi.soundindex("q1/wizard/widle1.wav");
@@ -500,17 +503,12 @@ void q1_monster_wizard(edict_t *self)
 	sound_wpain = gi.soundindex("q1/wizard/wpain.wav");
 	sound_wsight = gi.soundindex("q1/wizard/wsight.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-
 	gi.setmodel(self, "models/q1/wizard.mdl");
-
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 40);
-
 	self->health = 80;
-
 	self->monsterinfo.stand = wiz_stand;
 	self->monsterinfo.walk = wiz_walk;
 	self->monsterinfo.run = wiz_run;
@@ -518,12 +516,8 @@ void q1_monster_wizard(edict_t *self)
 	self->monsterinfo.checkattack = WizardCheckAttack;
 	self->pain = Wiz_Pain;
 	self->die = wiz_die;
-
 	self->monsterinfo.scale = 1;
-
 	wiz_stand(self);
-
 	flymonster_start(self);
-
 	self->viewheight = 25;
 }
