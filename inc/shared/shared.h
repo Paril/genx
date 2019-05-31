@@ -46,7 +46,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned char byte;
-typedef enum { qfalse, qtrue } qboolean;    // ABI compat only, don't use
 typedef int qhandle_t;
 
 // Paril
@@ -697,15 +696,14 @@ char    *va(const char *format, ...) q_printf(1, 2);
 
 //=============================================
 
-static inline uint16_t ShortSwap(uint16_t s)
+static inline uint16_t ShortSwap(const uint16_t s)
 {
-	s = (s >> 8) | (s << 8);
-	return s;
+	return (s >> 8) | (s << 8);
 }
 
-static inline uint32_t LongSwap(uint32_t l)
+static inline uint32_t LongSwap(const uint32_t sl)
 {
-	l = ((l >> 8) & 0x00ff00ff) | ((l << 8) & 0xff00ff00);
+	uint32_t l = ((sl >> 8) & 0x00ff00ff) | ((sl << 8) & 0xff00ff00);
 	l = (l >> 16) | (l << 16);
 	return l;
 }
@@ -722,44 +720,81 @@ static inline float FloatSwap(float f)
 	return dat2.f;
 }
 
+static inline uint16_t ShortNoSwap(const uint16_t s)
+{
+	return s;
+}
+
+static inline uint32_t LongNoSwap(const uint32_t s)
+{
+	return s;
+}
+
+static inline float FloatNoSwap(const float s)
+{
+	return s;
+}
+
+static inline uint32_t MakeRawLongLittle(const byte b1, const byte b2, const byte b3, const byte b4)
+{
+	return (((uint32_t)b4 << 24) | (b3 << 16) | (b2 << 8) | b1);
+}
+
+static inline uint16_t MakeRawShortLittle(const byte b1, const byte b2)
+{
+	return ((b2 << 8) | b1);
+}
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-	#define BigShort    ShortSwap
-	#define BigLong     LongSwap
-	#define BigFloat    FloatSwap
-	#define LittleShort(x)    ((uint16_t)(x))
-	#define LittleLong(x)     ((uint32_t)(x))
-	#define LittleFloat(x)    ((float)(x))
-	#define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b4)<<24)|((b3)<<16)|((b2)<<8)|(b1))
-	#define MakeRawShort(b1,b2) (((b2)<<8)|(b1))
+#define BigShort    ShortSwap
+#define BigLong     LongSwap
+#define BigFloat    FloatSwap
+#define LittleShort    ShortNoSwap
+#define LittleLong     LongNoSwap
+#define LittleFloat    FloatNoSwap
+#define MakeRawLong MakeRawLongLittle
+#define MakeRawShort MakeRawShortLittle
 #elif __BYTE_ORDER == __BIG_ENDIAN
-	#define BigShort(x)     ((uint16_t)(x))
-	#define BigLong(x)      ((uint32_t)(x))
-	#define BigFloat(x)     ((float)(x))
-	#define LittleShort ShortSwap
-	#define LittleLong  LongSwap
-	#define LittleFloat FloatSwap
-	#define MakeRawLong(b1,b2,b3,b4) (((unsigned)(b1)<<24)|((b2)<<16)|((b3)<<8)|(b4))
-	#define MakeRawShort(b1,b2) (((b1)<<8)|(b2))
+#define BigShort     ShortNoSwap
+#define BigLong      LongNoSwap
+#define BigFloat     FloatNoSwap
+#define LittleShort ShortSwap
+#define LittleLong  LongSwap
+#define LittleFloat FloatSwap
+static inline uint32_t MakeRawLong(const byte b1, const byte b2, const byte b3, const byte b4)
+{
+	return MakeRawLongLittle(b4, b3, b2, b1);
+}
+static inline uint16_t MakeRawShort(const byte b1, const byte b2)
+{
+	return MakeRawShortLittle(b2, b1);
+}
 #else
-	#error Unknown byte order
+#error Unknown byte order
 #endif
 
-#define LittleLongMem(p) (((unsigned)(p)[3]<<24)|((p)[2]<<16)|((p)[1]<<8)|(p)[0])
-#define LittleShortMem(p) (((p)[1]<<8)|(p)[0])
+static inline uint32_t LittleLongMem(const byte *p)
+{
+	return ((uint32_t)p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];
+}
 
-#define RawLongMem(p) MakeRawLong((p)[0],(p)[1],(p)[2],(p)[3])
-#define RawShortMem(p) MakeRawShort((p)[0],(p)[1])
+static inline uint16_t LittleShortMem(const byte *p)
+{
+	return (p[1] << 8) | p[0];
+}
 
-#define LittleVector(a,b) \
-	((b)[0]=LittleFloat((a)[0]),\
-		(b)[1]=LittleFloat((a)[1]),\
-		(b)[2]=LittleFloat((a)[2]))
+static inline uint32_t RawLongMem(const byte *p)
+{
+	return MakeRawLong(p[0], p[1], p[2], p[3]);
+}
 
-#if USE_BGRA
-	#define MakeColor(r, g, b, a)   MakeRawLong(b, g, r, a)
-#else
-	#define MakeColor(r, g, b, a)   MakeRawLong(r, g, b, a)
-#endif
+static inline void LittleVector(const vec3_t in, vec3_t out)
+{
+	for (int i = 0; i < 3; i++)
+		out[i] = LittleFloat(in[i]);
+}
+
+#define MakeColor	MakeRawLong
 
 //=============================================
 
@@ -772,8 +807,8 @@ static inline float FloatSwap(float f)
 
 char	    *Info_ValueForKey(const char *s, const char *key);
 void	    Info_RemoveKey(char *s, const char *key);
-bool    Info_SetValueForKey(char *s, const char *key, const char *value);
-bool    Info_Validate(const char *s);
+bool		Info_SetValueForKey(char *s, const char *key, const char *value);
+bool		Info_Validate(const char *s);
 size_t		Info_SubValidate(const char *s);
 void		Info_NextPair(const char **string, char *key, char *value);
 void		Info_Print(const char *infostring);
@@ -1701,8 +1736,15 @@ ROGUE - VERSIONS
 // maximum variable FPS factor
 #define MAX_FRAMEDIV    6
 
-#define ANGLE2SHORT(x)  ((int)((x)*65536/360) & 65535)
-#define SHORT2ANGLE(x)  ((x)*(360.0f/65536))
+static inline short ANGLE2SHORT(const float x)
+{
+	return (int)(x * 65536 / 360) & 65535;
+}
+
+static inline float SHORT2ANGLE(const short x)
+{
+	return x * (360.0f / 65536);
+}
 
 
 //

@@ -80,7 +80,7 @@ struct edict_s
 {
 	entity_state_t  s;
 	struct gclient_s    *client;
-	qboolean    inuse;
+	bool       inuse;
 	int         linkcount;
 
 	// FIXME: move these fields to a server private sv_entity_t

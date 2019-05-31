@@ -2102,7 +2102,7 @@ static void CL_WriteConfig(char *dir, char *filename, bool aliases, bool binding
 	}
 
 	f = FS_EasyOpenFile(buffer, sizeof(buffer), FS_MODE_WRITE | FS_FLAG_TEXT,
-						dir, filename, ".cfg");
+			dir, filename, ".cfg");
 
 	if (!f)
 		return;

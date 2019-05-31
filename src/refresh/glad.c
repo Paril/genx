@@ -35,20 +35,20 @@ typedef void *(APIENTRYP PFNWGLGETPROCADDRESSPROC_PRIVATE)(const char *);
 static PFNWGLGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 
 #ifdef _MSC_VER
-#ifdef __has_include
-#if __has_include(<winapifamily.h>)
-#define HAVE_WINAPIFAMILY 1
-#endif
-#elif _MSC_VER >= 1700 && !_USING_V110_SDK71_
-#define HAVE_WINAPIFAMILY 1
-#endif
+	#ifdef __has_include
+		#if __has_include(<winapifamily.h>)
+			#define HAVE_WINAPIFAMILY 1
+		#endif
+	#elif _MSC_VER >= 1700 && !_USING_V110_SDK71_
+		#define HAVE_WINAPIFAMILY 1
+	#endif
 #endif
 
 #ifdef HAVE_WINAPIFAMILY
-#include <winapifamily.h>
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
-#define IS_UWP 1
-#endif
+	#include <winapifamily.h>
+	#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) && WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_APP)
+		#define IS_UWP 1
+	#endif
 #endif
 
 static
@@ -56,6 +56,7 @@ int open_gl(void)
 {
 #ifndef IS_UWP
 	libGL = LoadLibraryW(L"opengl32.dll");
+
 	if (libGL != NULL)
 	{
 		void (*tmp)(void);
@@ -63,8 +64,8 @@ int open_gl(void)
 		gladGetProcAddressPtr = (PFNWGLGETPROCADDRESSPROC_PRIVATE)tmp;
 		return gladGetProcAddressPtr != NULL;
 	}
-#endif
 
+#endif
 	return 0;
 }
 
@@ -82,15 +83,16 @@ void close_gl(void)
 static void *libGL;
 
 #if !defined(__APPLE__) && !defined(__HAIKU__)
-typedef void *(APIENTRYP PFNGLXGETPROCADDRESSPROC_PRIVATE)(const char *);
-static PFNGLXGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
+	typedef void *(APIENTRYP PFNGLXGETPROCADDRESSPROC_PRIVATE)(const char *);
+	static PFNGLXGETPROCADDRESSPROC_PRIVATE gladGetProcAddressPtr;
 #endif
 
 static
 int open_gl(void)
 {
 #ifdef __APPLE__
-	static const char *NAMES[] = {
+	static const char *NAMES[] =
+	{
 		"../Frameworks/OpenGL.framework/OpenGL",
 		"/Library/Frameworks/OpenGL.framework/OpenGL",
 		"/System/Library/Frameworks/OpenGL.framework/OpenGL",
@@ -99,8 +101,8 @@ int open_gl(void)
 #else
 	static const char *NAMES[] = { "libGL.so.1", "libGL.so" };
 #endif
-
 	unsigned int index = 0;
+
 	for (index = 0; index < (sizeof(NAMES) / sizeof(NAMES[0])); index++)
 	{
 		libGL = dlopen(NAMES[index], RTLD_NOW | RTLD_GLOBAL);
@@ -111,7 +113,7 @@ int open_gl(void)
 			return 1;
 #else
 			gladGetProcAddressPtr = (PFNGLXGETPROCADDRESSPROC_PRIVATE)dlsym(libGL,
-																			"glXGetProcAddressARB");
+					"glXGetProcAddressARB");
 			return gladGetProcAddressPtr != NULL;
 #endif
 		}
@@ -135,14 +137,17 @@ static
 void *get_proc(const char *namez)
 {
 	void *result = NULL;
-	if (libGL == NULL) return NULL;
+
+	if (libGL == NULL)
+		return NULL;
 
 #if !defined(__APPLE__) && !defined(__HAIKU__)
+
 	if (gladGetProcAddressPtr != NULL)
-	{
 		result = gladGetProcAddressPtr(namez);
-	}
+
 #endif
+
 	if (result == NULL)
 	{
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -171,7 +176,7 @@ int gladLoadGL(void)
 struct gladGLversionStruct GLVersion = { 0, 0 };
 
 #if defined(GL_ES_VERSION_3_0) || defined(GL_VERSION_3_0)
-#define _GLAD_IS_SOME_NEW_VERSION 1
+	#define _GLAD_IS_SOME_NEW_VERSION 1
 #endif
 
 static int max_loaded_major;
@@ -184,6 +189,7 @@ static char **exts_i = NULL;
 static int get_exts(void)
 {
 #ifdef _GLAD_IS_SOME_NEW_VERSION
+
 	if (max_loaded_major < 3)
 	{
 #endif
@@ -193,32 +199,28 @@ static int get_exts(void)
 	else
 	{
 		unsigned int index;
-
 		num_exts_i = 0;
 		glGetIntegerv(GL_NUM_EXTENSIONS, &num_exts_i);
+
 		if (num_exts_i > 0)
-		{
 			exts_i = (char **)malloc((size_t)num_exts_i * (sizeof * exts_i));
-		}
 
 		if (exts_i == NULL)
-		{
 			return 0;
-		}
 
 		for (index = 0; index < (unsigned)num_exts_i; index++)
 		{
 			const char *gl_str_tmp = (const char *)glGetStringi(GL_EXTENSIONS, index);
 			size_t len = strlen(gl_str_tmp);
-
 			char *local_str = (char *)malloc((len + 1) * sizeof(char));
+
 			if (local_str != NULL)
-			{
 				memcpy(local_str, gl_str_tmp, (len + 1) * sizeof(char));
-			}
+
 			exts_i[index] = local_str;
 		}
 	}
+
 #endif
 	return 1;
 }
@@ -228,10 +230,10 @@ static void free_exts(void)
 	if (exts_i != NULL)
 	{
 		int index;
+
 		for (index = 0; index < num_exts_i; index++)
-		{
 			free((char *)exts_i[index]);
-		}
+
 		free((void *)exts_i);
 		exts_i = NULL;
 	}
@@ -240,6 +242,7 @@ static void free_exts(void)
 static int has_ext(const char *ext)
 {
 #ifdef _GLAD_IS_SOME_NEW_VERSION
+
 	if (max_loaded_major < 3)
 	{
 #endif
@@ -247,45 +250,45 @@ static int has_ext(const char *ext)
 		const char *loc;
 		const char *terminator;
 		extensions = exts;
+
 		if (extensions == NULL || ext == NULL)
-		{
 			return 0;
-		}
 
 		while (1)
 		{
 			loc = strstr(extensions, ext);
+
 			if (loc == NULL)
-			{
 				return 0;
-			}
 
 			terminator = loc + strlen(ext);
+
 			if ((loc == extensions || *(loc - 1) == ' ') &&
 				(*terminator == ' ' || *terminator == '\0'))
-			{
 				return 1;
-			}
+
 			extensions = terminator;
 		}
+
 #ifdef _GLAD_IS_SOME_NEW_VERSION
 	}
 	else
 	{
 		int index;
-		if (exts_i == NULL) return 0;
+
+		if (exts_i == NULL)
+			return 0;
+
 		for (index = 0; index < num_exts_i; index++)
 		{
 			const char *e = exts_i[index];
 
 			if (exts_i[index] != NULL && strcmp(e, ext) == 0)
-			{
 				return 1;
-			}
 		}
 	}
-#endif
 
+#endif
 	return 0;
 }
 int GLAD_GL_VERSION_1_0 = 0;
@@ -619,7 +622,9 @@ int GLAD_GL_ARB_texture_filter_anisotropic = 0;
 int GLAD_GL_EXT_texture_filter_anisotropic = 0;
 static void load_GL_VERSION_1_0(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_1_0) return;
+	if (!GLAD_GL_VERSION_1_0)
+		return;
+
 	glad_glCullFace = (PFNGLCULLFACEPROC)load("glCullFace");
 	glad_glFrontFace = (PFNGLFRONTFACEPROC)load("glFrontFace");
 	glad_glHint = (PFNGLHINTPROC)load("glHint");
@@ -671,7 +676,9 @@ static void load_GL_VERSION_1_0(GLADloadproc load)
 }
 static void load_GL_VERSION_1_1(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_1_1) return;
+	if (!GLAD_GL_VERSION_1_1)
+		return;
+
 	glad_glDrawArrays = (PFNGLDRAWARRAYSPROC)load("glDrawArrays");
 	glad_glDrawElements = (PFNGLDRAWELEMENTSPROC)load("glDrawElements");
 	glad_glPolygonOffset = (PFNGLPOLYGONOFFSETPROC)load("glPolygonOffset");
@@ -688,7 +695,9 @@ static void load_GL_VERSION_1_1(GLADloadproc load)
 }
 static void load_GL_VERSION_1_2(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_1_2) return;
+	if (!GLAD_GL_VERSION_1_2)
+		return;
+
 	glad_glDrawRangeElements = (PFNGLDRAWRANGEELEMENTSPROC)load("glDrawRangeElements");
 	glad_glTexImage3D = (PFNGLTEXIMAGE3DPROC)load("glTexImage3D");
 	glad_glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)load("glTexSubImage3D");
@@ -696,7 +705,9 @@ static void load_GL_VERSION_1_2(GLADloadproc load)
 }
 static void load_GL_VERSION_1_3(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_1_3) return;
+	if (!GLAD_GL_VERSION_1_3)
+		return;
+
 	glad_glActiveTexture = (PFNGLACTIVETEXTUREPROC)load("glActiveTexture");
 	glad_glSampleCoverage = (PFNGLSAMPLECOVERAGEPROC)load("glSampleCoverage");
 	glad_glCompressedTexImage3D = (PFNGLCOMPRESSEDTEXIMAGE3DPROC)load("glCompressedTexImage3D");
@@ -709,7 +720,9 @@ static void load_GL_VERSION_1_3(GLADloadproc load)
 }
 static void load_GL_VERSION_1_4(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_1_4) return;
+	if (!GLAD_GL_VERSION_1_4)
+		return;
+
 	glad_glBlendFuncSeparate = (PFNGLBLENDFUNCSEPARATEPROC)load("glBlendFuncSeparate");
 	glad_glMultiDrawArrays = (PFNGLMULTIDRAWARRAYSPROC)load("glMultiDrawArrays");
 	glad_glMultiDrawElements = (PFNGLMULTIDRAWELEMENTSPROC)load("glMultiDrawElements");
@@ -722,7 +735,9 @@ static void load_GL_VERSION_1_4(GLADloadproc load)
 }
 static void load_GL_VERSION_1_5(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_1_5) return;
+	if (!GLAD_GL_VERSION_1_5)
+		return;
+
 	glad_glGenQueries = (PFNGLGENQUERIESPROC)load("glGenQueries");
 	glad_glDeleteQueries = (PFNGLDELETEQUERIESPROC)load("glDeleteQueries");
 	glad_glIsQuery = (PFNGLISQUERYPROC)load("glIsQuery");
@@ -745,7 +760,9 @@ static void load_GL_VERSION_1_5(GLADloadproc load)
 }
 static void load_GL_VERSION_2_0(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_2_0) return;
+	if (!GLAD_GL_VERSION_2_0)
+		return;
+
 	glad_glBlendEquationSeparate = (PFNGLBLENDEQUATIONSEPARATEPROC)load("glBlendEquationSeparate");
 	glad_glDrawBuffers = (PFNGLDRAWBUFFERSPROC)load("glDrawBuffers");
 	glad_glStencilOpSeparate = (PFNGLSTENCILOPSEPARATEPROC)load("glStencilOpSeparate");
@@ -842,7 +859,9 @@ static void load_GL_VERSION_2_0(GLADloadproc load)
 }
 static void load_GL_VERSION_2_1(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_2_1) return;
+	if (!GLAD_GL_VERSION_2_1)
+		return;
+
 	glad_glUniformMatrix2x3fv = (PFNGLUNIFORMMATRIX2X3FVPROC)load("glUniformMatrix2x3fv");
 	glad_glUniformMatrix3x2fv = (PFNGLUNIFORMMATRIX3X2FVPROC)load("glUniformMatrix3x2fv");
 	glad_glUniformMatrix2x4fv = (PFNGLUNIFORMMATRIX2X4FVPROC)load("glUniformMatrix2x4fv");
@@ -852,7 +871,9 @@ static void load_GL_VERSION_2_1(GLADloadproc load)
 }
 static void load_GL_VERSION_3_0(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_3_0) return;
+	if (!GLAD_GL_VERSION_3_0)
+		return;
+
 	glad_glColorMaski = (PFNGLCOLORMASKIPROC)load("glColorMaski");
 	glad_glGetBooleani_v = (PFNGLGETBOOLEANI_VPROC)load("glGetBooleani_v");
 	glad_glGetIntegeri_v = (PFNGLGETINTEGERI_VPROC)load("glGetIntegeri_v");
@@ -940,7 +961,9 @@ static void load_GL_VERSION_3_0(GLADloadproc load)
 }
 static void load_GL_VERSION_3_1(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_3_1) return;
+	if (!GLAD_GL_VERSION_3_1)
+		return;
+
 	glad_glDrawArraysInstanced = (PFNGLDRAWARRAYSINSTANCEDPROC)load("glDrawArraysInstanced");
 	glad_glDrawElementsInstanced = (PFNGLDRAWELEMENTSINSTANCEDPROC)load("glDrawElementsInstanced");
 	glad_glTexBuffer = (PFNGLTEXBUFFERPROC)load("glTexBuffer");
@@ -959,7 +982,9 @@ static void load_GL_VERSION_3_1(GLADloadproc load)
 }
 static void load_GL_VERSION_3_2(GLADloadproc load)
 {
-	if (!GLAD_GL_VERSION_3_2) return;
+	if (!GLAD_GL_VERSION_3_2)
+		return;
+
 	glad_glDrawElementsBaseVertex = (PFNGLDRAWELEMENTSBASEVERTEXPROC)load("glDrawElementsBaseVertex");
 	glad_glDrawRangeElementsBaseVertex = (PFNGLDRAWRANGEELEMENTSBASEVERTEXPROC)load("glDrawRangeElementsBaseVertex");
 	glad_glDrawElementsInstancedBaseVertex = (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC)load("glDrawElementsInstancedBaseVertex");
@@ -982,7 +1007,9 @@ static void load_GL_VERSION_3_2(GLADloadproc load)
 }
 static int find_extensionsGL(void)
 {
-	if (!get_exts()) return 0;
+	if (!get_exts())
+		return 0;
+
 	GLAD_GL_ARB_texture_filter_anisotropic = has_ext("GL_ARB_texture_filter_anisotropic");
 	GLAD_GL_EXT_texture_filter_anisotropic = has_ext("GL_EXT_texture_filter_anisotropic");
 	free_exts();
@@ -991,27 +1018,28 @@ static int find_extensionsGL(void)
 
 static void find_coreGL(void)
 {
-
-/* Thank you @elmindreda
- * https://github.com/elmindreda/greg/blob/master/templates/greg.c.in#L176
- * https://github.com/glfw/glfw/blob/master/src/context.c#L36
- */
+	/* Thank you @elmindreda
+	 * https://github.com/elmindreda/greg/blob/master/templates/greg.c.in#L176
+	 * https://github.com/glfw/glfw/blob/master/src/context.c#L36
+	 */
 	int i, major, minor;
-
 	const char *version;
-	const char *prefixes[] = {
+	const char *prefixes[] =
+	{
 		"OpenGL ES-CM ",
 		"OpenGL ES-CL ",
 		"OpenGL ES ",
 		NULL
 	};
-
 	version = (const char *)glGetString(GL_VERSION);
-	if (!version) return;
+
+	if (!version)
+		return;
 
 	for (i = 0; prefixes[i]; i++)
 	{
 		const size_t length = strlen(prefixes[i]);
+
 		if (strncmp(version, prefixes[i], length) == 0)
 		{
 			version += length;
@@ -1019,15 +1047,16 @@ static void find_coreGL(void)
 		}
 	}
 
-/* PR #18 */
+	/* PR #18 */
 #ifdef _MSC_VER
 	sscanf_s(version, "%d.%d", &major, &minor);
 #else
 	sscanf(version, "%d.%d", &major, &minor);
 #endif
-
-	GLVersion.major = major; GLVersion.minor = minor;
-	max_loaded_major = major; max_loaded_minor = minor;
+	GLVersion.major = major;
+	GLVersion.minor = minor;
+	max_loaded_major = major;
+	max_loaded_minor = minor;
 	GLAD_GL_VERSION_1_0 = (major == 1 && minor >= 0) || major > 1;
 	GLAD_GL_VERSION_1_1 = (major == 1 && minor >= 1) || major > 1;
 	GLAD_GL_VERSION_1_2 = (major == 1 && minor >= 2) || major > 1;
@@ -1039,6 +1068,7 @@ static void find_coreGL(void)
 	GLAD_GL_VERSION_3_0 = (major == 3 && minor >= 0) || major > 3;
 	GLAD_GL_VERSION_3_1 = (major == 3 && minor >= 1) || major > 3;
 	GLAD_GL_VERSION_3_2 = (major == 3 && minor >= 2) || major > 3;
+
 	if (GLVersion.major > 3 || (GLVersion.major >= 3 && GLVersion.minor >= 2))
 	{
 		max_loaded_major = 3;
@@ -1048,10 +1078,16 @@ static void find_coreGL(void)
 
 int gladLoadGLLoader(GLADloadproc load)
 {
-	GLVersion.major = 0; GLVersion.minor = 0;
+	GLVersion.major = 0;
+	GLVersion.minor = 0;
 	glGetString = (PFNGLGETSTRINGPROC)load("glGetString");
-	if (glGetString == NULL) return 0;
-	if (glGetString(GL_VERSION) == NULL) return 0;
+
+	if (glGetString == NULL)
+		return 0;
+
+	if (glGetString(GL_VERSION) == NULL)
+		return 0;
+
 	find_coreGL();
 	load_GL_VERSION_1_0(load);
 	load_GL_VERSION_1_1(load);
@@ -1065,7 +1101,9 @@ int gladLoadGLLoader(GLADloadproc load)
 	load_GL_VERSION_3_1(load);
 	load_GL_VERSION_3_2(load);
 
-	if (!find_extensionsGL()) return 0;
+	if (!find_extensionsGL())
+		return 0;
+
 	return GLVersion.major != 0 || GLVersion.minor != 0;
 }
 

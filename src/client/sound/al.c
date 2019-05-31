@@ -385,7 +385,6 @@ void AL_Update(void)
 
 		// set pitch
 		qalSourcef(ch->srcnum, AL_PITCH, AL_AdjustPitch(ch));
-
 #ifdef _DEBUG
 
 		if (s_show->integer)

@@ -3294,7 +3294,6 @@ static void fs_game_changed(cvar_t *self)
 
 	// otherwise, restart the filesystem
 	CL_RestartFilesystem(false);
-
 	Com_AddConfigFile(COM_PATHS_CFG, FS_PATH_GAME);
 
 	// if baseq2/autoexec.cfg exists DO NOT exec default.cfg and config.cfg.

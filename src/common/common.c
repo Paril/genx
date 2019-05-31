@@ -1004,11 +1004,13 @@ void Qcommon_Init(int argc, char **argv)
 	logfile_flush->changed = logfile_param_changed;
 	logfile_name->changed = logfile_param_changed;
 	logfile_enable_changed(logfile_enable);
+
 	// execute configs: default.cfg may come from the packfile, but config.cfg
 	// and autoexec.cfg must be real files within the game directory.
 	// don't execute default.cfg if we're loading from config.cfg.
 	if (!FS_FileExistsEx(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME))
 		Com_AddConfigFile(COM_DEFAULT_CFG, 0);
+
 	Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME);
 	Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_GAME);
 	Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
