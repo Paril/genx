@@ -75,7 +75,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>DebugFastLink</GenerateDebugInformation>
-      <AdditionalDependencies>winmm.lib;ws2_32.lib;OpenAL32.lib;Opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Imm32.lib;winmm.lib;ws2_32.lib;OpenAL32.lib;Opengl32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <Profile>false</Profile>
     </Link>
     <ResourceCompile>
@@ -101,7 +101,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalDependencies>winmm.lib;ws2_32.lib;OpenAL32.lib;Opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Imm32.lib;winmm.lib;ws2_32.lib;OpenAL32.lib;Opengl32.lib;version.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ResourceCompile>
       <ResourceOutputFileName>q2pro.rc</ResourceOutputFileName>
@@ -192,6 +192,11 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">rf_$(IntDir)%(filename).obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">rf_$(IntDir)%(filename).obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\src\sdl\system.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)/system_2.obj</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)/system_2.obj</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\src\sdl\video.c" />
     <ClCompile Include="..\src\server\commands.c" />
     <ClCompile Include="..\src\server\entities.c" />
     <ClCompile Include="..\src\server\game.c" />
@@ -207,20 +212,16 @@
     <ClCompile Include="..\src\shared\hashset.c" />
     <ClCompile Include="..\src\shared\m_flash.c" />
     <ClCompile Include="..\src\shared\shared.c" />
-    <ClCompile Include="..\src\windows\client.c" />
-    <ClCompile Include="..\src\windows\glad_wgl.c" />
-    <ClCompile Include="..\src\windows\glimp.c" />
+    <ClCompile Include="..\src\windows\debug.c" />
     <ClCompile Include="..\src\windows\system.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\inc\client\client.h" />
     <ClInclude Include="..\inc\client\input.h" />
     <ClInclude Include="..\inc\client\keys.h" />
-    <ClInclude Include="..\inc\client\sound\dma.h" />
     <ClInclude Include="..\inc\client\sound\sound.h" />
     <ClInclude Include="..\inc\client\ui.h" />
     <ClInclude Include="..\inc\client\video.h" />
-    <ClInclude Include="..\inc\common\astar.h" />
     <ClInclude Include="..\inc\common\bsp.h" />
     <ClInclude Include="..\inc\common\cmd.h" />
     <ClInclude Include="..\inc\common\cmodel.h" />
@@ -257,33 +258,24 @@
     <ClInclude Include="..\inc\format\spr.h" />
     <ClInclude Include="..\inc\format\wal.h" />
     <ClInclude Include="..\inc\refresh\refresh.h" />
-    <ClInclude Include="..\inc\server\mvd\client.h" />
-    <ClInclude Include="..\inc\server\mvd\protocol.h" />
     <ClInclude Include="..\inc\server\server.h" />
     <ClInclude Include="..\inc\shared\game.h" />
+    <ClInclude Include="..\inc\shared\hashset.h" />
     <ClInclude Include="..\inc\shared\list.h" />
     <ClInclude Include="..\inc\shared\platform.h" />
     <ClInclude Include="..\inc\shared\shared.h" />
     <ClInclude Include="..\inc\system\system.h" />
     <ClInclude Include="..\src\client\client.h" />
-    <ClInclude Include="..\src\client\sound\qal\dynamic.h" />
-    <ClInclude Include="..\src\client\sound\qal\fixed.h" />
     <ClInclude Include="..\src\client\sound\sound.h" />
     <ClInclude Include="..\src\client\ui\ui.h" />
+    <ClInclude Include="..\src\common\astar.h" />
     <ClInclude Include="..\src\common\net\inet_ntop.h" />
     <ClInclude Include="..\src\common\net\inet_pton.h" />
-    <ClInclude Include="..\src\common\net\unix.h" />
     <ClInclude Include="..\src\common\net\win.h" />
     <ClInclude Include="..\src\refresh\arbfp.h" />
     <ClInclude Include="..\src\refresh\gl.h" />
     <ClInclude Include="..\src\refresh\glad.h" />
     <ClInclude Include="..\src\refresh\images.h" />
-    <ClInclude Include="..\src\server\mvd\client.h" />
-    <ClInclude Include="..\src\server\server.h" />
-    <ClInclude Include="..\src\unix\tty.h" />
-    <ClInclude Include="..\src\windows\client.h" />
-    <ClInclude Include="..\src\windows\glad_wgl.h" />
-    <ClInclude Include="..\src\windows\glimp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

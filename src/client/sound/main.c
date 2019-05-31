@@ -279,43 +279,21 @@ static void S_SoundInfo_f(void)
 
 static void S_SoundList_f(void)
 {
-	int     i;
+	int     i, total = 0;
 	sfx_t   *sfx;
-	sfxcache_t  *sc;
-	int     size, total;
-	total = 0;
 
 	for (sfx = known_sfx, i = 0; i < num_sfx; i++, sfx++)
 	{
 		if (!sfx->name[0])
 			continue;
 
-		sc = sfx->cache;
-
-		if (sc)
-		{
-			if (s_started == SS_OAL)
-				size = sc->size;
-			else
-				size = sc->length * sc->width;
-
-			total += size;
-
-			if (sc->loopstart >= 0)
-				Com_Printf("L");
-			else
-				Com_Printf(" ");
-
-			Com_Printf("(%2db) %6i : %s\n", sc->width * 8,  size, sfx->name) ;
-		}
+		if (sfx->loopstart >= 0)
+			Com_Printf("L");
 		else
-		{
-			if (sfx->name[0] == '*')
-				Com_Printf("  placeholder : %s\n", sfx->name);
-			else
-				Com_Printf("  not loaded  : %s (%s)\n",
-					sfx->name, Q_ErrorString(sfx->error));
-		}
+			Com_Printf(" ");
+
+		Com_Printf("(%2d bit) %6i msec: %s\n", sfx->width * 8, sfx->length, sfx->name);
+		total++;
 	}
 
 	Com_Printf("Total resident: %i\n", total);
@@ -398,9 +376,6 @@ static void S_FreeSound(sfx_t *sfx)
 {
 	if (s_started == SS_OAL)
 		AL_DeleteSfx(sfx);
-
-	if (sfx->cache)
-		Z_Free(sfx->cache);
 
 	if (sfx->truename)
 		Z_Free(sfx->truename);
@@ -905,7 +880,6 @@ by the update loop.
 void S_IssuePlaysound(playsound_t *ps)
 {
 	channel_t   *ch;
-	sfxcache_t  *sc;
 #ifdef _DEBUG
 
 	if (s_show->integer)
@@ -921,9 +895,7 @@ void S_IssuePlaysound(playsound_t *ps)
 		return;
 	}
 
-	sc = S_LoadSound(ps->sfx);
-
-	if (!sc)
+	if (!S_LoadSound(ps->sfx))
 	{
 		Com_Printf("S_IssuePlaysound: couldn't load %s\n", ps->sfx->name);
 		S_FreePlaysound(ps);
@@ -948,7 +920,7 @@ void S_IssuePlaysound(playsound_t *ps)
 		AL_PlayChannel(ch);
 
 	ch->pos = 0;
-	ch->end = paintedtime + sc->length;
+	ch->end = paintedtime + ps->sfx->length;
 	// free the playsound
 	S_FreePlaysound(ps);
 }
@@ -968,7 +940,6 @@ Entchannel 0 will never override a playing sound
 */
 void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSfx, float vol, float attenuation, float timeofs)
 {
-	sfxcache_t  *sc;
 	playsound_t *ps, *sort;
 	sfx_t       *sfx;
 
@@ -990,9 +961,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
 	}
 
 	// make sure the sound is loaded
-	sc = S_LoadSound(sfx);
-
-	if (!sc)
+	if (!S_LoadSound(sfx))
 		return;     // couldn't load the sound's data
 
 	// make the playsound_t

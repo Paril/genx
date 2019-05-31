@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // snd_mem.c: sound caching
 
 #include "sound.h"
+#include <SDL2/SDL.h>
 
 wavinfo_t s_info;
 
@@ -26,75 +27,43 @@ wavinfo_t s_info;
 ResampleSfx
 ================
 */
-sfxcache_t *ResampleSfx(sfx_t *sfx, int wanted_rate)
+bool S_ResampleSfx(sfx_t *sfx, int wanted_rate, byte **data, size_t *num_samples)
 {
-	int         outcount;
-	int         srcsample;
-	float       stepscale;
-	int         i;
-	int         samplefrac, fracstep;
-	sfxcache_t  *sc;
-	stepscale = (float)s_info.rate / wanted_rate;      // this is usually 0.5, 1, or 2
-	outcount = s_info.samples / stepscale;
+	float stepscale = (float)s_info.rate / wanted_rate;      // this is usually 0.5, 1, or 2
+	int outcount = s_info.samples / stepscale;
 
 	if (!outcount)
 	{
 		Com_DPrintf("%s resampled to zero length\n", s_info.name);
 		sfx->error = Q_ERR_TOO_FEW;
-		return NULL;
+		return false;
 	}
 
-	sc = sfx->cache = S_Malloc(outcount * s_info.width + sizeof(sfxcache_t) - 1);
-	sc->length = outcount;
-	sc->loopstart = s_info.loopstart == -1 ? -1 : s_info.loopstart / stepscale;
-	sc->width = s_info.width;
+	*num_samples = outcount;
+	sfx->loopstart = s_info.loopstart == -1 ? -1 : s_info.loopstart / stepscale;
+	sfx->width = s_info.width;
 
-	// resample / decimate to the current source rate
-	//Com_Printf("%s: %f, %d\n",sfx->name,stepscale,sc->width);
 	if (stepscale == 1)
 	{
-		// fast special case
-		if (sc->width == 1)
-			memcpy(sc->data, s_info.data, outcount);
-		else
-		{
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-			memcpy(sc->data, s_info.data, outcount << 1);
-#else
-
-			for (i = 0; i < outcount; i++)
-				((uint16_t *)sc->data)[i] = LittleShort(((uint16_t *)s_info.data)[i]);
-
-#endif
-		}
+		*data = s_info.data;
+		return true;
 	}
-	else
+
+	// general case
+	int samplefrac = 0;
+	int fracstep = stepscale * 256;
+	int i;
+	byte *out_data = *data = S_Malloc(outcount * s_info.width);
+
+	for (i = 0; i < outcount; i++)
 	{
-		// general case
-		samplefrac = 0;
-		fracstep = stepscale * 256;
-
-		if (sc->width == 1)
-		{
-			for (i = 0; i < outcount; i++)
-			{
-				srcsample = samplefrac >> 8;
-				samplefrac += fracstep;
-				sc->data[i] = s_info.data[srcsample];
-			}
-		}
-		else
-		{
-			for (i = 0; i < outcount; i++)
-			{
-				srcsample = samplefrac >> 8;
-				samplefrac += fracstep;
-				((uint16_t *)sc->data)[i] = LittleShort(((uint16_t *)s_info.data)[srcsample]);
-			}
-		}
+		int srcsample = samplefrac >> 8;
+		samplefrac += fracstep;
+		memcpy(out_data, s_info.data + srcsample, s_info.width);
+		out_data += s_info.width;
 	}
 
-	return sc;
+	return true;
 }
 
 /*
@@ -325,25 +294,21 @@ static bool GetWavinfo(void)
 S_LoadSound
 ==============
 */
-sfxcache_t *S_LoadSound(sfx_t *s)
+bool S_LoadSound(sfx_t *s)
 {
 	byte        *data;
-	sfxcache_t  *sc;
 	int         len;
 	char        *name;
 
 	if (s->name[0] == '*')
-		return NULL;
+		return false;
 
-	// see if still in memory
-	sc = s->cache;
-
-	if (sc)
-		return sc;
+	if (s->bufnum)
+		return s;
 
 	// don't retry after error
 	if (s->error)
-		return NULL;
+		return false;
 
 	// load it in
 	if (s->truename)
@@ -356,13 +321,20 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 	if (!data)
 	{
 		s->error = len;
-		return NULL;
+		return false;
 	}
 
 	memset(&s_info, 0, sizeof(s_info));
 	s_info.name = name;
 	iff_data = data;
 	iff_end = data + len;
+
+	/*SDL_RWops *myRWops = SDL_RWFromMem(data, len);
+	SDL_AudioSpec wav_spec;
+	Uint32 wav_length;
+	Uint8 *wav_buffer;
+	SDL_LoadWAV_RW(myRWops, 1, &wav_spec, &wav_buffer, &wav_length);
+	SDL_RWclose(myRWops);*/
 
 	if (!GetWavinfo())
 	{
@@ -371,10 +343,19 @@ sfxcache_t *S_LoadSound(sfx_t *s)
 	}
 
 	if (s_started == SS_OAL)
-		sc = AL_UploadSfx(s);
+	{
+		byte *in_data = s_info.data;
+		byte *out_data;
+
+		if (!AL_UploadSfx(s, &out_data))
+			goto fail;
+
+		if (out_data != in_data)
+			Z_Free(out_data);
+	}
 
 fail:
 	FS_FreeFile(data);
-	return sc;
+	return true;
 }
 

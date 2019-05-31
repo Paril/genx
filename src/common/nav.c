@@ -113,7 +113,7 @@ nav_node_t *Nav_GetClosestNode(vec3_t position)
 	return closest;
 }
 
-#include "common/astar.h"
+#include "astar.h"
 
 float astarPathCostHeuristic(void *start, void *end, void *ctx)
 {

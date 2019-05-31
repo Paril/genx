@@ -238,8 +238,8 @@ LONG WINAPI Sys_ExceptionFilter(LPEXCEPTION_POINTERS exceptionInfo)
 	if (GetCurrentThread() != mainProcessThread)
 		return EXCEPTION_CONTINUE_SEARCH;
 
-#if USE_CLIENT
-	Win_Shutdown();
+#if USE_CLIENT && USE_REF
+	VID_FatalShutdown();
 #endif
 	ret = MessageBox(NULL,
 			PRODUCT " has encountered an unhandled "

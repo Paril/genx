@@ -684,7 +684,7 @@ static void duplicate_surface_lmtc(mface_t *surf, vec_t *vbo)
 static bool create_surface_vbo(size_t size)
 {
 	GLuint buf = 0;
-	GL_ClearErrors();
+	GL_ClearError();
 	glGenBuffers(1, &buf);
 	glBindBuffer(GL_ARRAY_BUFFER, buf);
 	glBufferData(GL_ARRAY_BUFFER, size, NULL, GL_STATIC_DRAW);

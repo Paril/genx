@@ -689,7 +689,7 @@ static const char *GL_ErrorString(GLenum err)
 	return str;
 }
 
-void GL_ClearErrors(void)
+void GL_ClearError(void)
 {
 	GLenum err;
 

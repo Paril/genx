@@ -28,7 +28,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "shared/shared.h"
-#include "common/astar.h"
+#include "astar.h"
 #include "common/zone.h"
 #include <math.h>
 #include <string.h>

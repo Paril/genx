@@ -36,7 +36,7 @@ void    Sys_FreeLibrary(void *handle);
 void    *Sys_GetProcAddress(void *handle, const char *sym);
 
 unsigned    Sys_Milliseconds(void);
-void    Sys_Sleep(int msec);
+void    Sys_Sleep(unsigned msec);
 
 void    Sys_Init(void);
 void    Sys_AddDefaultConfig(void);

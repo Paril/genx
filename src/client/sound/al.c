@@ -97,14 +97,10 @@ void AL_Shutdown(void)
 	QAL_Shutdown();
 }
 
-sfxcache_t *ResampleSfx(sfx_t *sfx, int wanted_rate);
-
-sfxcache_t *AL_UploadSfx(sfx_t *s)
+bool AL_UploadSfx(sfx_t *s, byte **data)
 {
-	sfxcache_t *sc;
 	ALenum format = s_info.width == 2 ? AL_FORMAT_MONO16 : AL_FORMAT_MONO8;
 	ALuint name;
-	// allocate placeholder sfxcache
 	int speed;
 
 	if (s_khz->integer == 44)
@@ -114,50 +110,38 @@ sfxcache_t *AL_UploadSfx(sfx_t *s)
 	else
 		speed = 11025;
 
-	sc = ResampleSfx(s, speed);
-	ALsizei size = sc->length * s_info.width;
+	size_t samples;
 
-	if (!size)
-	{
-		s->error = Q_ERR_TOO_FEW;
-		return NULL;
-	}
+	if (!S_ResampleSfx(s, speed, data, &samples))
+		return false;
 
-	size_t length_in_samples = sc->length;
-	sc->length = sc->length * 1000 / speed; // in msec
-	sc->size = size;
+	s->length = samples * 1000 / speed; // in msec
+	//sc->size = samples * s_info.width;
 	qalGetError();
 	qalGenBuffers(1, &name);
-	qalBufferData(name, format, sc->data, size, speed);
+	qalBufferData(name, format, *data, samples * s_info.width, speed);
 
 	if (qalGetError() != AL_NO_ERROR)
 	{
 		s->error = Q_ERR_LIBRARY_ERROR;
-		return NULL;
+		return false;
 	}
 
 	// specify OpenAL-Soft style loop points
 	if (s_info.loopstart > 0 && qalIsExtensionPresent("AL_SOFT_loop_points"))
 	{
-		ALint points[2] = { sc->loopstart, length_in_samples };
+		ALint points[2] = { s->loopstart, samples };
 		qalBufferiv(name, AL_LOOP_POINTS_SOFT, points);
 	}
 
-	sc->bufnum = name;
-	return sc;
+	s->bufnum = name;
+	return true;
 }
 
 void AL_DeleteSfx(sfx_t *s)
 {
-	sfxcache_t *sc;
-	ALuint name;
-	sc = s->cache;
-
-	if (!sc)
-		return;
-
-	name = sc->bufnum;
-	qalDeleteBuffers(1, &name);
+	qalDeleteBuffers(1, &s->bufnum);
+	s->bufnum = 0;
 }
 
 static void AL_Spatialize(channel_t *ch)
@@ -192,7 +176,6 @@ void AL_StopChannel(channel_t *ch)
 
 void AL_PlayChannel(channel_t *ch)
 {
-	sfxcache_t *sc = ch->sfx->cache;
 #ifdef _DEBUG
 
 	if (s_show->integer > 1)
@@ -201,9 +184,9 @@ void AL_PlayChannel(channel_t *ch)
 #endif
 	ch->srcnum = s_srcnums[ch - channels];
 	qalGetError();
-	qalSourcei(ch->srcnum, AL_BUFFER, sc->bufnum);
+	qalSourcei(ch->srcnum, AL_BUFFER, ch->sfx->bufnum);
 
-	if (ch->autosound || (sc->loopstart >= 0 && qalIsExtensionPresent("AL_SOFT_loop_points")))
+	if (ch->autosound || (ch->sfx->loopstart >= 0 && qalIsExtensionPresent("AL_SOFT_loop_points")))
 		qalSourcei(ch->srcnum, AL_LOOPING, AL_TRUE);
 	else
 		qalSourcei(ch->srcnum, AL_LOOPING, AL_FALSE);
@@ -299,7 +282,6 @@ static void AL_AddLoopSounds(void)
 	int         sounds[MAX_EDICTS];
 	channel_t   *ch, *ch2;
 	sfx_t       *sfx;
-	sfxcache_t  *sc;
 	int         num;
 	entity_state_t  *ent;
 
@@ -315,13 +297,8 @@ static void AL_AddLoopSounds(void)
 
 		sfx = S_SfxForHandle(cl.precache[sounds[i]].sound, CL_GetClientGame());
 
-		if (!sfx)
+		if (!sfx || !sfx->bufnum)
 			continue;       // bad sound effect
-
-		sc = sfx->cache;
-
-		if (!sc)
-			continue;
 
 		num = (cl.frame.firstEntity + i) & PARSE_ENTITIES_MASK;
 		ent = &cl.entityStates[num];
@@ -330,7 +307,7 @@ static void AL_AddLoopSounds(void)
 		if (ch)
 		{
 			ch->autoframe = s_framecount;
-			ch->end = paintedtime + sc->length;
+			ch->end = paintedtime + sfx->length;
 			continue;
 		}
 
@@ -347,17 +324,17 @@ static void AL_AddLoopSounds(void)
 		ch->entnum = ent->number;
 		ch->master_vol = 1;
 		ch->dist_mult = SOUND_LOOPATTENUATE;
-		ch->end = paintedtime + sc->length;
+		ch->end = paintedtime + sfx->length;
 		ch->pitch_offset = 0; // TODO
 		AL_PlayChannel(ch);
 
 		// attempt to synchronize with existing sounds of the same type
-		if (ch2)
-		{
-			ALint offset;
-			qalGetSourcei(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
-			qalSourcei(ch->srcnum, AL_SAMPLE_OFFSET, offset);
-		}
+		if (!ch2)
+			continue;
+
+		ALint offset;
+		qalGetSourcei(ch2->srcnum, AL_SAMPLE_OFFSET, &offset);
+		qalSourcei(ch->srcnum, AL_SAMPLE_OFFSET, offset);
 	}
 }
 

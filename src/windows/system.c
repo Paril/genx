@@ -931,8 +931,8 @@ void Sys_Error(const char *error, ...)
 	Q_vsnprintf(text, sizeof(text), error, argptr);
 	va_end(argptr);
 	errorEntered = true;
-#if USE_CLIENT
-	Win_Shutdown();
+#if USE_CLIENT && USE_REF
+	VID_FatalShutdown();
 #endif
 #if USE_SYSCON
 	Sys_SetConsoleColor(COLOR_RED);
@@ -973,25 +973,8 @@ void Sys_Quit(void)
 	exit(0);
 }
 
-void Sys_DebugBreak(void)
-{
-	DebugBreak();
-}
-
-unsigned Sys_Milliseconds(void)
-{
-	LARGE_INTEGER tm;
-	QueryPerformanceCounter(&tm);
-	return tm.QuadPart * 1000ULL / timer_freq.QuadPart;
-}
-
 void Sys_AddDefaultConfig(void)
 {
-}
-
-void Sys_Sleep(int msec)
-{
-	Sleep(msec);
 }
 
 /*
@@ -1042,65 +1025,6 @@ void Sys_Init(void)
 	}
 
 #endif
-}
-
-/*
-========================================================================
-
-DLL LOADING
-
-========================================================================
-*/
-
-void Sys_FreeLibrary(void *handle)
-{
-	if (handle && !FreeLibrary(handle))
-		Com_Error(ERR_FATAL, "FreeLibrary failed on %p", handle);
-}
-
-void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
-{
-	HMODULE module;
-	void    *entry;
-	*handle = NULL;
-	module = LoadLibrary(path);
-
-	if (!module)
-	{
-		Com_SetLastError(va("%s: LoadLibrary failed with error %lu",
-				path, GetLastError()));
-		return NULL;
-	}
-
-	if (sym)
-	{
-		entry = (void *)GetProcAddress(module, sym);
-
-		if (!entry)
-		{
-			Com_SetLastError(va("%s: GetProcAddress(%s) failed with error %lu",
-					path, sym, GetLastError()));
-			FreeLibrary(module);
-			return NULL;
-		}
-	}
-	else
-		entry = NULL;
-
-	*handle = module;
-	return entry;
-}
-
-void *Sys_GetProcAddress(void *handle, const char *sym)
-{
-	void    *entry;
-	entry = (void *)GetProcAddress(handle, sym);
-
-	if (!entry)
-		Com_SetLastError(va("GetProcAddress(%s) failed with error %lu",
-				sym, GetLastError()));
-
-	return entry;
 }
 
 /*

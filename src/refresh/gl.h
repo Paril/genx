@@ -203,7 +203,7 @@ bool GL_AllocBlock(int width, int height, int *inuse,
 void GL_MultMatrix(GLfloat *out, const GLfloat *a, const GLfloat *b);
 void GL_RotateForEntity(vec3_t origin);
 
-void GL_ClearErrors(void);
+void GL_ClearError(void);
 bool GL_ShowErrors(const char *func);
 
 

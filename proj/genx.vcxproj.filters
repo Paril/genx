@@ -43,6 +43,36 @@
     <Filter Include="Source Files\client\sound\qal">
       <UniqueIdentifier>{11465b71-ccdf-419d-bd13-f455fbca9a5a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\sdl">
+      <UniqueIdentifier>{90ccdc9a-6478-4ead-8f02-9529a4a618a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\client">
+      <UniqueIdentifier>{1df1245c-fff6-4ef7-a6b1-9d67a68ce6e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\client\sound">
+      <UniqueIdentifier>{9f62b65c-b9b9-4679-b6c7-ff2b5e674037}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\common">
+      <UniqueIdentifier>{69830aae-cdf2-43c2-ba62-7714fbc3a96c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\common\net">
+      <UniqueIdentifier>{16fba3c7-fcff-4c3b-a1a5-28bf9c2da9fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\format">
+      <UniqueIdentifier>{24002957-0eb2-424a-9de1-7d7fdc55c087}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\refresh">
+      <UniqueIdentifier>{aaf1ad5f-f292-4227-b7c2-806ae768ee4a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\server">
+      <UniqueIdentifier>{9851b001-b1b1-4e9a-a935-eb4cb865c7d9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\shared">
+      <UniqueIdentifier>{09118fa1-e319-4efb-869e-e96afbf84298}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\system">
+      <UniqueIdentifier>{a4d5dc00-84c3-42a8-9f08-025091c8b512}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\windows\res\q2pro.rc">
@@ -211,12 +241,6 @@
     <ClCompile Include="..\src\client\ui\ui.c">
       <Filter>Source Files\client\ui</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\windows\glimp.c">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\windows\system.c">
-      <Filter>Source Files\windows</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\common\nav.c">
       <Filter>Source Files\common</Filter>
     </ClCompile>
@@ -240,9 +264,6 @@
     </ClCompile>
     <ClCompile Include="..\src\shared\hashset.c">
       <Filter>Source Files\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\windows\client.c">
-      <Filter>Source Files\windows</Filter>
     </ClCompile>
     <ClCompile Include="..\src\server\main.c">
       <Filter>Source Files\server</Filter>
@@ -292,223 +313,199 @@
     <ClCompile Include="..\src\refresh\glad.c">
       <Filter>Source Files\refresh</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\windows\glad_wgl.c">
+    <ClCompile Include="..\src\windows\debug.c">
       <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sdl\video.c">
+      <Filter>Source Files\sdl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\windows\system.c">
+      <Filter>Source Files\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\sdl\system.c">
+      <Filter>Source Files\sdl</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\inc\common\modelscript.h">
-      <Filter>Source Files\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\picscript.h">
-      <Filter>Source Files\common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\shared\shared.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\msg.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\protocol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\cmodel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\shared\game.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\refresh\refresh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\pmove.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\bsp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\video.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\client.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\cmd.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\common.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\cvar.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\field.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\zone.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\mdl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\sound\sound.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\soundscript.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\net\net.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\spr.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\shared\platform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\keys.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\net\chan.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\files.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\system\system.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\shared\list.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\bsp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\server\mvd\client.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\sound\dma.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\error.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\fifo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\input.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\math.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\md2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\md3.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\mdfour.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\pak.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\pcx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\prompt.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\server\mvd\protocol.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\server\server.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\sizebuf.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\sp2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\tests.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\client\ui.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\format\wal.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="..\src\client\sound\sound.h">
+      <Filter>Source Files\client\sound</Filter>
     </ClInclude>
     <ClInclude Include="..\src\client\client.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\server\mvd\client.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\net\inet_ntop.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\net\inet_pton.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\net\unix.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\common\net\win.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\client\sound\qal\dynamic.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\client\sound\qal\fixed.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\server\server.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\client\sound\sound.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files\client</Filter>
     </ClInclude>
     <ClInclude Include="..\src\client\ui\ui.h">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files\client\ui</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\unix\tty.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\windows\client.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\windows\glimp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\nav.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\inc\common\astar.h">
+    <ClInclude Include="..\src\common\astar.h">
       <Filter>Source Files\common</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\refresh\images.h">
+    <ClInclude Include="..\src\common\net\inet_pton.h">
+      <Filter>Source Files\common\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\net\inet_ntop.h">
+      <Filter>Source Files\common\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\common\net\win.h">
+      <Filter>Source Files\common\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\refresh\glad.h">
       <Filter>Source Files\refresh</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\refresh\gl.h">
+    <ClInclude Include="..\src\refresh\images.h">
       <Filter>Source Files\refresh</Filter>
     </ClInclude>
     <ClInclude Include="..\src\refresh\arbfp.h">
       <Filter>Source Files\refresh</Filter>
     </ClInclude>
-    <ClInclude Include="..\inc\format\mdx.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\refresh\glad.h">
+    <ClInclude Include="..\src\refresh\gl.h">
       <Filter>Source Files\refresh</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\windows\glad_wgl.h">
-      <Filter>Source Files\windows</Filter>
+    <ClInclude Include="..\inc\client\sound\sound.h">
+      <Filter>Header Files\client\sound</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\client\client.h">
+      <Filter>Header Files\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\client\input.h">
+      <Filter>Header Files\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\client\keys.h">
+      <Filter>Header Files\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\client\ui.h">
+      <Filter>Header Files\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\client\video.h">
+      <Filter>Header Files\client</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\net\chan.h">
+      <Filter>Header Files\common\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\net\net.h">
+      <Filter>Header Files\common\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\bsp.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\cmd.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\cmodel.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\common.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\cvar.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\error.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\field.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\fifo.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\files.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\math.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\mdfour.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\modelscript.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\msg.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\nav.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\picscript.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\pmove.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\prompt.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\protocol.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\sizebuf.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\soundscript.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\tests.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\utils.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\common\zone.h">
+      <Filter>Header Files\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\bsp.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\md2.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\md3.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\mdl.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\mdx.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\pak.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\pcx.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\sp2.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\spr.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\wal.h">
+      <Filter>Header Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\refresh\refresh.h">
+      <Filter>Header Files\refresh</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\server\server.h">
+      <Filter>Header Files\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\list.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\platform.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\shared.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\game.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\shared\hashset.h">
+      <Filter>Header Files\shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\system\system.h">
+      <Filter>Header Files\system</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

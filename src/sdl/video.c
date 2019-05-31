@@ -21,11 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 //
 
 #include "shared/shared.h"
-#include "common/cvar.h"
 #include "common/common.h"
 #include "common/files.h"
-#include "common/zone.h"
-#include "client/client.h"
 #include "client/input.h"
 #include "client/keys.h"
 #include "client/ui.h"
@@ -33,10 +30,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "refresh/refresh.h"
 #include "system/system.h"
 #include "res/q2pro.xbm"
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
-static SDL_Window       *sdl_window;
-static SDL_GLContext    *sdl_context;
+static SDL_Window *sdl_window;
+static SDL_GLContext *sdl_context;
 static vidFlags_t       sdl_flags;
 
 /*
@@ -56,13 +53,13 @@ static void gl_swapinterval_changed(cvar_t *self)
 static void VID_SDL_GL_SetAttributes(void)
 {
 	int colorbits = Cvar_ClampInteger(
-			Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
+		Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
 	int depthbits = Cvar_ClampInteger(
-			Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
+		Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
 	int stencilbits = Cvar_ClampInteger(
-			Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
+		Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
 	int multisamples = Cvar_ClampInteger(
-			Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
+		Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
 
 	if (colorbits == 0)
 		colorbits = 24;
@@ -133,37 +130,23 @@ static void VID_SDL_ModeChanged(void)
 
 static void VID_SDL_SetMode(void)
 {
-	Uint32 flags;
+	Uint32 flags = 0;
 	vrect_t rc;
-	int freq;
 
-	if (vid_fullscreen->integer)
+	if (vid_mode->integer == VM_FULLSCREEN)
 	{
-		if (VID_GetFullscreen(&rc, &freq, NULL))
-		{
-			SDL_DisplayMode mode =
-			{
-				.format         = SDL_PIXELFORMAT_UNKNOWN,
-				.w              = rc.width,
-				.h              = rc.height,
-				.refresh_rate   = freq,
-				.driverdata     = NULL
-			};
-			SDL_SetWindowDisplayMode(sdl_window, &mode);
-			flags = SDL_WINDOW_FULLSCREEN;
-		}
-		else
-			flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+		SDL_DisplayMode mode;
+		// TODO: vid_monitor? 
+		SDL_GetDesktopDisplayMode(0, &mode);
+		SDL_SetWindowDisplayMode(sdl_window, &mode);
+		flags = SDL_WINDOW_FULLSCREEN;
 	}
-	else
+	else if (vid_mode->integer == VM_BORDERLESS)
+		flags = SDL_WINDOW_FULLSCREEN_DESKTOP;
+	else if (VID_GetGeometry(&rc))
 	{
-		if (VID_GetGeometry(&rc))
-		{
-			SDL_SetWindowSize(sdl_window, rc.width, rc.height);
-			SDL_SetWindowPosition(sdl_window, rc.x, rc.y);
-		}
-
-		flags = 0;
+		SDL_SetWindowSize(sdl_window, rc.width, rc.height);
+		SDL_SetWindowPosition(sdl_window, rc.x, rc.y);
 	}
 
 	SDL_SetWindowFullscreen(sdl_window, flags);
@@ -242,45 +225,6 @@ static int VID_SDL_EventFilter(void *userdata, SDL_Event *event)
 	return 1;
 }
 
-char *VID_GetDefaultModeList(void)
-{
-	SDL_DisplayMode mode;
-	size_t size, len;
-	char *buf;
-	int i, num_modes;
-
-	if (VID_SDL_InitSubSystem())
-		return NULL;
-
-	num_modes = SDL_GetNumDisplayModes(0);
-
-	if (num_modes < 1)
-		return Z_CopyString(VID_MODELIST);
-
-	size = 8 + num_modes * 32 + 1;
-	buf = Z_Malloc(size);
-	len = Q_strlcpy(buf, "desktop ", size);
-
-	for (i = 0; i < num_modes; i++)
-	{
-		if (SDL_GetDisplayMode(0, i, &mode) < 0)
-			break;
-
-		if (mode.refresh_rate == 0)
-			continue;
-
-		len += Q_scnprintf(buf + len, size - len, "%dx%d@%d ",
-				mode.w, mode.h, mode.refresh_rate);
-	}
-
-	if (len == 0)
-		buf[0] = 0;
-	else if (buf[len - 1] == ' ')
-		buf[len - 1] = 0;
-
-	return buf;
-}
-
 bool VID_Init(void)
 {
 	vrect_t rc;
@@ -289,7 +233,6 @@ bool VID_Init(void)
 		return false;
 
 	VID_SDL_GL_SetAttributes();
-	Cvar_Get("gl_driver", LIBGL, CVAR_ROM);
 	SDL_SetEventFilter(VID_SDL_EventFilter, NULL);
 
 	if (!VID_GetGeometry(&rc))
@@ -308,7 +251,7 @@ bool VID_Init(void)
 
 	SDL_SetWindowMinimumSize(sdl_window, 320, 240);
 	SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(q2icon_bits, q2icon_width, q2icon_height,
-			1, q2icon_width / 8, 0, 0, 0, 0);
+												 1, q2icon_width / 8, 0, 0, 0, 0);
 
 	if (icon)
 	{
@@ -447,7 +390,7 @@ static const byte scantokey[128] =
 	'3',            '4',            '5',            '6',            '7',            '8',            '9',                '0',            // 2
 	K_ENTER,        K_ESCAPE,       K_BACKSPACE,    K_TAB,          K_SPACE,        '-',            '=',                '[',
 	']',            '\\',           0,              ';',            '\'',           '`',            ',',                '.',            // 3
-	'/',           K_CAPSLOCK,     K_F1,           K_F2,           K_F3,           K_F4,           K_F5,               K_F6,
+	'/',            K_CAPSLOCK,     K_F1,           K_F2,           K_F3,           K_F4,           K_F5,               K_F6,
 	K_F7,           K_F8,           K_F9,           K_F10,          K_F11,          K_F12,          K_PRINTSCREEN,      K_SCROLLOCK,    // 4
 	K_PAUSE,        K_INS,          K_HOME,         K_PGUP,         K_DEL,          K_END,          K_PGDN,             K_RIGHTARROW,
 	K_LEFTARROW,    K_DOWNARROW,    K_UPARROW,      K_NUMLOCK,      K_KP_SLASH,     K_KP_MULTIPLY,  K_KP_MINUS,         K_KP_PLUS,      // 5

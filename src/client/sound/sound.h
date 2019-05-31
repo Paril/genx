@@ -20,27 +20,14 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "../client.h"
 
-typedef struct samplepair_s
-{
-	int         left;
-	int         right;
-} samplepair_t;
-
-typedef struct sfxcache_s
-{
-	int         length;
-	int         loopstart;
-	int         width;
-	int         size;
-	int         bufnum;
-	byte        data[1];        // variable sized
-} sfxcache_t;
-
 typedef struct sfx_s
 {
 	char        name[MAX_QPATH];
 	int         registration_sequence;
-	sfxcache_t  *cache;
+	size_t		length; // in msec
+	int			loopstart;
+	byte		width;
+	int			bufnum;
 	char        *truename;
 	int         error;
 } sfx_t;
@@ -89,6 +76,7 @@ typedef struct
 	int     loopstart;
 	int     samples;
 	byte    *data;
+	size_t	data_length;
 } wavinfo_t;
 
 /*
@@ -102,7 +90,7 @@ typedef struct
 void AL_SoundInfo(void);
 bool AL_Init(void);
 void AL_Shutdown(void);
-sfxcache_t *AL_UploadSfx(sfx_t *s);
+bool AL_UploadSfx(sfx_t *s, byte **data);
 void AL_DeleteSfx(sfx_t *s);
 void AL_StopChannel(channel_t *ch);
 void AL_PlayChannel(channel_t *ch);
@@ -149,7 +137,8 @@ extern cvar_t   *s_show;
 #define S_CopyString(x) Z_TagCopyString(x, TAG_SOUND)
 
 sfx_t *S_SfxForHandle(qhandle_t hSfx, gametype_t game);
-sfxcache_t *S_LoadSound(sfx_t *s);
+bool S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
 void S_BuildSoundList(int *sounds);
+bool S_ResampleSfx(sfx_t *sfx, int wanted_rate, byte **data, size_t *num_samples);
