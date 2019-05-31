@@ -53,13 +53,13 @@ static void gl_swapinterval_changed(cvar_t *self)
 static void VID_SDL_GL_SetAttributes(void)
 {
 	int colorbits = Cvar_ClampInteger(
-		Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
+			Cvar_Get("gl_colorbits", "0", CVAR_REFRESH), 0, 32);
 	int depthbits = Cvar_ClampInteger(
-		Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
+			Cvar_Get("gl_depthbits", "0", CVAR_REFRESH), 0, 32);
 	int stencilbits = Cvar_ClampInteger(
-		Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
+			Cvar_Get("gl_stencilbits", "8", CVAR_REFRESH), 0, 8);
 	int multisamples = Cvar_ClampInteger(
-		Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
+			Cvar_Get("gl_multisamples", "0", CVAR_REFRESH), 0, 32);
 
 	if (colorbits == 0)
 		colorbits = 24;
@@ -136,7 +136,7 @@ static void VID_SDL_SetMode(void)
 	if (vid_mode->integer == VM_FULLSCREEN)
 	{
 		SDL_DisplayMode mode;
-		// TODO: vid_monitor? 
+		// TODO: vid_monitor?
 		SDL_GetDesktopDisplayMode(0, &mode);
 		SDL_SetWindowDisplayMode(sdl_window, &mode);
 		flags = SDL_WINDOW_FULLSCREEN;
@@ -251,7 +251,7 @@ bool VID_Init(void)
 
 	SDL_SetWindowMinimumSize(sdl_window, 320, 240);
 	SDL_Surface *icon = SDL_CreateRGBSurfaceFrom(q2icon_bits, q2icon_width, q2icon_height,
-												 1, q2icon_width / 8, 0, 0, 0, 0);
+			1, q2icon_width / 8, 0, 0, 0, 0);
 
 	if (icon)
 	{

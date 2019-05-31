@@ -45,7 +45,7 @@ void *Sys_LoadLibrary(const char *path, const char *sym, void **handle)
 	if (!module)
 	{
 		Com_SetLastError(va("%s: LoadLibrary failed with error %lu",
-						 path, SDL_GetError()));
+				path, SDL_GetError()));
 		return NULL;
 	}
 
@@ -73,7 +73,7 @@ void *Sys_GetProcAddress(void *handle, const char *sym)
 
 	if (!entry)
 		Com_SetLastError(va("GetProcAddress(%s) failed with error %lu",
-						 sym, SDL_GetError()));
+				sym, SDL_GetError()));
 
 	return entry;
 }
