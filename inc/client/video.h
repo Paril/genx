@@ -31,6 +31,7 @@ void VID_SetMode(void);
 
 bool    VID_Init(void);
 void    VID_Shutdown(void);
+void	VID_FatalShutdown(void);
 
 void    VID_UpdateGamma(const byte *table);
 

@@ -174,6 +174,16 @@ void AL_StopChannel(channel_t *ch)
 	memset(ch, 0, sizeof(*ch));
 }
 
+static float AL_AdjustPitch(channel_t *ch)
+{
+	float pitch = ch->pitch_scale;
+
+	if (cl.frame.ps.rdflags & RDF_UNDERWATER)
+		pitch /= 1.5;
+
+	return pitch;
+}
+
 void AL_PlayChannel(channel_t *ch)
 {
 #ifdef _DEBUG
@@ -195,19 +205,7 @@ void AL_PlayChannel(channel_t *ch)
 	qalSourcef(ch->srcnum, AL_REFERENCE_DISTANCE, SOUND_FULLVOLUME);
 	qalSourcef(ch->srcnum, AL_MAX_DISTANCE, 8192);
 	qalSourcef(ch->srcnum, AL_ROLLOFF_FACTOR, ch->dist_mult * (8192 - SOUND_FULLVOLUME));
-	float pitch = 1.0f;
-
-	if (cl.frame.ps.rdflags & RDF_UNDERWATER)
-		pitch -= 0.3f;
-
-	if (ch->pitch_offset != 0)
-	{
-		float difference_in_octaves = ch->pitch_offset / (2400.0f);
-		pitch += difference_in_octaves;
-		qalSourcef(ch->srcnum, AL_PITCH, pitch);
-	}
-
-	qalSourcef(ch->srcnum, AL_PITCH, pitch);
+	qalSourcef(ch->srcnum, AL_PITCH, AL_AdjustPitch(ch));
 	AL_Spatialize(ch);
 	// play it
 	qalSourcePlay(ch->srcnum);
@@ -325,7 +323,7 @@ static void AL_AddLoopSounds(void)
 		ch->master_vol = 1;
 		ch->dist_mult = SOUND_LOOPATTENUATE;
 		ch->end = paintedtime + sfx->length;
-		ch->pitch_offset = 0; // TODO
+		ch->pitch_scale = 1; // TODO
 		AL_PlayChannel(ch);
 
 		// attempt to synchronize with existing sounds of the same type
@@ -384,6 +382,9 @@ void AL_Update(void)
 				continue;
 			}
 		}
+
+		// set pitch
+		qalSourcef(ch->srcnum, AL_PITCH, AL_AdjustPitch(ch));
 
 #ifdef _DEBUG
 

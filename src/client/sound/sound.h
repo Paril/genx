@@ -65,7 +65,7 @@ typedef struct channel_s
 	int         autoframe;
 	int         srcnum;
 	// Generations
-	int			pitch_offset;
+	float		pitch_scale;
 } channel_t;
 
 typedef struct

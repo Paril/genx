@@ -50,14 +50,16 @@ bool S_ResampleSfx(sfx_t *sfx, int wanted_rate, byte **data, size_t *num_samples
 	}
 
 	// general case
+	const float frac = 256;
+	const float frac_inv = 1.0f / frac;
 	int samplefrac = 0;
-	int fracstep = stepscale * 256;
+	int fracstep = stepscale * frac;
 	int i;
 	byte *out_data = *data = S_Malloc(outcount * s_info.width);
 
 	for (i = 0; i < outcount; i++)
 	{
-		int srcsample = samplefrac >> 8;
+		int srcsample = (int)(samplefrac * frac_inv) * s_info.width;
 		samplefrac += fracstep;
 		memcpy(out_data, s_info.data + srcsample, s_info.width);
 		out_data += s_info.width;

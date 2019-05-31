@@ -3295,13 +3295,17 @@ static void fs_game_changed(cvar_t *self)
 	// otherwise, restart the filesystem
 	CL_RestartFilesystem(false);
 
-	// FIXME: if baseq2/autoexec.cfg exists DO NOT exec default.cfg and config.cfg.
+	Com_AddConfigFile(COM_PATHS_CFG, FS_PATH_GAME);
+
+	// if baseq2/autoexec.cfg exists DO NOT exec default.cfg and config.cfg.
 	// this assumes user prefers to do configuration via autoexec.cfg and doesn't
 	// want settings and binds messed up whenever gamedir changes after startup.
 	if (!FS_FileExistsEx(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_BASE))
 	{
-		Com_AddConfigFile(COM_PATHS_CFG, FS_PATH_GAME);
-		Com_AddConfigFile(COM_DEFAULT_CFG, FS_PATH_GAME);
+		// if config.cfg exists, ignore default.cfg
+		if (!FS_FileExistsEx(COM_CONFIG_CFG, FS_PATH_GAME))
+			Com_AddConfigFile(COM_DEFAULT_CFG, FS_PATH_GAME);
+
 		Com_AddConfigFile(COM_CONFIG_CFG, FS_TYPE_REAL | FS_PATH_GAME);
 	}
 

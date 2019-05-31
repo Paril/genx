@@ -914,7 +914,10 @@ void S_IssuePlaysound(playsound_t *ps)
 	ch->sfx = ps->sfx;
 	VectorCopy(ps->origin, ch->origin);
 	ch->fixed_origin = ps->fixed_origin;
-	ch->pitch_offset = ps->pitch_offset;
+	ch->pitch_scale = 1.0;
+
+	if (ps->pitch_offset)
+		ch->pitch_scale += ps->pitch_offset / (2400.0f);
 
 	if (s_started == SS_OAL)
 		AL_PlayChannel(ch);
@@ -983,6 +986,7 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
 	ps->attenuation = attenuation;
 	ps->volume = vol;
 	ps->sfx = sfx;
+	ps->pitch_offset = 0;
 
 	if (SOUND_HANDLE_TYPE(hSfx) == SOUNDHANDLE_GAMED)
 	{
@@ -993,8 +997,6 @@ void S_StartSound(const vec3_t origin, int entnum, int entchannel, qhandle_t hSf
 		else
 			ps->pitch_offset = entry->pitch_min + (Q_rand() % (entry->pitch_max - entry->pitch_min));
 	}
-	else
-		ps->pitch_offset = 0;
 
 	if (s_started == SS_OAL)
 		ps->begin = paintedtime + timeofs * 1000;

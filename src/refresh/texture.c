@@ -121,7 +121,7 @@ static void gl_anisotropy_changed(cvar_t *self)
 	int     i;
 	image_t *image;
 
-	if (!GLAD_GL_ARB_texture_filter_anisotropic)
+	if (!gl_config.max_anisotropy)
 		return;
 
 	gl_filter_anisotropy = self->integer == 1 ? gl_config.max_anisotropy : Cvar_ClampValue(self, 2, gl_config.max_anisotropy);
@@ -670,7 +670,7 @@ void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
 		}
 	}
 
-	if (GLAD_GL_ARB_texture_filter_anisotropic)
+	if (gl_config.max_anisotropy && gl_filter_anisotropy)
 	{
 		if (type == IT_WALL || type == IT_SKIN)
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, gl_filter_anisotropy);

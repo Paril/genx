@@ -507,5 +507,8 @@
     <ClInclude Include="..\inc\system\system.h">
       <Filter>Header Files\system</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\windows\client.h">
+      <Filter>Source Files\windows</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

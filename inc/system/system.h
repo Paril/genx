@@ -62,7 +62,6 @@ void    Sys_ListFiles_r(listfiles_t *list, const char *path, int depth);
 
 void    Sys_DebugBreak(void);
 
-#if USE_CLIENT
 typedef struct asyncwork_s
 {
 	void (*work_cb)(void *);
@@ -72,7 +71,8 @@ typedef struct asyncwork_s
 } asyncwork_t;
 
 void Sys_QueueAsyncWork(asyncwork_t *work);
-#endif
+void Sys_CompleteAsyncWork(void);
+void Sys_ShutdownAsyncWork(void);
 
 extern cvar_t   *sys_basedir;
 extern cvar_t   *sys_libdir;

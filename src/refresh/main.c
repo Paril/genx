@@ -827,7 +827,7 @@ static void GL_Strings_f(void)
 	Com_Printf("GL_MAX_TEXTURE_SIZE: %d\n", gl_config.max_texture_size);
 	Com_Printf("GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS: %d\n", gl_config.max_texture_units);
 
-	if (GLAD_GL_ARB_texture_filter_anisotropic)
+	if (gl_config.max_anisotropy)
 		Com_Printf("GL_MAX_TEXTURE_MAX_ANISOTROPY: %.f\n", gl_config.max_anisotropy);
 
 	Com_Printf("GL_PFD: color(%d-bit) Z(%d-bit) stencil(%d-bit)\n",
@@ -968,7 +968,9 @@ static void GL_SetupConfig(void)
 {
 	glGetIntegerv(GL_MAX_TEXTURE_SIZE, &gl_config.max_texture_size);
 	glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &gl_config.max_texture_units);
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &gl_config.max_anisotropy);
+
+	if (GLAD_GL_ARB_texture_filter_anisotropic || GLAD_GL_EXT_texture_filter_anisotropic)
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &gl_config.max_anisotropy);
 }
 
 static void GL_InitTables(void)
