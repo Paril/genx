@@ -81,7 +81,6 @@ void SP_target_crosslevel_trigger(edict_t *ent);
 void SP_target_crosslevel_target(edict_t *ent);
 void SP_target_laser(edict_t *self);
 void SP_target_help(edict_t *ent);
-void SP_target_actor(edict_t *ent);
 void SP_target_lightramp(edict_t *self);
 void SP_target_earthquake(edict_t *ent);
 void SP_target_character(edict_t *ent);
@@ -101,7 +100,6 @@ void SP_point_combat(edict_t *self);
 void SP_misc_explobox(edict_t *self);
 void SP_misc_banner(edict_t *self);
 void SP_misc_satellite_dish(edict_t *self);
-void SP_misc_actor(edict_t *self);
 void SP_misc_gib_arm(edict_t *self);
 void SP_misc_gib_leg(edict_t *self);
 void SP_misc_gib_head(edict_t *self);
@@ -138,6 +136,7 @@ void SP_monster_mutant(edict_t *self);
 void SP_monster_supertank(edict_t *self);
 void SP_monster_boss2(edict_t *self);
 void SP_monster_jorg(edict_t *self);
+void SP_monster_makron(edict_t *self);
 void SP_monster_boss3_stand(edict_t *self);
 
 void SP_monster_commander_body(edict_t *self);
@@ -231,7 +230,6 @@ static classname_to_entitytype_t classname_to_entitytype[] =
 	{ "target_crosslevel_target",	ET_TARGET_CROSSLEVEL_TARGET },
 	{ "target_laser",				ET_TARGET_LASER },
 	{ "target_help",				ET_TARGET_HELP },
-	{ "target_actor",				ET_TARGET_ACTOR },
 	{ "target_lightramp",			ET_TARGET_LIGHTRAMP },
 	{ "target_earthquake",			ET_TARGET_EARTHQUAKE },
 	{ "target_character",			ET_TARGET_CHARACTER },
@@ -251,7 +249,6 @@ static classname_to_entitytype_t classname_to_entitytype[] =
 	{ "misc_explobox",				ET_MISC_EXPLOBOX },
 	{ "misc_banner",				ET_MISC_BANNER },
 	{ "misc_satellite_dish",		ET_MISC_SATELLITE_DISH },
-	{ "misc_actor",					ET_MISC_ACTOR },
 	{ "misc_gib_arm",				ET_MISC_GIB_ARM },
 	{ "misc_gib_leg",				ET_MISC_GIB_LEG },
 	{ "misc_gib_head",				ET_MISC_GIB_HEAD },
@@ -290,6 +287,7 @@ static classname_to_entitytype_t classname_to_entitytype[] =
 	{ "monster_boss2",				ET_MONSTER_BOSS2 },
 	{ "monster_boss3_stand",		ET_MONSTER_BOSS3_STAND },
 	{ "monster_jorg",				ET_MONSTER_JORG },
+	{ "monster_makron",				ET_MONSTER_MAKRON },
 
 	{ "monster_commander_body",		ET_MONSTER_COMMANDER_BODY },
 
@@ -491,7 +489,6 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 	{ ET_TARGET_CROSSLEVEL_TARGET, SP_target_crosslevel_target },
 	{ ET_TARGET_LASER, SP_target_laser },
 	{ ET_TARGET_HELP, SP_target_help },
-	{ ET_TARGET_ACTOR, SP_target_actor },
 	{ ET_TARGET_LIGHTRAMP, SP_target_lightramp },
 	{ ET_TARGET_EARTHQUAKE, SP_target_earthquake },
 	{ ET_TARGET_CHARACTER, SP_target_character },
@@ -511,7 +508,6 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 	{ ET_MISC_EXPLOBOX, SP_misc_explobox },
 	{ ET_MISC_BANNER, SP_misc_banner },
 	{ ET_MISC_SATELLITE_DISH, SP_misc_satellite_dish },
-	{ ET_MISC_ACTOR, SP_misc_actor },
 	{ ET_MISC_GIB_ARM, SP_misc_gib_arm },
 	{ ET_MISC_GIB_LEG, SP_misc_gib_leg },
 	{ ET_MISC_GIB_HEAD, SP_misc_gib_head },
@@ -550,6 +546,7 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 	{ ET_MONSTER_BOSS2, SP_monster_boss2 },
 	{ ET_MONSTER_BOSS3_STAND, SP_monster_boss3_stand },
 	{ ET_MONSTER_JORG, SP_monster_jorg },
+	{ ET_MONSTER_MAKRON, SP_monster_makron },
 
 	{ ET_MONSTER_COMMANDER_BODY, SP_monster_commander_body },
 
@@ -1283,7 +1280,7 @@ void SP_worldspawn(edict_t *ent)
 	ent->movetype = MOVETYPE_PUSH;
 	ent->solid = SOLID_BSP;
 	ent->inuse = true;          // since the world doesn't use G_Spawn()
-	ent->s.modelindex = 1;      // world model is always index 1
+	gi.setmodel(ent, "*1"); // world model is always index 1
 	//---------------
 	// reserve some spots for dead player bodies for coop / deathmatch
 	InitBodyQue();

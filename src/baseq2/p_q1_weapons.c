@@ -132,6 +132,7 @@ static struct
 	int			damage;
 	int			kick;
 	int			old_clipmask;
+	vec3_t		point, normal;
 } multi_ent[MAX_MULTIHIT];
 static int multi_hits = 0;
 
@@ -147,15 +148,15 @@ static void ClearMultiDamage()
 	multi_hits = 0;
 }
 
-void ApplyMultiDamage(edict_t *self, int dflags, meansOfDeath_t multi_mod)
+void ApplyMultiDamage(edict_t *self, vec3_t aimdir, int dflags, meansOfDeath_t multi_mod)
 {
 	for (int i = 0; i < multi_hits; ++i)
-		T_Damage(multi_ent[i].hit, self, self, vec3_origin, vec3_origin, vec3_origin, multi_ent[i].damage, multi_ent[i].kick, dflags, multi_mod);
+		T_Damage(multi_ent[i].hit, self, self, aimdir, multi_ent[i].point, multi_ent[i].normal, multi_ent[i].damage, multi_ent[i].kick, dflags, multi_mod);
 
 	ClearMultiDamage();
 }
 
-void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all)
+void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all, vec3_t point, vec3_t normal)
 {
 	if (!hit)
 		return;
@@ -163,10 +164,7 @@ void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod
 	if (hit->hit_index == 0)
 	{
 		if (multi_hits == MAX_MULTIHIT)
-		{
-			gi.dprintf("Too many multihits");
-			ApplyMultiDamage(hit, dflags, multi_mod);
-		}
+			gi.error("Too many multihits");
 
 		hit->hit_index = ++multi_hits;
 		multi_ent[hit->hit_index - 1].hit = hit;
@@ -175,6 +173,8 @@ void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod
 
 	multi_ent[hit->hit_index - 1].damage += damage;
 	multi_ent[hit->hit_index - 1].kick += kick;
+	VectorCopy(point, multi_ent[hit->hit_index - 1].point);
+	VectorCopy(normal, multi_ent[hit->hit_index - 1].normal);
 
 	if (!absorb_all)
 	{
@@ -189,7 +189,7 @@ void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod
 	}
 }
 
-void TraceAttack(edict_t *ent, trace_t *tr, int damage, vec3_t dir, vec3_t v_up, vec3_t v_right, meansOfDeath_t mod)
+static void TraceAttack(edict_t *ent, trace_t *tr, int damage, vec3_t dir, vec3_t v_up, vec3_t v_right, meansOfDeath_t mod)
 {
 	vec3_t org;
 	VectorMA(tr->endpos, -4, dir, org);
@@ -202,13 +202,8 @@ void TraceAttack(edict_t *ent, trace_t *tr, int damage, vec3_t dir, vec3_t v_up,
 		VectorNormalize(vel);
 		VectorMA(vel, 2, tr->plane.normal, vel);
 		VectorScale(vel, 200 * 0.02f, vel);
-		/*blood_count = blood_count + 1;
-		VectorCopy(org, blood_org);
-		AddMultiDamage(ent, tr->ent, damage);
-		SpawnBlood(blood_org, vel, damage);*/
 		Q1_SpawnBlood(org, vel, damage);
-		AddMultiDamage(tr->ent, damage, 0, mod, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, true);
-		//T_Damage(tr->ent, ent, ent, vec3_origin, org, vel, damage, 0, DAMAGE_Q1 | DAMAGE_BULLET, mod);
+		AddMultiDamage(tr->ent, damage, 0, mod, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, true, tr->endpos, tr->plane.normal);
 	}
 	else
 	{
@@ -250,7 +245,7 @@ void FireBullets(edict_t *ent, int shotcount, int damage, vec3_t dir, vec3_t spr
 		shotcount = shotcount - 1;
 	}
 
-	ApplyMultiDamage(ent, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, mod);
+	ApplyMultiDamage(ent, dir, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, mod);
 }
 
 void Q1Grenade_Explode(edict_t *ent)

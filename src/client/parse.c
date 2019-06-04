@@ -240,15 +240,10 @@ static void CL_ParseFrame(int extrabits)
 	{
 		currentframe = MSG_ReadLong();
 		deltaframe = MSG_ReadLong();
+		suppressed = MSG_ReadByte();
 
-		// BIG HACK to let old demos continue to work
-		if (cls.serverProtocol != PROTOCOL_VERSION_OLD)
-		{
-			suppressed = MSG_ReadByte();
-
-			if (suppressed)
-				cl.frameflags |= FF_SUPPRESSED;
-		}
+		if (suppressed)
+			cl.frameflags |= FF_SUPPRESSED;
 	}
 
 	frame.number = currentframe;
@@ -294,14 +289,6 @@ static void CL_ParseFrame(int extrabits)
 		{
 			frame.valid = true; // valid delta parse
 		}
-
-		if (!frame.valid && cl.frame.valid && cls.demo.playback)
-		{
-			Com_DPrintf("%s: recovering broken demo\n", __func__);
-			oldframe = &cl.frame;
-			from = &oldframe->ps;
-			frame.valid = true;
-		}
 	}
 	else
 	{
@@ -337,7 +324,7 @@ static void CL_ParseFrame(int extrabits)
 
 	SHOWNET(2, "%3"PRIz":playerinfo\n", msg_read.readcount - 1);
 	// parse playerstate
-	bits = MSG_ReadWord();
+	bits = MSG_ReadUShort();
 
 	if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
 	{
@@ -436,10 +423,8 @@ static void CL_ParseFrame(int extrabits)
 	}
 
 #endif
-	cls.demo.frames_read++;
 
-	if (!cls.demo.seeking)
-		CL_DeltaFrame();
+	CL_DeltaFrame();
 }
 
 /*
@@ -476,15 +461,6 @@ static void CL_ParseConfigstring(int index)
 			"%s: index %d overflowed: %"PRIz" > %"PRIz"\n",
 			__func__, index, len, maxlen - 1);
 	}
-
-	if (cls.demo.seeking)
-	{
-		Q_SetBit(cl.dcs, index);
-		return;
-	}
-
-	if (cls.demo.recording && cls.demo.paused)
-		Q_SetBit(cl.dcs, index);
 
 	// do something apropriate
 	CL_UpdateConfigstring(index);
@@ -569,17 +545,8 @@ static void CL_ParseServerData(void)
 	// check protocol
 	if (cls.serverProtocol != protocol)
 	{
-		if (!cls.demo.playback)
-		{
-			Com_Error(ERR_DROP, "Requested protocol version %d, but server returned %d.",
-				cls.serverProtocol, protocol);
-		}
-
-		// BIG HACK to let demos from release work with the 3.0x patch!!!
-		if (protocol < PROTOCOL_VERSION_OLD || protocol > PROTOCOL_VERSION_Q2PRO)
-			Com_Error(ERR_DROP, "Demo uses unsupported protocol version %d.", protocol);
-
-		cls.serverProtocol = protocol;
+		Com_Error(ERR_DROP, "Requested protocol version %d, but server returned %d.",
+			cls.serverProtocol, protocol);
 	}
 
 	// game directory
@@ -588,11 +555,10 @@ static void CL_ParseServerData(void)
 	if (len >= sizeof(cl.gamedir))
 		Com_Error(ERR_DROP, "Oversize gamedir string");
 
-	// never allow demos to change gamedir
-	// do not change gamedir if connected to local sever either,
+	// do not change gamedir if connected to local sever,
 	// as it was already done by SV_InitGame, and changing it
 	// here will not work since server is now running
-	if (!cls.demo.playback && !sv_running->integer)
+	if (!sv_running->integer)
 	{
 		// pretend it has been set by user, so that 'changed' hook
 		// gets called and filesystem is restarted
@@ -939,7 +905,7 @@ static void CL_ParseStartSoundPacket(void)
 		Com_Error(ERR_DROP, "%s: neither SND_ENT nor SND_POS set", __func__);
 
 	// Generations
-	snd.index = MSG_ReadShort();
+	snd.index = MSG_ReadUShort();
 
 	if (snd.index == -1)
 		Com_Error(ERR_DROP, "%s: read past end of message", __func__);
@@ -987,9 +953,6 @@ static void CL_ParseStartSoundPacket(void)
 
 static void CL_ParseReconnect(void)
 {
-	if (cls.demo.playback)
-		Com_Error(ERR_DISCONNECT, "Server disconnected");
-
 	Com_Printf("Server disconnected, reconnecting\n");
 
 	// free netchan now to prevent `disconnect'
@@ -1060,13 +1023,8 @@ static void CL_ParsePrint(void)
 	if (level != PRINT_CHAT)
 	{
 		Com_Printf("%s", s);
-
-		if (!cls.demo.playback)
-		{
-			COM_strclr(s);
-			Cmd_ExecTrigger(s);
-		}
-
+		COM_strclr(s);
+		Cmd_ExecTrigger(s);
 		return;
 	}
 
@@ -1105,12 +1063,8 @@ static void CL_ParseCenterPrint(void)
 	MSG_ReadString(s, sizeof(s));
 	SHOWNET(2, "    \"%s\"\n", s);
 	SCR_CenterPrint(s);
-
-	if (!cls.demo.playback)
-	{
-		COM_strclr(s);
-		Cmd_ExecTrigger(s);
-	}
+	COM_strclr(s);
+	Cmd_ExecTrigger(s);
 }
 
 static void CL_ParseStuffText(void)
@@ -1152,8 +1106,8 @@ static void CL_ParseZPacket(void)
 	if (msg_read.data != msg_read_buffer)
 		Com_Error(ERR_DROP, "%s: recursively entered", __func__);
 
-	inlen = MSG_ReadWord();
-	outlen = MSG_ReadWord();
+	inlen = MSG_ReadUShort();
+	outlen = MSG_ReadUShort();
 
 	if (inlen == -1 || outlen == -1 || msg_read.readcount + inlen > msg_read.cursize)
 		Com_Error(ERR_DROP, "%s: read past end of message", __func__);
@@ -1379,120 +1333,6 @@ badbyte:
 
 				CL_ParsePrecacheBaseline();
 				continue;
-		}
-
-		// if recording demos, copy off protocol invariant stuff
-		if (cls.demo.recording && !cls.demo.paused)
-		{
-			size_t len = msg_read.readcount - readcount;
-
-			// it is very easy to overflow standard 1390 bytes
-			// demo frame with modern servers... attempt to preserve
-			// reliable messages at least, assuming they come first
-			if (cls.demo.buffer.cursize + len < cls.demo.buffer.maxsize)
-				SZ_Write(&cls.demo.buffer, msg_read.data + readcount, len);
-			else
-				cls.demo.others_dropped++;
-		}
-	}
-}
-
-/*
-=====================
-CL_SeekDemoMessage
-
-A variant of ParseServerMessage that skips over non-important action messages,
-used for seeking in demos.
-=====================
-*/
-void CL_SeekDemoMessage(void)
-{
-	int         cmd, extrabits;
-	int         index;
-#ifdef _DEBUG
-
-	if (cl_shownet->integer == 1)
-		Com_LPrintf(PRINT_DEVELOPER, "%"PRIz" ", msg_read.cursize);
-	else if (cl_shownet->integer > 1)
-		Com_LPrintf(PRINT_DEVELOPER, "------------------\n");
-
-#endif
-
-	//
-	// parse the message
-	//
-	while (1)
-	{
-		if (msg_read.readcount > msg_read.cursize)
-			Com_Error(ERR_DROP, "%s: read past end of server message", __func__);
-
-		if ((cmd = MSG_ReadByte()) == -1)
-		{
-			SHOWNET(1, "%3"PRIz":END OF MESSAGE\n", msg_read.readcount - 1);
-			break;
-		}
-
-		extrabits = cmd >> SVCMD_BITS;
-		cmd &= SVCMD_MASK;
-#ifdef _DEBUG
-
-		if (cl_shownet->integer > 1)
-			MSG_ShowSVC(cmd);
-
-#endif
-
-		// other commands
-		switch (cmd)
-		{
-			default:
-				Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
-
-			case svc_nop:
-				break;
-
-			case svc_disconnect:
-			case svc_reconnect:
-				Com_Error(ERR_DISCONNECT, "Server disconnected");
-
-			case svc_print:
-				MSG_ReadByte();
-
-			// fall through
-
-			case svc_centerprint:
-			case svc_stufftext:
-				MSG_ReadString(NULL, 0);
-				break;
-
-			case svc_configstring:
-				index = MSG_ReadShort();
-				CL_ParseConfigstring(index);
-				break;
-
-			case svc_sound:
-				CL_ParseStartSoundPacket();
-				break;
-
-			case svc_temp_entity:
-				CL_ParseTEntPacket();
-				break;
-
-			case svc_muzzleflash:
-			case svc_muzzleflash2:
-				CL_ParseMuzzleFlashPacket(0);
-				break;
-
-			case svc_frame:
-				CL_ParseFrame(extrabits);
-				continue;
-
-			case svc_inventory:
-				CL_ParseInventory();
-				break;
-
-			case svc_layout:
-				CL_ParseLayout();
-				break;
 		}
 	}
 }

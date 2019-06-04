@@ -191,7 +191,7 @@ The "base directory" is the path to the directory holding all game directories.
 The base directory is only used during filesystem initialization.
 
 The "game directory" is the first tree on the search path and directory that
-all generated files (savegames, screenshots, demos, config files) will be saved to.
+all generated files (savegames, screenshots, config files) will be saved to.
 
 */
 
@@ -419,7 +419,7 @@ static file_t *alloc_handle(qhandle_t *f)
 	{
 		if (file->type == FS_FREE)
 		{
-			*f = i + 1;
+			*f = (qhandle_t)(i + 1);
 			return file;
 		}
 	}
@@ -431,10 +431,10 @@ static file_t *file_for_handle(qhandle_t f)
 {
 	file_t *file;
 
-	if (f < 1 || f > MAX_FILE_HANDLES)
+	if (!f || (uint32_t)f > MAX_FILE_HANDLES)
 		return NULL;
 
-	file = &fs_files[f - 1];
+	file = &fs_files[(uint32_t)f - 1];
 
 	if (file->type == FS_FREE)
 		return NULL;
@@ -3248,7 +3248,7 @@ void FS_Shutdown(void)
 		if (file->type != FS_FREE)
 		{
 			Com_WPrintf("%s: closing handle %d\n", __func__, i + 1);
-			FS_FCloseFile(i + 1);
+			FS_FCloseFile((qhandle_t)(i + 1));
 		}
 	}
 

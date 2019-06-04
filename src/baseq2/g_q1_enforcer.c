@@ -37,16 +37,16 @@ enum
 	paind17, paind18, paind19
 };
 
-static int sound_enfire;
-static int sound_udeath;
-static int sound_death1;
-static int sound_idle1;
-static int sound_pain1;
-static int sound_pain2;
-static int sound_sight1;
-static int sound_sight2;
-static int sound_sight3;
-static int sound_sight4;
+static q_soundhandle sound_enfire;
+static q_soundhandle sound_udeath;
+static q_soundhandle sound_death1;
+static q_soundhandle sound_idle1;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_sight1;
+static q_soundhandle sound_sight2;
+static q_soundhandle sound_sight3;
+static q_soundhandle sound_sight4;
 
 void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed);
 

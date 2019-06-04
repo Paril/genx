@@ -76,9 +76,9 @@ void f_walk(edict_t *self)
 	self->monsterinfo.currentmove = &f_walk1;
 }
 
-static int sound_bite;
-static int sound_death;
-static int sound_idle;
+static q_soundhandle sound_bite;
+static q_soundhandle sound_death;
+static q_soundhandle sound_idle;
 
 void fish_idle_sound(edict_t *self)
 {

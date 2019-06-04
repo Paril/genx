@@ -89,19 +89,19 @@ static int PF_FindIndex(const char *name, precache_type_e type, int start, int m
 	return i;
 }
 
-static int PF_ModelIndex(const char *name)
+static q_modelhandle PF_ModelIndex(const char *name)
 {
-	return PF_FindIndex(name, PRECACHE_MODEL, CS_PRECACHE, MAX_PRECACHE);
+	return (q_modelhandle) PF_FindIndex(name, PRECACHE_MODEL, CS_PRECACHE, MAX_PRECACHE);
 }
 
-static int PF_SoundIndex(const char *name)
+static q_soundhandle PF_SoundIndex(const char *name)
 {
-	return PF_FindIndex(name, PRECACHE_SOUND, CS_PRECACHE, MAX_PRECACHE);
+	return (q_soundhandle) PF_FindIndex(name, PRECACHE_SOUND, CS_PRECACHE, MAX_PRECACHE);
 }
 
-static int PF_ImageIndex(const char *name)
+static q_imagehandle PF_ImageIndex(const char *name)
 {
-	return PF_FindIndex(name, PRECACHE_PIC, CS_PRECACHE, MAX_PRECACHE);
+	return (q_imagehandle) PF_FindIndex(name, PRECACHE_PIC, CS_PRECACHE, MAX_PRECACHE);
 }
 
 /*
@@ -111,7 +111,7 @@ PF_Unicast
 Sends the contents of the mutlicast buffer to a single client.
 ===============
 */
-static void PF_Unicast(edict_t *ent, qboolean reliable)
+static void PF_Unicast(edict_t *ent, bool reliable)
 {
 	client_t    *client;
 	int         cmd, flags, clientNum;
@@ -356,13 +356,13 @@ static void PF_setmodel(edict_t *ent, const char *name)
 	ent->s.modelindex = PF_ModelIndex(name);
 
 	// if it is an inline model, get the size information for it
-	if (name[0] == '*')
-	{
-		mod = CM_InlineModel(&sv.cm, name);
-		VectorCopy(mod->mins, ent->mins);
-		VectorCopy(mod->maxs, ent->maxs);
-		PF_LinkEdict(ent);
-	}
+	if (name[0] != '*')
+		return;
+
+	mod = CM_InlineModel(&sv.cm, name);
+	VectorCopy(mod->mins, ent->mins);
+	VectorCopy(mod->maxs, ent->maxs);
+	PF_LinkEdict(ent);
 }
 
 /*
@@ -444,7 +444,7 @@ static q_noreturn void PF_WriteFloat(float f)
 	Com_Error(ERR_DROP, "PF_WriteFloat not implemented");
 }
 
-static qboolean PF_inVIS(vec3_t p1, vec3_t p2, int vis)
+static bool PF_inVIS(vec3_t p1, vec3_t p2, int vis)
 {
 	mleaf_t *leaf1, *leaf2;
 	byte mask[VIS_MAX_BYTES];
@@ -476,7 +476,7 @@ PF_inPVS
 Also checks portalareas so that doors block sight
 =================
 */
-static qboolean PF_inPVS(vec3_t p1, vec3_t p2)
+static bool PF_inPVS(vec3_t p1, vec3_t p2)
 {
 	return PF_inVIS(p1, p2, DVIS_PVS);
 }
@@ -488,7 +488,7 @@ PF_inPHS
 Also checks portalareas so that doors block sound
 =================
 */
-static qboolean PF_inPHS(vec3_t p1, vec3_t p2)
+static bool PF_inPHS(vec3_t p1, vec3_t p2)
 {
 	return PF_inVIS(p1, p2, DVIS_PHS);
 }
@@ -520,7 +520,7 @@ or the midpoint of the entity box for bmodels.
 ==================
 */
 static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
-	int soundindex, float volume,
+	q_soundhandle soundindex, float volume,
 	float attenuation, float timeofs)
 {
 	int         i, ent, flags, sendchan;
@@ -543,8 +543,8 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 	if (timeofs < 0 || timeofs > 0.255f)
 		Com_Error(ERR_DROP, "%s: timeofs = %f", __func__, timeofs);
 
-	if (soundindex < 0 || soundindex >= MAX_SOUNDS)
-		Com_Error(ERR_DROP, "%s: soundindex = %d", __func__, soundindex);
+	if ((uint16_t)soundindex >= MAX_PRECACHE)
+		Com_Error(ERR_DROP, "%s: soundindex = %d", __func__, (uint16_t)soundindex);
 
 	ent = NUM_FOR_EDICT(edict);
 	sendchan = (ent << 3) | (channel & 7);
@@ -580,7 +580,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 	// prepare multicast message
 	MSG_WriteByte(svc_sound);
 	MSG_WriteByte(flags | SND_POS);
-	MSG_WriteShort(soundindex);
+	MSG_WriteUShort((uint16_t)soundindex);
 
 	if (flags & SND_VOLUME)
 		MSG_WriteByte(volume * 255);
@@ -675,7 +675,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 		msg = LIST_FIRST(message_packet_t, &client->msg_free_list, entry);
 		msg->cursize = 0;
 		msg->flags = flags;
-		msg->index = soundindex;
+		msg->index = (uint16_t)soundindex;
 		msg->volume = volume * 255;
 		msg->attenuation = attenuation * 64;
 		msg->timeofs = timeofs * 1000;
@@ -693,7 +693,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 }
 
 static void PF_StartSound(edict_t *entity, int channel,
-	int soundindex, float volume,
+	q_soundhandle soundindex, float volume,
 	float attenuation, float timeofs)
 {
 	if (!entity)
@@ -732,7 +732,7 @@ static void PF_AddCommandString(const char *string)
 	Cbuf_AddText(&cmd_buffer, string);
 }
 
-static void PF_SetAreaPortalState(int portalnum, qboolean open)
+static void PF_SetAreaPortalState(int portalnum, bool open)
 {
 	if (!sv.cm.cache)
 		Com_Error(ERR_DROP, "%s: no map loaded", __func__);
@@ -740,7 +740,7 @@ static void PF_SetAreaPortalState(int portalnum, qboolean open)
 	CM_SetAreaPortalState(&sv.cm, portalnum, open);
 }
 
-static qboolean PF_AreasConnected(int area1, int area2)
+static bool PF_AreasConnected(int area1, int area2)
 {
 	if (!sv.cm.cache)
 		Com_Error(ERR_DROP, "%s: no map loaded", __func__);
@@ -918,6 +918,12 @@ static void *SV_LoadGameLibrary(const char *game, const char *prefix)
 	return _SV_LoadGameLibrary(path);
 }
 
+static inline int PF_FS_LoadFile(const char *path, void **buf)
+{
+	// TODO: ???
+	return FS_LoadFileEx(path, buf, 0, 765);
+}
+
 /*
 ===============
 SV_InitGameProgs
@@ -1019,6 +1025,18 @@ void SV_InitGameProgs(void)
 	import.Nav_GetNavigatorPathNode = PF_Nav_GetNavigatorPathNode;
 	import.Nav_NavigatorAStar = PF_Nav_NavigatorAStar;
 	import.Nav_DestroyNavigator = PF_Nav_DestroyNavigator;
+
+	import.FS_FOpenFile = FS_FOpenFile;
+	import.FS_Tell = FS_Tell;
+	import.FS_Seek = FS_Seek;
+	import.FS_Length = FS_Length;
+	import.FS_Read = FS_Read;
+	import.FS_Write = FS_Write;
+	import.FS_FPrintf = FS_FPrintf;
+	import.FS_LoadFile = PF_FS_LoadFile;
+	import.FS_FreeFile = FS_FreeFile;
+	import.FS_FCloseFile = FS_FCloseFile;
+
 	ge = entry(&import);
 
 	if (!ge)

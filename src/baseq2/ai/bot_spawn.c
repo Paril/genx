@@ -219,7 +219,7 @@ int	BOT_NextCTFTeam()
 // BOT_JoinCTFTeam
 // Assign a team for the bot
 //==========================================
-qboolean BOT_JoinCTFTeam(edict_t *ent, char *team_name)
+bool BOT_JoinCTFTeam(edict_t *ent, char *team_name)
 {
 	char	*s;
 	int		team;

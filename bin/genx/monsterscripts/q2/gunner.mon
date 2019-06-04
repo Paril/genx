@@ -1,0 +1,131 @@
+stand $stand01 $stand30
+{
+	stand +repeat 9
+	^ +event gunner_fidget
+	@0 +repeat 9
+	@9
+	@0 +repeat 9
+	@9
+}
+
+fidget $stand31 $stand70 gunner_stand
+{
+	stand +repeat 7
+	^ +event gunner_idlesound
+	@0 +repeat 32
+}
+
+walk $walk07 $walk19
+{
+	walk
+	^ +speed 3
+	^ +speed 4
+	^ +speed 5
+	^ +speed 7
+	^ +speed 2
+	^ +speed 6
+	@2
+	@5
+	@4
+	@3
+	@4
+	@2
+}
+
+run $run01 $run08
+{
+	run +speed 26
+	^ +speed 9 +repeat 3
+	^ +speed 15
+	^ +speed 10
+	^ +speed 13
+	^ +speed 6
+}
+
+pain1 $pain101 $pain118 gunner_run
+{
+	move +speed 2
+	^ +speed 0
+	^ +speed -5
+	^ +speed 3
+	^ +speed -1
+	@1 +repeat 4
+	^ +speed 1 +repeat 2
+	@0
+	@9
+	@1
+	^ +speed -2 +repeat 2
+	@1 +repeat 2
+}
+
+pain2 $pain201 $pain208 gunner_run
+{
+	move +speed -2
+	^ +speed 11
+	^ +speed 6
+	^ +speed 2
+	^ +speed -1
+	^ +speed -7
+	@0
+	@5
+}
+
+pain3 $pain301 $pain305 gunner_run
+{
+	move +speed -3
+	^ +speed 1 +repeat 2
+	^ +speed 0
+	@1
+}
+
+death $death01 $death11 gunner_dead
+{
+	move +repeat 3
+	^ +speed -7
+	^ +speed -3
+	^ +speed -5
+	^ +speed 8
+	^ +speed 6
+	@0 +repeat 3
+}
+
+duck $duck01 $duck08 gunner_run
+{
+	move +speed 1 +event gunner_duck_down
+	^ +event none
+	^ +event gunner_duck_hold
+	@1 +speed 0
+	^ +speed -1 +repeat 2
+	@3 +event gunner_duck_up
+	@4
+}
+
+attack_chain $attak209 $attak215 gunner_fire_chain
+{
+	charge +event gunner_opengun
+	^ +event none +repeat 6
+}
+
+fire_chain $attak216 $attak223 gunner_refire_chain
+{
+	charge +event GunnerFire +repeat 8
+}
+
+endfire_chain $attak224 $attak230 gunner_run
+{
+	charge +repeat 7
+}
+
+attack_grenade $attak101 $attak121 gunner_run
+{
+	charge +repeat 4
+	^ +event GunnerGrenade
+	@0 +repeat 2
+	@4
+	@0 +repeat 2
+	@4
+	@0 +repeat 2
+	@4
+	@0 +repeat 7
+}
+

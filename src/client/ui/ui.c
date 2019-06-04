@@ -641,7 +641,6 @@ void UI_Init(void)
 	// load built-in menus
 	M_Menu_PlayerConfig();
 	M_Menu_Servers();
-	M_Menu_Demos();
 	Com_DPrintf("Registered %d menus.\n", List_Count(&ui_menus));
 	uis.initialized = true;
 }

@@ -83,7 +83,6 @@ static cvar_t   *scr_lag_min;
 static cvar_t   *scr_lag_max;
 static cvar_t   *scr_alpha;
 
-static cvar_t   *scr_demobar;
 static cvar_t   *scr_font;
 static cvar_t   *scr_scale;
 
@@ -122,11 +121,7 @@ static const char *const sb_nums[2][STAT_PICS] =
 	}
 };
 
-const uint32_t colorTable[8] =
-{
-	U32_BLACK, U32_RED, U32_GREEN, U32_YELLOW,
-	U32_BLUE, U32_CYAN, U32_MAGENTA, U32_WHITE
-};
+uint32_t colorTable[8];
 
 /*
 ===============================================================================
@@ -278,81 +273,6 @@ bool SCR_ParseColor(const char *s, color_t *color)
 
 	color->u32 = colorTable[i];
 	return true;
-}
-
-/*
-===============================================================================
-
-BAR GRAPHS
-
-===============================================================================
-*/
-
-static void draw_percent_bar(int percent, bool paused, int framenum)
-{
-	char buffer[16];
-	int x, w;
-	size_t len;
-	scr.hud_height -= CHAR_HEIGHT;
-	w = scr.hud_width * percent / 100;
-	R_DrawFill8(0, scr.hud_height, w, CHAR_HEIGHT, 4);
-	R_DrawFill8(w, scr.hud_height, scr.hud_width - w, CHAR_HEIGHT, 0);
-	len = Q_scnprintf(buffer, sizeof(buffer), "%d%%", percent);
-	x = (scr.hud_width - len * CHAR_WIDTH) / 2;
-	R_DrawString(x, scr.hud_height, 0, MAX_STRING_CHARS, buffer, scr.font_pic, CL_GetClientGame());
-
-	if (scr_demobar->integer > 1)
-	{
-		int sec = framenum / 10;
-		int min = sec / 60;
-		sec %= 60;
-		Q_scnprintf(buffer, sizeof(buffer), "%d:%02d.%d", min, sec, framenum % 10);
-		R_DrawString(0, scr.hud_height, 0, MAX_STRING_CHARS, buffer, scr.font_pic, CL_GetClientGame());
-	}
-
-	if (paused)
-		SCR_DrawString(scr.hud_width, scr.hud_height, UI_RIGHT, "[PAUSED]");
-}
-
-static void SCR_DrawDemo(void)
-{
-#if USE_MVD_CLIENT
-	int percent;
-	bool paused;
-	int framenum;
-#endif
-
-	if (!scr_demobar->integer)
-		return;
-
-	if (cls.demo.playback)
-	{
-		if (cls.demo.file_size)
-		{
-			draw_percent_bar(
-				cls.demo.file_percent,
-				sv_paused->integer &&
-				cl_paused->integer &&
-				scr_showpause->integer == 2,
-				cls.demo.frames_read);
-		}
-
-		return;
-	}
-
-#if USE_MVD_CLIENT
-
-	if (sv_running->integer != ss_broadcast)
-		return;
-
-	if ((percent = MVD_GetDemoPercent(&paused, &framenum)) == -1)
-		return;
-
-	if (sv_paused->integer && cl_paused->integer && scr_showpause->integer == 2)
-		paused = true;
-
-	draw_percent_bar(percent, paused, framenum);
-#endif
 }
 
 /*
@@ -1374,10 +1294,18 @@ SCR_Init
 */
 void SCR_Init(void)
 {
+	colorTable[0] = U32_BLACK;
+	colorTable[1] = U32_RED;
+	colorTable[2] = U32_GREEN;
+	colorTable[3] = U32_YELLOW;
+	colorTable[4] = U32_BLUE;
+	colorTable[5] = U32_CYAN;
+	colorTable[6] = U32_MAGENTA;
+	colorTable[7] = U32_WHITE;
+
 	scr_viewsize = Cvar_Get("viewsize", "100", CVAR_ARCHIVE);
 	scr_showpause = Cvar_Get("scr_showpause", "1", CVAR_ARCHIVE);
 	scr_centertime = Cvar_Get("scr_centertime", "2.5", CVAR_ARCHIVE);
-	scr_demobar = Cvar_Get("scr_demobar", "1", CVAR_ARCHIVE);
 	// Generations
 	scr_font = Cvar_Get("scr_font", "%conchars", 0);
 	scr_font->changed = scr_font_changed;
@@ -3151,13 +3079,9 @@ static void SCR_DrawLayout(void)
 	if (scr_draw2d->integer == 3 && !Key_IsDown(K_F1))
 		return;
 
-	if (cls.demo.playback && Key_IsDown(K_F1))
-		goto draw;
-
 	if (!(cl.frame.ps.stats.layouts & 1))
 		return;
 
-draw:
 	SCR_ExecuteLayoutStruct(cl.layout);
 }
 
@@ -3243,7 +3167,7 @@ static void SCR_DrawWeapon()
 	{
 		bool firing = cl.frame.ps.guns[gun].offset[1] <= 0;
 		float ofs = LerpFloat(cl.oldframe.ps.guns[gun].offset[2], cl.frame.ps.guns[gun].offset[2], cl.lerpfrac);
-		R_DrawWeaponSprite(cl.precache[cl.frame.ps.guns[gun].index].model.handle, gun, curVel, cl.time, cls.frametime,
+		R_DrawWeaponSprite(cl.precache[(uint16_t)cl.frame.ps.guns[gun].index].model.handle, gun, curVel, cl.time, cls.frametime,
 			cl.oldframe.ps.guns[gun].frame, cl.frame.ps.guns[gun].frame, cl.lerpfrac, scr.hud_width,
 			scr.hud_height, firing, ofs, scr.hud_scale, color, !!(cl.refdef.rdflags & RDF_INVUL), r_config.height - scr_vrect.height);
 	}
@@ -3312,7 +3236,6 @@ static void SCR_DrawActive(void)
 	// start with full screen HUD
 	scr.hud_height = r_config.height;
 	scr.hud_width = r_config.width;
-	SCR_DrawDemo();
 	SCR_CalcVrect();
 	// clear any dirty part of the background
 	SCR_TileClear();

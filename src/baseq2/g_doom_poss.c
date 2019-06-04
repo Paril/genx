@@ -1,14 +1,14 @@
 #include "g_local.h"
 
-static int sound_alert1;
-static int sound_alert2;
-static int sound_alert3;
-static int sound_action;
-static int sound_pain;
-static int sound_death1;
-static int sound_death2;
-static int sound_death3;
-static int sound_gib;
+static q_soundhandle sound_alert1;
+static q_soundhandle sound_alert2;
+static q_soundhandle sound_alert3;
+static q_soundhandle sound_action;
+static q_soundhandle sound_pain;
+static q_soundhandle sound_death1;
+static q_soundhandle sound_death2;
+static q_soundhandle sound_death3;
+static q_soundhandle sound_gib;
 
 enum
 {

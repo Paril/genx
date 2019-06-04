@@ -447,7 +447,7 @@ static mnode_t *SV_HullForEntity(edict_t *ent)
 {
 	if (ent->solid == SOLID_BSP)
 	{
-		int i = ent->s.modelindex - 1;
+		int i = ((uint16_t)ent->s.modelindex) - 1;
 
 		// explicit hulls in the BSP model
 		if (i <= 0 || i >= sv.cm.cache->nummodels)

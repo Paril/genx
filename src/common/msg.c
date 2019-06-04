@@ -109,7 +109,7 @@ void MSG_WriteByte(int c)
 	byte    *buf;
 #ifdef PARANOID
 
-	if (c < 0 || c > 255)
+	if (c < 0 || c > UCHAR_MAX)
 		Com_Error(ERR_FATAL, "MSG_WriteByte: range error");
 
 #endif
@@ -124,10 +124,29 @@ MSG_WriteShort
 */
 void MSG_WriteShort(int c)
 {
-	byte    *buf;
+	byte *buf;
 #ifdef PARANOID
 
-	if (c < ((short)0x8000) || c > (short)0x7fff)
+	if (c < SHRT_MIN || c > SHRT_MAX)
+		Com_Error(ERR_FATAL, "MSG_WriteShort: range error");
+
+#endif
+	buf = SZ_GetSpace(&msg_write, 2);
+	buf[0] = c & 0xff;
+	buf[1] = c >> 8;
+}
+
+/*
+=============
+MSG_WriteShort
+=============
+*/
+void MSG_WriteUShort(int c)
+{
+	byte *buf;
+#ifdef PARANOID
+
+	if (c < 0 || c > USHRT_MAX)
 		Com_Error(ERR_FATAL, "MSG_WriteShort: range error");
 
 #endif
@@ -533,16 +552,16 @@ void MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_a
 	out->old_origin[0] = COORD2SHORT(in->old_origin[0]);
 	out->old_origin[1] = COORD2SHORT(in->old_origin[1]);
 	out->old_origin[2] = COORD2SHORT(in->old_origin[2]);
-	out->modelindex = in->modelindex;
-	out->modelindex2 = in->modelindex2;
-	out->modelindex3 = in->modelindex3;
-	out->modelindex4 = in->modelindex4;
+	out->modelindex = (uint16_t)in->modelindex;
+	out->modelindex2 = (uint16_t)in->modelindex2;
+	out->modelindex3 = (uint16_t)in->modelindex3;
+	out->modelindex4 = (uint16_t)in->modelindex4;
 	out->skinnum = in->skinnum;
 	out->effects = in->effects;
 	out->renderfx = in->renderfx;
 	out->solid = in->solid;
 	out->frame = in->frame;
-	out->sound = in->sound;
+	out->sound = (uint16_t)in->sound;
 	out->event = in->event;
 	out->game = in->game;
 	out->clip_contents = in->clip_contents;
@@ -759,16 +778,16 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
 		MSG_WriteByte(to->number);
 
 	if (bits & U_MODEL)
-		MSG_WriteShort(to->modelindex);
+		MSG_WriteUShort(to->modelindex);
 
 	if (bits & U_MODEL2)
-		MSG_WriteShort(to->modelindex2);
+		MSG_WriteUShort(to->modelindex2);
 
 	if (bits & U_MODEL3)
-		MSG_WriteShort(to->modelindex3);
+		MSG_WriteUShort(to->modelindex3);
 
 	if (bits & U_MODEL4)
-		MSG_WriteShort(to->modelindex4);
+		MSG_WriteUShort(to->modelindex4);
 
 	if (bits & U_FRAME8)
 		MSG_WriteByte(to->frame);
@@ -836,7 +855,7 @@ void MSG_WriteDeltaEntity(const entity_packed_t *from,
 	}
 
 	if (bits & U_SOUND)
-		MSG_WriteShort(to->sound);
+		MSG_WriteUShort(to->sound);
 
 	if (bits & U_EVENT)
 		MSG_WriteByte(to->event);
@@ -880,7 +899,7 @@ void MSG_PackPlayer(player_packed_t *out, const player_state_t *in)
 
 	for (int i = 0; i < MAX_PLAYER_GUNS; ++i)
 	{
-		out->guns[i].index = in->guns[i].index;
+		out->guns[i].index = (uint16_t)in->guns[i].index;
 		out->guns[i].frame = in->guns[i].frame;
 
 		for (int x = 0; x < 3; ++x)
@@ -1433,7 +1452,7 @@ int MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t    *from,
 			MSG_WriteByte((i & 0b1111) | ((changed_bits << 4) & 0b11110000));
 
 			if (changed_bits & PS_GUN_INDEX)
-				MSG_WriteShort(to->guns[i].index);
+				MSG_WriteUShort(to->guns[i].index);
 
 			if (changed_bits & PS_GUN_FRAME)
 				MSG_WriteByte(to->guns[i].frame);
@@ -1554,7 +1573,7 @@ int MSG_ReadShort(void)
 	return c;
 }
 
-int MSG_ReadWord(void)
+int MSG_ReadUShort(void)
 {
 	byte *buf = MSG_ReadData(2);
 	int c;
@@ -1984,16 +2003,16 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
 		return;
 
 	if (bits & U_MODEL)
-		to->modelindex = MSG_ReadShort();
+		to->modelindex = (q_modelhandle)MSG_ReadUShort();
 
 	if (bits & U_MODEL2)
-		to->modelindex2 = MSG_ReadShort();
+		to->modelindex2 = (q_modelhandle)MSG_ReadUShort();
 
 	if (bits & U_MODEL3)
-		to->modelindex3 = MSG_ReadShort();
+		to->modelindex3 = (q_modelhandle)MSG_ReadUShort();
 
 	if (bits & U_MODEL4)
-		to->modelindex4 = MSG_ReadShort();
+		to->modelindex4 = (q_modelhandle)MSG_ReadUShort();
 
 	if (bits & U_FRAME8)
 		to->frame = MSG_ReadByte();
@@ -2006,21 +2025,21 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
 	else if (bits & U_SKIN8)
 		to->skinnum = MSG_ReadByte();
 	else if (bits & U_SKIN16)
-		to->skinnum = MSG_ReadWord();
+		to->skinnum = MSG_ReadUShort();
 
 	if ((bits & (U_EFFECTS8 | U_EFFECTS16)) == (U_EFFECTS8 | U_EFFECTS16))
 		to->effects = MSG_ReadLong();
 	else if (bits & U_EFFECTS8)
 		to->effects = MSG_ReadByte();
 	else if (bits & U_EFFECTS16)
-		to->effects = MSG_ReadWord();
+		to->effects = MSG_ReadUShort();
 
 	if ((bits & (U_RENDERFX8 | U_RENDERFX16)) == (U_RENDERFX8 | U_RENDERFX16))
 		to->renderfx = MSG_ReadLong();
 	else if (bits & U_RENDERFX8)
 		to->renderfx = MSG_ReadByte();
 	else if (bits & U_RENDERFX16)
-		to->renderfx = MSG_ReadWord();
+		to->renderfx = MSG_ReadUShort();
 
 	if (bits & U_ORIGIN1)
 		to->origin[0] = MSG_ReadCoord();
@@ -2058,7 +2077,7 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
 		MSG_ReadPos(to->old_origin);
 
 	if (bits & U_SOUND)
-		to->sound = MSG_ReadShort();
+		to->sound = (q_soundhandle)MSG_ReadUShort();
 
 	if (bits & U_EVENT)
 		to->event = MSG_ReadByte();
@@ -2068,7 +2087,7 @@ void MSG_ParseDeltaEntity(const entity_state_t *from,
 		if (flags & MSG_ES_LONGSOLID)
 			to->solid = MSG_ReadLong();
 		else
-			to->solid = MSG_ReadWord();
+			to->solid = MSG_ReadUShort();
 	}
 
 	// Paril
@@ -2296,7 +2315,7 @@ void MSG_ParseDeltaPlayerstate_Enhanced(const player_state_t    *from,
 			byte gun_flags = (gun & 0b11110000) >> 4;
 
 			if (gun_flags & PS_GUN_INDEX)
-				to->guns[gun_index].index = MSG_ReadShort();
+				to->guns[gun_index].index = (q_modelhandle)MSG_ReadUShort();
 
 			if (gun_flags & PS_GUN_FRAME)
 				to->guns[gun_index].frame = MSG_ReadByte();

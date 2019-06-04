@@ -179,7 +179,7 @@ static soundscript_t *SSCR_Register(const char *name)
 
 		if (game == GAME_NONE)
 		{
-			entry.loaded = qtrue;
+			entry.loaded = true;
 
 			for (game = GAME_Q2; game != GAME_TOTAL; ++game)
 				memcpy(&script->entries[game], &entry, sizeof(entry));
@@ -189,7 +189,7 @@ static soundscript_t *SSCR_Register(const char *name)
 			if (game == GAME_TOTAL || !entry.path[0])
 				goto fail2;
 
-			entry.loaded = qtrue;
+			entry.loaded = true;
 			memcpy(&script->entries[game], &entry, sizeof(entry));
 		}
 	}
@@ -242,7 +242,7 @@ int			paintedtime;    // sample PAIRS
 // than could actually be referenced during gameplay,
 // because we don't want to free anything until we are
 // sure we won't need it.
-#define     MAX_SFX     (MAX_SOUNDS*2)
+#define     MAX_SFX     (MAX_PRECACHE*2)
 static sfx_t        known_sfx[MAX_SFX];
 static int          num_sfx;
 
@@ -1088,7 +1088,7 @@ void S_StopAllSounds(void)
 // Update sound buffer
 // =======================================================================
 
-void S_BuildSoundList(int *sounds)
+void S_BuildSoundList(q_soundhandle *sounds)
 {
 	int         i;
 	int         num;

@@ -51,15 +51,15 @@ enum
 	magicc9, magicc10, magicc11
 };
 
-static int sound_attack1;
-static int sound_sword1;
-static int sound_sword2;
-static int sound_idle1;
-static int sound_udeath;
-static int sound_death1;
-static int sound_sight1;
-static int sound_pain1;
-static int sound_slash1;
+static q_soundhandle sound_attack1;
+static q_soundhandle sound_sword1;
+static q_soundhandle sound_sword2;
+static q_soundhandle sound_idle1;
+static q_soundhandle sound_udeath;
+static q_soundhandle sound_death1;
+static q_soundhandle sound_sight1;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_slash1;
 
 edict_t *fire_spike(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, bool super);
 

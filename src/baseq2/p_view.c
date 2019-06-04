@@ -94,7 +94,7 @@ void P_DamageFeedback(edict_t *player)
 		return;     // didn't take any damage
 
 	// start a pain animation if still in the player model
-	if (client->anim_priority < ANIM_PAIN && player->s.modelindex == 255)
+	if (client->anim_priority < ANIM_PAIN && player->s.modelindex == MODEL_HANDLE_PLAYER)
 	{
 		static int      i;
 		client->anim_priority = ANIM_PAIN;
@@ -766,7 +766,7 @@ void P_FallingDamage(edict_t *ent, byte msec)
 	if (ent->health <= 0)
 		return;
 
-	if (ent->s.modelindex != 255)
+	if (ent->s.modelindex != MODEL_HANDLE_PLAYER)
 		return;     // not in the player model
 
 	if (ent->movetype == MOVETYPE_NOCLIP)
@@ -1325,7 +1325,7 @@ void G_SetClientFrame(edict_t *ent)
 	gclient_t   *client;
 	bool        duck, run;
 
-	if (ent->s.modelindex != 255)
+	if (ent->s.modelindex != MODEL_HANDLE_PLAYER)
 		return;     // not in the player model
 
 	client = ent->client;
@@ -1680,7 +1680,7 @@ void ClientEndServerFrame(edict_t *ent)
 	{
 		if (ent->client->breather_time > level.time)
 		{
-			if (ent->s.modelindex == 255)
+			if (ent->s.modelindex == MODEL_HANDLE_PLAYER)
 			{
 				ent->s.modelindex = gi.modelindex("models/q1/eyes.mdl");
 				ent->s.skinnum = 0;
@@ -1690,9 +1690,9 @@ void ClientEndServerFrame(edict_t *ent)
 		}
 		else if (ent->client->breather_time <= level.time)
 		{
-			if (ent->s.modelindex != 255 && ent->solid)
+			if (ent->s.modelindex != MODEL_HANDLE_PLAYER && ent->solid)
 			{
-				ent->s.modelindex = 255;
+				ent->s.modelindex = MODEL_HANDLE_PLAYER;
 				ent->s.skinnum = ent - g_edicts - 1;
 				ent->client->force_anim = true;
 				G_SetClientFrame(ent);

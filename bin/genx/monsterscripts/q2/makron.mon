@@ -1,0 +1,129 @@
+stand $stand201 $stand260
+{
+	stand +repeat 60
+}
+
+run $walk204 $walk213
+{
+	run +speed 3 +event makron_step_left
+	^ +speed 12 +event none
+	^ +speed 8 +repeat 2
+	^ +event makron_step_right
+	@1 +speed 6
+	@1
+	^ +speed 9
+	@5
+	@1
+}
+
+walk $walk204 $walk213
+{
+	run +speed 3 +event makron_step_left
+	^ +speed 12 +event none
+	^ +speed 8 +repeat 2
+	^ +event makron_step_right
+	@1 +speed 6
+	@1
+	^ +speed 9
+	@5
+	@1
+}
+
+pain4 $pain401 $pain404 makron_run
+{
+	move +repeat 4
+}
+
+pain5 $pain501 $pain504 makron_run
+{
+	move +repeat 4
+}
+
+pain6 $pain601 $pain627 makron_run
+{
+	move +repeat 15
+	^ +event makron_popup
+	@0 +repeat 7
+	^ +event makron_taunt
+	@0 +repeat 3
+}
+
+death2 $death201 $death295 makron_dead
+{
+	move +speed -15
+	^ +speed 3
+	^ +speed -12
+	^ +speed 0 +event makron_step_left
+	^ +event none +repeat 11
+	^ +speed 11
+	^ +speed 12
+	@15 +event makron_step_right
+	@4 +repeat 15
+	^ +speed 5
+	^ +speed 7
+	@3 +speed 6
+	@4 +repeat 2
+	^ +speed -1
+	^ +speed 2
+	@4 +repeat 13
+	^ +speed -6
+	^ +speed -4
+	@17 +speed -6
+	@54
+	^ +event makron_step_left
+	@4 +repeat 4
+	^ +speed -2
+	^ +speed -5
+	@17 +speed -3
+	@0 +speed -8
+	@3 +speed -3
+	@0 +speed -7
+	@54
+	^ +event makron_step_right
+	@53
+	@67
+	@3
+	@4 +repeat 12
+	@62
+	@4 +repeat 2
+	@39
+	@4
+	^ +speed 27 +event makron_hit
+	@0 +speed 26
+	@3 +event makron_brainsplorch
+	@4 +repeat 2
+}
+
+death3 $death301 $death320
+{
+	move +repeat 20
+}
+
+sight $active01 $active13 makron_run
+{
+	move +repeat 13
+}
+
+attack3 $attak301 $attak308 makron_run
+{
+	charge +repeat 3
+	^ +event makronBFG
+	move +repeat 4
+}
+
+attack4 $attak401 $attak426 makron_run
+{
+	charge +repeat 4
+	move +event MakronHyperblaster +repeat 17
+	^ +event none +repeat 5
+}
+
+attack5 $attak501 $attak516 makron_run
+{
+	charge +event makron_prerailgun
+	^ +event none +repeat 6
+	^ +event MakronSaveloc
+	move +event MakronRailgun
+	^ +event none +repeat 7
+}
+

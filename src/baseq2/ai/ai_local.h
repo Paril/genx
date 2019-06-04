@@ -95,7 +95,7 @@ void		CopyToBodyQue(edict_t *ent);
 void		Use_Plat(edict_t *ent, edict_t *other, edict_t *activator);
 void		ClientThink(edict_t *ent, usercmd_t *ucmd);
 void		SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles);
-qboolean	ClientConnect(edict_t *ent, char *userinfo);
+bool	ClientConnect(edict_t *ent, char *userinfo);
 
 // bot_spawn.c
 //----------------------------------------------------------

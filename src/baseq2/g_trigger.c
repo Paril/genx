@@ -399,7 +399,7 @@ trigger_push
 
 #define PUSH_ONCE       1
 
-static int windsound;
+static q_soundhandle windsound;
 
 void trigger_push_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {

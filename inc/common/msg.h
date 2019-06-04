@@ -112,6 +112,7 @@ void    MSG_BeginWriting(void);
 void    MSG_WriteChar(int c);
 void    MSG_WriteByte(int c);
 void    MSG_WriteShort(int c);
+void    MSG_WriteUShort(int c);
 void    MSG_WriteLong(int c);
 void    MSG_WriteString(const char *s);
 void    MSG_WritePos(const vec3_t pos);
@@ -127,7 +128,6 @@ void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t 
 void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);
 void    MSG_WriteDeltaPlayerstate_Default(const player_packed_t *from, const player_packed_t *to);
 int     MSG_WriteDeltaPlayerstate_Enhanced(const player_packed_t *from, player_packed_t *to, msgPsFlags_t flags);
-void    MSG_WriteDeltaPlayerstate_Packet(const player_packed_t *from, const player_packed_t *to, int number, msgPsFlags_t flags);
 
 static inline void *MSG_WriteData(const void *data, size_t len)
 {
@@ -145,7 +145,7 @@ byte    *MSG_ReadData(size_t len);
 int     MSG_ReadChar(void);
 int     MSG_ReadByte(void);
 int     MSG_ReadShort(void);
-int     MSG_ReadWord(void);
+int     MSG_ReadUShort(void);
 int     MSG_ReadLong(void);
 size_t  MSG_ReadString(char *dest, size_t size);
 size_t  MSG_ReadStringLine(char *dest, size_t size);

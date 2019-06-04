@@ -29,16 +29,16 @@ MEDIC
 bool visible(edict_t *self, edict_t *other);
 
 
-static int  sound_idle1;
-static int  sound_pain1;
-static int  sound_pain2;
-static int  sound_die;
-static int  sound_sight;
-static int  sound_search;
-static int  sound_hook_launch;
-static int  sound_hook_hit;
-static int  sound_hook_heal;
-static int  sound_hook_retract;
+static q_soundhandle sound_idle1;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_die;
+static q_soundhandle sound_sight;
+static q_soundhandle sound_search;
+static q_soundhandle sound_hook_launch;
+static q_soundhandle sound_hook_hit;
+static q_soundhandle sound_hook_heal;
+static q_soundhandle sound_hook_retract;
 
 
 edict_t *medic_FindDeadMonster(edict_t *self)

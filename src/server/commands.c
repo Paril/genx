@@ -311,24 +311,6 @@ static void SV_Map(bool restart)
 
 /*
 ==================
-SV_DemoMap_f
-
-Puts the server in demo mode on a specific map/cinematic
-==================
-*/
-static void SV_DemoMap_f(void)
-{
-	Com_Printf("'%s' command is no longer supported.\n", Cmd_Argv(0));
-#if USE_CLIENT
-	Com_Printf("To play a client demo, use 'demo' command instead.\n");
-#endif
-#if USE_MVD_CLIENT
-	Com_Printf("To play a MVD, use 'mvdplay' command.\n");
-#endif
-}
-
-/*
-==================
 SV_GameMap_f
 
 Saves the state of the map just being exited and goes to a new map.
@@ -642,16 +624,15 @@ static void dump_settings(void)
 	Com_Printf(
 		"num name            proto options upd fps\n"
 		"--- --------------- ----- ------- --- ---\n");
-	opt[6] = ' ';
-	opt[7] = 0;
+	opt[5] = ' ';
+	opt[6] = 0;
 	FOR_EACH_CLIENT(cl)
 	{
 		opt[0] = cl->settings[CLS_NOGUN]          ? 'G' : ' ';
 		opt[1] = cl->settings[CLS_NOBLEND]        ? 'B' : ' ';
-		opt[2] = cl->settings[CLS_RECORDING]      ? 'R' : ' ';
-		opt[3] = cl->settings[CLS_NOGIBS]         ? 'I' : ' ';
-		opt[4] = cl->settings[CLS_NOFOOTSTEPS]    ? 'F' : ' ';
-		opt[5] = cl->settings[CLS_NOPREDICT]      ? 'P' : ' ';
+		opt[2] = cl->settings[CLS_NOGIBS]         ? 'I' : ' ';
+		opt[3] = cl->settings[CLS_NOFOOTSTEPS]    ? 'F' : ' ';
+		opt[4] = cl->settings[CLS_NOPREDICT]      ? 'P' : ' ';
 		Com_Printf("%3i %-15.15s %5d %s %3d %3d\n",
 			cl->number, cl->name, cl->protocol, opt,
 			cl->settings[CLS_PLAYERUPDATES], cl->settings[CLS_FPS]);
@@ -1789,7 +1770,6 @@ static const cmdreg_t c_server[] =
 	{ "stuffall", SV_StuffAll_f },
 	{ "stuffcvar", SV_StuffCvar_f, SV_SetPlayer_c },
 	{ "map", SV_Map_f, SV_Map_c },
-	{ "demomap", SV_DemoMap_f },
 	{ "gamemap", SV_GameMap_f, SV_Map_c },
 	{ "dumpents", SV_DumpEnts_f },
 	{ "setmaster", SV_SetMaster_f },

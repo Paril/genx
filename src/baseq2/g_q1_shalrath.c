@@ -31,13 +31,13 @@ void shal_stand(edict_t *self)
 	self->monsterinfo.currentmove = &shal_stand1;
 }
 
-static int sound_idle;
-static int sound_attack;
-static int sound_sight;
-static int sound_pain;
-static int sound_udeath;
-static int sound_death;
-static int sound_attack2;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_attack;
+static q_soundhandle sound_sight;
+static q_soundhandle sound_pain;
+static q_soundhandle sound_udeath;
+static q_soundhandle sound_death;
+static q_soundhandle sound_attack2;
 
 void shal_idle_sound(edict_t *self)
 {

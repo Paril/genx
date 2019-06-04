@@ -396,7 +396,7 @@ static void GL_DrawSpriteModel(entity_t *ent, model_t *model)
 
 static void GL_DrawNullModel(void)
 {
-	static const uint32_t colors[6] =
+	uint32_t colors[6] =
 	{
 		U32_RED, U32_RED,
 		U32_GREEN, U32_GREEN,

@@ -1,0 +1,139 @@
+stand $stand01 $stand30
+{
+	stand +repeat 30
+}
+
+idle $stand31 $stand60 brain_stand
+{
+	stand +repeat 30
+}
+
+walk1 $walk101 $walk111
+{
+	walk +speed 7
+	^ +speed 2
+	^ +speed 3 +repeat 2
+	^ +speed 1
+	^ +speed 0 +repeat 2
+	^ +speed 9
+	^ +speed -4
+	^ +speed -1
+	@1
+}
+
+pain1 $pain101 $pain121 brain_run
+{
+	move +speed -6
+	^ +speed -2
+	@0
+	^ +speed 0 +repeat 10
+	^ +speed 2
+	@3
+	@13
+	^ +speed 1
+	^ +speed 7
+	@3
+	^ +speed 3
+	^ +speed -1
+}
+
+pain2 $pain201 $pain208 brain_run
+{
+	move +speed -2
+	^ +speed 0 +repeat 4
+	^ +speed 3
+	^ +speed 1
+	@0
+}
+
+pain3 $pain301 $pain306 brain_run
+{
+	move +speed -2
+	^ +speed 2
+	^ +speed 1
+	^ +speed 3
+	^ +speed 0
+	^ +speed -4
+}
+
+duck $duck01 $duck08 brain_run
+{
+	move
+	^ +speed -2 +event brain_duck_down
+	^ +speed 17 +event brain_duck_hold
+	@0 +speed -3
+	^ +speed -1 +event brain_duck_up
+	@0 +speed -5
+	^ +speed -6 +repeat 2
+}
+
+death1 $death101 $death118 brain_dead
+{
+	move +repeat 2
+	^ +speed -2
+	^ +speed 9
+	@0 +repeat 14
+}
+
+death2 $death201 $death205 brain_dead
+{
+	move +repeat 3
+	^ +speed 9
+	@0
+}
+
+attack1 $attak101 $attak118 brain_run
+{
+	charge +speed 8
+	^ +speed 3
+	^ +speed 5
+	^ +speed 0
+	^ +speed -3 +event brain_swing_right
+	@3
+	^ +speed -5
+	^ +speed -7 +event brain_hit_right
+	@3
+	^ +speed 6 +event brain_swing_left
+	@0 +speed 1
+	^ +speed 2 +event brain_hit_left
+	@0 +speed -3
+	^ +speed 6
+	^ +speed -1
+	@12
+	^ +speed 2
+	^ +speed -11
+}
+
+attack2 $attak201 $attak217 brain_run
+{
+	charge +speed 5
+	^ +speed -4 +repeat 2
+	^ +speed -3
+	^ +speed 0 +event brain_chest_open
+	^ +event none
+	^ +speed 13 +event brain_tentacle_attack
+	@5
+	^ +speed 2
+	@5
+	^ +speed -9 +event brain_chest_closed
+	@5
+	^ +speed 4
+	^ +speed 3
+	@8
+	@3
+	^ +speed -6
+}
+
+run $walk101 $walk111
+{
+	run +speed 9
+	^ +speed 2
+	^ +speed 3 +repeat 2
+	^ +speed 1
+	^ +speed 0 +repeat 2
+	^ +speed 10
+	^ +speed -4
+	^ +speed -1
+	@1
+}
+

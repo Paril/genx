@@ -446,12 +446,6 @@ bool FindTarget(edict_t *self)
 
 	if (self->monsterinfo.aiflags & AI_GOOD_GUY)
 	{
-		if (self->goalentity && self->goalentity->inuse && self->goalentity->entitytype)
-		{
-			if (self->goalentity->entitytype == ET_TARGET_ACTOR)
-				return false;
-		}
-
 		//FIXME look for monsters?
 		return false;
 	}

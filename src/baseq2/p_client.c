@@ -2043,12 +2043,12 @@ void PutClientInServer(edict_t *ent)
 
 	// clear entity state values
 	ent->s.effects = 0;
-	ent->s.modelindex = 255;        // will use the skin specified model
+	ent->s.modelindex = MODEL_HANDLE_PLAYER;        // will use the skin specified model
 
 	switch (ent->s.game)
 	{
 		case GAME_Q2:
-			ent->s.modelindex2 = 255;       // custom gun model
+			ent->s.modelindex2 = MODEL_HANDLE_PLAYER;       // custom gun model
 			break;
 
 		default:
@@ -2334,7 +2334,7 @@ Changing levels will NOT cause this to be called again, but
 loadgames will.
 ============
 */
-qboolean ClientConnect(edict_t *ent, char *userinfo)
+bool ClientConnect(edict_t *ent, char *userinfo)
 {
 	char    *value;
 	// check to see if they are on the banned IP list

@@ -45,12 +45,6 @@ typedef struct
 	int numPlayers;
 } serverStatus_t;
 
-typedef struct
-{
-	char map[MAX_QPATH];
-	char pov[MAX_CLIENT_NAME];
-} demoInfo_t;
-
 typedef enum
 {
 	ACT_MINIMIZED,
@@ -70,7 +64,6 @@ void CL_RestartFilesystem(bool total);
 void CL_Activate(active_t active);
 void CL_UpdateUserinfo(cvar_t *var, from_t from);
 void CL_SendStatusRequest(const netadr_t *address);
-demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info);
 bool CL_CheatsOK(void);
 void CL_SetSky(void);
 gametype_t CL_GetClientGame();
@@ -120,7 +113,7 @@ void SCR_FreeHUDLayouts();
 #define UI_MULTILINE        0x00000200
 #define UI_DRAWCURSOR       0x00000400
 
-extern const uint32_t   colorTable[8];
+extern uint32_t   colorTable[8];
 
 bool SCR_ParseColor(const char *s, color_t *color);
 

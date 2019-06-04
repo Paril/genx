@@ -35,47 +35,6 @@ typedef struct file_info_s
 	char    name[1];
 } file_info_t;
 
-// bits 0 - 1, enum
-#define FS_MODE_APPEND          0x00000000
-#define FS_MODE_READ            0x00000001
-#define FS_MODE_WRITE           0x00000002
-#define FS_MODE_RDWR            0x00000003
-#define FS_MODE_MASK            0x00000003
-
-// bits 2 - 3, enum
-#define FS_BUF_DEFAULT          0x00000000
-#define FS_BUF_FULL             0x00000004
-#define FS_BUF_LINE             0x00000008
-#define FS_BUF_NONE             0x0000000c
-#define FS_BUF_MASK             0x0000000c
-
-// bits 4 - 5, enum
-#define FS_TYPE_ANY             0x00000000
-#define FS_TYPE_REAL            0x00000010
-#define FS_TYPE_PAK             0x00000020
-#define FS_TYPE_RESERVED        0x00000030
-#define FS_TYPE_MASK            0x00000030
-
-// bits 6 - 7, flag
-#define FS_PATH_ANY             0x00000000
-#define FS_PATH_BASE            0x00000040
-#define FS_PATH_GAME            0x00000080
-#define FS_PATH_MASK            0x000000c0
-
-// bits 8 - 12, flag
-#define FS_SEARCH_BYFILTER      0x00000100
-#define FS_SEARCH_SAVEPATH      0x00000200
-#define FS_SEARCH_EXTRAINFO     0x00000400
-#define FS_SEARCH_STRIPEXT      0x00000800
-#define FS_SEARCH_DIRSONLY      0x00001000
-#define FS_SEARCH_MASK          0x00001f00
-
-// bits 8 - 11, flag
-#define FS_FLAG_GZIP            0x00000100
-#define FS_FLAG_EXCL            0x00000200
-#define FS_FLAG_TEXT            0x00000400
-#define FS_FLAG_DEFLATE         0x00000800
-
 //
 // Limit the maximum file size FS_LoadFile can handle, as a protection from
 // malicious paks causing memory exhaustion.
@@ -89,8 +48,6 @@ typedef struct file_info_s
 #define FS_Malloc(size)         Z_TagMalloc(size, TAG_FILESYSTEM)
 #define FS_Mallocz(size)        Z_TagMallocz(size, TAG_FILESYSTEM)
 #define FS_CopyString(string)   Z_TagCopyString(string, TAG_FILESYSTEM)
-#define FS_LoadFile(path, buf)  FS_LoadFileEx(path, buf, 0, TAG_FILESYSTEM)
-#define FS_FreeFile(buf)        Z_Free(buf)
 
 // just regular malloc for now
 #define FS_AllocTempMem(size)   FS_Malloc(size)
@@ -113,21 +70,42 @@ void    FS_Restart(bool total);
 
 int FS_CreatePath(char *path);
 
-char    *FS_CopyExtraInfo(const char *name, const file_info_t *info);
-
 int64_t FS_FOpenFile(const char *filename, qhandle_t *f, unsigned mode);
+int64_t	FS_Tell(qhandle_t f);
+int		FS_Seek(qhandle_t f, int64_t offset);
+int64_t FS_Length(qhandle_t f);
+int		FS_Read(void *buffer, size_t len, qhandle_t f);
+int		FS_Write(const void *buffer, size_t len, qhandle_t f);
+int		FS_FPrintf(qhandle_t f, const char *format, ...) q_printf(2, 3);
+int		FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag);
 int     FS_FCloseFile(qhandle_t f);
+
 qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
 	const char *dir, const char *name, const char *ext);
 
-#define FS_FileExistsEx(path, flags) \
-	(FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT)
-#define FS_FileExists(path) \
-	FS_FileExistsEx(path, 0)
+static inline int FS_LoadFile(const char *path, void **buf)
+{
+	return FS_LoadFileEx(path, buf, 0, TAG_FILESYSTEM);
+}
 
-int FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag);
+static inline void FS_FreeFile(void *buf)
+{
+	Z_Free(buf);
+}
+
 // a NULL buffer will just return the file length without loading
 // length < 0 indicates error
+
+static inline bool FS_FileExistsEx(const char *path, unsigned flags)
+{
+	return FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT;
+}
+
+static inline bool FS_FileExists(const char *path)
+{
+	return FS_FileExistsEx(path, 0);
+}
+
 
 int FS_WriteFile(const char *path, const void *data, size_t len);
 
@@ -135,19 +113,9 @@ bool FS_EasyWriteFile(char *buf, size_t size, unsigned mode,
 	const char *dir, const char *name, const char *ext,
 	const void *data, size_t len);
 
-int FS_Read(void *buffer, size_t len, qhandle_t f);
-int FS_Write(const void *buffer, size_t len, qhandle_t f);
-// properly handles partial reads
-
-int FS_FPrintf(qhandle_t f, const char *format, ...) q_printf(2, 3);
 int FS_ReadLine(qhandle_t f, char *buffer, size_t size);
 
 void    FS_Flush(qhandle_t f);
-
-int64_t FS_Tell(qhandle_t f);
-int FS_Seek(qhandle_t f, int64_t offset);
-
-int64_t FS_Length(qhandle_t f);
 
 bool FS_WildCmp(const char *filter, const char *string);
 bool FS_ExtCmp(const char *extension, const char *string);

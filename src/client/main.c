@@ -255,27 +255,6 @@ static void CL_UpdateRateSetting(void)
 }
 #endif
 
-void CL_UpdateRecordingSetting(void)
-{
-	int rec;
-
-	if (!cls.netchan)
-		return;
-
-	if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2)
-		return;
-
-	if (cls.demo.recording)
-		rec = 1;
-	else
-		rec = 0;
-
-	MSG_WriteByte(clc_setting);
-	MSG_WriteShort(CLS_RECORDING);
-	MSG_WriteShort(rec);
-	MSG_FlushTo(&cls.netchan->message);
-}
-
 /*
 ===================
 CL_ClientCommand
@@ -326,9 +305,6 @@ static void CL_ForwardToServer_f(void)
 		return;
 	}
 
-	if (cls.demo.playback)
-		return;
-
 	// don't forward the first argument
 	if (Cmd_Argc() > 1)
 		CL_ClientCommand(Cmd_RawArgs());
@@ -362,9 +338,6 @@ void CL_CheckForResend(void)
 	char tail[MAX_QPATH];
 	char userinfo[MAX_INFO_STRING];
 	int maxmsglen;
-
-	if (cls.demo.playback)
-		return;
 
 	// if the local server is running and we aren't
 	// then connect
@@ -547,7 +520,6 @@ usage:
 	cls.connect_count = 0;
 	Con_Popup(true);
 	CL_CheckForResend();
-	Cvar_Set("timedemo", "0");
 }
 
 static void CL_FollowIP_f(void)
@@ -735,7 +707,7 @@ void CL_Disconnect(error_type_t type)
 	SCR_EndLoadingPlaque(); // get rid of loading plaque
 	SCR_ClearChatHUD_f();   // clear chat HUD on server change
 
-	if (cls.state > ca_disconnected && !cls.demo.playback)
+	if (cls.state > ca_disconnected)
 		EXEC_TRIGGER(cl_disconnectcmd);
 
 #if 0
@@ -761,7 +733,6 @@ void CL_Disconnect(error_type_t type)
 	}
 
 	// stop playback and/or recording
-	CL_CleanupDemos();
 	CL_ClearState();
 	cls.state = ca_disconnected;
 	cls.userinfo_modified = 0;
@@ -1060,17 +1031,11 @@ static void CL_Changing_f(void)
 	if (cls.state < ca_connected)
 		return;
 
-	if (cls.demo.recording)
-		CL_Stop_f();
-
 	S_StopAllSounds();
 	Com_Printf("Changing map...\n");
 
-	if (!cls.demo.playback)
-	{
-		EXEC_TRIGGER(cl_changemapcmd);
-		Cmd_ExecTrigger("#cl_changelevel");
-	}
+	EXEC_TRIGGER(cl_changemapcmd);
+	Cmd_ExecTrigger("#cl_changelevel");
 
 	SCR_BeginLoadingPlaque();
 	cls.state = ca_connected;   // not active anymore, but not disconnected
@@ -1108,10 +1073,6 @@ static void CL_Reconnect_f(void)
 	if (cls.state >= ca_connected)
 	{
 		cls.state = ca_connected;
-
-		if (cls.demo.playback)
-			return;
-
 		Com_Printf("Reconnecting...\n");
 		CL_ClientCommand("new");
 		return;
@@ -1542,10 +1503,6 @@ static void CL_PacketEvent(void)
 #endif
 	CL_ParseServerMessage();
 
-	// if recording demo, write the message out
-	if (cls.demo.recording && !cls.demo.paused && CL_FRAMESYNC)
-		CL_WriteDemoMessage(&cls.demo.buffer);
-
 	if (!cls.netchan)
 		return;     // might have disconnected
 
@@ -1712,8 +1669,6 @@ static int precache_spawncount;
 /*
 =================
 CL_Begin
-
-Not used for demos.
 =================
 */
 void CL_Begin(void)
@@ -1734,7 +1689,6 @@ void CL_Begin(void)
 	CL_UpdateGibSetting();
 	CL_UpdateFootstepsSetting();
 	CL_UpdatePredictSetting();
-	CL_UpdateRecordingSetting();
 }
 
 /*
@@ -1754,18 +1708,6 @@ static void CL_Precache_f(void)
 	CL_LoadState(LOAD_MAP);
 	S_StopAllSounds();
 	CL_RegisterVWepModels();
-
-	// demos use different precache sequence
-	if (cls.demo.playback)
-	{
-		CL_RegisterBspModels();
-		CL_PrepRefresh();
-		CL_LoadState(LOAD_SOUNDS);
-		CL_RegisterSounds();
-		CL_LoadState(LOAD_NONE);
-		cls.state = ca_precached;
-		return;
-	}
 
 	precache_spawncount = atoi(Cmd_Argv(1));
 	CL_RegisterBspModels();
@@ -2212,8 +2154,7 @@ static size_t CL_Ups_m(char *buffer, size_t size)
 		return 0;
 	}
 
-	if (!cls.demo.playback && cl.frame.clientNum == cl.clientNum &&
-		cl_predict->integer)
+	if (cl.frame.clientNum == cl.clientNum && cl_predict->integer)
 		VectorCopy(cl.predicted_velocity, vel);
 	else
 		VectorScale(cl.frame.ps.pmove.velocity, 0.125f, vel);
@@ -2234,26 +2175,6 @@ static size_t CL_Timer_m(char *buffer, size_t size)
 		return Q_scnprintf(buffer, size, "%i:%i:%02i", hour, min, sec);
 
 	return Q_scnprintf(buffer, size, "%i:%02i", min, sec);
-}
-
-static size_t CL_DemoPos_m(char *buffer, size_t size)
-{
-	int sec, min, framenum;
-
-	if (cls.demo.playback)
-		framenum = cls.demo.frames_read;
-	else
-#if USE_MVD_CLIENT
-		if (MVD_GetDemoPercent(NULL, &framenum) == -1)
-#endif
-			framenum = 0;
-
-	sec = framenum / 10;
-	framenum %= 10;
-	min = sec / 60;
-	sec %= 60;
-	return Q_scnprintf(buffer, size,
-			"%d:%02d.%d", min, sec, framenum);
 }
 
 static size_t CL_Fps_m(char *buffer, size_t size)
@@ -2306,7 +2227,7 @@ static size_t CL_Armor_m(char *buffer, size_t size)
 static size_t CL_WeaponModel_m(char *buffer, size_t size)
 {
 	return Q_scnprintf(buffer, size, "%s",
-			cl.configstrings[cl.frame.ps.guns[GUN_MAIN].index + CS_PRECACHE]);
+			cl.configstrings[(uint16_t)cl.frame.ps.guns[GUN_MAIN].index + CS_PRECACHE]);
 }
 
 /*
@@ -2481,13 +2402,6 @@ static void exec_server_string(cmdbuf_t *buf, const char *text)
 		return;
 	}
 
-	// forbid nearly every command from demos
-	if (cls.demo.playback)
-	{
-		if (strcmp(s, "play"))
-			return;
-	}
-
 	// execute regular commands
 	Cmd_ExecuteCommand(buf);
 }
@@ -2639,7 +2553,6 @@ static void CL_InitLocal(void)
 	cls.state = ca_disconnected;
 	cls.connect_time -= CONNECT_INSTANT;
 	CL_RegisterInput();
-	CL_InitDemos();
 	LOC_Init();
 	CL_InitEffects();
 	CL_InitTEnts();
@@ -2676,8 +2589,6 @@ static void CL_InitLocal(void)
 	cl_rollhack = Cvar_Get("cl_rollhack", "1", 0);
 	cl_noglow = Cvar_Get("cl_noglow", "0", 0);
 	cl_nolerp = Cvar_Get("cl_nolerp", "0", 0);
-	// hack for timedemo
-	com_timedemo->changed = cl_sync_changed;
 	CL_UpdateFrameTimes();
 	warn_on_fps_rounding(cl_maxfps);
 	warn_on_fps_rounding(r_maxfps);
@@ -2737,7 +2648,6 @@ static void CL_InitLocal(void)
 	Cmd_AddMacro("cl_mapname", CL_Mapname_m);
 	Cmd_AddMacro("cl_server", CL_Server_m);
 	Cmd_AddMacro("cl_timer", CL_Timer_m);
-	Cmd_AddMacro("cl_demopos", CL_DemoPos_m);
 	Cmd_AddMacro("cl_ups", CL_Ups_m);
 	Cmd_AddMacro("cl_fps", CL_Fps_m);
 	Cmd_AddMacro("r_fps", R_Fps_m);
@@ -2758,8 +2668,8 @@ CL_CheatsOK
 */
 bool CL_CheatsOK(void)
 {
-	// can cheat when disconnected or playing a demo
-	if (cls.state < ca_connected || cls.demo.playback)
+	// can cheat when disconnected
+	if (cls.state < ca_connected)
 		return true;
 
 	// can't cheat on remote servers
@@ -2800,20 +2710,7 @@ void CL_Activate(active_t active)
 
 static void CL_SetClientTime(void)
 {
-	int prevtime;
-
-	if (com_timedemo->integer)
-	{
-		cl.time = cl.servertime;
-		cl.lerpfrac = 1.0f;
-#if USE_FPS
-		cl.keytime = cl.keyservertime;
-		cl.keylerpfrac = 1.0f;
-#endif
-		return;
-	}
-
-	prevtime = cl.servertime - CL_FRAMETIME;
+	int prevtime = cl.servertime - CL_FRAMETIME;
 
 	if (cl.time > cl.servertime)
 	{
@@ -2946,33 +2843,10 @@ void CL_CheckForPause(void)
 		// only resume after automatic pause
 		Cvar_Set("cl_paused", "0");
 	}
-
-	// hack for demo playback pause/unpause
-	if (cls.demo.playback)
-	{
-		// don't pause when running timedemo!
-		if (cl_paused->integer && !com_timedemo->integer)
-		{
-			if (!sv_paused->integer)
-			{
-				Cvar_Set("sv_paused", "1");
-				IN_Activate();
-			}
-		}
-		else
-		{
-			if (sv_paused->integer)
-			{
-				Cvar_Set("sv_paused", "0");
-				IN_Activate();
-			}
-		}
-	}
 }
 
 typedef enum
 {
-	SYNC_TIMEDEMO,
 	SYNC_MAXFPS,
 	SYNC_SLEEP_10,
 	SYNC_SLEEP_60,
@@ -2982,7 +2856,6 @@ typedef enum
 #ifdef _DEBUG
 static const char *const sync_names[] =
 {
-	"SYNC_TIMEDEMO",
 	"SYNC_MAXFPS",
 	"SYNC_SLEEP_10",
 	"SYNC_SLEEP_60",
@@ -3024,12 +2897,7 @@ void CL_UpdateFrameTimes(void)
 	phys_msec = ref_msec = main_msec = 0;
 	ref_extra = phys_extra = main_extra = 0;
 
-	if (com_timedemo->integer)
-	{
-		// timedemo just runs at full speed
-		sync_mode = SYNC_TIMEDEMO;
-	}
-	else if (cls.active == ACT_MINIMIZED)
+	if (cls.active == ACT_MINIMIZED)
 	{
 		// run at 10 fps if minimized
 		main_msec = fps_to_msec(10);
@@ -3079,10 +2947,6 @@ unsigned CL_Frame(unsigned msec)
 
 	switch (sync_mode)
 	{
-		case SYNC_TIMEDEMO:
-			// timedemo just runs at full speed
-			break;
-
 		case SYNC_SLEEP_10:
 			// don't run refresh at all
 			ref_frame = false;
@@ -3144,10 +3008,6 @@ unsigned CL_Frame(unsigned msec)
 		cl.keytime += main_extra;
 #endif
 	}
-
-	// read next demo frame
-	if (cls.demo.playback)
-		CL_DemoFrame(main_extra);
 
 	// calculate local time
 	if (cls.state == ca_active && !sv_paused->integer)

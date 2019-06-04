@@ -154,9 +154,6 @@
     <ClCompile Include="..\src\client\crc.c">
       <Filter>Source Files\client</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\client\demo.c">
-      <Filter>Source Files\client</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\client\effects.c">
       <Filter>Source Files\client</Filter>
     </ClCompile>
@@ -219,9 +216,6 @@
     </ClCompile>
     <ClCompile Include="..\src\server\world.c">
       <Filter>Source Files\server</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\client\ui\demos.c">
-      <Filter>Source Files\client\ui</Filter>
     </ClCompile>
     <ClCompile Include="..\src\client\ui\menu.c">
       <Filter>Source Files\client\ui</Filter>

@@ -236,7 +236,6 @@ void SV_SpawnServer(mapcmd_t *cmd)
 	SV_InfoSet("port", net_port->string);
 	Cvar_SetInteger(sv_running, sv.state, FROM_CODE);
 	Cvar_Set("sv_paused", "0");
-	Cvar_Set("timedemo", "0");
 	EXEC_TRIGGER(sv_changemapcmd);
 #if USE_SYSCON
 	SV_SetConsoleTitle();

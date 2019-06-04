@@ -459,8 +459,7 @@ static void fire_doom_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damag
 
 			if (tr.ent->takedamage)
 			{
-				AddMultiDamage(tr.ent, damage, kick, mod, DAMAGE_BULLET | DAMAGE_NO_PARTICLES, false);
-				//T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_BULLET | DAMAGE_NO_PARTICLES, mod);
+				AddMultiDamage(tr.ent, damage, kick, mod, DAMAGE_BULLET | DAMAGE_NO_PARTICLES, false, tr.endpos, tr.plane.normal);
 				gi.WriteByte(svc_temp_entity);
 				gi.WriteByte(te_impact == TE_DUKE_GUNSHOT ? TE_DUKE_BLOOD : TE_DOOM_BLOOD);
 				gi.WritePosition(puff);
@@ -483,7 +482,7 @@ static void fire_doom_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damag
 void fire_doom_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int hspread, int vspread, meansOfDeath_t mod)
 {
 	fire_doom_lead(self, start, aimdir, damage, kick, te_impact, hspread, vspread, mod);
-	ApplyMultiDamage(self, DAMAGE_NO_PARTICLES, mod);
+	ApplyMultiDamage(self, aimdir, DAMAGE_NO_PARTICLES, mod);
 }
 
 void fire_doom_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int count, int hspread, int vspread, meansOfDeath_t mod)
@@ -493,7 +492,7 @@ void fire_doom_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, i
 	for (i = 0; i < count; ++i)
 		fire_doom_lead(self, start, aimdir, damage, kick, te_impact, hspread, vspread, mod);
 
-	ApplyMultiDamage(self, DAMAGE_NO_PARTICLES, mod);
+	ApplyMultiDamage(self, aimdir, DAMAGE_NO_PARTICLES, mod);
 }
 
 void weapon_doom_pistol_fire(edict_t *ent, gunindex_e gun, bool first)

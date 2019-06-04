@@ -293,7 +293,6 @@ typedef enum
 	// r1q2 specific
 	CLS_NOGUN,
 	CLS_NOBLEND,
-	CLS_RECORDING,
 	CLS_PLAYERUPDATES,
 	CLS_FPS,
 

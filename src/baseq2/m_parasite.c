@@ -27,17 +27,17 @@ parasite
 #include "m_parasite.h"
 
 
-static int  sound_pain1;
-static int  sound_pain2;
-static int  sound_die;
-static int  sound_launch;
-static int  sound_impact;
-static int  sound_suck;
-static int  sound_reelin;
-static int  sound_sight;
-static int  sound_tap;
-static int  sound_scratch;
-static int  sound_search;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_die;
+static q_soundhandle sound_launch;
+static q_soundhandle sound_impact;
+static q_soundhandle sound_suck;
+static q_soundhandle sound_reelin;
+static q_soundhandle sound_sight;
+static q_soundhandle sound_tap;
+static q_soundhandle sound_scratch;
+static q_soundhandle sound_search;
 
 
 void parasite_stand(edict_t *self);

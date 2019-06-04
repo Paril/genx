@@ -1,0 +1,200 @@
+stand $stand101 $stand130
+{
+	stand +repeat 29
+	^ +event chick_fidget
+}
+
+fidget $stand201 $stand230 chick_stand
+{
+	stand +repeat 8
+	^ +event ChickMoan
+	@0 +repeat 21
+}
+
+start_run $walk01 $walk10 chick_run
+{
+	run +speed 1
+	^ +speed 0 +repeat 2
+	^ +speed -1 +repeat 2
+	@1
+	@0
+	^ +speed 3
+	^ +speed 6
+	@7
+}
+
+run $walk11 $walk20
+{
+	run +speed 6
+	^ +speed 8
+	^ +speed 13
+	^ +speed 5
+	^ +speed 7
+	^ +speed 4
+	^ +speed 11
+	@3
+	^ +speed 9
+	@4
+}
+
+walk $walk11 $walk20
+{
+	walk +speed 6
+	^ +speed 8
+	^ +speed 13
+	^ +speed 5
+	^ +speed 7
+	^ +speed 4
+	^ +speed 11
+	@3
+	^ +speed 9
+	@4
+}
+
+pain1 $pain101 $pain105 chick_run
+{
+	move +repeat 5
+}
+
+pain2 $pain201 $pain205 chick_run
+{
+	move +repeat 5
+}
+
+pain3 $pain301 $pain321 chick_run
+{
+	move +repeat 2
+	^ +speed -6
+	^ +speed 3
+	^ +speed 11
+	@3
+	@0 +repeat 2
+	^ +speed 4
+	^ +speed 1
+	@0
+	^ +speed -3
+	^ +speed -4
+	^ +speed 5
+	^ +speed 7
+	^ +speed -2
+	@3
+	^ +speed -5
+	@15
+	^ +speed -8
+	^ +speed 2
+}
+
+death1 $death101 $death112 chick_dead
+{
+	move +repeat 2
+	^ +speed -7
+	^ +speed 4
+	^ +speed 11
+	@0 +repeat 7
+}
+
+death2 $death201 $death223 chick_dead
+{
+	move +speed -6
+	^ +speed 0
+	^ +speed -1
+	^ +speed -5
+	@1
+	@2
+	^ +speed -2
+	^ +speed 1
+	^ +speed 10
+	^ +speed 2
+	^ +speed 3
+	@7
+	@9
+	@1
+	@10 +repeat 2
+	@7
+	^ +speed -3
+	@3
+	^ +speed 4
+	^ +speed 15
+	^ +speed 14
+	@7
+}
+
+duck $duck01 $duck07 chick_run
+{
+	move +event chick_duck_down
+	^ +speed 1 +event none
+	^ +speed 4 +event chick_duck_hold
+	@1 +speed -4
+	^ +speed -5 +event chick_duck_up
+	@1 +speed 3
+	@1
+}
+
+start_attack1 $attak101 $attak113
+{
+	charge +event Chick_PreAttack1
+	^ +event none +repeat 2
+	^ +speed 4
+	@1
+	^ +speed -3
+	^ +speed 3
+	^ +speed 5
+	^ +speed 7
+	@1 +repeat 3
+	^ +event chick_attack1
+}
+
+attack1 $attak114 $attak127
+{
+	charge +speed 19 +event ChickRocket
+	^ +speed -6 +event none
+	^ +speed -5
+	^ +speed -2
+	^ +speed -7
+	^ +speed 0
+	^ +speed 1
+	^ +speed 10 +event ChickReload
+	@1 +speed 4
+	^ +speed 5
+	^ +speed 6 +repeat 2
+	@8
+	^ +speed 3 +event chick_rerocket
+}
+
+end_attack1 $attak128 $attak132 chick_run
+{
+	charge +speed -3
+	^ +speed 0
+	^ +speed -6
+	^ +speed -4
+	^ +speed -2
+}
+
+start_slash $attak201 $attak203 chick_slash
+{
+	charge +speed 1
+	^ +speed 8
+	^ +speed 3
+}
+
+slash $attak204 $attak212
+{
+	charge +speed 1
+	^ +speed 7 +event ChickSlash
+	@0 +speed -7
+	@0
+	^ +speed -1
+	@0
+	^ +speed 0
+	@0
+	^ +speed -2 +event chick_reslash
+}
+
+end_slash $attak213 $attak216 chick_run
+{
+	charge +speed -6
+	^ +speed -1
+	@0
+	^ +speed 0
+}
+

@@ -27,16 +27,16 @@ GLADIATOR
 #include "m_gladiator.h"
 
 
-static int  sound_pain1;
-static int  sound_pain2;
-static int  sound_die;
-static int  sound_gun;
-static int  sound_cleaver_swing;
-static int  sound_cleaver_hit;
-static int  sound_cleaver_miss;
-static int  sound_idle;
-static int  sound_search;
-static int  sound_sight;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_die;
+static q_soundhandle sound_gun;
+static q_soundhandle sound_cleaver_swing;
+static q_soundhandle sound_cleaver_hit;
+static q_soundhandle sound_cleaver_miss;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_search;
+static q_soundhandle sound_sight;
 
 
 void gladiator_idle(edict_t *self)
@@ -61,13 +61,13 @@ void gladiator_cleaver_swing(edict_t *self)
 
 mframe_t gladiator_frames_stand [] =
 {
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL }
+	{ ai_stand, 0, NULL }, //
+	{ ai_stand, 0, NULL }, //
+	{ ai_stand, 0, NULL }, //
+	{ ai_stand, 0, NULL }, //
+	{ ai_stand, 0, NULL }, //
+	{ ai_stand, 0, NULL }, //
+	{ ai_stand, 0, NULL }  //
 };
 mmove_t gladiator_move_stand = {FRAME_stand1, FRAME_stand7, gladiator_frames_stand, NULL};
 
@@ -79,22 +79,22 @@ void gladiator_stand(edict_t *self)
 
 mframe_t gladiator_frames_walk [] =
 {
-	{ ai_walk, 15, NULL },
-	{ ai_walk, 7,  NULL },
-	{ ai_walk, 6,  NULL },
-	{ ai_walk, 5,  NULL },
-	{ ai_walk, 2,  NULL },
-	{ ai_walk, 0,  NULL },
-	{ ai_walk, 2,  NULL },
-	{ ai_walk, 8,  NULL },
-	{ ai_walk, 12, NULL },
-	{ ai_walk, 8,  NULL },
-	{ ai_walk, 5,  NULL },
-	{ ai_walk, 5,  NULL },
-	{ ai_walk, 2,  NULL },
-	{ ai_walk, 2,  NULL },
-	{ ai_walk, 1,  NULL },
-	{ ai_walk, 8,  NULL }
+	{ ai_walk, 15, NULL }, //
+	{ ai_walk, 7,  NULL }, //
+	{ ai_walk, 6,  NULL }, //
+	{ ai_walk, 5,  NULL }, //
+	{ ai_walk, 2,  NULL }, //
+	{ ai_walk, 0,  NULL }, //
+	{ ai_walk, 2,  NULL }, //
+	{ ai_walk, 8,  NULL }, //
+	{ ai_walk, 12, NULL }, //
+	{ ai_walk, 8,  NULL }, //
+	{ ai_walk, 5,  NULL }, //
+	{ ai_walk, 5,  NULL }, //
+	{ ai_walk, 2,  NULL }, //
+	{ ai_walk, 2,  NULL }, //
+	{ ai_walk, 1,  NULL }, //
+	{ ai_walk, 8,  NULL }  //
 };
 mmove_t gladiator_move_walk = {FRAME_walk1, FRAME_walk16, gladiator_frames_walk, NULL};
 
@@ -106,12 +106,12 @@ void gladiator_walk(edict_t *self)
 
 mframe_t gladiator_frames_run [] =
 {
-	{ ai_run, 23, NULL },
-	{ ai_run, 14, NULL },
-	{ ai_run, 14, NULL },
-	{ ai_run, 21, NULL },
-	{ ai_run, 12, NULL },
-	{ ai_run, 13, NULL }
+	{ ai_run, 23, NULL }, //
+	{ ai_run, 14, NULL }, //
+	{ ai_run, 14, NULL }, //
+	{ ai_run, 21, NULL }, //
+	{ ai_run, 12, NULL }, //
+	{ ai_run, 13, NULL }  //
 };
 mmove_t gladiator_move_run = {FRAME_run1, FRAME_run6, gladiator_frames_run, NULL};
 
@@ -137,23 +137,23 @@ void GaldiatorMelee(edict_t *self)
 
 mframe_t gladiator_frames_attack_melee [] =
 {
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, gladiator_cleaver_swing },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GaldiatorMelee },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, gladiator_cleaver_swing },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GaldiatorMelee },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL }
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, gladiator_cleaver_swing }, //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, GaldiatorMelee },		   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, gladiator_cleaver_swing }, //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, GaldiatorMelee },		   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL },					   //
+	{ ai_charge, 0, NULL }					   //
 };
 mmove_t gladiator_move_attack_melee = {FRAME_melee1, FRAME_melee17, gladiator_frames_attack_melee, gladiator_run};
 
@@ -178,15 +178,15 @@ void GladiatorGun(edict_t *self)
 
 mframe_t gladiator_frames_attack_gun [] =
 {
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GladiatorGun },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL }
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, GladiatorGun },	//
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, NULL },			//
+	{ ai_charge, 0, NULL }			//
 };
 mmove_t gladiator_move_attack_gun = {FRAME_attack1, FRAME_attack9, gladiator_frames_attack_gun, gladiator_run};
 
@@ -211,24 +211,24 @@ void gladiator_attack(edict_t *self)
 
 mframe_t gladiator_frames_pain [] =
 {
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL }
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }  //
 };
 mmove_t gladiator_move_pain = {FRAME_pain1, FRAME_pain6, gladiator_frames_pain, gladiator_run};
 
 mframe_t gladiator_frames_pain_air [] =
 {
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL }
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }  //
 };
 mmove_t gladiator_move_pain_air = {FRAME_painup1, FRAME_painup7, gladiator_frames_pain_air, gladiator_run};
 
@@ -275,28 +275,28 @@ void gladiator_dead(edict_t *self)
 
 mframe_t gladiator_frames_death [] =
 {
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL },
-	{ ai_move, 0, NULL }
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }, //
+	{ ai_move, 0, NULL }  //
 };
 mmove_t gladiator_move_death = {FRAME_death1, FRAME_death22, gladiator_frames_death, gladiator_dead};
 

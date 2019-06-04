@@ -269,12 +269,8 @@ void CL_RegisterBspModels(void)
 
 			if (cl.bsp->checksum != (unsigned int)atoi(cl.configstrings[CS_MAPCHECKSUM]))
 			{
-				if (cls.demo.playback)
-					Com_WPrintf("Local map version differs from demo: %i != %s\n",
-						cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
-				else
-					Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
-						cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
+				Com_Error(ERR_DROP, "Local map version differs from server: %i != %s",
+					cl.bsp->checksum, cl.configstrings[CS_MAPCHECKSUM]);
 			}
 
 #endif

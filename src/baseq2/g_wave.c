@@ -198,7 +198,7 @@ entitytype_e Wave_PickSpawnableMonster()
 
 bool ED_CallSpawnByType(edict_t *ent, entitytype_e type);
 
-static int wave_noise;
+static q_soundhandle wave_noise;
 
 void Wave_Init()
 {

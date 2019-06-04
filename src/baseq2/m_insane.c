@@ -27,10 +27,10 @@ insane
 #include "m_insane.h"
 
 
-static int  sound_fist;
-static int  sound_shake;
-static int  sound_moan;
-static int  sound_scream[8];
+static q_soundhandle sound_fist;
+static q_soundhandle sound_shake;
+static q_soundhandle sound_moan;
+static q_soundhandle sound_scream[8];
 
 void insane_fist(edict_t *self)
 {

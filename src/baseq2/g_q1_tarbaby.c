@@ -114,10 +114,10 @@ void tbaby_run(edict_t *self)
 
 void tbaby_jump(edict_t *self);
 
-static int sound_hit1;
-static int sound_land1;
-static int sound_death1;
-static int sound_sight1;
+static q_soundhandle sound_hit1;
+static q_soundhandle sound_land1;
+static q_soundhandle sound_death1;
+static q_soundhandle sound_sight1;
 
 void Tar_JumpTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {

@@ -191,14 +191,14 @@ void chainsaw(edict_t *self, float side)
 	}
 }
 
-static int sound_ogidle;
-static int sound_ogdrag;
-static int sound_ogidle2;
-static int sound_ogsawatk;
-static int sound_ogpain1;
-static int sound_udeath;
-static int sound_ogdth;
-static int sound_ogwake;
+static q_soundhandle sound_ogidle;
+static q_soundhandle sound_ogdrag;
+static q_soundhandle sound_ogidle2;
+static q_soundhandle sound_ogsawatk;
+static q_soundhandle sound_ogpain1;
+static q_soundhandle sound_udeath;
+static q_soundhandle sound_ogdth;
+static q_soundhandle sound_ogwake;
 
 void ogre_idle_sound(edict_t *self)
 {

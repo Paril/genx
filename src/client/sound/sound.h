@@ -140,5 +140,5 @@ sfx_t *S_SfxForHandle(qhandle_t hSfx, gametype_t game);
 bool S_LoadSound(sfx_t *s);
 channel_t *S_PickChannel(int entnum, int entchannel);
 void S_IssuePlaysound(playsound_t *ps);
-void S_BuildSoundList(int *sounds);
+void S_BuildSoundList(q_soundhandle *sounds);
 bool S_ResampleSfx(sfx_t *sfx, int wanted_rate, byte **data, size_t *num_samples);

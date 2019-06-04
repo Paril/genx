@@ -114,7 +114,7 @@ void AITools_DrawLine(vec3_t origin, vec3_t dest)
 	gi.WriteByte(TE_BFG_LASER);
 	gi.WritePosition(origin);
 	gi.WritePosition(dest);
-	gi.unicast(AIDevel.plinkguy, qfalse);
+	gi.unicast(AIDevel.plinkguy, false);
 }
 
 

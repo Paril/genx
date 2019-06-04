@@ -26,9 +26,8 @@ Encode a client frame onto the network channel
 =============================================================================
 */
 
-// some protocol optimizations are disabled when recording a demo
 #define Q2PRO_OPTIMIZE(c) \
-	((c)->protocol == PROTOCOL_VERSION_Q2PRO && !(c)->settings[CLS_RECORDING])
+	((c)->protocol == PROTOCOL_VERSION_Q2PRO)
 
 /*
 =============
@@ -266,36 +265,33 @@ void SV_WriteFrameToClient_Enhanced(client_t *client)
 	// ignore some parts of playerstate if not recording demo
 	psFlags = MSG_PS_NONE;
 
-	if (!client->settings[CLS_RECORDING])
+	if (client->settings[CLS_NOGUN])
 	{
-		if (client->settings[CLS_NOGUN])
-		{
-			psFlags |= MSG_PS_IGNORE_GUNFRAMES;
+		psFlags |= MSG_PS_IGNORE_GUNFRAMES;
 
-			if (client->settings[CLS_NOGUN] != 2)
-				psFlags |= MSG_PS_IGNORE_GUNINDEX;
-		}
+		if (client->settings[CLS_NOGUN] != 2)
+			psFlags |= MSG_PS_IGNORE_GUNINDEX;
+	}
 
-		if (client->settings[CLS_NOBLEND])
-			psFlags |= MSG_PS_IGNORE_BLEND;
+	if (client->settings[CLS_NOBLEND])
+		psFlags |= MSG_PS_IGNORE_BLEND;
 
-		if (frame->ps.pmove.pm_type < PM_DEAD)
-		{
-			if (!(frame->ps.pmove.pm_flags & PMF_NO_PREDICTION))
-				psFlags |= MSG_PS_IGNORE_VIEWANGLES;
-		}
-		else
-		{
-			// lying dead on a rotating platform?
-			psFlags |= MSG_PS_IGNORE_DELTAANGLES;
-		}
+	if (frame->ps.pmove.pm_type < PM_DEAD)
+	{
+		if (!(frame->ps.pmove.pm_flags & PMF_NO_PREDICTION))
+			psFlags |= MSG_PS_IGNORE_VIEWANGLES;
+	}
+	else
+	{
+		// lying dead on a rotating platform?
+		psFlags |= MSG_PS_IGNORE_DELTAANGLES;
 	}
 
 	clientEntityNum = 0;
 
 	if (client->protocol == PROTOCOL_VERSION_Q2PRO)
 	{
-		if (frame->ps.pmove.pm_type < PM_DEAD && !client->settings[CLS_RECORDING])
+		if (frame->ps.pmove.pm_type < PM_DEAD)
 			clientEntityNum = frame->clientNum + 1;
 
 		if (client->settings[CLS_NOPREDICT])

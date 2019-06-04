@@ -36,14 +36,13 @@ enum
 	prowl_17, prowl_18, prowl_19, prowl_20, prowl_21, prowl_22, prowl_23, prowl_24,
 };
 
-static int sound_death1;
-static int sound_idle;
-static int sound_pain1;
-static int sound_pain2;
-static int sound_sattck1;
-static int sound_sight1;
-
-static int sound_udeath;
+static q_soundhandle sound_death1;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_sattck1;
+static q_soundhandle sound_sight1;
+static q_soundhandle sound_udeath;
 
 mframe_t army_frames_stand[] =
 {

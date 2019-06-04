@@ -46,7 +46,17 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define q_countof(a)        (sizeof(a) / sizeof(a[0]))
 
 typedef unsigned char byte;
-typedef int qhandle_t;
+
+#define OPAQUE_TYPE \
+	struct { int unused; } *
+
+typedef OPAQUE_TYPE q_soundhandle;
+typedef OPAQUE_TYPE q_modelhandle;
+typedef OPAQUE_TYPE q_imagehandle;
+
+typedef OPAQUE_TYPE qhandle_t;
+
+#define MODEL_HANDLE_PLAYER ((q_modelhandle)(USHRT_MAX - 1))
 
 // Paril
 typedef enum
@@ -210,9 +220,6 @@ typedef enum
 #define MAX_EDICTS          1024    // must change protocol to increase more
 #define MAX_LIGHTSTYLES     256
 // Generations
-#define MAX_MODELS          1024
-#define MAX_SOUNDS          1024
-#define MAX_IMAGES          1024
 #define MAX_PRECACHE        1024
 #define MAX_PRECACHE_BITSET (MAX_PRECACHE / 3) + 1
 #define MAX_GENERAL         (MAX_CLIENTS * 2) // general config strings
@@ -497,14 +504,35 @@ uint32_t Q_rand_uniform(uint32_t n);
 	#define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
-#define frand()     ((int32_t)Q_rand() * 0x1p-32f + 0.5f)
-#define crand()     ((int32_t)Q_rand() * 0x1p-31f)
+static inline float frand(void)
+{
+	return (int32_t)Q_rand() * 0x1p-32f + 0.5f;
+}
 
-#define Q_rint(x)   ((x) < 0 ? ((int)((x) - 0.5f)) : ((int)((x) + 0.5f)))
+static inline float crand(void)
+{
+	return (int32_t)Q_rand() * 0x1p-31f;
+}
 
-#define Q_IsBitSet(data, bit)   (((data)[(bit) >> 3] & (1 << ((bit) & 7))) != 0)
-#define Q_SetBit(data, bit)     ((data)[(bit) >> 3] |= (1 << ((bit) & 7)))
-#define Q_ClearBit(data, bit)   ((data)[(bit) >> 3] &= ~(1 << ((bit) & 7)))
+static inline int Q_rint(float x)
+{
+	return x < 0 ? (int)(x - 0.5f) : (int)(x + 0.5f);
+}
+
+static inline bool Q_IsBitSet(const byte *data, const uint32_t bit)
+{
+	return (data[bit >> 3] & (1 << (bit & 7))) != 0;
+}
+
+static inline void Q_SetBit(byte *data, const uint32_t bit)
+{
+	data[bit >> 3] |= (1 << (bit & 7));
+}
+
+static inline void Q_ClearBit(byte *data, const uint32_t bit)
+{
+	data[bit >> 3] &= ~(1 << (bit & 7));
+}
 
 // Generations
 typedef enum
@@ -545,22 +573,58 @@ static inline void Q_SetPrecacheBitsetType(byte *bitset, const uint32_t index, c
 
 //=============================================
 
-// fast "C" macros
-#define Q_isupper(c)    ((c) >= 'A' && (c) <= 'Z')
-#define Q_islower(c)    ((c) >= 'a' && (c) <= 'z')
-#define Q_isdigit(c)    ((c) >= '0' && (c) <= '9')
-#define Q_isalpha(c)    (Q_isupper(c) || Q_islower(c))
-#define Q_isalnum(c)    (Q_isalpha(c) || Q_isdigit(c))
-#define Q_isprint(c)    ((c) >= 32 && (c) < 127)
-#define Q_isgraph(c)    ((c) > 32 && (c) < 127)
-#define Q_isspace(c)    (c == ' ' || c == '\f' || c == '\n' || \
-	c == '\r' || c == '\t' || c == '\v')
+static inline bool Q_isupper(char c)
+{
+	return c >= 'A' && c <= 'Z';
+}
+
+static inline bool Q_islower(char c)
+{
+	return c >= 'a' && c <= 'z';
+}
+
+static inline bool Q_isdigit(char c)
+{
+	return c >= '0' && c <= '9';
+}
+
+static inline bool Q_isalpha(char c)
+{
+	return Q_isupper(c) || Q_islower(c);
+}
+
+static inline bool Q_isalnum(char c)
+{
+	return Q_isalpha(c) || Q_isdigit(c);
+}
+
+static inline bool Q_isprint(char c)
+{
+	return c >= 32 && c < 127;
+}
+
+static inline bool Q_isgraph(char c)
+{
+	return c > 32 && c < 127;
+}
+
+static inline bool Q_isspace(char c)
+{
+	return	c == ' ' || c == '\f' || c == '\n' ||
+			c == '\r' || c == '\t' || c == '\v';
+}
 
 // tests if specified character is valid quake path character
-#define Q_ispath(c)     (Q_isalnum(c) || (c) == '_' || (c) == '-')
+static inline bool Q_ispath(char c)
+{
+	return Q_isalnum(c) || c == '_' || c == '-';
+}
 
 // tests if specified character has special meaning to quake console
-#define Q_isspecial(c)  ((c) == '\r' || (c) == '\n' || (c) == 127)
+static inline bool Q_isspecial(char c)
+{
+	return c == '\r' || c == '\n' || c == 127;
+}
 
 static inline int Q_tolower(int c)
 {
@@ -844,7 +908,7 @@ typedef struct cvar_s
 	char        *string;
 	char        *latched_string;    // for CVAR_LATCH vars
 	int         flags;
-	qboolean    modified;   // set each time the cvar is changed
+	bool		modified;   // set each time the cvar is changed
 	float       value;
 	struct cvar_s *next;
 
@@ -973,8 +1037,8 @@ typedef struct csurface_s
 // a trace is returned when a box is swept through the world
 typedef struct
 {
-	qboolean    allsolid;   // if true, plane is not valid
-	qboolean    startsolid; // if true, the initial point was in a solid area
+	bool    allsolid;   // if true, plane is not valid
+	bool    startsolid; // if true, the initial point was in a solid area
 	float			fraction;   // time completed, 1.0 = didn't hit anything
 	vec3_t			endpos;     // final position
 	cplane_t		plane;      // surface normal at impact
@@ -1057,7 +1121,7 @@ typedef struct
 
 	// command (in)
 	usercmd_t       cmd;
-	qboolean        snapinitial;    // if s has been changed outside pmove
+	bool        snapinitial;    // if s has been changed outside pmove
 
 	// results (out)
 	int         numtouch;
@@ -1816,8 +1880,8 @@ typedef struct entity_state_s
 	vec3_t  origin;
 	vec3_t  angles;
 	vec3_t  old_origin;     // for lerping
-	int     modelindex;
-	int     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
+	q_modelhandle     modelindex;
+	q_modelhandle     modelindex2, modelindex3, modelindex4;  // weapons, CTF flags, etc
 	int     frame;
 	int     skinnum;
 	unsigned int        effects;        // PGM - we're filling it, so it needs to be unsigned
@@ -1825,7 +1889,7 @@ typedef struct entity_state_s
 	int     solid;          // for client side prediction, 8*(bits 0-4) is x/y radius
 	// 8*(bits 5-9) is z down distance, 8(bits10-15) is z up
 	// gi.linkentity sets this properly
-	int     sound;          // for looping sounds, to guarantee shutoff
+	q_soundhandle     sound;          // for looping sounds, to guarantee shutoff
 	int     event;          // impulse events -- muzzle flashes, footsteps, etc
 	// events only go out for a single frame, they
 	// are automatically cleared each frame
@@ -1846,10 +1910,10 @@ typedef enum
 
 typedef struct
 {
-	vec3_t		angles;
-	vec3_t		offset;
-	uint16_t	index;
-	uint16_t	frame;
+	vec3_t			angles;
+	vec3_t			offset;
+	q_modelhandle	index;
+	uint16_t		frame;
 } player_gun_t;
 
 typedef enum
@@ -1866,8 +1930,8 @@ typedef enum
 typedef struct
 {
 	// stats used by every class
-	uint16_t	ammo_icon;
-	uint16_t	armor_icon;
+	q_imagehandle	ammo_icon;
+	q_imagehandle	armor_icon;
 
 	int16_t		health;
 	uint16_t	ammo;
@@ -1894,11 +1958,11 @@ typedef struct
 	{
 		struct
 		{
-			uint16_t	health_icon;
-			uint16_t	pickup_icon;
-			uint16_t	timer_icon;
-			uint16_t	selected_icon;
-			uint16_t	help_icon;
+			q_imagehandle	health_icon;
+			q_imagehandle	pickup_icon;
+			q_imagehandle	timer_icon;
+			q_imagehandle	selected_icon;
+			q_imagehandle	help_icon;
 			uint16_t	timer;
 			uint16_t	pickup_string;
 		} q2;
@@ -2007,5 +2071,47 @@ typedef double(*nav_igator_heuristic_func)(nav_node_id a, nav_node_id b);
 typedef bool(*nav_igator_node_func)(nav_node_id node);
 
 typedef struct nav_igator_s nav_igator_t;
+
+// FILE SYSTEM
+// bits 0 - 1, enum
+#define FS_MODE_APPEND          0x00000000
+#define FS_MODE_READ            0x00000001
+#define FS_MODE_WRITE           0x00000002
+#define FS_MODE_RDWR            0x00000003
+#define FS_MODE_MASK            0x00000003
+
+// bits 2 - 3, enum
+#define FS_BUF_DEFAULT          0x00000000
+#define FS_BUF_FULL             0x00000004
+#define FS_BUF_LINE             0x00000008
+#define FS_BUF_NONE             0x0000000c
+#define FS_BUF_MASK             0x0000000c
+
+// bits 4 - 5, enum
+#define FS_TYPE_ANY             0x00000000
+#define FS_TYPE_REAL            0x00000010
+#define FS_TYPE_PAK             0x00000020
+#define FS_TYPE_RESERVED        0x00000030
+#define FS_TYPE_MASK            0x00000030
+
+// bits 6 - 7, flag
+#define FS_PATH_ANY             0x00000000
+#define FS_PATH_BASE            0x00000040
+#define FS_PATH_GAME            0x00000080
+#define FS_PATH_MASK            0x000000c0
+
+// bits 8 - 12, flag
+#define FS_SEARCH_BYFILTER      0x00000100
+#define FS_SEARCH_SAVEPATH      0x00000200
+#define FS_SEARCH_EXTRAINFO     0x00000400
+#define FS_SEARCH_STRIPEXT      0x00000800
+#define FS_SEARCH_DIRSONLY      0x00001000
+#define FS_SEARCH_MASK          0x00001f00
+
+// bits 8 - 11, flag
+#define FS_FLAG_GZIP            0x00000100
+#define FS_FLAG_EXCL            0x00000200
+#define FS_FLAG_TEXT            0x00000400
+#define FS_FLAG_DEFLATE         0x00000800
 
 #endif // SHARED_H

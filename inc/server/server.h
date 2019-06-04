@@ -42,10 +42,6 @@ unsigned SV_Frame(unsigned msec);
 //void SV_ConsoleOutput(const char *msg);
 
 #if USE_CLIENT
-	int MVD_GetDemoPercent(bool *paused, int *framenum);
-#endif
-
-#if USE_CLIENT
 	char *SV_GetSaveInfo(const char *dir);
 #endif
 

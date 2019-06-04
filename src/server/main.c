@@ -1081,7 +1081,7 @@ static void SVC_DirectConnect(void)
 	conn_params_t   params;
 	client_t        *newcl;
 	int             number;
-	qboolean        allow;
+	bool        allow;
 	char            *reason;
 	memset(&params, 0, sizeof(params));
 
@@ -1806,9 +1806,6 @@ static inline bool check_paused(void)
 		goto resume;
 
 	if (!cl_paused->integer)
-		goto resume;
-
-	if (com_timedemo->integer)
 		goto resume;
 
 	if (!LIST_SINGLE(&sv_clientlist))

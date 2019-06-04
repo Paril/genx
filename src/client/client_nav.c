@@ -49,7 +49,7 @@ void Nav_ForceDrop(void)
 
 void Nav_Frame(void)
 {
-	if (cls.state != ca_active || cls.demo.playback || sv_paused->integer)
+	if (cls.state != ca_active || sv_paused->integer)
 		return;
 
 	if (!nav_debug.is_running)

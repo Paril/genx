@@ -27,19 +27,19 @@ mutant
 #include "m_mutant.h"
 
 
-static int  sound_swing;
-static int  sound_hit;
-static int  sound_hit2;
-static int  sound_death;
-static int  sound_idle;
-static int  sound_pain1;
-static int  sound_pain2;
-static int  sound_sight;
-static int  sound_search;
-static int  sound_step1;
-static int  sound_step2;
-static int  sound_step3;
-static int  sound_thud;
+static q_soundhandle sound_swing;
+static q_soundhandle sound_hit;
+static q_soundhandle sound_hit2;
+static q_soundhandle sound_death;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_sight;
+static q_soundhandle sound_search;
+static q_soundhandle sound_step1;
+static q_soundhandle sound_step2;
+static q_soundhandle sound_step3;
+static q_soundhandle sound_thud;
 
 //
 // SOUNDS

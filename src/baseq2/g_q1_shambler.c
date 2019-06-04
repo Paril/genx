@@ -64,16 +64,16 @@ void sham_stand(edict_t *self)
 	self->monsterinfo.currentmove = &sham_stand1;
 }
 
-static int sound_sidle;
-static int sound_smack;
-static int sound_melee1;
-static int sound_melee2;
-static int sound_sattck1;
-static int sound_sboom;
-static int sound_shurt2;
-static int sound_sdeath;
-static int sound_ssight;
-static int sound_udeath;
+static q_soundhandle sound_sidle;
+static q_soundhandle sound_smack;
+static q_soundhandle sound_melee1;
+static q_soundhandle sound_melee2;
+static q_soundhandle sound_sattck1;
+static q_soundhandle sound_sboom;
+static q_soundhandle sound_shurt2;
+static q_soundhandle sound_sdeath;
+static q_soundhandle sound_ssight;
+static q_soundhandle sound_udeath;
 
 void sham_idle_sound(edict_t *self)
 {

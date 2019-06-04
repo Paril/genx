@@ -64,13 +64,13 @@ void knight_stand(edict_t *self)
 	self->monsterinfo.currentmove = &knight_stand1;
 }
 
-static int sound_idle;
-static int sound_sword1;
-static int sound_sword2;
-static int sound_khurt;
-static int sound_ksight;
-static int sound_kdeath;
-static int sound_udeath;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_sword1;
+static q_soundhandle sound_sword2;
+static q_soundhandle sound_khurt;
+static q_soundhandle sound_ksight;
+static q_soundhandle sound_kdeath;
+static q_soundhandle sound_udeath;
 
 void knight_sight(edict_t *self, edict_t *other)
 {

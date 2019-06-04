@@ -25,261 +25,61 @@ GUNNER
 
 #include "g_local.h"
 #include "m_gunner.h"
+#include "m_local.h"
 
+static q_soundhandle sound_pain;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_death;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_open;
+static q_soundhandle sound_search;
+static q_soundhandle sound_sight;
 
-static int  sound_pain;
-static int  sound_pain2;
-static int  sound_death;
-static int  sound_idle;
-static int  sound_open;
-static int  sound_search;
-static int  sound_sight;
+static mscript_t script;
 
-
-void gunner_idlesound(edict_t *self)
+static void gunner_idlesound(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
-void gunner_sight(edict_t *self, edict_t *other)
+static void gunner_sight(edict_t *self, edict_t *other)
 {
 	gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
-void gunner_search(edict_t *self)
+static void gunner_search(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-
-bool visible(edict_t *self, edict_t *other);
-void GunnerGrenade(edict_t *self);
-void GunnerFire(edict_t *self);
-void gunner_fire_chain(edict_t *self);
-void gunner_refire_chain(edict_t *self);
-
-
-void gunner_stand(edict_t *self);
-
-mframe_t gunner_frames_fidget [] =
-{
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, gunner_idlesound },
-	{ ai_stand, 0, NULL },
-
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL }
-};
-mmove_t gunner_move_fidget = {FRAME_stand31, FRAME_stand70, gunner_frames_fidget, gunner_stand};
-
-void gunner_fidget(edict_t *self)
+static void gunner_fidget(edict_t *self)
 {
 	if (self->monsterinfo.aiflags & AI_STAND_GROUND)
 		return;
 
 	if (random() <= 0.05f)
-		self->monsterinfo.currentmove = &gunner_move_fidget;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "fidget");
 }
 
-mframe_t gunner_frames_stand [] =
+static void gunner_stand(edict_t *self)
 {
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, gunner_fidget },
-
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, gunner_fidget },
-
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, NULL },
-	{ ai_stand, 0, gunner_fidget }
-};
-mmove_t gunner_move_stand = {FRAME_stand01, FRAME_stand30, gunner_frames_stand, NULL};
-
-void gunner_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &gunner_move_stand;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand");
 }
 
-
-mframe_t gunner_frames_walk [] =
+static void gunner_walk(edict_t *self)
 {
-	{ ai_walk, 0, NULL },
-	{ ai_walk, 3, NULL },
-	{ ai_walk, 4, NULL },
-	{ ai_walk, 5, NULL },
-	{ ai_walk, 7, NULL },
-	{ ai_walk, 2, NULL },
-	{ ai_walk, 6, NULL },
-	{ ai_walk, 4, NULL },
-	{ ai_walk, 2, NULL },
-	{ ai_walk, 7, NULL },
-	{ ai_walk, 5, NULL },
-	{ ai_walk, 7, NULL },
-	{ ai_walk, 4, NULL }
-};
-mmove_t gunner_move_walk = {FRAME_walk07, FRAME_walk19, gunner_frames_walk, NULL};
-
-void gunner_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &gunner_move_walk;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk");
 }
 
-mframe_t gunner_frames_run [] =
-{
-	{ ai_run, 26, NULL },
-	{ ai_run, 9,  NULL },
-	{ ai_run, 9,  NULL },
-	{ ai_run, 9,  NULL },
-	{ ai_run, 15, NULL },
-	{ ai_run, 10, NULL },
-	{ ai_run, 13, NULL },
-	{ ai_run, 6,  NULL }
-};
-
-mmove_t gunner_move_run = {FRAME_run01, FRAME_run08, gunner_frames_run, NULL};
-
-void gunner_run(edict_t *self)
+static void gunner_run(edict_t *self)
 {
 	if (self->monsterinfo.aiflags & AI_STAND_GROUND)
-		self->monsterinfo.currentmove = &gunner_move_stand;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand");
 	else
-		self->monsterinfo.currentmove = &gunner_move_run;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run");
 }
 
-mframe_t gunner_frames_runandshoot [] =
-{
-	{ ai_run, 32, NULL },
-	{ ai_run, 15, NULL },
-	{ ai_run, 10, NULL },
-	{ ai_run, 18, NULL },
-	{ ai_run, 8,  NULL },
-	{ ai_run, 20, NULL }
-};
-
-mmove_t gunner_move_runandshoot = {FRAME_runs01, FRAME_runs06, gunner_frames_runandshoot, NULL};
-
-void gunner_runandshoot(edict_t *self)
-{
-	self->monsterinfo.currentmove = &gunner_move_runandshoot;
-}
-
-mframe_t gunner_frames_pain3 [] =
-{
-	{ ai_move, -3, NULL },
-	{ ai_move, 1,  NULL },
-	{ ai_move, 1,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 1,  NULL }
-};
-mmove_t gunner_move_pain3 = {FRAME_pain301, FRAME_pain305, gunner_frames_pain3, gunner_run};
-
-mframe_t gunner_frames_pain2 [] =
-{
-	{ ai_move, -2, NULL },
-	{ ai_move, 11, NULL },
-	{ ai_move, 6,  NULL },
-	{ ai_move, 2,  NULL },
-	{ ai_move, -1, NULL },
-	{ ai_move, -7, NULL },
-	{ ai_move, -2, NULL },
-	{ ai_move, -7, NULL }
-};
-mmove_t gunner_move_pain2 = {FRAME_pain201, FRAME_pain208, gunner_frames_pain2, gunner_run};
-
-mframe_t gunner_frames_pain1 [] =
-{
-	{ ai_move, 2,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, -5, NULL },
-	{ ai_move, 3,  NULL },
-	{ ai_move, -1, NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 1,  NULL },
-	{ ai_move, 1,  NULL },
-	{ ai_move, 2,  NULL },
-	{ ai_move, 1,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, -2, NULL },
-	{ ai_move, -2, NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL }
-};
-mmove_t gunner_move_pain1 = {FRAME_pain101, FRAME_pain118, gunner_frames_pain1, gunner_run};
-
-void gunner_pain(edict_t *self, edict_t *other, float kick, int damage)
+static void gunner_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
 		self->s.skinnum = 1;
@@ -298,14 +98,14 @@ void gunner_pain(edict_t *self, edict_t *other, float kick, int damage)
 		return;     // no pain anims in nightmare
 
 	if (damage <= 10)
-		self->monsterinfo.currentmove = &gunner_move_pain3;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain3");
 	else if (damage <= 25)
-		self->monsterinfo.currentmove = &gunner_move_pain2;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain2");
 	else
-		self->monsterinfo.currentmove = &gunner_move_pain1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain1");
 }
 
-void gunner_dead(edict_t *self)
+static void gunner_dead(edict_t *self)
 {
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, -8);
@@ -316,23 +116,7 @@ void gunner_dead(edict_t *self)
 	gi.linkentity(self);
 }
 
-mframe_t gunner_frames_death [] =
-{
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, -7, NULL },
-	{ ai_move, -3, NULL },
-	{ ai_move, -5, NULL },
-	{ ai_move, 8,  NULL },
-	{ ai_move, 6,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL }
-};
-mmove_t gunner_move_death = {FRAME_death01, FRAME_death11, gunner_frames_death, gunner_dead};
-
-void gunner_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void gunner_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int     n;
 
@@ -359,95 +143,10 @@ void gunner_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
 	self->takedamage = DAMAGE_YES;
-	self->monsterinfo.currentmove = &gunner_move_death;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
 
-
-void gunner_duck_down(edict_t *self)
-{
-	if (self->monsterinfo.aiflags & AI_DUCKED)
-		return;
-
-	self->monsterinfo.aiflags |= AI_DUCKED;
-
-	if (skill->value >= 2)
-	{
-		if (random() > 0.5f)
-			GunnerGrenade(self);
-	}
-
-	self->maxs[2] -= 32;
-	self->takedamage = DAMAGE_YES;
-	self->monsterinfo.pausetime = level.time + 1000;
-	gi.linkentity(self);
-}
-
-void gunner_duck_hold(edict_t *self)
-{
-	if (level.time >= self->monsterinfo.pausetime)
-		self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
-	else
-		self->monsterinfo.aiflags |= AI_HOLD_FRAME;
-}
-
-void gunner_duck_up(edict_t *self)
-{
-	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
-	self->takedamage = DAMAGE_AIM;
-	gi.linkentity(self);
-}
-
-mframe_t gunner_frames_duck [] =
-{
-	{ ai_move, 1,  gunner_duck_down },
-	{ ai_move, 1,  NULL },
-	{ ai_move, 1,  gunner_duck_hold },
-	{ ai_move, 0,  NULL },
-	{ ai_move, -1, NULL },
-	{ ai_move, -1, NULL },
-	{ ai_move, 0,  gunner_duck_up },
-	{ ai_move, -1, NULL }
-};
-mmove_t gunner_move_duck = {FRAME_duck01, FRAME_duck08, gunner_frames_duck, gunner_run};
-
-void gunner_dodge(edict_t *self, edict_t *attacker, float eta)
-{
-	if (random() > 0.25f)
-		return;
-
-	if (!self->enemy)
-		self->enemy = attacker;
-
-	self->monsterinfo.currentmove = &gunner_move_duck;
-}
-
-
-void gunner_opengun(edict_t *self)
-{
-	gi.sound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE, 0);
-}
-
-void GunnerFire(edict_t *self)
-{
-	vec3_t  start;
-	vec3_t  forward, right;
-	vec3_t  target;
-	vec3_t  aim;
-	int     flash_number;
-	flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->s.frame - FRAME_attak216);
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
-	// project enemy back a bit and target there
-	VectorCopy(self->enemy->s.origin, target);
-	VectorMA(target, -0.2f, self->enemy->velocity, target);
-	target[2] += self->enemy->viewheight;
-	VectorSubtract(target, start, aim);
-	VectorNormalize(aim);
-	monster_fire_bullet(self, start, aim, 3, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_number);
-}
-
-void GunnerGrenade(edict_t *self)
+static void GunnerGrenade(edict_t *self)
 {
 	vec3_t  start;
 	vec3_t  forward, right;
@@ -470,109 +169,118 @@ void GunnerGrenade(edict_t *self)
 	monster_fire_grenade(self, start, aim, 50, 600, flash_number);
 }
 
-mframe_t gunner_frames_attack_chain [] =
+static void gunner_duck_down(edict_t *self)
 {
-	/*
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	*/
-	{ ai_charge, 0, gunner_opengun },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL }
-};
-mmove_t gunner_move_attack_chain = {FRAME_attak209, FRAME_attak215, gunner_frames_attack_chain, gunner_fire_chain};
+	if (self->monsterinfo.aiflags & AI_DUCKED)
+		return;
 
-mframe_t gunner_frames_fire_chain [] =
-{
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire },
-	{ ai_charge,   0, GunnerFire }
-};
-mmove_t gunner_move_fire_chain = {FRAME_attak216, FRAME_attak223, gunner_frames_fire_chain, gunner_refire_chain};
+	self->monsterinfo.aiflags |= AI_DUCKED;
 
-mframe_t gunner_frames_endfire_chain [] =
-{
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL }
-};
-mmove_t gunner_move_endfire_chain = {FRAME_attak224, FRAME_attak230, gunner_frames_endfire_chain, gunner_run};
-
-mframe_t gunner_frames_attack_grenade [] =
-{
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GunnerGrenade },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GunnerGrenade },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GunnerGrenade },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, GunnerGrenade },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL },
-	{ ai_charge, 0, NULL }
-};
-mmove_t gunner_move_attack_grenade = {FRAME_attak101, FRAME_attak121, gunner_frames_attack_grenade, gunner_run};
-
-void gunner_attack(edict_t *self)
-{
-	if (range(self, self->enemy) == RANGE_MELEE)
-		self->monsterinfo.currentmove = &gunner_move_attack_chain;
-	else
+	if (skill->value >= 2)
 	{
-		if (random() <= 0.5f)
-			self->monsterinfo.currentmove = &gunner_move_attack_grenade;
-		else
-			self->monsterinfo.currentmove = &gunner_move_attack_chain;
+		if (random() > 0.5f)
+			GunnerGrenade(self);
 	}
+
+	self->maxs[2] -= 32;
+	self->takedamage = DAMAGE_YES;
+	self->monsterinfo.pausetime = level.time + 1000;
+	gi.linkentity(self);
 }
 
-void gunner_fire_chain(edict_t *self)
+static void gunner_duck_hold(edict_t *self)
 {
-	self->monsterinfo.currentmove = &gunner_move_fire_chain;
+	if (level.time >= self->monsterinfo.pausetime)
+		self->monsterinfo.aiflags &= ~AI_HOLD_FRAME;
+	else
+		self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-void gunner_refire_chain(edict_t *self)
+static void gunner_duck_up(edict_t *self)
 {
-	if (self->enemy->health > 0)
-		if (visible(self, self->enemy))
-			if (random() <= 0.5f)
-			{
-				self->monsterinfo.currentmove = &gunner_move_fire_chain;
-				return;
-			}
-
-	self->monsterinfo.currentmove = &gunner_move_endfire_chain;
+	self->monsterinfo.aiflags &= ~AI_DUCKED;
+	self->maxs[2] += 32;
+	self->takedamage = DAMAGE_AIM;
+	gi.linkentity(self);
 }
+
+static void gunner_dodge(edict_t *self, edict_t *attacker, float eta)
+{
+	if (random() > 0.25f)
+		return;
+
+	if (!self->enemy)
+		self->enemy = attacker;
+
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "duck");
+}
+
+static void gunner_opengun(edict_t *self)
+{
+	gi.sound(self, CHAN_VOICE, sound_open, 1, ATTN_IDLE, 0);
+}
+
+static void GunnerFire(edict_t *self)
+{
+	vec3_t  start;
+	vec3_t  forward, right;
+	vec3_t  target;
+	vec3_t  aim;
+	int     flash_number;
+	flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->s.frame - FRAME_attak216);
+	AngleVectors(self->s.angles, forward, right, NULL);
+	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	// project enemy back a bit and target there
+	VectorCopy(self->enemy->s.origin, target);
+	VectorMA(target, -0.2f, self->enemy->velocity, target);
+	target[2] += self->enemy->viewheight;
+	VectorSubtract(target, start, aim);
+	VectorNormalize(aim);
+	monster_fire_bullet(self, start, aim, 3, 4, DEFAULT_BULLET_HSPREAD, DEFAULT_BULLET_VSPREAD, flash_number);
+}
+
+static void gunner_attack(edict_t *self)
+{
+	if (range(self, self->enemy) == RANGE_MELEE || random() <= 0.5f)
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack_chain");
+	else
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack_grenade");
+}
+
+static void gunner_fire_chain(edict_t *self)
+{
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "fire_chain");
+}
+
+static void gunner_refire_chain(edict_t *self)
+{
+	if (self->enemy->health > 0 && visible(self, self->enemy) &&
+		random() <= 0.5f)
+	{
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "fire_chain");
+		return;
+	}
+
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "endfire_chain");
+}
+
+static const mevent_t events[] =
+{
+	EVENT_FUNC(gunner_fidget),
+	EVENT_FUNC(gunner_stand),
+	EVENT_FUNC(gunner_idlesound),
+	EVENT_FUNC(gunner_run),
+	EVENT_FUNC(gunner_dead),
+	EVENT_FUNC(gunner_duck_down),
+	EVENT_FUNC(gunner_duck_hold),
+	EVENT_FUNC(gunner_duck_up),
+	EVENT_FUNC(gunner_fire_chain),
+	EVENT_FUNC(gunner_opengun),
+	EVENT_FUNC(gunner_refire_chain),
+	EVENT_FUNC(GunnerFire),
+	EVENT_FUNC(GunnerGrenade),
+	NULL
+};
 
 /*QUAKED monster_gunner (1 .5 0) (-16 -16 -24) (16 16 32) Ambush Trigger_Spawn Sight
 */
@@ -582,6 +290,14 @@ void SP_monster_gunner(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/monsters/gunner/tris.md2";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q2/gunner.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	sound_death = gi.soundindex("gunner/death1.wav");
@@ -595,7 +311,7 @@ void SP_monster_gunner(edict_t *self)
 	gi.soundindex("gunner/gunatck3.wav");
 	self->movetype = MOVETYPE_STEP;
 	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex("models/monsters/gunner/tris.md2");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 32);
 	self->health = 175;
@@ -612,7 +328,7 @@ void SP_monster_gunner(edict_t *self)
 	self->monsterinfo.sight = gunner_sight;
 	self->monsterinfo.search = gunner_search;
 	gi.linkentity(self);
-	self->monsterinfo.currentmove = &gunner_move_stand;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand");
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }

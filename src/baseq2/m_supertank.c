@@ -28,14 +28,13 @@ SUPERTANK
 
 bool visible(edict_t *self, edict_t *other);
 
-static int  sound_pain1;
-static int  sound_pain2;
-static int  sound_pain3;
-static int  sound_death;
-static int  sound_search1;
-static int  sound_search2;
-
-static  int tread_sound;
+static q_soundhandle sound_pain1;
+static q_soundhandle sound_pain2;
+static q_soundhandle sound_pain3;
+static q_soundhandle sound_death;
+static q_soundhandle sound_search1;
+static q_soundhandle sound_search2;
+static q_soundhandle tread_sound;
 
 void BossExplode(edict_t *self);
 

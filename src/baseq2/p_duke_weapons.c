@@ -31,7 +31,7 @@ extern byte     is_silenced;
 #define DUKE_ANIM_TIME 400
 #define DUKE_ANIM_FRAC DUKE_ANIM_TIME
 
-int pipe_detonator_index, foot_index;
+q_modelhandle pipe_detonator_index, foot_index;
 
 extern bool do_propagate;
 
@@ -81,7 +81,6 @@ void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, 
 	radius = sqrtf(radius) * DUKE_DISTANCE_SCALE;
 	long   points;
 	edict_t *ent = NULL;
-	vec3_t  v;
 	vec3_t  dir;
 	float	d;
 
@@ -875,7 +874,7 @@ void tripwire_activate(edict_t *ent)
 	trace_t tr;
 	tr = gi.trace(ent->s.origin, NULL, NULL, laser->s.old_origin, NULL, CONTENTS_SOLID);
 	laser->s.game = GAME_DUKE;
-	laser->s.modelindex = 1;         // must be non-zero
+	laser->s.modelindex = (q_modelhandle)1;         // must be non-zero
 	laser->s.renderfx |= RF_BEAM;
 	laser->s.skinnum = 0xF0F0F0F0;
 	laser->s.frame = 2;

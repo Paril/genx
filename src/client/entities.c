@@ -288,7 +288,7 @@ static void set_active_state(void)
 {
 	cls.state = ca_active;
 	cl.serverdelta = Q_align(cl.frame.number, CL_FRAMEDIV);
-	cl.time = cl.servertime = 0; // set time, needed for demos
+	cl.time = cl.servertime = 0; // set time
 #if USE_FPS
 	cl.keytime = cl.keyservertime = 0;
 	cl.keyframe = cl.frame; // initialize keyframe to make sure it's valid
@@ -305,28 +305,20 @@ static void set_active_state(void)
 	if (cls.netchan)
 		cl.initialSeq = cls.netchan->outgoing_sequence;
 
-	if (cls.demo.playback)
+	// set initial cl.predicted_origin and cl.predicted_angles
+	VectorScale(cl.frame.ps.pmove.origin, 0.125f, cl.predicted_origin);
+	VectorScale(cl.frame.ps.pmove.velocity, 0.125f, cl.predicted_velocity);
+
+	if (cl.frame.ps.pmove.pm_type < PM_DEAD &&
+		cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
 	{
-		// init some demo things
-		CL_FirstDemoFrame();
+		// enhanced servers don't send viewangles
+		CL_PredictAngles();
 	}
 	else
 	{
-		// set initial cl.predicted_origin and cl.predicted_angles
-		VectorScale(cl.frame.ps.pmove.origin, 0.125f, cl.predicted_origin);
-		VectorScale(cl.frame.ps.pmove.velocity, 0.125f, cl.predicted_velocity);
-
-		if (cl.frame.ps.pmove.pm_type < PM_DEAD &&
-			cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
-		{
-			// enhanced servers don't send viewangles
-			CL_PredictAngles();
-		}
-		else
-		{
-			// just use what server provided
-			VectorCopy(cl.frame.ps.viewangles, cl.predicted_angles);
-		}
+		// just use what server provided
+		VectorCopy(cl.frame.ps.viewangles, cl.predicted_angles);
 	}
 
 	SCR_EndLoadingPlaque();     // get rid of loading plaque
@@ -335,11 +327,8 @@ static void set_active_state(void)
 	CL_CheckForPause();
 	CL_UpdateFrameTimes();
 
-	if (!cls.demo.playback)
-	{
-		EXEC_TRIGGER(cl_beginmapcmd);
-		Cmd_ExecTrigger("#cl_enterlevel");
-	}
+	EXEC_TRIGGER(cl_beginmapcmd);
+	Cmd_ExecTrigger("#cl_enterlevel");
 }
 
 static void player_update(server_frame_t *oldframe, server_frame_t *frame, int framediv)
@@ -437,16 +426,6 @@ void CL_DeltaFrame(void)
 		entity_update(state);
 		// fire events
 		entity_event(state->number);
-	}
-
-	if (cls.demo.recording && !cls.demo.paused && !cls.demo.seeking && CL_FRAMESYNC)
-		CL_EmitDemoFrame();
-
-	if (cls.demo.playback)
-	{
-		// this delta has nothing to do with local viewangles,
-		// clear it to avoid interfering with demo freelook hack
-		VectorClear(cl.frame.ps.pmove.delta_angles);
 	}
 
 	if (cl.oldframe.ps.pmove.pm_type != cl.frame.ps.pmove.pm_type)
@@ -548,7 +527,7 @@ static void CL_AddPacketEntities(void)
 		else
 		{
 			// set skin
-			if (s1->modelindex == 255)
+			if (s1->modelindex == MODEL_HANDLE_PLAYER)
 			{
 				// use custom player skin
 				ent.skinnum = 0;
@@ -583,7 +562,7 @@ static void CL_AddPacketEntities(void)
 			{
 				ent.skinnum = s1->skinnum;
 				ent.skin = 0;
-				ent.model = cl.precache[s1->modelindex].model.handle;
+				ent.model = cl.precache[(uint16_t)s1->modelindex].model.handle;
 
 				if (ent.model == cl_mod_laser || ent.model == cl_mod_dmspot)
 					renderfx |= RF_NOSHADOW;
@@ -807,7 +786,7 @@ static void CL_AddPacketEntities(void)
 				cl.lerpfrac, ent.angles);
 
 			// mimic original ref_gl "leaning" bug (uuugly!)
-			if (s1->modelindex == 255 && cl_rollhack->integer)
+			if (s1->modelindex == MODEL_HANDLE_PLAYER && cl_rollhack->integer)
 				ent.angles[ROLL] = -ent.angles[ROLL];
 		}
 
@@ -912,7 +891,7 @@ static void CL_AddPacketEntities(void)
 		// duplicate for linked models
 		if (s1->modelindex2)
 		{
-			if (s1->modelindex2 == 255)
+			if (s1->modelindex2 == MODEL_HANDLE_PLAYER)
 			{
 				// custom weapon
 				ci = &cl.clientinfo[s1->skinnum & 0xff];
@@ -933,10 +912,10 @@ static void CL_AddPacketEntities(void)
 				}
 			}
 			else
-				ent.model = cl.precache[s1->modelindex2].model.handle;
+				ent.model = cl.precache[(uint16_t)s1->modelindex2].model.handle;
 
 			// PMM - check for the defender sphere shell .. make it translucent
-			if (!Q_strcasecmp(cl.configstrings[CS_PRECACHE + (s1->modelindex2)], "models/items/shell/tris.md2"))
+			if (!Q_strcasecmp(cl.configstrings[CS_PRECACHE + ((uint16_t)s1->modelindex2)], "models/items/shell/tris.md2"))
 			{
 				ent.alpha = 0.32f;
 				ent.flags = RF_TRANSLUCENT;
@@ -950,13 +929,13 @@ static void CL_AddPacketEntities(void)
 
 		if (s1->modelindex3)
 		{
-			ent.model = cl.precache[s1->modelindex3].model.handle;
+			ent.model = cl.precache[(uint16_t)s1->modelindex3].model.handle;
 			V_AddEntity(&ent);
 		}
 
 		if (s1->modelindex4)
 		{
-			ent.model = cl.precache[s1->modelindex4].model.handle;
+			ent.model = cl.precache[(uint16_t)s1->modelindex4].model.handle;
 			V_AddEntity(&ent);
 		}
 
@@ -1246,7 +1225,7 @@ static void CL_AddViewWeapon(void)
 			gun.model = gun_model;  // development tool
 		}
 		else
-			gun.model = cl.precache[ps->guns[index].index].model.handle;
+			gun.model = cl.precache[(uint16_t)ps->guns[index].index].model.handle;
 
 		if (!gun.model)
 			return;
@@ -1460,28 +1439,6 @@ static inline float LerpShort(int a2, int a1, float frac)
 
 static inline float lerp_client_fov(float ofov, float nfov, float lerp)
 {
-	if (cls.demo.playback)
-	{
-		int fov = info_fov->integer;
-
-		if (fov < 1)
-			fov = 90;
-		else if (fov > 160)
-			fov = 160;
-
-		if (info_uf->integer & UF_LOCALFOV)
-			return fov;
-
-		if (!(info_uf->integer & UF_PLAYERFOV))
-		{
-			if (ofov >= 90)
-				ofov = fov;
-
-			if (nfov >= 90)
-				nfov = fov;
-		}
-	}
-
 	return ofov + lerp * (nfov - ofov);
 }
 
@@ -1509,7 +1466,7 @@ void CL_CalcViewValues(void)
 	lerp = cl.lerpfrac;
 
 	// calculate the origin
-	if (!cls.demo.playback && cl_predict->integer && !(ps->pmove.pm_flags & PMF_NO_PREDICTION))
+	if (cl_predict->integer && !(ps->pmove.pm_flags & PMF_NO_PREDICTION))
 	{
 		// use predicted values
 		unsigned delta = cls.realtime - cl.predicted_step_time;
@@ -1536,18 +1493,8 @@ void CL_CalcViewValues(void)
 			lerp * (ps->pmove.origin[2] - ops->pmove.origin[2]) * 0.125f;
 	}
 
-	// if not running a demo or on a locked frame, add the local angle movement
-	if (cls.demo.playback)
-	{
-		if (cls.key_dest == KEY_GAME && Key_IsDown(K_SHIFT))
-			VectorCopy(cl.viewangles, cl.refdef.viewangles);
-		else
-		{
-			LerpAngles(ops->viewangles, ps->viewangles, lerp,
-				cl.refdef.viewangles);
-		}
-	}
-	else if (ps->pmove.pm_type < PM_DEAD)
+	// if not on a locked frame, add the local angle movement
+	if (ps->pmove.pm_type < PM_DEAD)
 	{
 		// use predicted values
 		VectorCopy(cl.predicted_angles, cl.refdef.viewangles);
@@ -1660,7 +1607,7 @@ void CL_GetEntitySoundOrigin(int entnum, vec3_t org)
 	// offset the origin for BSP models
 	if (ent->current.solid == PACKED_BSP)
 	{
-		cm = cl.precache[ent->current.modelindex].model.clip;
+		cm = cl.precache[(uint16_t)ent->current.modelindex].model.clip;
 
 		if (cm)
 		{

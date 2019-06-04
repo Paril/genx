@@ -1184,15 +1184,8 @@ static void CL_SendReliable(void)
 
 void CL_SendCmd(void)
 {
-	if (cls.state < ca_connected)
-	{
+	if (cls.state < ca_connected || !cls.netchan)
 		return; // not talking to a server
-	}
-
-	// generate usercmds while playing a demo,
-	// but do not send them
-	if (!cls.netchan)
-		return;
 
 	if (cls.state != ca_active || sv_paused->integer)
 	{

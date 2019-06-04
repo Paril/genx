@@ -90,7 +90,7 @@ static void CL_ClipMoveToEntities(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t
 		if (ent->current.solid == PACKED_BSP)
 		{
 			// special value for bmodel
-			cmodel = cl.precache[ent->current.modelindex].model.clip;
+			cmodel = cl.precache[(uint16_t)ent->current.modelindex].model.clip;
 
 			if (!cmodel)
 				continue;
@@ -148,7 +148,7 @@ static int CL_PointContents(vec3_t point)
 		if (ent->current.solid != PACKED_BSP) // special value for bmodel
 			continue;
 
-		cmodel = cl.precache[ent->current.modelindex].model.clip;
+		cmodel = cl.precache[(uint16_t)ent->current.modelindex].model.clip;
 
 		if (!cmodel)
 			continue;
@@ -183,9 +183,6 @@ void CL_PredictMovement(void)
 	int         step, oldz;
 
 	if (cls.state != ca_active)
-		return;
-
-	if (cls.demo.playback)
 		return;
 
 	if (sv_paused->integer)

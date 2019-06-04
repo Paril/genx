@@ -1,0 +1,60 @@
+stand $stand30 $stand50
+{
+	stand +repeat 21
+}
+
+fidget $stand1 $stand30
+{
+	stand +repeat 22
+}
+
+walk $walk1 $walk20
+{
+	walk +speed 8 +repeat 20
+}
+
+run $walk1 $walk20
+{
+	run +speed 8 +repeat 20
+}
+
+attack_pre_mg $attack1 $attack9
+{
+	charge +speed 1 +repeat 8
+	^ +event boss2_attack_mg
+}
+
+attack_mg $attack10 $attack15
+{
+	charge +speed 1 +event Boss2MachineGun +repeat 5
+	^ +event boss2_reattack_mg
+}
+
+attack_post_mg $attack16 $attack19 boss2_run
+{
+	charge +speed 1 +repeat 4
+}
+
+attack_rocket $attack20 $attack40 boss2_run
+{
+	charge +speed 1 +repeat 12
+	move +speed -20 +event Boss2Rocket
+	@0 +repeat 8
+}
+
+pain_heavy $pain2 $pain19 boss2_run
+{
+	move +repeat 18
+}
+
+pain_light $pain20 $pain23 boss2_run
+{
+	move +repeat 4
+}
+
+death $death2 $death50 boss2_dead
+{
+	move +repeat 48
+	^ +event BossExplode
+}
+

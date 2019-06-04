@@ -663,8 +663,7 @@ void Key_Event(unsigned key, bool down, unsigned time)
 			return;
 
 		if (cls.key_dest == KEY_GAME &&
-			cl.frame.ps.stats.layouts &&
-			cls.demo.playback == false)
+			cl.frame.ps.stats.layouts)
 		{
 			if (keydown[key] == 2)
 			{
@@ -716,10 +715,6 @@ void Key_Event(unsigned key, bool down, unsigned time)
 		if (anykeydown < 0)
 			anykeydown = 0;
 	}
-
-	// hack for demo freelook in windowed mode
-	if (cls.key_dest == KEY_GAME && cls.demo.playback && key == K_SHIFT && keydown[key] <= 1)
-		IN_Activate();
 
 	// skip the rest of the cinematic
 	if (cls.key_dest == KEY_GAME && cls.state == ca_cinematic && down)

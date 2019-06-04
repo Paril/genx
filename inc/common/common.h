@@ -45,7 +45,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // FIXME: rename these
 #define COM_HISTORYFILE_NAME    ".conhistory"
-#define COM_DEMOCACHE_NAME      ".democache"
 
 #define MAXPRINTMSG     4096
 #define MAXERRORMSG     1024
@@ -157,7 +156,6 @@ extern cvar_t   *com_version;
 #endif
 extern cvar_t   *sv_running;
 extern cvar_t   *sv_paused;
-extern cvar_t   *com_timedemo;
 extern cvar_t   *com_sleep;
 
 extern cvar_t   *rcon_password;

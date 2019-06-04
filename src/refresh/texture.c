@@ -631,7 +631,7 @@ void GL_SetFilterAndRepeat(imagetype_t type, imageflags_t flags)
 			// Generations
 		}
 		else if (flags & IF_OLDSCHOOL)
-			nearest = qtrue;
+			nearest = true;
 		else if (type == IT_PIC)
 		{
 			if (flags & IF_SCRAP)

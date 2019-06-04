@@ -189,7 +189,7 @@ static void toggle_console(consoleMode_t mode, chatMode_t chat)
 		return;
 	}
 
-	if (mode == CON_CHAT && (cls.state != ca_active || cls.demo.playback))
+	if (mode == CON_CHAT && cls.state != ca_active)
 	{
 		Com_Printf("You must be in a level to chat.\n");
 		return;
@@ -306,7 +306,7 @@ Con_MessageMode_f
 */
 static void start_message_mode(chatMode_t mode)
 {
-	if (cls.state != ca_active || cls.demo.playback)
+	if (cls.state != ca_active)
 	{
 		Com_Printf("You must be in a level to chat.\n");
 		return;

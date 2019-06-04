@@ -93,9 +93,6 @@
     <ClCompile Include="..\src\baseq2\g_weapon.c">
       <Filter>Source Files\baseq2</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\baseq2\m_actor.c">
-      <Filter>Source Files\baseq2</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\baseq2\m_berserk.c">
       <Filter>Source Files\baseq2</Filter>
     </ClCompile>
@@ -300,12 +297,12 @@
     <ClCompile Include="..\src\baseq2\g_doom_cybr.c">
       <Filter>Source Files\doom</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\baseq2\m_local.c">
+      <Filter>Source Files\baseq2</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\baseq2\g_local.h">
-      <Filter>Source Files\baseq2</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\baseq2\m_actor.h">
       <Filter>Source Files\baseq2</Filter>
     </ClInclude>
     <ClInclude Include="..\src\baseq2\m_berserk.h">
@@ -403,6 +400,9 @@
     </ClInclude>
     <ClInclude Include="..\inc\shared\shared.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\baseq2\m_local.h">
+      <Filter>Source Files\baseq2</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

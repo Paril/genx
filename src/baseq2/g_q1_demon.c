@@ -30,13 +30,13 @@ enum
 
 //============================================================================
 
-static int sound_djump;
-static int sound_dhit2;
-static int sound_idle1;
-static int sound_dpain1;
-static int sound_ddeath;
-static int sound_sight2;
-static int sound_udeath;
+static q_soundhandle sound_djump;
+static q_soundhandle sound_dhit2;
+static q_soundhandle sound_idle1;
+static q_soundhandle sound_dpain1;
+static q_soundhandle sound_ddeath;
+static q_soundhandle sound_sight2;
+static q_soundhandle sound_udeath;
 
 /*
 ==============================================================================

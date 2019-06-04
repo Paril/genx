@@ -196,13 +196,13 @@ FAST ATTACKS
 
 edict_t *fire_spike(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, bool super);
 
-static int sound_wattack;
-static int sound_widle1;
-static int sound_widle2;
-static int sound_wpain;
-static int sound_udeath;
-static int sound_wdeath;
-static int sound_wsight;
+static q_soundhandle sound_wattack;
+static q_soundhandle sound_widle1;
+static q_soundhandle sound_widle2;
+static q_soundhandle sound_wpain;
+static q_soundhandle sound_udeath;
+static q_soundhandle sound_wdeath;
+static q_soundhandle sound_wsight;
 
 void Wiz_FastFire(edict_t *self)
 {

@@ -93,8 +93,8 @@ typedef struct
 
 
 // bot_cmds.c
-qboolean	BOT_Commands(edict_t *ent);
-qboolean	BOT_ServerCommand(void);
+bool	BOT_Commands(edict_t *ent);
+bool	BOT_ServerCommand(void);
 
 // ai_main.c
 void		AI_Init(void);

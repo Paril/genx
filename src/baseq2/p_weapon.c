@@ -53,7 +53,7 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first);
 void weapon_duke_chaingun_fire(edict_t *ent, gunindex_e gun, bool first);
 void weapon_duke_shotgun_fire(edict_t *ent, gunindex_e gun, bool first);
 
-extern int pipe_detonator_index;
+extern q_modelhandle pipe_detonator_index;
 
 bool     is_quad;
 byte     is_silenced;
@@ -382,7 +382,7 @@ void ChangeWeapon(edict_t *ent, gunindex_e gun)
 	ent->client->gunstates[gun].machinegun_shots = 0;
 
 	// set visible model
-	if (ent->s.modelindex == 255)
+	if (ent->s.modelindex == MODEL_HANDLE_PLAYER)
 	{
 		if (ent->client->pers.weapon)
 			i = (((ITI_WEAPONS_START - ITEM_INDEX(ent->client->pers.weapon) + 1) & 0xff) << 8);

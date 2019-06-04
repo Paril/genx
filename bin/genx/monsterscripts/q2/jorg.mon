@@ -1,0 +1,122 @@
+stand $stand01 $stand51
+{
+	stand +event jorg_idle
+	^ +event none +repeat 32
+	^ +speed 19
+	^ +speed 11 +event jorg_step_left
+	@1 +repeat 2
+	^ +speed 6
+	^ +speed 9 +event jorg_step_right
+	@1 +repeat 7
+	^ +speed -2
+	@34 +speed -17
+	@1
+	^ +speed -12
+	@38 +speed -14
+}
+
+run $walk06 $walk19
+{
+	run +speed 17 +event jorg_step_left
+	^ +speed 0 +event none +repeat 3
+	^ +speed 12
+	^ +speed 8
+	^ +speed 10
+	^ +speed 33 +event jorg_step_right
+	@1 +repeat 3
+	^ +speed 9 +repeat 3
+}
+
+start_walk $walk01 $walk05
+{
+	walk +speed 5
+	^ +speed 6
+	^ +speed 7
+	^ +speed 9
+	^ +speed 15
+}
+
+walk $walk06 $walk19
+{
+	walk +speed 17
+	^ +speed 0 +repeat 3
+	^ +speed 12
+	^ +speed 8
+	^ +speed 10
+	^ +speed 33
+	@1 +repeat 3
+	^ +speed 9 +repeat 3
+}
+
+end_walk $walk20 $walk25
+{
+	walk +speed 11
+	^ +speed 0 +repeat 3
+	^ +speed 8
+	^ +speed -8
+}
+
+pain1 $pain101 $pain103 jorg_run
+{
+	move +repeat 3
+}
+
+pain2 $pain201 $pain203 jorg_run
+{
+	move +repeat 3
+}
+
+pain3 $pain301 $pain325 jorg_run
+{
+	move +speed -28
+	^ +speed -6
+	^ +speed -3 +event jorg_step_left
+	@0 +speed -9
+	^ +speed 0 +event jorg_step_right
+	^ +event none +repeat 3
+	^ +speed -7
+	^ +speed 1
+	^ +speed -11
+	^ +speed -4
+	@5 +repeat 2
+	^ +speed 10
+	^ +speed 11
+	@5
+	@14
+	^ +speed 3
+	@14
+	@2 +speed 7
+	@0 +speed 17
+	@5 +repeat 2
+	@4
+}
+
+death $death01 $death50
+{
+	move +repeat 48
+	^ +event MakronToss
+	^ +event BossExplode
+}
+
+start_attack1 $attak101 $attak108 jorg_attack1
+{
+	charge +repeat 8
+}
+
+attack1 $attak109 $attak114 jorg_reattack1
+{
+	charge +event jorg_firebullet +repeat 6
+}
+
+end_attack1 $attak115 $attak118 jorg_run
+{
+	move +repeat 4
+}
+
+attack2 $attak201 $attak213 jorg_run
+{
+	charge +repeat 6
+	^ +event jorgBFG
+	move +repeat 6
+}
+

@@ -30,12 +30,12 @@ enum
 	walk1, walk2, walk3, walk4, walk5, walk6, walk7, walk8
 };
 
-static int sound_idle;
-static int sound_dattack1;
-static int sound_dpain1;
-static int sound_udeath;
-static int sound_ddeath;
-static int sound_dsight;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_dattack1;
+static q_soundhandle sound_dpain1;
+static q_soundhandle sound_udeath;
+static q_soundhandle sound_ddeath;
+static q_soundhandle sound_dsight;
 
 void dog_leap(edict_t *self);
 void dog_run(edict_t *self);

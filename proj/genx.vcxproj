@@ -118,7 +118,6 @@
   <ItemGroup>
     <ClCompile Include="..\src\client\console.c" />
     <ClCompile Include="..\src\client\crc.c" />
-    <ClCompile Include="..\src\client\demo.c" />
     <ClCompile Include="..\src\client\effects.c" />
     <ClCompile Include="..\src\client\entities.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cl_$(IntDir)%(filename).obj</ObjectFileName>
@@ -143,7 +142,6 @@
     <ClCompile Include="..\src\client\sound\mem.c" />
     <ClCompile Include="..\src\client\sound\qal\dynamic.c" />
     <ClCompile Include="..\src\client\tent.c" />
-    <ClCompile Include="..\src\client\ui\demos.c" />
     <ClCompile Include="..\src\client\ui\menu.c" />
     <ClCompile Include="..\src\client\ui\playerconfig.c" />
     <ClCompile Include="..\src\client\ui\playermodels.c" />

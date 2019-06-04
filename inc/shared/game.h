@@ -62,7 +62,6 @@ typedef enum
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
 
-
 #ifndef GAME_INCLUDE
 
 struct gclient_s
@@ -118,8 +117,8 @@ typedef struct
 	void (* q_printf(1, 2) dprintf)(const char *fmt, ...);
 	void (* q_printf(3, 4) cprintf)(edict_t *ent, int printlevel, const char *fmt, ...);
 	void (* q_printf(2, 3) centerprintf)(edict_t *ent, const char *fmt, ...);
-	void (*sound)(edict_t *ent, int channel, int soundindex, float volume, float attenuation, float timeofs);
-	void (*positioned_sound)(vec3_t origin, edict_t *ent, int channel, int soundinedex, float volume, float attenuation, float timeofs);
+	void (*sound)(edict_t *ent, int channel, q_soundhandle soundindex, float volume, float attenuation, float timeofs);
+	void (*positioned_sound)(vec3_t origin, edict_t *ent, int channel, q_soundhandle soundinedex, float volume, float attenuation, float timeofs);
 
 	// config strings hold all the index strings, the lightstyles,
 	// and misc data like the sky definition and cdtrack.
@@ -130,19 +129,19 @@ typedef struct
 	void (* q_noreturn q_printf(1, 2) error)(const char *fmt, ...);
 
 	// the *index functions create configstrings and some internal server state
-	int (*modelindex)(const char *name);
-	int (*soundindex)(const char *name);
-	int (*imageindex)(const char *name);
+	q_modelhandle (*modelindex)(const char *name);
+	q_soundhandle (*soundindex)(const char *name);
+	q_imagehandle (*imageindex)(const char *name);
 
 	void (*setmodel)(edict_t *ent, const char *name);
 
 	// collision detection
 	trace_t (* q_gameabi trace)(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end, edict_t *passent, int contentmask);
 	int (*pointcontents)(vec3_t point);
-	qboolean(*inPVS)(vec3_t p1, vec3_t p2);
-	qboolean(*inPHS)(vec3_t p1, vec3_t p2);
-	void (*SetAreaPortalState)(int portalnum, qboolean open);
-	qboolean(*AreasConnected)(int area1, int area2);
+	bool (*inPVS)(vec3_t p1, vec3_t p2);
+	bool (*inPHS)(vec3_t p1, vec3_t p2);
+	void (*SetAreaPortalState)(int portalnum, bool open);
+	bool (*AreasConnected)(int area1, int area2);
 
 	// an entity will never be sent to a client or used for collision
 	// if it is not passed to linkentity.  If the size, position, or
@@ -154,7 +153,7 @@ typedef struct
 
 	// network messaging
 	void (*multicast)(vec3_t origin, multicast_t to);
-	void (*unicast)(edict_t *ent, qboolean reliable);
+	void (*unicast)(edict_t *ent, bool reliable);
 	void (*WriteChar)(int c);
 	void (*WriteByte)(int c);
 	void (*WriteShort)(int c);
@@ -204,6 +203,17 @@ typedef struct
 	nav_node_id(*Nav_GetNavigatorPathNode)(nav_igator_t *navigator, uint32_t index);
 	bool (*Nav_NavigatorAStar)(nav_igator_t *navigator);
 	void (*Nav_DestroyNavigator)(nav_igator_t *navigator);
+
+	int64_t (*FS_FOpenFile)(const char *filename, qhandle_t *f, unsigned mode);
+	int64_t	(*FS_Tell)(qhandle_t f);
+	int		(*FS_Seek)(qhandle_t f, int64_t offset);
+	int64_t (*FS_Length)(qhandle_t f);
+	int		(*FS_Read)(void *buffer, size_t len, qhandle_t f);
+	int		(*FS_Write)(const void *buffer, size_t len, qhandle_t f);
+	int		(*FS_FPrintf)(qhandle_t f, const char *format, ...) q_printf(2, 3);
+	int		(*FS_LoadFile)(const char *path, void **buf);
+	void	(*FS_FreeFile)(void *buf);
+	int     (*FS_FCloseFile)(qhandle_t f);
 } game_import_t;
 
 //
@@ -226,7 +236,7 @@ typedef struct
 	// about the world state and the clients.
 	// WriteGame is called every time a level is exited.
 	// ReadGame is called on a loadgame.
-	void (*WriteGame)(const char *filename, qboolean autosave);
+	void (*WriteGame)(const char *filename, bool autosave);
 	void (*ReadGame)(const char *filename);
 
 	// ReadLevel is called after the default map information has been
@@ -234,7 +244,7 @@ typedef struct
 	void (*WriteLevel)(const char *filename);
 	void (*ReadLevel)(const char *filename);
 
-	qboolean(*ClientConnect)(edict_t *ent, char *userinfo);
+	bool (*ClientConnect)(edict_t *ent, char *userinfo);
 	void (*ClientBegin)(edict_t *ent);
 	void (*ClientUserinfoChanged)(edict_t *ent, char *userinfo);
 	void (*ClientDisconnect)(edict_t *ent);
@@ -257,10 +267,10 @@ typedef struct
 	// can vary in size from one game to another.
 	//
 	// The size will be fixed when ge->Init() is called
-	struct edict_s  *edicts;
-	int         edict_size;
-	int         num_edicts;     // current number, <= max_edicts
-	int         max_edicts;
+	struct edict_s	*edicts;
+	int				edict_size;
+	int				num_edicts;     // current number, <= max_edicts
+	int				max_edicts;
 } game_export_t;
 
 #endif // GAME_H

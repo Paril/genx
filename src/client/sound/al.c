@@ -277,7 +277,7 @@ static channel_t *AL_FindLoopingSound(int entnum, sfx_t *sfx)
 static void AL_AddLoopSounds(void)
 {
 	int         i;
-	int         sounds[MAX_EDICTS];
+	q_soundhandle sounds[MAX_EDICTS];
 	channel_t   *ch, *ch2;
 	sfx_t       *sfx;
 	int         num;
@@ -293,7 +293,7 @@ static void AL_AddLoopSounds(void)
 		if (!sounds[i])
 			continue;
 
-		sfx = S_SfxForHandle(cl.precache[sounds[i]].sound, CL_GetClientGame());
+		sfx = S_SfxForHandle(cl.precache[(uint16_t)sounds[i]].sound, CL_GetClientGame());
 
 		if (!sfx || !sfx->bufnum)
 			continue;       // bad sound effect

@@ -45,7 +45,7 @@
     <OutDir>..\bin\genx\</OutDir>
     <TargetName>gamex86</TargetName>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>.\;..\inc\;$(IncludePath)</IncludePath>
+    <IncludePath>.;..\inc;$(IncludePath)</IncludePath>
     <IntDir>$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
@@ -53,7 +53,7 @@
     <OutDir>..\bin\genx\</OutDir>
     <TargetName>gamex86</TargetName>
     <TargetExt>.dll</TargetExt>
-    <IncludePath>..\inc\;$(IncludePath)</IncludePath>
+    <IncludePath>.;..\inc;$(IncludePath)</IncludePath>
     <IntDir>$(ProjectName)_$(Configuration)_$(PlatformShortName)\</IntDir>
     <UseMultiToolTask>true</UseMultiToolTask>
   </PropertyGroup>
@@ -144,7 +144,6 @@
     <ClCompile Include="..\src\baseq2\g_utils.c" />
     <ClCompile Include="..\src\baseq2\g_wave.c" />
     <ClCompile Include="..\src\baseq2\g_weapon.c" />
-    <ClCompile Include="..\src\baseq2\m_actor.c" />
     <ClCompile Include="..\src\baseq2\m_berserk.c" />
     <ClCompile Include="..\src\baseq2\m_boss2.c" />
     <ClCompile Include="..\src\baseq2\m_boss3.c" />
@@ -160,6 +159,7 @@
     <ClCompile Include="..\src\baseq2\m_hover.c" />
     <ClCompile Include="..\src\baseq2\m_infantry.c" />
     <ClCompile Include="..\src\baseq2\m_insane.c" />
+    <ClCompile Include="..\src\baseq2\m_local.c" />
     <ClCompile Include="..\src\baseq2\m_medic.c" />
     <ClCompile Include="..\src\baseq2\m_move.c" />
     <ClCompile Include="..\src\baseq2\m_mutant.c" />
@@ -189,7 +189,6 @@
     <ClInclude Include="..\src\baseq2\ai\ai_weapons.h" />
     <ClInclude Include="..\src\baseq2\ai\AStar.h" />
     <ClInclude Include="..\src\baseq2\g_local.h" />
-    <ClInclude Include="..\src\baseq2\m_actor.h" />
     <ClInclude Include="..\src\baseq2\m_berserk.h" />
     <ClInclude Include="..\src\baseq2\m_boss2.h" />
     <ClInclude Include="..\src\baseq2\m_boss31.h" />
@@ -204,6 +203,7 @@
     <ClInclude Include="..\src\baseq2\m_hover.h" />
     <ClInclude Include="..\src\baseq2\m_infantry.h" />
     <ClInclude Include="..\src\baseq2\m_insane.h" />
+    <ClInclude Include="..\src\baseq2\m_local.h" />
     <ClInclude Include="..\src\baseq2\m_medic.h" />
     <ClInclude Include="..\src\baseq2\m_mutant.h" />
     <ClInclude Include="..\src\baseq2\m_parasite.h" />

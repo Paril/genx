@@ -17,6 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // g_local.h -- local definitions for game module
 
+#pragma once
+
 #include "shared/shared.h"
 #include "shared/list.h"
 
@@ -121,7 +123,6 @@ typedef enum
 	ET_TARGET_CROSSLEVEL_TARGET,
 	ET_TARGET_LASER,
 	ET_TARGET_HELP,
-	ET_TARGET_ACTOR,
 	ET_TARGET_LIGHTRAMP,
 	ET_TARGET_EARTHQUAKE,
 	ET_TARGET_CHARACTER,
@@ -141,7 +142,6 @@ typedef enum
 	ET_MISC_EXPLOBOX,
 	ET_MISC_BANNER,
 	ET_MISC_SATELLITE_DISH,
-	ET_MISC_ACTOR,
 	ET_MISC_GIB_ARM,
 	ET_MISC_GIB_LEG,
 	ET_MISC_GIB_HEAD,
@@ -596,7 +596,7 @@ typedef struct
 	edict_t     *sound2_entity;
 	gtime_t     sound2_entity_time;
 
-	int         pic_health;
+	q_imagehandle pic_health;
 
 	int         total_secrets;
 	int         found_secrets;
@@ -661,9 +661,9 @@ typedef struct
 	vec3_t      end_origin;
 	vec3_t      end_angles;
 
-	int         sound_start;
-	int         sound_middle;
-	int         sound_end;
+	q_soundhandle sound_start;
+	q_soundhandle sound_middle;
+	q_soundhandle sound_end;
 
 	float       accel;
 	float       speed;
@@ -683,29 +683,33 @@ typedef struct
 	void	(*endfunc)(edict_t *);
 } moveinfo_t;
 
+typedef void (*mai_func_t) (edict_t *self, float dist);
 
 typedef struct
 {
-	void	(*aifunc)(edict_t *self, float dist);
-	float   dist;
-	void	(*thinkfunc)(edict_t *self);
-	int		real_frame;
+	mai_func_t	aifunc;
+	float		dist;
+	void		(*thinkfunc)(edict_t *self);
+	int			real_frame;
 } mframe_t;
 
 typedef struct
 {
 	int         firstframe;
 	int         lastframe;
-	mframe_t    *frame;
-	void	(*endfunc)(edict_t *self);
+	mframe_t	*frame;
+	void		(*endfunc)(edict_t *self);
+
+	char		name[32];
+	list_t		listEntry, hashEntry;
 } mmove_t;
 
 typedef struct
 {
-	mmove_t     *currentmove;
-	int         aiflags;
-	int         nextframe;
-	float       scale;
+	const mmove_t	*currentmove;
+	int				aiflags;
+	int				nextframe;
+	float			scale;
 
 	void	(*stand)(edict_t *self);
 	void	(*idle)(edict_t *self);
@@ -743,8 +747,8 @@ typedef struct
 	list_t		wave_entry;
 } monsterinfo_t;
 
-extern  int sm_meat_index;
-extern  int snd_fry;
+extern  q_modelhandle sm_meat_index;
+extern  q_soundhandle snd_fry;
 
 // Generations
 typedef enum
@@ -1132,8 +1136,8 @@ void PlayerNoise(edict_t *who, vec3_t where, int type);
 void AttemptBetterWeaponSwap(edict_t *ent);
 
 // p_q1_weapons.c
-void ApplyMultiDamage(edict_t *self, int dflags, meansOfDeath_t multi_mod);
-void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all);
+void ApplyMultiDamage(edict_t *self, vec3_t aimdir, int dflags, meansOfDeath_t multi_mod);
+void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all, vec3_t point, vec3_t normal);
 void Weapon_Q1_Run(edict_t *ent, gunindex_e gun);
 
 // p_doom_weapons.c
@@ -1288,10 +1292,10 @@ struct gclient_s
 	gtime_t     breather_time;
 	gtime_t     enviro_time;
 
-	bool	    grenade_blew_up;
-	gtime_t     grenade_time;
-	int         silencer_shots;
-	int         weapon_sound;
+	bool	      grenade_blew_up;
+	gtime_t       grenade_time;
+	int           silencer_shots;
+	q_soundhandle weapon_sound;
 
 	gtime_t     pickup_msg_time;
 	gitem_t		*pickup_item;
@@ -1325,7 +1329,7 @@ struct edict_s
 	// of gclient_s to be a player_state_t
 	// but the rest of it is opaque
 
-	qboolean    inuse;
+	bool    inuse;
 	int         linkcount;
 
 	// FIXME: move these fields to a server private sv_entity_t
@@ -1458,8 +1462,8 @@ struct edict_s
 		};
 	};
 
-	int         noise_index;
-	int         noise_index2;
+	q_soundhandle noise_index;
+	q_soundhandle noise_index2;
 	float       volume;
 	float       attenuation;
 

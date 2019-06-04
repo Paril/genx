@@ -125,10 +125,6 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 	return true;
 }
 
-
-void ApplyMultiDamage(edict_t *self, int dflags, meansOfDeath_t multi_mod);
-void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all);
-
 /*
 =================
 fire_lead
@@ -225,7 +221,7 @@ static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 		{
 			if (tr.ent->takedamage)
 			{
-				AddMultiDamage(tr.ent, damage, kick, mod, DAMAGE_BULLET, true);
+				AddMultiDamage(tr.ent, damage, kick, mod, DAMAGE_BULLET, true, tr.endpos, tr.plane.normal);
 				T_Damage(tr.ent, self, self, aimdir, tr.endpos, tr.plane.normal, damage, kick, DAMAGE_PARTICLES_ONLY | DAMAGE_NO_KNOCKBACK | DAMAGE_BULLET, blankMeansOfDeath);
 			}
 			else
@@ -280,7 +276,7 @@ pistols, rifles, etc....
 void fire_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, meansOfDeath_t mod)
 {
 	fire_lead(self, start, aimdir, damage, kick, TE_GUNSHOT, hspread, vspread, mod);
-	ApplyMultiDamage(self, DAMAGE_BULLET, mod);
+	ApplyMultiDamage(self, aimdir, DAMAGE_BULLET, mod);
 }
 
 
@@ -298,7 +294,7 @@ void fire_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int ki
 	for (i = 0; i < count; i++)
 		fire_lead(self, start, aimdir, damage, kick, TE_SHOTGUN, hspread, vspread, mod);
 
-	ApplyMultiDamage(self, DAMAGE_BULLET, mod);
+	ApplyMultiDamage(self, aimdir, DAMAGE_BULLET, mod);
 }
 
 

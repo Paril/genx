@@ -31,14 +31,14 @@ void tank_refire_rocket(edict_t *self);
 void tank_doattack_rocket(edict_t *self);
 void tank_reattack_blaster(edict_t *self);
 
-static int  sound_thud;
-static int  sound_pain;
-static int  sound_idle;
-static int  sound_die;
-static int  sound_step;
-static int  sound_sight;
-static int  sound_windup;
-static int  sound_strike;
+static q_soundhandle sound_thud;
+static q_soundhandle sound_pain;
+static q_soundhandle sound_idle;
+static q_soundhandle sound_die;
+static q_soundhandle sound_step;
+static q_soundhandle sound_sight;
+static q_soundhandle sound_windup;
+static q_soundhandle sound_strike;
 
 //
 // misc

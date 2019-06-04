@@ -365,7 +365,7 @@ static inline int signum(int x)
 
 void M_MoveFrame(edict_t *self)
 {
-	mmove_t *move;
+	const mmove_t *move;
 	int     index;
 	int		*frame_ptr;
 

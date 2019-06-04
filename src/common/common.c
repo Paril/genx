@@ -87,7 +87,6 @@ cvar_t  *logfile_prefix;
 #endif
 cvar_t  *sv_running;
 cvar_t  *sv_paused;
-cvar_t  *com_timedemo;
 cvar_t  *com_date_format;
 cvar_t  *com_time_format;
 #ifdef _DEBUG
@@ -863,8 +862,7 @@ Com_AddLateCommands
 Adds command line parameters as script statements
 Commands lead with a + and continue until another +
 
-Returns true if any late commands were added, which
-will keep the demoloop from immediately starting
+Returns true if any late commands were added
 
 Assumes +set commands are already filtered out
 =================
@@ -965,7 +963,6 @@ void Qcommon_Init(int argc, char **argv)
 #endif
 	sv_running = Cvar_Get("sv_running", "0", CVAR_ROM);
 	sv_paused = Cvar_Get("sv_paused", "0", CVAR_ROM);
-	com_timedemo = Cvar_Get("timedemo", "0", CVAR_CHEAT);
 	com_date_format = Cvar_Get("com_date_format", "%Y-%m-%d", 0);
 #ifdef _WIN32
 	com_time_format = Cvar_Get("com_time_format", "%H.%M", 0);
@@ -1103,7 +1100,7 @@ void Qcommon_Frame(void)
 #if USE_CLIENT
 
 	// spin until msec is non-zero if running a client
-	if (!dedicated->integer && !com_timedemo->integer)
+	if (!dedicated->integer)
 	{
 		while (msec < 1)
 		{

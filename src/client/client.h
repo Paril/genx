@@ -397,29 +397,6 @@ typedef struct client_static_s
 
 	netadr_t    recent_addr[RECENT_ADDR];
 	int         recent_head;
-
-	// demo recording info must be here, so it isn't cleared on level change
-	struct
-	{
-		qhandle_t   playback;
-		qhandle_t   recording;
-		unsigned    time_start;
-		unsigned    time_frames;
-		int         last_server_frame;  // number of server frame the last svc_frame was written
-		int         frames_written;     // number of frames written to demo file
-		int         frames_dropped;     // number of svc_frames that didn't fit
-		int         others_dropped;     // number of misc svc_* messages that didn't fit
-		int         frames_read;        // number of frames read from demo file
-		int         last_snapshot;      // number of demo frame the last snapshot was saved
-		int64_t     file_size;
-		int64_t     file_offset;
-		int         file_percent;
-		sizebuf_t   buffer;
-		list_t      snapshots;
-		bool        paused;
-		bool        seeking;
-		bool        eof;
-	} demo;
 } client_static_t;
 
 extern client_static_t    cls;
@@ -514,7 +491,6 @@ extern cvar_t    *info_uf;
 void CL_Init(void);
 void CL_Quit_f(void);
 void CL_Disconnect(error_type_t type);
-void CL_UpdateRecordingSetting(void);
 void CL_Begin(void);
 void CL_CheckForResend(void);
 void CL_ClearState(void);
@@ -610,7 +586,6 @@ extern mz_params_t      mz;
 extern snd_params_t     snd;
 
 void CL_ParseServerMessage(void);
-void CL_SeekDemoMessage(void);
 
 
 //
@@ -791,20 +766,6 @@ void CL_IonripperTrail(vec3_t start, vec3_t end);
 void CL_TrapParticles(centity_t *ent, vec3_t origin);
 void CL_ParticleEffect3(vec3_t org, vec3_t dir, int color, int count);
 void CL_ParticleSteamEffect2(cl_sustain_t *self);
-
-
-//
-// demo.c
-//
-void CL_InitDemos(void);
-void CL_CleanupDemos(void);
-void CL_DemoFrame(int msec);
-bool CL_WriteDemoMessage(sizebuf_t *buf);
-void CL_EmitDemoFrame(void);
-void CL_EmitDemoSnapshot(void);
-void CL_FirstDemoFrame(void);
-void CL_Stop_f(void);
-demoInfo_t *CL_GetDemoInfo(const char *path, demoInfo_t *info);
 
 
 //

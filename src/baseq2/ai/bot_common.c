@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // BOT_Commands
 // Special command processor
 //==========================================
-qboolean BOT_Commands(edict_t *ent)
+bool BOT_Commands(edict_t *ent)
 {
 	char	*cmd;
 	cmd = gi.argv(0);
@@ -50,7 +50,7 @@ qboolean BOT_Commands(edict_t *ent)
 // BOT_ServerCommand
 // Special server command processor
 //==========================================
-qboolean BOT_ServerCommand(void)
+bool BOT_ServerCommand(void)
 {
 	char	*cmd;
 	cmd = gi.argv(1);

@@ -789,7 +789,7 @@ void SV_Physics_Toss(edict_t *ent)
 		ent->watercheck = true;
 	else
 	{
-		int water_sound = gi.soundindex("misc/h2ohit1.wav");
+		q_soundhandle water_sound = gi.soundindex("misc/h2ohit1.wav");
 
 		if (ent->s.game == GAME_Q1)
 			water_sound = gi.soundindex("q1/misc/h2ohit1.wav");

@@ -50,16 +50,16 @@ enum
 
 #define SPAWN_CRUCIFIED	1
 
-static int sound_z_idle;
-static int sound_z_idle1;
-static int sound_z_shot1;
-static int sound_z_gib;
-static int sound_z_pain;
-static int sound_z_pain1;
-static int sound_z_fall;
-static int sound_z_miss;
-static int sound_z_hit;
-static int sound_idle_w2;
+static q_soundhandle sound_z_idle;
+static q_soundhandle sound_z_idle1;
+static q_soundhandle sound_z_shot1;
+static q_soundhandle sound_z_gib;
+static q_soundhandle sound_z_pain;
+static q_soundhandle sound_z_pain1;
+static q_soundhandle sound_z_fall;
+static q_soundhandle sound_z_miss;
+static q_soundhandle sound_z_hit;
+static q_soundhandle sound_idle_w2;
 
 //=============================================================================
 

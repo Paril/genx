@@ -601,7 +601,8 @@ void target_laser_start(edict_t *self)
 	self->movetype = MOVETYPE_NONE;
 	self->solid = SOLID_NOT;
 	self->s.renderfx |= RF_BEAM | RF_TRANSLUCENT;
-	self->s.modelindex = 1;         // must be non-zero
+	// FIXME
+	self->s.modelindex = (q_modelhandle)1;         // must be non-zero
 
 	// set the beam diameter
 	if (self->spawnflags & 64)
