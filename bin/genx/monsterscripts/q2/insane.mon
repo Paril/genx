@@ -1,0 +1,230 @@
+stand_normal $stand60 $stand65 insane_stand
+{
+	stand +repeat 5
+	^ +event insane_checkdown
+}
+
+stand_insane $stand65 $stand94 insane_stand
+{
+	stand +event insane_shake
+	^ +event none +repeat 28
+	^ +event insane_checkdown
+}
+
+uptodown $stand1 $stand40 insane_onground
+{
+	move +repeat 7
+	^ +event insane_moan
+	@0 +repeat 12
+	^ +speed 2.7
+	^ +speed 4.1
+	^ +speed 6
+	^ +speed 7.6
+	^ +speed 3.6
+	@0 +repeat 2
+	^ +event insane_fist
+	@0 +repeat 5
+	@27
+	@0 +repeat 6
+}
+
+downtoup $stand41 $stand59 insane_stand
+{
+	move +speed -0.7
+	^ +speed -1.2
+	^ +speed -1.5
+	^ +speed -4.5
+	^ +speed -3.5
+	^ +speed -0.2
+	^ +speed 0
+	^ +speed -1.3
+	^ +speed -3
+	^ +speed -2
+	@6 +repeat 3
+	^ +speed -3.3
+	^ +speed -1.6
+	^ +speed -0.3
+	@6 +repeat 3
+}
+
+jumpdown $stand96 $stand100 insane_onground
+{
+	move +speed 0.2
+	^ +speed 11.5
+	^ +speed 5.1
+	^ +speed 7.1
+	^ +speed 0
+}
+
+down $stand100 $stand160 insane_onground
+{
+	move +repeat 11
+	^ +speed -1.7
+	^ +speed -1.6
+	@0 +repeat 3
+	^ +event insane_fist
+	@0 +repeat 16
+	^ +event insane_moan
+	@0 +repeat 17
+	^ +speed 0.5
+	@0
+	^ +speed -0.2 +event insane_scream
+	@0
+	^ +speed 0.2
+	^ +speed 0.4
+	^ +speed 0.6
+	^ +speed 0.8
+	^ +speed 0.7
+	@0 +event insane_checkup
+}
+
+walk_normal $walk27 $walk39 insane_walk
+{
+	walk +event insane_scream
+	^ +speed 2.5 +event none
+	^ +speed 3.5
+	^ +speed 1.7
+	^ +speed 2.3
+	^ +speed 2.4
+	^ +speed 2.2
+	^ +speed 4.2
+	^ +speed 5.6
+	^ +speed 3.3
+	@5
+	^ +speed 0.9
+	^ +speed 0
+}
+
+run_normal $walk27 $walk39 insane_run
+{
+	walk +event insane_scream
+	^ +speed 2.5 +event none
+	^ +speed 3.5
+	^ +speed 1.7
+	^ +speed 2.3
+	^ +speed 2.4
+	^ +speed 2.2
+	^ +speed 4.2
+	^ +speed 5.6
+	^ +speed 3.3
+	@5
+	^ +speed 0.9
+	^ +speed 0
+}
+
+walk_insane $walk1 $walk26 insane_walk
+{
+	walk +event insane_scream
+	^ +speed 3.4 +event none
+	^ +speed 3.6
+	^ +speed 2.9
+	^ +speed 2.2
+	^ +speed 2.6
+	^ +speed 0
+	^ +speed 0.7
+	^ +speed 4.8
+	^ +speed 5.3
+	^ +speed 1.1
+	^ +speed 2
+	^ +speed 0.5
+	@6 +repeat 2
+	^ +speed 4.9
+	^ +speed 6.7
+	^ +speed 3.8
+	@11
+	^ +speed 0.2
+	@6
+	@1
+	^ +speed 6.4
+	^ +speed 5
+	^ +speed 1.8
+	@6
+}
+
+run_insane $walk1 $walk26 insane_run
+{
+	walk +event insane_scream
+	^ +speed 3.4 +event none
+	^ +speed 3.6
+	^ +speed 2.9
+	^ +speed 2.2
+	^ +speed 2.6
+	^ +speed 0
+	^ +speed 0.7
+	^ +speed 4.8
+	^ +speed 5.3
+	^ +speed 1.1
+	^ +speed 2
+	^ +speed 0.5
+	@6 +repeat 2
+	^ +speed 4.9
+	^ +speed 6.7
+	^ +speed 3.8
+	@11
+	^ +speed 0.2
+	@6
+	@1
+	^ +speed 6.4
+	^ +speed 5
+	^ +speed 1.8
+	@6
+}
+
+stand_pain $st_pain2 $st_pain12 insane_run
+{
+	move +repeat 11
+}
+
+stand_death $st_death2 $st_death18 insane_dead
+{
+	move +repeat 17
+}
+
+crawl $crawl1 $crawl9
+{
+	walk +event insane_scream
+	^ +speed 1.5 +event none
+	^ +speed 2.1
+	^ +speed 3.6
+	^ +speed 2
+	^ +speed 0.9
+	^ +speed 3
+	^ +speed 3.4
+	^ +speed 2.4
+}
+
+runcrawl $crawl1 $crawl9
+{
+	walk +event insane_scream
+	^ +speed 1.5 +event none
+	^ +speed 2.1
+	^ +speed 3.6
+	^ +speed 2
+	^ +speed 0.9
+	^ +speed 3
+	^ +speed 3.4
+	^ +speed 2.4
+}
+
+crawl_pain $cr_pain2 $cr_pain10 insane_run
+{
+	move +repeat 9
+}
+
+crawl_death $cr_death10 $cr_death16 insane_dead
+{
+	move +repeat 7
+}
+
+cross $cross1 $cross15 insane_cross
+{
+	move +event insane_moan
+	^ +event none +repeat 14
+}
+
+struggle_cross $cross16 $cross30 insane_cross
+{
+	move +event insane_scream
+	^ +event none +repeat 14
+}
+

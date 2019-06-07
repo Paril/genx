@@ -1,0 +1,90 @@
+stand1 $stand1 $stand8
+{
+	stand +repeat 8
+}
+
+walk1 $prowl_1 $prowl_24
+{
+	walk +speed 1 +event army_run_sound
+	^ +event none +repeat 3
+	^ +speed 2
+	^ +speed 3
+	^ +speed 4 +repeat 2
+	@4 +repeat 3
+	@1
+	^ +speed 0
+	@1 +repeat 3
+	@5 +repeat 4
+	@4
+	@1 +repeat 3
+}
+
+run1 $run1 $run8
+{
+	run +speed 11 +event army_run_sound
+	^ +speed 15 +event none
+	^ +speed 10 +repeat 2
+	^ +speed 8
+	@1
+	@2
+	@4
+}
+
+atk1 $shoot1 $shoot9 army_run
+{
+	charge +repeat 4
+	^ +event army_fire
+	@0
+	^ +event army_checkrefire
+	@0 +repeat 2
+}
+
+bdie $death1 $death10 army_dead
+{
+	move +repeat 2
+	^ +event army_drop
+	@0 +repeat 7
+}
+
+cdie $deathc1 $deathc11 army_dead
+{
+	move
+	^ +speed -5
+	^ +speed -4 +event army_drop
+	@0 +speed -13
+	^ +speed -3
+	^ +speed -4
+	@0 +repeat 5
+}
+
+paina $pain1 $pain6 army_run
+{
+	move +repeat 5
+	^ +speed -1
+}
+
+painb $painb1 $painb14 army_run
+{
+	move
+	^ +speed 13
+	^ +speed 9
+	@0 +repeat 8
+	^ +speed 2
+	@0 +repeat 2
+}
+
+painc $painc1 $painc13 army_run
+{
+	move
+	^ +speed -1
+	@0 +repeat 2
+	^ +speed 1 +repeat 2
+	@0
+	@1
+	^ +speed 4
+	^ +speed 3
+	^ +speed 6
+	^ +speed 8
+	@0
+}
+

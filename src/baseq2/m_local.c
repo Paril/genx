@@ -1,4 +1,5 @@
 #include "m_local.h"
+#include "format/mdl.h"
 #include "format/md2.h"
 
 struct
@@ -315,11 +316,102 @@ static void load_md2_frames(const char *model_filename)
 		script_frame_temp.md2_num_frames = MD2_MAX_FRAMES;
 }
 
+#define READ_BYTES(num) \
+		buffer; buffer += num
+
+#define READ_TYPE(t) \
+		*((t *)buffer); buffer += sizeof(t);
+
+#define SKIP_BYTES(num) \
+		buffer += num
+
+static void load_mdl_frames(const char *model_filename)
+{
+	if (model_filename)
+	{
+		byte *buffer = NULL;
+
+		gi.FS_LoadFile(model_filename, &buffer);
+
+		if (!buffer)
+			gi.error("Can't find model %s", model_filename);
+
+		dmdlheader_t *header = (dmdlheader_t *)READ_BYTES(sizeof(dmdlheader_t));
+
+		script_frame_temp.md2_num_frames = LittleLong(header->num_frames);
+
+		int skinsize = header->skinwidth * header->skinheight;
+		int64_t filepos = 0;
+
+		// skip skins
+		for (int i = 0; i < LittleLong(header->num_skins); i++)
+		{
+			int group = READ_TYPE(int);
+
+			if (!group)
+				SKIP_BYTES(skinsize);
+			else
+			{
+				int nb = READ_TYPE(int);
+				SKIP_BYTES(skinsize * nb);
+			}
+		}
+
+		// skip texcoords
+		SKIP_BYTES(sizeof(dmdltexcoord_t) * header->num_verts);
+
+		// skip tris
+		SKIP_BYTES(sizeof(dmdltriangle_t) * header->num_tris);
+
+		script_frame_temp.md2_num_frames = 0;
+
+		for (int i = 0; i < LittleLong(header->num_frames); i++)
+		{
+			int type = READ_TYPE(int);
+
+			if (type == 0)
+			{
+				SKIP_BYTES(sizeof(dmdlvertex_t) * 2);
+				memcpy(script_frame_temp.md2_frame_names[script_frame_temp.md2_num_frames], buffer, sizeof(*script_frame_temp.md2_frame_names));
+				script_frame_temp.md2_num_frames++;
+				SKIP_BYTES(16 + sizeof(dmdlvertex_t) * header->num_verts);
+			}
+			else
+			{
+				int num = READ_TYPE(int);
+				SKIP_BYTES(sizeof(dmdlvertex_t) * 2) + (sizeof(float) * num);
+
+				for (int x = 0; x < num; x++)
+				{
+					SKIP_BYTES(sizeof(dmdlvertex_t) * 2);
+					memcpy(script_frame_temp.md2_frame_names[script_frame_temp.md2_num_frames], buffer, sizeof(*script_frame_temp.md2_frame_names));
+					script_frame_temp.md2_num_frames++;
+					SKIP_BYTES(16 + sizeof(dmdlvertex_t) * header->num_verts);
+				}
+			}
+		}
+
+		gi.FS_FreeFile((byte*)header);
+	}
+	else
+		script_frame_temp.md2_num_frames = MD2_MAX_FRAMES;
+}
+
+static void load_model_frames(const char *model_filename)
+{
+	const char *ext = COM_FileExtension(model_filename);
+
+	if (Q_stricmp(ext, ".md2") == 0)
+		load_md2_frames(model_filename);
+	else if (Q_stricmp(ext, ".mdl") == 0)
+		load_mdl_frames(model_filename);
+}
+
 void M_ParseMonsterScript(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
 {
 	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
 
-	load_md2_frames(model_filename);
+	load_model_frames(model_filename);
 
 	List_Init(&script->moves);
 
@@ -490,7 +582,7 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 	qhandle_t f;
 
 	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
-	load_md2_frames(model_filename);
+	load_model_frames(model_filename);
 
 	gi.FS_FOpenFile(script_filename, &f, FS_MODE_WRITE);
 

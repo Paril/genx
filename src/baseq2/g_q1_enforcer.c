@@ -7,6 +7,9 @@ SOLDIER / PLAYER
 */
 
 #include "g_local.h"
+#include "m_local.h"
+
+static mscript_t script;
 
 enum
 {
@@ -50,7 +53,7 @@ static q_soundhandle sound_sight4;
 
 void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed);
 
-void enforcer_fire(edict_t *self)
+static void enforcer_fire(edict_t *self)
 {
 	gi.positioned_sound(self->s.origin, self, CHAN_VOICE, sound_enfire, 1, ATTN_NORM, 0);
 	//self.effects = self.effects | EF_MUZZLEFLASH;
@@ -69,81 +72,35 @@ void enforcer_fire(edict_t *self)
 
 //============================================================================
 
-mframe_t enf_frames_stand1[] =
+static void enf_stand(edict_t *self)
 {
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL }
-};
-mmove_t enf_stand1 = { stand1, stand7, enf_frames_stand1, NULL };
-
-void enf_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &enf_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 }
 
-void enf_idle_sound(edict_t *self)
+static void enf_idle_sound(edict_t *self)
 {
 	if (random() < 0.2f)
 		gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_IDLE, 0);
 }
 
-mframe_t enf_frames_walk1[] =
+static void enf_walk(edict_t *self)
 {
-	{ ai_walk, 2,   enf_idle_sound },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 1,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 1,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 1,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 2,   NULL }
-};
-mmove_t enf_walk1 = { walk1, walk16, enf_frames_walk1, NULL };
-
-void enf_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &enf_walk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk1");
 }
 
-mframe_t enf_frames_run1[] =
+static void enf_run(edict_t *self)
 {
-	{ ai_run, 18,   enf_idle_sound },
-	{ ai_run, 14,   NULL },
-	{ ai_run, 7,   NULL },
-	{ ai_run, 12,   NULL },
-	{ ai_run, 14,   NULL },
-	{ ai_run, 14,   NULL },
-	{ ai_run, 7,   NULL },
-	{ ai_run, 11,   NULL }
-};
-mmove_t enf_run1 = { run1, run8, enf_frames_run1, NULL };
-
-void enf_run(edict_t *self)
-{
-	self->monsterinfo.currentmove = &enf_run1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run1");
 }
 
 void SUB_CheckRefire(edict_t *self, int frame);
 
-void enf_refire(edict_t *self)
+static void enf_refire(edict_t *self)
 {
 	SUB_CheckRefire(self, attack1);
 }
 
-void enf_pew(edict_t *self)
+static void enf_pew(edict_t *self)
 {
 	if (self->dmg == 0)
 	{
@@ -155,83 +112,12 @@ void enf_pew(edict_t *self)
 	self->dmg = 0;
 }
 
-mframe_t enf_frames_atk1[] =
+static void enf_atk(edict_t *self)
 {
-	{ ai_charge, 0,   enf_idle_sound },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   enforcer_fire },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   enf_pew },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   enf_refire }
-};
-mmove_t enf_atk1 = { attack1, attack10, enf_frames_atk1, enf_run };
-
-void enf_atk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &enf_atk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "atk1");
 }
 
-mframe_t enf_frames_paina1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t enf_paina1 = { paina1, paina4, enf_frames_paina1, enf_run };
-
-mframe_t enf_frames_painb1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t enf_painb1 = { painb1, painb5, enf_frames_painb1, enf_run };
-
-mframe_t enf_frames_painc1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t enf_painc1 = { painc1, painc8, enf_frames_painc1, enf_run };
-
-mframe_t enf_frames_paind1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 2,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t enf_paind1 = { paind1, paind19, enf_frames_paind1, enf_run };
-
-void enf_pain(edict_t *self, edict_t *attacker, float kick, int damage)
+static void enf_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 {
 	float r = random();
 
@@ -246,22 +132,22 @@ void enf_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 	if (r < 0.2f)
 	{
 		self->pain_debounce_time = level.time + 1000;
-		self->monsterinfo.currentmove = &enf_paina1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "paina1");
 	}
 	else if (r < 0.4f)
 	{
 		self->pain_debounce_time = level.time + 1000;
-		self->monsterinfo.currentmove = &enf_painb1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "painb1");
 	}
 	else if (r < 0.7f)
 	{
 		self->pain_debounce_time = level.time + 1000;
-		self->monsterinfo.currentmove = &enf_painc1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "painc1");
 	}
 	else
 	{
 		self->pain_debounce_time = level.time + 2000;
-		self->monsterinfo.currentmove = &enf_paind1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "paind1");
 	}
 }
 
@@ -269,7 +155,7 @@ void enf_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 
 edict_t *Drop_Backpack(edict_t *self);
 
-void enf_drop(edict_t *self)
+static void enf_drop(edict_t *self)
 {
 	self->solid = SOLID_NOT;
 	//edict_t *backpack = Drop_Backpack(self);
@@ -277,49 +163,14 @@ void enf_drop(edict_t *self)
 	gi.linkentity(self);
 }
 
-void enf_dead(edict_t *self)
+static void enf_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
 	self->svflags |= SVF_DEADMONSTER;
 	self->nextthink = 0;
 }
 
-mframe_t enf_frames_die1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   enf_drop },
-	{ ai_move, 14,   NULL },
-	{ ai_move, 2,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 3,   NULL },
-	{ ai_move, 5,   NULL },
-	{ ai_move, 5,   NULL },
-	{ ai_move, 5,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t enf_die1 = { death1, death14, enf_frames_die1, enf_dead };
-
-mframe_t enf_frames_fdie1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   enf_drop },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t enf_fdie1 = { fdeath1, fdeath11, enf_frames_fdie1, enf_dead };
-
-void enf_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void enf_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	// check for gib
 	if (self->health < -35)
@@ -341,12 +192,12 @@ void enf_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, v
 	gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
 
 	if (random() > 0.5f)
-		self->monsterinfo.currentmove = &enf_die1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "die1");
 	else
-		self->monsterinfo.currentmove = &enf_fdie1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "fdie1");
 }
 
-void enf_sight(edict_t *self, edict_t *other)
+static void enf_sight(edict_t *self, edict_t *other)
 {
 	int rsnd = Q_rint(random() * 3);
 
@@ -360,8 +211,19 @@ void enf_sight(edict_t *self, edict_t *other)
 		gi.sound(self, CHAN_BODY, sound_sight4, 1, ATTN_NORM, 0);
 }
 
-/*QUAKED monster_enforcer (1 0 0) (-16 -16 -24) (16 16 40) Ambush
+static const mevent_t events[] =
+{
+	EVENT_FUNC(enf_idle_sound),
+	EVENT_FUNC(enf_run),
+	EVENT_FUNC(enforcer_fire),
+	EVENT_FUNC(enf_pew),
+	EVENT_FUNC(enf_refire),
+	EVENT_FUNC(enf_dead),
+	EVENT_FUNC(enf_drop),
+	NULL
+};
 
+/*QUAKED monster_enforcer (1 0 0) (-16 -16 -24) (16 16 40) Ambush
 */
 void q1_monster_enforcer(edict_t *self)
 {
@@ -369,6 +231,14 @@ void q1_monster_enforcer(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/q1/enforcer.mdl";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q1/enforcer.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	gi.modelindex("models/q1/enforcer.mdl");
@@ -387,7 +257,7 @@ void q1_monster_enforcer(edict_t *self)
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	gi.setmodel(self, "models/q1/enforcer.mdl");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 40);
 	self->health = 80;
@@ -399,7 +269,7 @@ void q1_monster_enforcer(edict_t *self)
 	self->pain = enf_pain;
 	self->die = enf_die;
 	gi.linkentity(self);
-	self->monsterinfo.currentmove = &enf_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }

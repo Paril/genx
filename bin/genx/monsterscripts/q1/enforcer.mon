@@ -1,0 +1,90 @@
+stand1 $stand1 $stand7
+{
+	stand +repeat 7
+}
+
+walk1 $walk1 $walk16
+{
+	walk +speed 2 +event enf_idle_sound
+	^ +speed 4 +event none +repeat 2
+	^ +speed 3
+	^ +speed 1
+	^ +speed 2 +repeat 2
+	@4
+	@5
+	@1 +repeat 2
+	@4
+	@5
+	@3
+	@1
+	@5
+}
+
+run1 $run1 $run8
+{
+	run +speed 18 +event enf_idle_sound
+	^ +speed 14 +event none
+	^ +speed 7
+	^ +speed 12
+	@1 +repeat 2
+	@2
+	^ +speed 11
+}
+
+atk1 $attack1 $attack10 enf_run
+{
+	charge +event enf_idle_sound
+	^ +event none +repeat 4
+	^ +event enforcer_fire
+	@1
+	^ +event enf_pew
+	@1
+	^ +event enf_refire
+}
+
+paina1 $paina1 $paina4 enf_run
+{
+	move +repeat 4
+}
+
+painb1 $painb1 $painb5 enf_run
+{
+	move +repeat 5
+}
+
+painc1 $painc1 $painc8 enf_run
+{
+	move +repeat 8
+}
+
+paind1 $paind1 $paind19 enf_run
+{
+	move +repeat 3
+	^ +speed 2
+	^ +speed 1
+	@0 +repeat 5
+	@4 +repeat 3
+	@0 +repeat 2
+	^ +speed -1 +repeat 2
+	@0 +repeat 2
+}
+
+die1 $death1 $death14 enf_dead
+{
+	move +repeat 2
+	^ +event enf_drop
+	@0 +speed 14
+	^ +speed 2
+	@0 +repeat 3
+	^ +speed 3
+	^ +speed 5 +repeat 3
+	@0 +repeat 2
+}
+
+fdie1 $fdeath1 $fdeath11 enf_dead
+{
+	move +repeat 2
+	^ +event enf_drop
+	@0 +repeat 8
+}
+

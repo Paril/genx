@@ -110,8 +110,8 @@ edict_t *findradius(edict_t *from, vec3_t org, float rad)
 		if (!from->inuse)
 			continue;
 
-		if (from->solid == SOLID_NOT)
-			continue;
+		//if (from->solid == SOLID_NOT)
+		//	continue;
 
 		for (j = 0 ; j < 3 ; j++)
 			eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j]) * 0.5f);

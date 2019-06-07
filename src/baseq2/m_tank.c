@@ -377,7 +377,7 @@ void SP_monster_tank(edict_t *self)
 		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
-	self->s.modelindex = gi.modelindex("models/monsters/tank/tris.md2");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -32, -32, -16);
 	VectorSet(self->maxs, 32, 32, 72);
 	self->movetype = MOVETYPE_STEP;
