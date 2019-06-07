@@ -1,0 +1,56 @@
+stand1 $stand101 $stand152
+{
+	stand +repeat 52
+}
+
+stand2 $stand201 $stand252
+{
+	stand +repeat 52
+}
+
+attack1 $attak101 $attak114 floater_run
+{
+	charge +repeat 3
+	^ +event floater_fire_blaster +repeat 7
+	@0 +repeat 4
+}
+
+attack2 $attak201 $attak225 floater_run
+{
+	charge +repeat 11
+	^ +event floater_wham
+	@0 +repeat 13
+}
+
+attack3 $attak301 $attak334 floater_run
+{
+	charge +repeat 8
+	^ +event floater_zap
+	@0 +repeat 25
+}
+
+pain1 $pain101 $pain107 floater_run
+{
+	move +repeat 7
+}
+
+pain2 $pain201 $pain208 floater_run
+{
+	move +repeat 8
+}
+
+pain3 $pain301 $pain312 floater_run
+{
+	move +repeat 12
+}
+
+walk $stand101 $stand152
+{
+	walk +speed 5 +repeat 52
+}
+
+run $stand101 $stand152
+{
+	run +speed 13 +repeat 52
+}
+

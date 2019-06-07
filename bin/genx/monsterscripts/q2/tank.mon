@@ -1,0 +1,200 @@
+stand $stand01 $stand30
+{
+	stand +repeat 30
+}
+
+walk $walk05 $walk20
+{
+	walk +speed 4
+	^ +speed 5
+	^ +speed 3
+	^ +speed 2
+	@1 +repeat 2
+	@0
+	^ +event tank_footstep
+	@2
+	@1
+	@0
+	@1
+	^ +speed 7 +repeat 2
+	^ +speed 6
+	^ +event tank_footstep
+}
+
+start_run $walk01 $walk04 tank_run
+{
+	run
+	^ +speed 6 +repeat 2
+	^ +speed 11 +event tank_footstep
+}
+
+run $walk05 $walk20
+{
+	run +speed 4
+	^ +speed 5
+	^ +speed 3
+	^ +speed 2
+	@1 +repeat 2
+	@0
+	^ +event tank_footstep
+	@2
+	@1
+	@0
+	@1
+	^ +speed 7 +repeat 2
+	^ +speed 6
+	^ +event tank_footstep
+}
+
+pain1 $pain101 $pain104 tank_run
+{
+	move +repeat 4
+}
+
+pain2 $pain201 $pain205 tank_run
+{
+	move +repeat 5
+}
+
+pain3 $pain301 $pain316 tank_run
+{
+	move +speed -7
+	^ +speed 0 +repeat 3
+	^ +speed 2
+	@1 +repeat 2
+	^ +speed 3
+	@1
+	@4
+	@1 +repeat 5
+	^ +event tank_footstep
+}
+
+attack_blast $attak101 $attak116 tank_reattack_blaster
+{
+	charge +repeat 4
+	^ +speed -1
+	^ +speed -2
+	@4 +repeat 2
+	@0
+	^ +event TankBlaster
+	@0 +repeat 2
+	@9
+	@0 +repeat 2
+	@9
+}
+
+reattack_blast $attak111 $attak116 tank_reattack_blaster
+{
+	charge +repeat 2
+	^ +event TankBlaster
+	@0 +repeat 2
+	@2
+}
+
+attack_post_blast $attak117 $attak122 tank_run
+{
+	move +repeat 2
+	^ +speed 2
+	^ +speed 3
+	@2
+	^ +speed -2 +event tank_footstep
+}
+
+attack_strike $attak201 $attak238 tank_poststrike
+{
+	move +speed 3
+	^ +speed 2 +repeat 2
+	^ +speed 1
+	^ +speed 6
+	^ +speed 7
+	^ +speed 9 +event tank_footstep
+	@1
+	@3
+	@1
+	^ +event tank_footstep
+	@1
+	^ +speed 0 +repeat 4
+	^ +speed -2 +repeat 2
+	@12 +event tank_windup
+	@12 +repeat 6
+	^ +event TankStrike
+	@12
+	^ +speed -1 +repeat 5
+	^ +speed -3
+	^ +speed -10 +repeat 2
+	@16
+	@32
+	@6 +speed -2
+}
+
+attack_pre_rocket $attak301 $attak321 tank_doattack_rocket
+{
+	charge +repeat 11
+	^ +speed 1
+	^ +speed 2
+	^ +speed 7 +repeat 2
+	^ +event tank_footstep
+	@0 +repeat 4
+	^ +speed -3
+}
+
+attack_fire_rocket $attak322 $attak330 tank_refire_rocket
+{
+	charge +speed -3
+	^ +speed 0
+	^ +event TankRocket
+	@1 +repeat 2
+	@2
+	@1 +repeat 2
+	@2 +speed -1
+}
+
+attack_post_rocket $attak331 $attak353 tank_run
+{
+	charge
+	^ +speed -1 +repeat 2
+	@0
+	^ +speed 2
+	^ +speed 3
+	^ +speed 4
+	@4
+	@0 +repeat 3
+	^ +speed -9
+	^ +speed -8
+	^ +speed -7
+	@1
+	^ +event tank_footstep
+	@0 +repeat 7
+}
+
+attack_chain $attak401 $attak429 tank_run
+{
+	charge +repeat 5
+	none +event TankMachineGun +repeat 19
+	@0 +repeat 5
+}
+
+death $death101 $death132 tank_dead
+{
+	move +speed -7
+	^ +speed -2 +repeat 2
+	^ +speed 1
+	^ +speed 3
+	^ +speed 6
+	@3 +repeat 2
+	^ +speed 2
+	^ +speed 0 +repeat 3
+	@1
+	@9 +repeat 2
+	^ +speed -3
+	@9 +repeat 6
+	^ +speed -4
+	^ +speed -6
+	@22
+	^ +speed -5
+	@0
+	^ +speed -15 +event tank_thud
+	@25
+	@9 +repeat 3
+}
+

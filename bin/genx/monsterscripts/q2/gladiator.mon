@@ -1,0 +1,67 @@
+stand $stand1 $stand7
+{
+	stand +repeat 7
+}
+
+walk $walk1 $walk16
+{
+	walk +speed 15
+	^ +speed 7
+	^ +speed 6
+	^ +speed 5
+	^ +speed 2
+	^ +speed 0
+	@4
+	^ +speed 8
+	^ +speed 12
+	@7
+	@3 +repeat 2
+	@4 +repeat 2
+	^ +speed 1
+	@7
+}
+
+run $run1 $run6
+{
+	run +speed 23
+	^ +speed 14 +repeat 2
+	^ +speed 21
+	^ +speed 12
+	^ +speed 13
+}
+
+attack_melee $melee1 $melee17 gladiator_run
+{
+	charge +repeat 4
+	^ +event gladiator_cleaver_swing
+	@0
+	^ +event GaldiatorMelee
+	@0 +repeat 3
+	@4
+	@0 +repeat 2
+	@6
+	@0 +repeat 3
+}
+
+attack_gun $attack1 $attack9 gladiator_run
+{
+	charge +repeat 3
+	^ +event GladiatorGun
+	@0 +repeat 5
+}
+
+pain $pain1 $pain6 gladiator_run
+{
+	move +repeat 6
+}
+
+pain_air $painup1 $painup7 gladiator_run
+{
+	move +repeat 7
+}
+
+death $death1 $death22 gladiator_dead
+{
+	move +repeat 22
+}
+

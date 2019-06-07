@@ -1,0 +1,64 @@
+stand $stand01 $stand45
+{
+	stand +repeat 45
+}
+
+walk $stand01 $stand45
+{
+	walk +speed 5 +repeat 45
+}
+
+run $stand01 $stand45
+{
+	run +speed 10 +repeat 45
+}
+
+pain1 $pain101 $pain109 flyer_run
+{
+	move +repeat 9
+}
+
+pain2 $pain201 $pain204 flyer_run
+{
+	move +repeat 4
+}
+
+pain3 $pain301 $pain304 flyer_run
+{
+	move +repeat 4
+}
+
+attack2 $attak201 $attak217 flyer_run
+{
+	charge +repeat 3
+	^ +speed -10 +event flyer_fireleft
+	^ +event flyer_fireright
+	@3
+	@4
+	@3
+	@4
+	@3
+	@4
+	@0 +repeat 6
+}
+
+start_melee $attak101 $attak106 flyer_loop_melee
+{
+	charge +event flyer_pop_blades
+	^ +event none +repeat 5
+}
+
+end_melee $attak119 $attak121 flyer_run
+{
+	charge +repeat 3
+}
+
+loop_melee $attak107 $attak118 flyer_check_melee
+{
+	charge +repeat 2
+	^ +event flyer_slash_left
+	@0 +repeat 4
+	^ +event flyer_slash_right
+	@0 +repeat 4
+}
+

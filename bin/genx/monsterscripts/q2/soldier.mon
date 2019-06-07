@@ -1,0 +1,218 @@
+stand1 $stand101 $stand130 soldier_stand
+{
+	stand +event soldier_idle
+	^ +event none +repeat 29
+}
+
+stand3 $stand301 $stand339 soldier_stand
+{
+	stand +repeat 21
+	^ +event soldier_cock
+	@0 +repeat 17
+}
+
+walk1 $walk101 $walk133
+{
+	walk +speed 3
+	^ +speed 6
+	^ +speed 2 +repeat 3
+	^ +speed 1
+	@1
+	^ +speed 5
+	@0
+	^ +speed -1 +event soldier_walk1_random
+	@0 +speed 0 +repeat 23
+}
+
+walk2 $walk209 $walk218
+{
+	walk +speed 4 +repeat 2
+	^ +speed 9
+	^ +speed 8
+	^ +speed 5
+	^ +speed 1
+	^ +speed 3
+	^ +speed 7
+	^ +speed 6
+	@7
+}
+
+start_run $run01 $run02 soldier_run
+{
+	run +speed 7
+	^ +speed 5
+}
+
+run $run03 $run08
+{
+	run +speed 10
+	^ +speed 11 +repeat 2
+	^ +speed 16
+	@0
+	^ +speed 15
+}
+
+pain1 $pain101 $pain105 soldier_run
+{
+	move +speed -3
+	^ +speed 4
+	^ +speed 1 +repeat 2
+	^ +speed 0
+}
+
+pain2 $pain201 $pain207 soldier_run
+{
+	move +speed -13
+	^ +speed -1
+	^ +speed 2
+	^ +speed 4
+	@2
+	^ +speed 3
+	@2
+}
+
+pain3 $pain301 $pain318 soldier_run
+{
+	move +speed -8
+	^ +speed 10
+	^ +speed -4
+	^ +speed -1
+	^ +speed -3
+	^ +speed 0
+	^ +speed 3
+	@5 +repeat 4
+	^ +speed 1
+	@5
+	@11
+	^ +speed 2
+	^ +speed 4
+	@6
+	@14
+}
+
+pain4 $pain401 $pain417 soldier_run
+{
+	move +repeat 3
+	^ +speed -10
+	^ +speed -6
+	^ +speed 8
+	^ +speed 4
+	^ +speed 1
+	@0
+	^ +speed 2
+	^ +speed 5
+	@9
+	^ +speed -1 +repeat 2
+	^ +speed 3
+	@9
+	@0
+}
+
+attack1 $attak101 $attak112 soldier_run
+{
+	charge +repeat 2
+	^ +event soldier_fire1
+	@0 +repeat 2
+	^ +event soldier_attack1_refire1
+	@0
+	^ +event soldier_cock
+	^ +event soldier_attack1_refire2
+	@0 +repeat 3
+}
+
+attack2 $attak201 $attak218 soldier_run
+{
+	charge +repeat 4
+	^ +event soldier_fire2
+	@0 +repeat 2
+	^ +event soldier_attack2_refire1
+	@0 +repeat 4
+	^ +event soldier_cock
+	@0
+	^ +event soldier_attack2_refire2
+	@0 +repeat 3
+}
+
+attack3 $attak301 $attak309 soldier_run
+{
+	charge +repeat 2
+	^ +event soldier_fire3
+	@0 +repeat 2
+	^ +event soldier_attack3_refire
+	^ +event soldier_duck_up
+	@0 +repeat 2
+}
+
+attack4 $attak401 $attak406 soldier_run
+{
+	charge +repeat 2
+	^ +event soldier_fire4
+	@0 +repeat 3
+}
+
+attack6 $runs01 $runs14 soldier_run
+{
+	charge +speed 10
+	^ +speed 4
+	^ +speed 12
+	^ +speed 11 +event soldier_fire8
+	@0 +speed 13
+	^ +speed 18
+	^ +speed 15
+	^ +speed 14
+	^ +speed 11
+	^ +speed 8
+	@8
+	@2 +repeat 2
+	^ +speed 17 +event soldier_attack6_refire
+}
+
+duck $duck01 $duck05 soldier_run
+{
+	move +speed 5 +event soldier_duck_down
+	^ +speed -1 +event soldier_duck_hold
+	^ +speed 1 +event none
+	^ +speed 0 +event soldier_duck_up
+	@0 +event none
+}
+
+death1 $death101 $death136 soldier_dead
+{
+	move
+	^ +speed -10 +repeat 3
+	^ +speed -5
+	@0 +repeat 16
+	^ +event soldier_fire6
+	@0 +repeat 2
+	^ +event soldier_fire7
+	@0 +repeat 11
+}
+
+death2 $death201 $death235 soldier_dead
+{
+	move +speed -5 +repeat 3
+	^ +speed 0 +repeat 32
+}
+
+death3 $death301 $death345 soldier_dead
+{
+	move +speed -5 +repeat 3
+	^ +speed 0 +repeat 42
+}
+
+death4 $death401 $death453 soldier_dead
+{
+	move +repeat 53
+}
+
+death5 $death501 $death524 soldier_dead
+{
+	move +speed -5 +repeat 3
+	^ +speed 0 +repeat 21
+}
+
+death6 $death601 $death610 soldier_dead
+{
+	move +repeat 10
+}
+
