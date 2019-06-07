@@ -260,9 +260,6 @@ void CL_UpdateBlendSetting(void)
 	if (cls.state < ca_connected)
 		return;
 
-	if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2)
-		return;
-
 	MSG_WriteByte(clc_setting);
 	MSG_WriteShort(CLS_NOBLEND);
 	MSG_WriteShort(!cl_add_blend->integer);

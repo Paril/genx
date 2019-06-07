@@ -293,6 +293,9 @@ void turret_driver_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 	self->target_ent->owner = NULL;
 	self->target_ent->teammaster->owner = NULL;
 	infantry_die(self, inflictor, attacker, damage, point);
+
+	self->die = infantry_die;
+	self->think = monster_think;
 }
 
 bool FindTarget(edict_t *self);
@@ -381,6 +384,8 @@ void turret_driver_link(edict_t *self)
 	self->flags |= FL_TEAMSLAVE;
 }
 
+void SP_monster_infantry(edict_t *self);
+
 void SP_turret_driver(edict_t *self)
 {
 	if (deathmatch->value)
@@ -389,36 +394,16 @@ void SP_turret_driver(edict_t *self)
 		return;
 	}
 
+	SP_monster_infantry(self);
+
 	self->movetype = MOVETYPE_PUSH;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex("models/monsters/infantry/tris.md2");
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
-	self->health = 100;
-	self->gib_health = 0;
-	self->mass = 200;
 	self->viewheight = 24;
 	self->die = turret_driver_die;
-	self->monsterinfo.stand = infantry_stand;
 	self->flags |= FL_NO_KNOCKBACK;
-	level.total_monsters++;
-	self->svflags |= SVF_MONSTER;
-	self->s.renderfx |= RF_FRAMELERP;
-	self->takedamage = DAMAGE_AIM;
-	self->use = monster_use;
-	self->clipmask = MASK_MONSTERSOLID;
 	VectorCopy(self->s.origin, self->s.old_origin);
-	self->monsterinfo.aiflags |= AI_STAND_GROUND | AI_DUCKED;
-
-	if (spawnTemp.item)
-	{
-		self->item = FindItemByClassname(spawnTemp.item);
-
-		if (!self->item)
-			gi.dprintf("%s at %s has bad item: %s\n", spawnTemp.classname, vtos(self->s.origin), spawnTemp.item);
-	}
-
+	self->monsterinfo.aiflags |= AI_STAND_GROUND;
 	self->think = turret_driver_link;
 	self->nextthink = level.time + 1;
+	self->s.frame = 0;
 	gi.linkentity(self);
 }

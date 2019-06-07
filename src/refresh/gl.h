@@ -39,9 +39,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MAX_TMUS        2
 
-#define TAB_SIN(x) gl_static.sintab[(x) & 255]
-#define TAB_COS(x) gl_static.sintab[((x) + 64) & 255]
-
 #define MAX_PROGRAMS    64
 #define NUM_TEXNUMS     8 // Generations
 
@@ -89,8 +86,6 @@ typedef struct
 	uint32_t        inverse_intensity_33;
 	uint32_t        inverse_intensity_66;
 	uint32_t        inverse_intensity_100;
-	float           sintab[256];
-	byte            latlngtab[NUMVERTEXNORMALS][2];
 	byte            lightstylemap[MAX_LIGHTSTYLES];
 	GLuint			drawbuffer;
 } glStatic_t;
@@ -223,7 +218,7 @@ typedef struct maliastc_s
 typedef struct masliasvert_s
 {
 	short   pos[3];
-	byte    norm[2]; // lat, lng
+	vec3_t	norm;
 } maliasvert_t;
 
 typedef struct maliasframe_s

@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MDL_MAX_TRIANGLES   2048
 #define MDL_MAX_VERTS       1024
 #define MDL_MAX_FRAMES      256
+#define MDL_MAX_SKINS		16
 
 /* Compressed vertex */
 typedef struct

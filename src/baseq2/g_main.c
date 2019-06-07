@@ -73,7 +73,6 @@ cvar_t  *flood_waitdelay;
 
 cvar_t  *sv_maplist;
 
-cvar_t  *sv_features;
 // Generations
 cvar_t	*invasion;
 
@@ -165,10 +164,6 @@ void InitGame(void)
 	flood_waitdelay = gi.cvar("flood_waitdelay", "10", 0);
 	// dm map list
 	sv_maplist = gi.cvar("sv_maplist", "", 0);
-	// obtain server features
-	sv_features = gi.cvar("sv_features", NULL, 0);
-	// export our own features
-	gi.cvar_forceset("g_features", va("%d", G_FEATURES));
 	// items
 	InitItems();
 	game.helpmessage1[0] = 0;
@@ -183,20 +178,10 @@ void InitGame(void)
 	game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	globals.num_edicts = game.maxclients + 1;
 	AI_Init();//JABot
-#if USE_FPS
-	cvar_t *sv_fps = gi.cvar("sv_fps", "", 0);
-	int framediv;
-#if (G_FEATURES & GMF_VARIABLE_FPS)
-	framediv = sv_fps->integer / BASE_FRAMERATE;
-#else
-	framediv = 1;
-#endif
-	clamp(framediv, 1, MAX_FRAMEDIV);
-	game.framerate = framediv * BASE_FRAMERATE;
-	game.frametime = BASE_FRAMETIME / framediv;
-	game.framediv = framediv;
-	game.frameseconds = BASE_FRAMETIME_1000 / framediv;
-#endif
+	game.framerate = BASE_FRAMERATE;
+	game.frametime = BASE_FRAMETIME;
+	game.framediv = 1;
+	game.frameseconds = BASE_FRAMETIME_1000;
 	game.random_seed = time(NULL);
 
 	if (invasion->integer)

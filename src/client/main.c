@@ -58,9 +58,6 @@ cvar_t  *cl_changemapcmd;
 cvar_t  *cl_beginmapcmd;
 
 cvar_t  *cl_gibs;
-#if USE_FPS
-	cvar_t  *cl_updaterate;
-#endif
 
 cvar_t  *cl_protocol;
 
@@ -80,7 +77,6 @@ cvar_t  *info_fov;
 cvar_t  *info_msg;
 cvar_t  *info_hand;
 cvar_t  *info_gender;
-cvar_t  *info_uf;
 cvar_t	*info_game;
 
 #if USE_REF
@@ -181,9 +177,6 @@ static void CL_UpdateGunSetting(void)
 	if (!cls.netchan)
 		return;
 
-	if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2)
-		return;
-
 	if (cl_gun->integer == -1)
 		nogun = 2;
 	else if (cl_gun->integer == 0 || (info_hand->integer == 2 && cl_gun->integer == 1))
@@ -202,9 +195,6 @@ static void CL_UpdateGibSetting(void)
 	if (!cls.netchan)
 		return;
 
-	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-		return;
-
 	MSG_WriteByte(clc_setting);
 	MSG_WriteShort(CLS_NOGIBS);
 	MSG_WriteShort(!cl_gibs->integer);
@@ -214,9 +204,6 @@ static void CL_UpdateGibSetting(void)
 static void CL_UpdateFootstepsSetting(void)
 {
 	if (!cls.netchan)
-		return;
-
-	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
 		return;
 
 	MSG_WriteByte(clc_setting);
@@ -230,30 +217,11 @@ static void CL_UpdatePredictSetting(void)
 	if (!cls.netchan)
 		return;
 
-	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-		return;
-
 	MSG_WriteByte(clc_setting);
 	MSG_WriteShort(CLS_NOPREDICT);
 	MSG_WriteShort(!cl_predict->integer);
 	MSG_FlushTo(&cls.netchan->message);
 }
-
-#if USE_FPS
-static void CL_UpdateRateSetting(void)
-{
-	if (!cls.netchan)
-		return;
-
-	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-		return;
-
-	MSG_WriteByte(clc_setting);
-	MSG_WriteShort(CLS_FPS);
-	MSG_WriteShort(cl_updaterate->integer);
-	MSG_FlushTo(&cls.netchan->message);
-}
-#endif
 
 /*
 ===================
@@ -335,7 +303,6 @@ Resend a connect message if the last one has timed out
 */
 void CL_CheckForResend(void)
 {
-	char tail[MAX_QPATH];
 	char userinfo[MAX_INFO_STRING];
 	int maxmsglen;
 
@@ -346,10 +313,6 @@ void CL_CheckForResend(void)
 		strcpy(cls.servername, "localhost");
 		cls.serverAddress.type = NA_LOOPBACK;
 		cls.serverProtocol = cl_protocol->integer;
-
-		if (cls.serverProtocol < PROTOCOL_VERSION_DEFAULT ||
-			cls.serverProtocol > PROTOCOL_VERSION_Q2PRO)
-			cls.serverProtocol = PROTOCOL_VERSION_Q2PRO;
 
 		// we don't need a challenge on the localhost
 		cls.state = ca_connecting;
@@ -389,31 +352,12 @@ void CL_CheckForResend(void)
 		maxmsglen = MAX_PACKETLEN_WRITABLE;
 
 	// add protocol dependent stuff
-	switch (cls.serverProtocol)
-	{
-		case PROTOCOL_VERSION_R1Q2:
-			Q_snprintf(tail, sizeof(tail), " %d %d",
-				maxmsglen, PROTOCOL_VERSION_R1Q2_CURRENT);
-			cls.quakePort = net_qport->integer & 0xff;
-			break;
-
-		case PROTOCOL_VERSION_Q2PRO:
-			Q_snprintf(tail, sizeof(tail), " %d %d %d",
-				maxmsglen, USE_ZLIB,
-				PROTOCOL_VERSION_Q2PRO_CURRENT);
-			cls.quakePort = net_qport->integer & 0xff;
-			break;
-
-		default:
-			tail[0] = 0;
-			cls.quakePort = net_qport->integer;
-			break;
-	}
+	cls.quakePort = net_qport->integer & 0xff;
 
 	Cvar_BitInfo(userinfo, CVAR_USERINFO);
 	Netchan_OutOfBand(NS_CLIENT, &cls.serverAddress,
-		"connect %i %i %i \"%s\"%s\n", cls.serverProtocol, cls.quakePort,
-		cls.challenge, userinfo, tail);
+		"connect %i %i %i \"%s\" %d\n", cls.serverProtocol, cls.quakePort,
+		cls.challenge, userinfo, maxmsglen);
 }
 
 static void CL_RecentIP_g(genctx_t *ctx)
@@ -462,30 +406,12 @@ static void CL_Connect_f(void)
 {
 	char    *server, *p;
 	netadr_t    address;
-	int protocol;
 	int argc = Cmd_Argc();
 
 	if (argc < 2)
 	{
-usage:
-		Com_Printf("Usage: %s <server> [34|35|36]\n", Cmd_Argv(0));
+		Com_Printf("Usage: %s <server>\n", Cmd_Argv(0));
 		return;
-	}
-
-	if (argc > 2)
-	{
-		protocol = atoi(Cmd_Argv(2));
-
-		if (protocol < PROTOCOL_VERSION_DEFAULT ||
-			protocol > PROTOCOL_VERSION_Q2PRO)
-			goto usage;
-	}
-	else
-	{
-		protocol = cl_protocol->integer;
-
-		if (!protocol)
-			protocol = PROTOCOL_VERSION_Q2PRO;
 	}
 
 	server = Cmd_Argv(1);
@@ -512,8 +438,7 @@ usage:
 	NET_Config(NET_CLIENT);
 	CL_Disconnect(ERR_RECONNECT);
 	cls.serverAddress = address;
-	cls.serverProtocol = protocol;
-	cls.protocolVersion = 0;
+	cls.serverProtocol = PROTOCOL_VERSION;
 	cls.passive = false;
 	cls.state = ca_challenging;
 	cls.connect_time -= CONNECT_FAST;
@@ -1251,8 +1176,9 @@ static void CL_ConnectionlessPacket(void)
 {
 	char    string[MAX_STRING_CHARS];
 	char    *s, *c;
-	int     i, j, k;
+	int     i, j;
 	size_t  len;
+
 	MSG_BeginReading();
 	MSG_ReadLong(); // skip the -1
 	len = MSG_ReadStringLine(string, sizeof(string));
@@ -1295,55 +1221,7 @@ static void CL_ConnectionlessPacket(void)
 		cls.connect_time -= CONNECT_INSTANT; // fire immediately
 		//cls.connect_count = 0;
 		// parse additional parameters
-		j = Cmd_Argc();
-
-		for (i = 2; i < j; i++)
-		{
-			s = Cmd_Argv(i);
-
-			if (!strncmp(s, "p=", 2))
-			{
-				s += 2;
-
-				while (*s)
-				{
-					k = strtoul(s, &s, 10);
-
-					if (k == PROTOCOL_VERSION_R1Q2)
-						mask |= 1;
-					else if (k == PROTOCOL_VERSION_Q2PRO)
-						mask |= 2;
-
-					s = strchr(s, ',');
-
-					if (s == NULL)
-						break;
-
-					s++;
-				}
-			}
-		}
-
-		// choose supported protocol
-		switch (cls.serverProtocol)
-		{
-			case PROTOCOL_VERSION_Q2PRO:
-				if (mask & 2)
-					break;
-
-				cls.serverProtocol = PROTOCOL_VERSION_R1Q2;
-
-			// fall through
-			case PROTOCOL_VERSION_R1Q2:
-				if (mask & 1)
-					break;
-
-			// fall through
-			default:
-				cls.serverProtocol = PROTOCOL_VERSION_DEFAULT;
-				break;
-		}
-
+		cls.serverProtocol = PROTOCOL_VERSION;
 		Com_DPrintf("Selected protocol %d\n", cls.serverProtocol);
 		CL_CheckForResend();
 		return;
@@ -1575,13 +1453,6 @@ void CL_UpdateUserinfo(cvar_t *var, from_t from)
 	if (var->flags & CVAR_PRIVATE)
 		return;
 
-	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-	{
-		// transmit at next oportunity
-		cls.userinfo_modified = MAX_PACKET_USERINFOS;
-		goto done;
-	}
-
 	if (cls.userinfo_modified == MAX_PACKET_USERINFOS)
 	{
 		// can't hold any more
@@ -1680,9 +1551,6 @@ void CL_Begin(void)
 	LOC_LoadLocations();
 	CL_LoadState(LOAD_NONE);
 	cls.state = ca_precached;
-#if USE_FPS
-	CL_UpdateRateSetting();
-#endif
 	CL_ClientCommand(va("begin %i\n", precache_spawncount));
 	CL_UpdateGunSetting();
 	CL_UpdateBlendSetting();
@@ -2431,13 +2299,6 @@ static void cl_predict_changed(cvar_t *self)
 	CL_UpdatePredictSetting();
 }
 
-#if USE_FPS
-static void cl_updaterate_changed(cvar_t *self)
-{
-	CL_UpdateRateSetting();
-}
-#endif
-
 static inline int fps_to_msec(int fps)
 {
 #if 0
@@ -2609,10 +2470,6 @@ static void CL_InitLocal(void)
 	cl_disable_explosions = Cvar_Get("cl_disable_explosions", "0", 0);
 	cl_gibs = Cvar_Get("cl_gibs", "1", 0);
 	cl_gibs->changed = cl_gibs_changed;
-#if USE_FPS
-	cl_updaterate = Cvar_Get("cl_updaterate", "0", 0);
-	cl_updaterate->changed = cl_updaterate_changed;
-#endif
 	cl_chat_notify = Cvar_Get("cl_chat_notify", "1", 0);
 	cl_chat_sound = Cvar_Get("cl_chat_sound", "1", 0);
 	cl_chat_sound->changed = cl_chat_sound_changed;
@@ -2621,7 +2478,7 @@ static void CL_InitLocal(void)
 	cl_disconnectcmd = Cvar_Get("cl_disconnectcmd", "", 0);
 	cl_changemapcmd = Cvar_Get("cl_changemapcmd", "", 0);
 	cl_beginmapcmd = Cvar_Get("cl_beginmapcmd", "", 0);
-	cl_protocol = Cvar_Get("cl_protocol", "0", 0);
+	cl_protocol = Cvar_Get("cl_protocol", va("%d", PROTOCOL_VERSION), 0);
 	gender_auto = Cvar_Get("gender_auto", "1", CVAR_ARCHIVE);
 	cl_vwep = Cvar_Get("cl_vwep", "1", CVAR_ARCHIVE);
 	cl_vwep->changed = cl_vwep_changed;
@@ -2639,7 +2496,6 @@ static void CL_InitLocal(void)
 	info_fov = Cvar_Get("fov", "90", CVAR_USERINFO | CVAR_ARCHIVE);
 	info_gender = Cvar_Get("gender", "male", CVAR_USERINFO | CVAR_ARCHIVE);
 	info_gender->modified = false; // clear this so we know when user sets it manually
-	info_uf = Cvar_Get("uf", "", CVAR_USERINFO);
 	// Generations
 	info_game = Cvar_Get("gameclass", "random", CVAR_USERINFO | CVAR_ARCHIVE);
 	//
@@ -2729,27 +2585,6 @@ static void CL_SetClientTime(void)
 
 	SHOWCLAMP(2, "time %d %d, lerpfrac %.3f\n",
 		cl.time, cl.servertime, cl.lerpfrac);
-#if USE_FPS
-	prevtime = cl.keyservertime - BASE_FRAMETIME;
-
-	if (cl.keytime > cl.keyservertime)
-	{
-		SHOWCLAMP(1, "high keyclamp %i\n", cl.keytime - cl.keyservertime);
-		cl.keytime = cl.keyservertime;
-		cl.keylerpfrac = 1.0f;
-	}
-	else if (cl.keytime < prevtime)
-	{
-		SHOWCLAMP(1, "low keyclamp %i\n", prevtime - cl.keytime);
-		cl.keytime = prevtime;
-		cl.keylerpfrac = 0;
-	}
-	else
-		cl.keylerpfrac = (cl.keytime - prevtime) * BASE_1_FRAMETIME;
-
-	SHOWCLAMP(2, "keytime %d %d keylerpfrac %.3f\n",
-		cl.keytime, cl.keyservertime, cl.keylerpfrac);
-#endif
 }
 
 static void CL_MeasureStats(void)
@@ -3002,12 +2837,7 @@ unsigned CL_Frame(unsigned msec)
 		cls.frametime = 1.0f / 5;
 
 	if (!sv_paused->integer)
-	{
 		cl.time += main_extra;
-#if USE_FPS
-		cl.keytime += main_extra;
-#endif
-	}
 
 	// calculate local time
 	if (cls.state == ca_active && !sv_paused->integer)

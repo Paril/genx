@@ -40,9 +40,6 @@ cvar_t  *sv_timescale_time;
 cvar_t  *sv_timescale_warn;
 cvar_t  *sv_timescale_kick;
 cvar_t  *sv_allow_nodelta;
-#if USE_FPS
-	cvar_t  *sv_fps;
-#endif
 
 cvar_t  *sv_timeout;            // seconds without any message
 cvar_t  *sv_zombietime;         // seconds to sink messages after disconnect
@@ -208,12 +205,9 @@ void SV_DropClient(client_t *client, const char *reason)
 	MSG_WriteByte(svc_disconnect);
 	SV_ClientAddMessage(client, MSG_RELIABLE | MSG_CLEAR);
 
-	if (oldstate == cs_spawned || (g_features->integer & GMF_WANT_ALL_DISCONNECTS))
-	{
-		// call the prog function for removing a client
-		// this will remove the body, among other things
-		ge->ClientDisconnect(client->edict);
-	}
+	// call the prog function for removing a client
+	// this will remove the body, among other things
+	ge->ClientDisconnect(client->edict);
 
 	SV_CleanClient(client);
 	Com_DPrintf("Going to cs_zombie for %s\n", client->name);
@@ -475,7 +469,7 @@ Responds with all the info that qplug or qspy can see
 */
 static void SVC_Status(void)
 {
-	char    buffer[MAX_PACKETLEN_DEFAULT];
+	char    buffer[MAX_PACKETLEN];
 	size_t  len;
 
 	if (!sv_status_show->integer)
@@ -539,7 +533,7 @@ static void SVC_Info(void)
 
 	version = atoi(Cmd_Argv(1));
 
-	if (version < PROTOCOL_VERSION_DEFAULT || version > PROTOCOL_VERSION_Q2PRO)
+	if (version != PROTOCOL_VERSION)
 		return; // ignore invalid versions
 
 	len = Q_scnprintf(buffer, sizeof(buffer),
@@ -613,7 +607,7 @@ static void SVC_GetChallenge(void)
 
 	// send it back
 	Netchan_OutOfBand(NS_SERVER, &net_from,
-		"challenge %u p=34,35,36", challenge);
+		"challenge %u", challenge);
 }
 
 /*
@@ -627,12 +621,10 @@ A connection request that did not come from the master
 typedef struct
 {
 	int         protocol;   // major version
-	int         version;    // minor version
 	int         qport;
 	int         challenge;
 
 	int         maxlength;
-	bool    	has_zlib;
 
 	int         reserved;   // hidden client slots
 	char        reconnect_var[16];
@@ -653,13 +645,8 @@ static bool parse_basic_params(conn_params_t *p)
 	p->challenge = atoi(Cmd_Argv(3));
 
 	// check for invalid protocol version
-	if (p->protocol < PROTOCOL_VERSION_OLD ||
-		p->protocol > PROTOCOL_VERSION_Q2PRO)
+	if (p->protocol != PROTOCOL_VERSION)
 		return reject("Unsupported protocol version %d.\n", p->protocol);
-
-	// check for valid, but outdated protocol version
-	if (p->protocol < PROTOCOL_VERSION_DEFAULT)
-		return reject("You need Quake 2 version 3.19 or higher.\n");
 
 	return true;
 }
@@ -752,24 +739,22 @@ static bool permit_connection(conn_params_t *p)
 static bool parse_packet_length(conn_params_t *p)
 {
 	char *s;
+
 	// set maximum packet length
-	p->maxlength = MAX_PACKETLEN_WRITABLE_DEFAULT;
+	p->maxlength = MAX_PACKETLEN_WRITABLE;
 
-	if (p->protocol >= PROTOCOL_VERSION_R1Q2)
+	s = Cmd_Argv(5);
+
+	if (*s)
 	{
-		s = Cmd_Argv(5);
+		int length = atoi(s);
 
-		if (*s)
-		{
-			p->maxlength = atoi(s);
+		if (length < 0 || length > MAX_PACKETLEN_WRITABLE)
+			return reject("Invalid maximum message length.\n");
 
-			if (p->maxlength < 0 || p->maxlength > MAX_PACKETLEN_WRITABLE)
-				return reject("Invalid maximum message length.\n");
-
-			// 0 means highest available
-			if (!p->maxlength)
-				p->maxlength = MAX_PACKETLEN_WRITABLE;
-		}
+		// 0 means highest available
+		if (length)
+			p->maxlength = length;
 	}
 
 	if (!NET_IsLocalAddress(&net_from) && net_maxmsglen->integer > 0)
@@ -786,72 +771,8 @@ static bool parse_packet_length(conn_params_t *p)
 	return true;
 }
 
-static bool parse_enhanced_params(conn_params_t *p)
-{
-	char *s;
-
-	if (p->protocol == PROTOCOL_VERSION_R1Q2)
-	{
-		// set minor protocol version
-		s = Cmd_Argv(6);
-
-		if (*s)
-		{
-			p->version = atoi(s);
-			clamp(p->version,
-				PROTOCOL_VERSION_R1Q2_MINIMUM,
-				PROTOCOL_VERSION_R1Q2_CURRENT);
-		}
-		else
-			p->version = PROTOCOL_VERSION_R1Q2_MINIMUM;
-
-		p->has_zlib = true;
-	}
-	else if (p->protocol == PROTOCOL_VERSION_Q2PRO)
-	{
-		// set zlib
-		s = Cmd_Argv(6);
-		p->has_zlib = !*s || atoi(s);
-		// set minor protocol version
-		s = Cmd_Argv(7);
-
-		if (*s)
-		{
-			p->version = atoi(s);
-			clamp(p->version,
-				PROTOCOL_VERSION_Q2PRO_MINIMUM,
-				PROTOCOL_VERSION_Q2PRO_CURRENT);
-
-			if (p->version == PROTOCOL_VERSION_Q2PRO_RESERVED)
-			{
-				p->version--; // never use this version
-			}
-		}
-		else
-			p->version = PROTOCOL_VERSION_Q2PRO_MINIMUM;
-	}
-
-	return true;
-}
-
 static char *userinfo_ip_string(void)
 {
-	static char s[MAX_QPATH];
-
-	// fake up reserved IPv4 address to prevent IPv6 unaware mods from exploding
-	if (net_from.type == NA_IP6 && !(g_features->integer & GMF_IPV6_ADDRESS_AWARE))
-	{
-		uint8_t res = 0;
-		int i;
-
-		// stuff /48 network part into the last byte
-		for (i = 0; i < 48 / CHAR_BIT; i++)
-			res ^= net_from.ip.u8[i];
-
-		Q_snprintf(s, sizeof(s), "198.51.100.%u:%u", res, BigShort(net_from.port));
-		return s;
-	}
-
 	return NET_AdrToString(&net_from);
 }
 
@@ -902,20 +823,6 @@ static bool parse_userinfo(conn_params_t *params, char *userinfo)
 
 	// copy userinfo off
 	Q_strlcpy(userinfo, info, MAX_INFO_STRING);
-
-	// ip, etc are passed in extra userinfo if supported
-	if (!(g_features->integer & GMF_EXTRA_USERINFO))
-	{
-		if (sv_password->string[0] || sv_reserved_password->string[0])
-		{
-			// unset password key to make game mod happy
-			Info_RemoveKey(userinfo, "password");
-		}
-
-		// force the IP key/value pair so the game can filter based on ip
-		if (!Info_SetValueForKey(userinfo, "ip", userinfo_ip_string()))
-			return reject("Oversize userinfo string.\n");
-	}
 
 	// reject if there is a kickable userinfo ban
 	if ((ban = SV_CheckInfoBans(userinfo, true)) != NULL)
@@ -999,51 +906,35 @@ static client_t *find_client_slot(conn_params_t *params)
 void init_pmove_and_es_flags(client_t *newcl)
 {
 	int force;
+
 	// copy default pmove parameters
 	newcl->pmp = sv_pmp;
 	newcl->pmp.airaccelerate = sv_airaccelerate->integer;
 	newcl->pmp.game = svs.entities[newcl->number].game;
-	// common extensions
-	force = 2;
 
-	if (newcl->protocol >= PROTOCOL_VERSION_R1Q2)
-	{
-		newcl->pmp.speedmult = 2;
-		force = 1;
-	}
+	// common extensions
+	newcl->pmp.speedmult = 2;
+	force = 1;
 
 	newcl->pmp.strafehack = sv_strafejump_hack->integer >= force;
 
 	// r1q2 extensions
-	if (newcl->protocol == PROTOCOL_VERSION_R1Q2)
-	{
-		newcl->esFlags |= MSG_ES_BEAMORIGIN;
-
-		if (newcl->version >= PROTOCOL_VERSION_R1Q2_LONG_SOLID)
-			newcl->esFlags |= MSG_ES_LONGSOLID;
-	}
+	newcl->esFlags |= MSG_ES_BEAMORIGIN;
+	newcl->esFlags |= MSG_ES_LONGSOLID;
 
 	// q2pro extensions
 	force = 2;
 
-	if (newcl->protocol == PROTOCOL_VERSION_Q2PRO)
-	{
-		if (sv_qwmod->integer)
-			PmoveEnableQW(&newcl->pmp);
+	if (sv_qwmod->integer)
+		PmoveEnableQW(&newcl->pmp);
 
-		newcl->pmp.flyhack = true;
-		newcl->pmp.flyfriction = 4;
-		newcl->esFlags |= MSG_ES_UMASK;
+	newcl->pmp.flyhack = true;
+	newcl->pmp.flyfriction = 4;
+	newcl->esFlags |= MSG_ES_UMASK;
+	newcl->esFlags |= MSG_ES_LONGSOLID;
+	newcl->esFlags |= MSG_ES_BEAMORIGIN;
 
-		if (newcl->version >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID)
-			newcl->esFlags |= MSG_ES_LONGSOLID;
-
-		if (newcl->version >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN)
-			newcl->esFlags |= MSG_ES_BEAMORIGIN;
-
-		if (newcl->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK)
-			force = 1;
-	}
+	force = 1;
 
 	newcl->pmp.waterhack = sv_waterjump_hack->integer >= force;
 	PmoveInit(&newcl->pmp, svs.entities[newcl->number].game);
@@ -1055,24 +946,17 @@ static void send_connect_packet(client_t *newcl)
 		newcl->mapname);
 }
 
-// converts all the extra positional parameters to `connect' command into an
-// infostring appended to normal userinfo after terminating NUL. game mod can
-// then access these parameters in ClientConnect callback.
+// apend all the extra positional parameters to `connect' command to userinfo.
+// game mod can then access these parameters in ClientConnect callback.
 static void append_extra_userinfo(conn_params_t *params, char *userinfo)
 {
-	if (!(g_features->integer & GMF_EXTRA_USERINFO))
-	{
-		userinfo[strlen(userinfo) + 1] = 0;
-		return;
-	}
-
-	Q_snprintf(userinfo + strlen(userinfo) + 1, MAX_INFO_STRING,
+	Q_snprintf(userinfo + strlen(userinfo), MAX_INFO_STRING,
 		"\\challenge\\%d\\ip\\%s"
-		"\\major\\%d\\minor\\%d"
-		"\\packetlen\\%d\\qport\\%d\\zlib\\%d",
+		"\\major\\%d"
+		"\\packetlen\\%d\\qport\\%d",
 		params->challenge, userinfo_ip_string(),
-		params->protocol, params->version,
-		params->maxlength, params->qport, params->has_zlib);
+		params->protocol, params->maxlength,
+		params->qport);
 }
 
 static void SVC_DirectConnect(void)
@@ -1095,9 +979,6 @@ static void SVC_DirectConnect(void)
 	if (!parse_packet_length(&params))
 		return;
 
-	if (!parse_enhanced_params(&params))
-		return;
-
 	if (!parse_userinfo(&params, userinfo))
 		return;
 
@@ -1115,8 +996,6 @@ static void SVC_DirectConnect(void)
 	newcl->number = newcl->slot = number;
 	newcl->challenge = params.challenge; // save challenge for checksumming
 	newcl->protocol = params.protocol;
-	newcl->version = params.version;
-	newcl->has_zlib = params.has_zlib;
 	newcl->edict = EDICT_NUM(number + 1);
 	newcl->gamedir = fs_game->string;
 	newcl->mapname = sv.name;
@@ -1128,10 +1007,6 @@ static void SVC_DirectConnect(void)
 	newcl->maxclients = sv_maxclients->integer;
 	strcpy(newcl->reconnect_var, params.reconnect_var);
 	strcpy(newcl->reconnect_val, params.reconnect_val);
-#if USE_FPS
-	newcl->framediv = sv.framediv;
-	newcl->settings[CLS_FPS] = BASE_FRAMERATE;
-#endif
 	init_pmove_and_es_flags(newcl);
 	append_extra_userinfo(&params, userinfo);
 	// get the game a chance to reject this connection or modify the userinfo
@@ -1166,10 +1041,7 @@ static void SVC_DirectConnect(void)
 	SV_RateInit(&newcl->ratelimit_namechange, sv_namechange_limit->string);
 	SV_InitClientSend(newcl);
 
-	if (newcl->protocol == PROTOCOL_VERSION_DEFAULT)
-		newcl->WriteFrame = SV_WriteFrameToClient_Default;
-	else
-		newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
+	newcl->WriteFrame = SV_WriteFrameToClient_Enhanced;
 
 	// loopback client doesn't need to reconnect
 	if (NET_IsLocalAddress(&net_from))
@@ -1566,16 +1438,7 @@ static void SV_PacketEvent(void)
 		if (!NET_IsEqualBaseAdr(&net_from, &netchan->remote_address))
 			continue;
 
-		// read the qport out of the message so we can fix up
-		// stupid address translating routers
-		if (client->protocol == PROTOCOL_VERSION_DEFAULT)
-		{
-			qport = msg_read.data[8] | (msg_read.data[9] << 8);
-
-			if (netchan->qport != qport)
-				continue;
-		}
-		else if (netchan->qport)
+		if (netchan->qport)
 		{
 			qport = msg_read.data[8];
 
@@ -1870,7 +1733,7 @@ let it know we are alive, and log information
 */
 static void SV_MasterHeartbeat(void)
 {
-	char    buffer[MAX_PACKETLEN_DEFAULT];
+	char    buffer[MAX_PACKETLEN];
 	size_t  len;
 	master_t *m;
 
@@ -2212,9 +2075,6 @@ void SV_Init(void)
 	sv_timescale_warn = Cvar_Get("sv_timescale_warn", "0", 0);
 	sv_timescale_kick = Cvar_Get("sv_timescale_kick", "0", 0);
 	sv_allow_nodelta = Cvar_Get("sv_allow_nodelta", "1", 0);
-#if USE_FPS
-	sv_fps = Cvar_Get("sv_fps", "10", CVAR_LATCH);
-#endif
 	sv_force_reconnect = Cvar_Get("sv_force_reconnect", "", CVAR_LATCH);
 	sv_show_name_changes = Cvar_Get("sv_show_name_changes", "0", 0);
 	sv_airaccelerate = Cvar_Get("sv_airaccelerate", "0", CVAR_LATCH);
@@ -2252,14 +2112,9 @@ void SV_Init(void)
 	sv_namechange_limit->changed = sv_namechange_limit_changed;
 	sv_allow_unconnected_cmds = Cvar_Get("sv_allow_unconnected_cmds", "0", 0);
 	sv_lrcon_password = Cvar_Get("lrcon_password", "", CVAR_PRIVATE);
-	Cvar_Get("sv_features", va("%d", SV_FEATURES), CVAR_ROM);
 	g_features = Cvar_Get("g_features", "0", CVAR_ROM);
 	map_override_path = Cvar_Get("map_override_path", "", 0);
 	init_rate_limits();
-#if USE_FPS
-	// set up default frametime for main loop
-	sv.frametime = BASE_FRAMETIME;
-#endif
 	// set up default pmove parameters
 	PmoveInit(&sv_pmp, GAME_NONE);
 #if USE_SYSCON
@@ -2360,10 +2215,6 @@ void SV_Shutdown(const char *finalmsg, error_type_t type)
 	memset(&svs, 0, sizeof(svs));
 	// reset rate limits
 	init_rate_limits();
-#if USE_FPS
-	// set up default frametime for main loop
-	sv.frametime = BASE_FRAMETIME;
-#endif
 	sv_client = NULL;
 	sv_player = NULL;
 	Cvar_Set("sv_running", "0");

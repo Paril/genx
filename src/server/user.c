@@ -62,7 +62,7 @@ static void SV_CreateBaselines(void)
 	{
 		ent = EDICT_POOL(sv_client, i);
 
-		if ((g_features->integer & GMF_PROPERINUSE) && !ent->inuse)
+		if (!ent->inuse)
 			continue;
 
 		if (!ES_INUSE(&ent->s))
@@ -87,13 +87,7 @@ static void SV_CreateBaselines(void)
 
 static bool need_flush_msg(size_t size)
 {
-	size += msg_write.cursize;
-#if USE_ZLIB
-
-	if (sv_client->has_zlib)
-		size = ZPACKET_HEADER + deflateBound(&svs.z, size);
-
-#endif
+	size = ZPACKET_HEADER + deflateBound(&svs.z, size);
 	return size > sv_client->netchan->maxpacketlen;
 }
 
@@ -350,26 +344,10 @@ void SV_New_f(void)
 	MSG_WriteString(&sv_client->configstrings[CS_NAME * MAX_QPATH]);
 
 	// send protocol specific stuff
-	switch (sv_client->protocol)
-	{
-		case PROTOCOL_VERSION_R1Q2:
-			MSG_WriteByte(0);   // not enhanced
-			MSG_WriteShort(sv_client->version);
-			MSG_WriteByte(0);   // no advanced deltas
-			MSG_WriteByte(sv_client->pmp.strafehack);
-			break;
-
-		case PROTOCOL_VERSION_Q2PRO:
-			MSG_WriteShort(sv_client->version);
-			MSG_WriteByte(sv.state);
-			MSG_WriteByte(sv_client->pmp.strafehack);
-			MSG_WriteByte(sv_client->pmp.qwmode);
-
-			if (sv_client->version >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK)
-				MSG_WriteByte(sv_client->pmp.waterhack);
-
-			break;
-	}
+	MSG_WriteByte(sv.state);
+	MSG_WriteByte(sv_client->pmp.strafehack);
+	MSG_WriteByte(sv_client->pmp.qwmode);
+	MSG_WriteByte(sv_client->pmp.waterhack);
 
 	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
 	SV_ClientCommand(sv_client, "\n");
@@ -449,7 +427,6 @@ void SV_Begin_f(void)
 	sv_client->command_msec = 1800;
 	sv_client->cmd_msec_used = 0;
 	sv_client->suppress_count = 0;
-	SV_AlignKeyFrames(sv_client);
 	stuff_cmds(&sv_cmdlist_begin);
 	// call the game begin function
 	ge->ClientBegin(sv_player);
@@ -506,7 +483,6 @@ static void SV_ShowMiscInfo_f(void)
 static void SV_NoGameData_f(void)
 {
 	sv_client->nodata ^= 1;
-	SV_AlignKeyFrames(sv_client);
 }
 
 static void SV_Lag_f(void)
@@ -843,81 +819,6 @@ static void SV_SetLastFrame(int lastframe)
 
 /*
 ==================
-SV_OldClientExecuteMove
-==================
-*/
-static void SV_OldClientExecuteMove(void)
-{
-	usercmd_t   oldest, oldcmd, newcmd;
-	int         lastframe;
-	int         net_drop;
-
-	if (moveIssued)
-	{
-		SV_DropClient(sv_client, "multiple clc_move commands in packet");
-		return;     // someone is trying to cheat...
-	}
-
-	moveIssued = true;
-
-	if (sv_client->protocol == PROTOCOL_VERSION_DEFAULT)
-	{
-		MSG_ReadByte();    // skip over checksum
-	}
-
-	lastframe = MSG_ReadLong();
-
-	// read all cmds
-	if (sv_client->protocol == PROTOCOL_VERSION_R1Q2 &&
-		sv_client->version >= PROTOCOL_VERSION_R1Q2_UCMD)
-	{
-		MSG_ReadDeltaUsercmd_Hacked(NULL, &oldest);
-		MSG_ReadDeltaUsercmd_Hacked(&oldest, &oldcmd);
-		MSG_ReadDeltaUsercmd_Hacked(&oldcmd, &newcmd);
-	}
-	else
-	{
-		MSG_ReadDeltaUsercmd(NULL, &oldest);
-		MSG_ReadDeltaUsercmd(&oldest, &oldcmd);
-		MSG_ReadDeltaUsercmd(&oldcmd, &newcmd);
-	}
-
-	if (sv_client->state != cs_spawned)
-	{
-		SV_SetLastFrame(-1);
-		return;
-	}
-
-	SV_SetLastFrame(lastframe);
-	net_drop = sv_client->netchan->dropped;
-
-	if (net_drop > 2)
-		sv_client->frameflags |= FF_CLIENTPRED;
-
-	if (net_drop < 20)
-	{
-		// run lastcmd multiple times if no backups available
-		while (net_drop > 2)
-		{
-			SV_ClientThink(&sv_client->lastcmd);
-			net_drop--;
-		}
-
-		// run backup cmds
-		if (net_drop > 1)
-			SV_ClientThink(&oldest);
-
-		if (net_drop > 0)
-			SV_ClientThink(&oldcmd);
-	}
-
-	// run new cmd
-	SV_ClientThink(&newcmd);
-	sv_client->lastcmd = newcmd;
-}
-
-/*
-==================
 SV_NewClientExecuteMove
 ==================
 */
@@ -979,7 +880,7 @@ static void SV_NewClientExecuteMove(int c)
 			}
 
 			cmd = &cmds[i][j];
-			MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd, sv_client->version);
+			MSG_ReadDeltaUsercmd_Enhanced(lastcmd, cmd);
 			lastcmd = cmd;
 		}
 	}
@@ -1217,43 +1118,6 @@ static void SV_ParseDeltaUserinfo(void)
 	SV_UpdateUserinfo();
 }
 
-#if USE_FPS
-void SV_AlignKeyFrames(client_t *client)
-{
-	int framediv = sv.framediv / client->framediv;
-	int framenum = sv.framenum / client->framediv;
-	int frameofs = framenum % framediv;
-	int newnum = frameofs + Q_align(client->framenum, framediv);
-	Com_DPrintf("[%d] align %d --> %d (num = %d, div = %d, ofs = %d)\n",
-		sv.framenum, client->framenum, newnum, framenum, framediv, frameofs);
-	client->framenum = newnum;
-}
-
-static void set_client_fps(int value)
-{
-	int framediv, framerate;
-
-	// 0 means highest
-	if (!value)
-		value = sv.framerate;
-
-	framediv = value / BASE_FRAMERATE;
-	clamp(framediv, 1, MAX_FRAMEDIV);
-	framediv = sv.framediv / Q_gcd(sv.framediv, framediv);
-	framerate = sv.framerate / framediv;
-	Com_DPrintf("[%d] client div=%d, server div=%d, rate=%d\n",
-		sv.framenum, framediv, sv.framediv, framerate);
-	sv_client->framediv = framediv;
-	SV_AlignKeyFrames(sv_client);
-	// save for status inspection
-	sv_client->settings[CLS_FPS] = framerate;
-	MSG_WriteByte(svc_setting);
-	MSG_WriteLong(SVS_FPS);
-	MSG_WriteLong(framerate);
-	SV_ClientAddMessage(sv_client, MSG_RELIABLE | MSG_CLEAR);
-}
-#endif
-
 static void SV_ParseClientSetting(void)
 {
 	int idx, value;
@@ -1265,12 +1129,6 @@ static void SV_ParseClientSetting(void)
 		return;
 
 	sv_client->settings[idx] = value;
-#if USE_FPS
-
-	if (idx == CLS_FPS && sv_client->protocol == PROTOCOL_VERSION_Q2PRO)
-		set_client_fps(value);
-
-#endif
 }
 
 static void SV_ParseClientCommand(void)
@@ -1330,7 +1188,6 @@ void SV_ExecuteClientMessage(client_t *client)
 		switch (c & SVCMD_MASK)
 		{
 			default:
-badbyte:
 				SV_DropClient(client, "unknown command byte");
 				break;
 
@@ -1341,33 +1198,20 @@ badbyte:
 				SV_ParseFullUserinfo();
 				break;
 
-			case clc_move:
-				SV_OldClientExecuteMove();
-				break;
-
 			case clc_stringcmd:
 				SV_ParseClientCommand();
 				break;
 
 			case clc_setting:
-				if (client->protocol < PROTOCOL_VERSION_R1Q2)
-					goto badbyte;
-
 				SV_ParseClientSetting();
 				break;
 
 			case clc_move_nodelta:
 			case clc_move_batched:
-				if (client->protocol != PROTOCOL_VERSION_Q2PRO)
-					goto badbyte;
-
 				SV_NewClientExecuteMove(c);
 				break;
 
 			case clc_userinfo_delta:
-				if (client->protocol != PROTOCOL_VERSION_Q2PRO)
-					goto badbyte;
-
 				SV_ParseDeltaUserinfo();
 				break;
 		}

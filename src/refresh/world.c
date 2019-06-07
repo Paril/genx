@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "gl.h"
+#include "common/cmodel.h"
 
 void GL_SampleLightPoint(vec3_t color)
 {
@@ -63,14 +64,14 @@ void GL_SampleLightPoint(vec3_t color)
 	}
 }
 
-static bool _GL_LightPoint(vec3_t start, vec3_t color)
+static bool _GL_LightPoint(vec3_t start_pt, vec3_t color)
 {
 	bsp_t           *bsp;
 	// Generations
 	int             i;
 	qhandle_t		index;
 	lightpoint_t    pt;
-	vec3_t          end, mins, maxs;
+	vec3_t          start, end, mins, maxs;
 	entity_t        *ent;
 	mmodel_t        *model;
 	vec_t           *angles;
@@ -78,6 +79,10 @@ static bool _GL_LightPoint(vec3_t start, vec3_t color)
 
 	if (!bsp || !bsp->lightmap)
 		return false;
+
+	start[0] = start_pt[0];
+	start[1] = start_pt[1];
+	start[2] = start_pt[2] + 1;
 
 	end[0] = start[0];
 	end[1] = start[1];

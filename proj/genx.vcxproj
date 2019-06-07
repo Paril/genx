@@ -178,6 +178,8 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">rf_$(IntDir)%(filename).obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">rf_$(IntDir)%(filename).obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\src\refresh\md2.c" />
+    <ClCompile Include="..\src\refresh\mdl.c" />
     <ClCompile Include="..\src\refresh\mesh.c" />
     <ClCompile Include="..\src\refresh\models.c" />
     <ClCompile Include="..\src\refresh\shader.c" />
@@ -190,6 +192,7 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">rf_$(IntDir)%(filename).obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">rf_$(IntDir)%(filename).obj</ObjectFileName>
     </ClCompile>
+    <ClCompile Include="..\src\refresh\wsc.c" />
     <ClCompile Include="..\src\sdl\system.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)/system_2.obj</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)/system_2.obj</ObjectFileName>
@@ -274,6 +277,8 @@
     <ClInclude Include="..\src\refresh\gl.h" />
     <ClInclude Include="..\src\refresh\glad.h" />
     <ClInclude Include="..\src\refresh\images.h" />
+    <ClInclude Include="..\src\refresh\models.h" />
+    <ClInclude Include="..\src\server\server.h" />
     <ClInclude Include="..\src\windows\client.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

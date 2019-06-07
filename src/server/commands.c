@@ -610,10 +610,9 @@ static void dump_protocols(void)
 		"--- --------------- ----- ----- ------ ---- ----\n");
 	FOR_EACH_CLIENT(cl)
 	{
-		Com_Printf("%3i %-15.15s %5d %5d %6"PRIz"  %s\n",
-			cl->number, cl->name, cl->protocol, cl->version,
-			cl->netchan->maxpacketlen,
-			cl->has_zlib ? "yes" : "no ");
+		Com_Printf("%3i %-15.15s %5d %6"PRIz"\n",
+			cl->number, cl->name, cl->protocol,
+			cl->netchan->maxpacketlen);
 	}
 }
 
@@ -633,9 +632,9 @@ static void dump_settings(void)
 		opt[2] = cl->settings[CLS_NOGIBS]         ? 'I' : ' ';
 		opt[3] = cl->settings[CLS_NOFOOTSTEPS]    ? 'F' : ' ';
 		opt[4] = cl->settings[CLS_NOPREDICT]      ? 'P' : ' ';
-		Com_Printf("%3i %-15.15s %5d %s %3d %3d\n",
+		Com_Printf("%3i %-15.15s %5d %s %3d\n",
 			cl->number, cl->name, cl->protocol, opt,
-			cl->settings[CLS_PLAYERUPDATES], cl->settings[CLS_FPS]);
+			cl->settings[CLS_PLAYERUPDATES]);
 	}
 }
 
@@ -763,15 +762,11 @@ void SV_PrintMiscInfo(void)
 	char buffer[MAX_QPATH];
 	Com_Printf("version              %s\n",
 		sv_client->version_string ? sv_client->version_string : "-");
-	Com_Printf("protocol (maj/min)   %d/%d\n",
-		sv_client->protocol, sv_client->version);
+	Com_Printf("protocol             %d\n",
+		sv_client->protocol);
 	Com_Printf("maxmsglen            %"PRIz"\n", sv_client->netchan->maxpacketlen);
-	Com_Printf("zlib support         %s\n", sv_client->has_zlib ? "yes" : "no");
 	Com_Printf("ping                 %d\n", sv_client->ping);
 	Com_Printf("movement fps         %d\n", sv_client->moves_per_sec);
-#if USE_FPS
-	Com_Printf("update rate          %d\n", sv_client->settings[CLS_FPS]);
-#endif
 	Com_Printf("RTT (min/avg/max)    %d/%d/%d ms\n",
 		sv_client->min_ping, AVG_PING(sv_client), sv_client->max_ping);
 	Com_Printf("PL server to client  %.2f%% (approx)\n", PL_S2C(sv_client));

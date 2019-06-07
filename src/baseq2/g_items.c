@@ -404,7 +404,7 @@ GetItemByIndex
 */
 gitem_t *GetItemByIndex(itemid_e index)
 {
-	if (index == 0 || index > game.num_items)
+	if (index == 0 || index >= game.num_items)
 		return NULL;
 
 	return &itemlist[index];
@@ -1708,7 +1708,7 @@ static inline void InitKey(itemid_e id, const char *classname, const char *world
 	InitWeapon(ITI_WEAPON_ ## index, "weapon_" #index, "%wg_weapon_" #index, "%wv_weapon_" #index, "%w_weapon_" #index, "Weapon " #index, weapmodel, precaches, "%wa_weapon_" #index, "%wa_weapon_" #index)
 
 #define InitWeaponInitialQuick(index, weapmodel, precaches) \
-	InitWeapon(ITI_WEAPON_ ## index, "weapon_" #index, NULL, "%wv_weapon_" #index, "%w_weapon_" #index, "Weapon " #index, weapmodel, precaches, NULL, NULL)
+	InitWeapon(ITI_WEAPON_ ## index, "weapon_" #index, NULL, "%wv_weapon_" #index, NULL, "Weapon " #index, weapmodel, precaches, NULL, NULL)
 
 static void InitItemList()
 {
@@ -1860,7 +1860,7 @@ void CheckWeaponBalanceCvars()
 
 void InitItems(void)
 {
-	game.num_items = sizeof(itemlist) / sizeof(itemlist[0]) - 1;
+	game.num_items = q_countof(itemlist);
 	InitItemList();
 	InitGameInfos();
 	CheckWeaponBalanceCvars();

@@ -81,7 +81,6 @@ static void parse_frame_script(void)
 			if (!type_start)
 				gi.error("Animation script invalid type");
 	
-			//stand, move, walk, turn, run, charge
 #define TYPE_IS(x)		Q_stricmpn(type_start, x, type_len) == 0
 
 			if (TYPE_IS("stand"))
@@ -96,6 +95,8 @@ static void parse_frame_script(void)
 				script_frame_temp.move_type = ai_run;
 			else if (TYPE_IS("charge"))
 				script_frame_temp.move_type = ai_charge;
+			else if (TYPE_IS("none"))
+				script_frame_temp.move_type = NULL;
 			else
 				gi.error("Animation script bad type");
 
@@ -599,8 +600,13 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 
 			if (!ditto_frame)
 			{
-				undecorate_symbol_name(frame->aifunc, name_buf, sizeof(name_buf));
-				gi.FS_FPrintf(f, "\t%s", name_buf + 3);
+				if (frame->aifunc)
+				{
+					undecorate_symbol_name(frame->aifunc, name_buf, sizeof(name_buf));
+					gi.FS_FPrintf(f, "\t%s", name_buf + 3);
+				}
+				else
+					gi.FS_FPrintf(f, "\tnone", name_buf + 3);
 			}
 			else
 			{

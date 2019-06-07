@@ -1976,6 +1976,7 @@ void PutClientInServer(edict_t *ent)
 	saved = client->pers;
 	memset(client, 0, sizeof(*client));
 	client->pers = saved;
+	client->clientNum = ent - g_edicts - 1;
 
 	if (client->pers.health <= 0)
 	{
@@ -2421,16 +2422,13 @@ bool ClientConnect(edict_t *ent, char *userinfo)
 ClientDisconnect
 
 Called when a player drops from the server.
-Will not be called between levels.
+Will be called between levels.
 ============
 */
 void ClientDisconnect(edict_t *ent)
 {
-	//int     playernum;
 	if (!ent->client)
 		return;
-
-	gi.bprintf(PRINT_HIGH, "%s disconnected\n", ent->client->pers.netname);
 
 	// send effect
 	if (ent->inuse)
@@ -2442,17 +2440,21 @@ void ClientDisconnect(edict_t *ent)
 	}
 
 	gi.unlinkentity(ent);
+
+	bool wasInUse = ent->inuse;
+
+	ent->inuse = false;
 	ent->s.modelindex = 0;
 	ent->s.sound = 0;
 	ent->s.event = 0;
 	ent->s.effects = 0;
 	ent->solid = SOLID_NOT;
-	ent->inuse = false;
 	ent->entitytype = ET_NULL;
 	ent->client->pers.connected = false;
-	// FIXME: don't break skins on corpses, etc
-	//playernum = ent-g_edicts-1;
-	//gi.configstring (CS_PLAYERSKINS+playernum, "");
+
+	if (wasInUse)
+		gi.bprintf(PRINT_HIGH, "%s disconnected\n", ent->client->pers.netname);
+
 	//JABot[start]
 	AI_EnemyRemoved(ent);
 	//[end]

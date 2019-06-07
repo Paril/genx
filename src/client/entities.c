@@ -37,9 +37,6 @@ FRAME PARSING
 
 static inline bool entity_optimized(const entity_state_t *state)
 {
-	if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-		return false;
-
 	if (state->number != cl.frame.clientNum + 1)
 		return false;
 
@@ -54,10 +51,6 @@ static inline void entity_update_new(centity_t *ent, const entity_state_t *state
 	ent->trailcount = 1024;     // for diminishing rocket / grenade trails
 	// duplicate the current state so lerping doesn't hurt anything
 	ent->prev = *state;
-#if USE_FPS
-	ent->prev_frame = state->frame;
-	ent->event_frame = cl.frame.number;
-#endif
 
 	if (state->event == EV_PLAYER_TELEPORT ||
 		state->event == EV_OTHER_TELEPORT ||
@@ -77,17 +70,6 @@ static inline void entity_update_new(centity_t *ent, const entity_state_t *state
 static inline void entity_update_old(centity_t *ent, const entity_state_t *state, const vec_t *origin)
 {
 	int event = state->event;
-#if USE_FPS
-
-	// check for new event
-	if (state->event != ent->current.event)
-		ent->event_frame = cl.frame.number; // new
-	else if (cl.frame.number - ent->event_frame >= cl.framediv)
-		ent->event_frame = cl.frame.number; // refreshed
-	else
-		event = 0; // duplicated
-
-#endif
 
 	if (state->modelindex != ent->current.modelindex
 		|| state->modelindex2 != ent->current.modelindex2
@@ -104,28 +86,11 @@ static inline void entity_update_old(centity_t *ent, const entity_state_t *state
 		ent->trailcount = 1024;     // for diminishing rocket / grenade trails
 		// duplicate the current state so lerping doesn't hurt anything
 		ent->prev = *state;
-#if USE_FPS
-		ent->prev_frame = state->frame;
-#endif
 		// no lerping if teleported or morphed
 		VectorCopy(origin, ent->lerp_origin);
 		return;
 	}
 
-#if USE_FPS
-
-	// start alias model animation
-	if (state->frame != ent->current.frame)
-	{
-		ent->prev_frame = ent->current.frame;
-		ent->anim_start = cl.servertime - cl.frametime;
-		Com_DDDDPrintf("[%d] anim start %d: %d --> %d [%d]\n",
-			ent->anim_start, state->number,
-			ent->prev_frame, state->frame,
-			cl.frame.number);
-	}
-
-#endif
 	// shuffle the last state to previous
 	ent->prev = ent->current;
 }
@@ -212,13 +177,6 @@ static void entity_event(int number)
 	if ((cent->current.effects & EF_TELEPORTER) && CL_FRAMESYNC)
 		CL_TeleporterParticles(cent->current.origin);
 
-#if USE_FPS
-
-	if (cent->event_frame != cl.frame.number)
-		return;
-
-#endif
-
 	switch (cent->current.event)
 	{
 		case EV_ITEM_RESPAWN:
@@ -289,17 +247,9 @@ static void set_active_state(void)
 	cls.state = ca_active;
 	cl.serverdelta = Q_align(cl.frame.number, CL_FRAMEDIV);
 	cl.time = cl.servertime = 0; // set time
-#if USE_FPS
-	cl.keytime = cl.keyservertime = 0;
-	cl.keyframe = cl.frame; // initialize keyframe to make sure it's valid
-#endif
 	// initialize oldframe so lerping doesn't hurt anything
 	cl.oldframe.valid = false;
 	cl.oldframe.ps = cl.frame.ps;
-#if USE_FPS
-	cl.oldkeyframe.valid = false;
-	cl.oldkeyframe.ps = cl.keyframe.ps;
-#endif
 	cl.frameflags = 0;
 
 	if (cls.netchan)
@@ -309,8 +259,7 @@ static void set_active_state(void)
 	VectorScale(cl.frame.ps.pmove.origin, 0.125f, cl.predicted_origin);
 	VectorScale(cl.frame.ps.pmove.velocity, 0.125f, cl.predicted_velocity);
 
-	if (cl.frame.ps.pmove.pm_type < PM_DEAD &&
-		cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
+	if (cl.frame.ps.pmove.pm_type < PM_DEAD)
 	{
 		// enhanced servers don't send viewangles
 		CL_PredictAngles();
@@ -360,10 +309,6 @@ static void player_update(server_frame_t *oldframe, server_frame_t *frame, int f
 
 	if (ent->serverframe > oldnum &&
 		ent->serverframe <= frame->number &&
-#if USE_FPS
-		ent->event_frame > oldnum &&
-		ent->event_frame <= frame->number &&
-#endif
 		(ent->current.event == EV_PLAYER_TELEPORT
 			|| ent->current.event == EV_OTHER_TELEPORT))
 		goto dup;
@@ -407,9 +352,6 @@ void CL_DeltaFrame(void)
 	// set server time
 	framenum = cl.frame.number - cl.serverdelta;
 	cl.servertime = framenum * CL_FRAMETIME;
-#if USE_FPS
-	cl.keyservertime = (framenum / cl.framediv) * BASE_FRAMETIME;
-#endif
 	// rebuild the list of solid entities for this frame
 	cl.numSolidEntities = 0;
 	// initialize position of the player's own entity from playerstate.
@@ -432,12 +374,7 @@ void CL_DeltaFrame(void)
 		IN_Activate();
 
 	player_update(&cl.oldframe, &cl.frame, 1);
-#if USE_FPS
 
-	if (CL_FRAMESYNC)
-		player_update(&cl.oldkeyframe, &cl.keyframe, cl.framediv);
-
-#endif
 	CL_CheckPredictionError();
 	SCR_SetCrosshairColor();
 }
@@ -702,39 +639,6 @@ static void CL_AddPacketEntities(void)
 
 				VectorCopy(ent.origin, ent.oldorigin);
 			}
-
-#if USE_FPS
-
-			// run alias model animation
-			if (cent->prev_frame != s1->frame)
-			{
-				int delta = cl.time - cent->anim_start;
-				float frac;
-
-				if (delta > BASE_FRAMETIME)
-				{
-					Com_DDDDPrintf("[%d] anim end %d: %d --> %d\n",
-						cl.time, s1->number,
-						cent->prev_frame, s1->frame);
-					cent->prev_frame = s1->frame;
-					frac = 1;
-				}
-				else if (delta > 0)
-				{
-					frac = delta * BASE_1_FRAMETIME;
-					Com_DDDDPrintf("[%d] anim run %d: %d --> %d [%f]\n",
-						cl.time, s1->number,
-						cent->prev_frame, s1->frame,
-						frac);
-				}
-				else
-					frac = 0;
-
-				ent.oldframe = cent->prev_frame;
-				ent.backlerp = 1.0f - frac;
-			}
-
-#endif
 		}
 
 		if (entry)
@@ -1499,7 +1403,7 @@ void CL_CalcViewValues(void)
 		// use predicted values
 		VectorCopy(cl.predicted_angles, cl.refdef.viewangles);
 	}
-	else if (ops->pmove.pm_type < PM_DEAD && cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
+	else if (ops->pmove.pm_type < PM_DEAD)
 	{
 		// lerp from predicted angles, since enhanced servers
 		// do not send viewangles each frame
@@ -1526,11 +1430,6 @@ void CL_CalcViewValues(void)
 			cl.refdef.blend[i] = LerpFloat(ops->blend[i], ps->blend[i], lerp);
 	}
 
-#if USE_FPS
-	ps = &cl.keyframe.ps;
-	ops = &cl.oldkeyframe.ps;
-	lerp = cl.keylerpfrac;
-#endif
 	// interpolate field of view
 	cl.fov_x = lerp_client_fov(ops->fov, ps->fov, lerp);
 	cl.fov_y = V_CalcFov(cl.fov_x, 4, 3);

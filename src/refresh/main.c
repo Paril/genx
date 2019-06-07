@@ -973,25 +973,6 @@ static void GL_SetupConfig(void)
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &gl_config.max_anisotropy);
 }
 
-static void GL_InitTables(void)
-{
-	vec_t lat, lng;
-	const vec_t *v;
-	int i;
-
-	for (i = 0; i < NUMVERTEXNORMALS; i++)
-	{
-		v = bytedirs[i];
-		lat = acos(v[2]);
-		lng = atan2(v[1], v[0]);
-		gl_static.latlngtab[i][0] = (int)(lat * (float)(255 / (2 * M_PI))) & 255;
-		gl_static.latlngtab[i][1] = (int)(lng * (float)(255 / (2 * M_PI))) & 255;
-	}
-
-	for (i = 0; i < 256; i++)
-		gl_static.sintab[i] = sin(i * (2 * M_PI / 255));
-}
-
 static void GL_PostInit(void)
 {
 	registration_sequence = 1;
@@ -1034,7 +1015,6 @@ bool R_Init(bool total)
 	// register our variables
 	GL_Register();
 	GL_InitState();
-	GL_InitTables();
 	GL_PostInit();
 	Com_Printf("----------------------\n");
 	return true;

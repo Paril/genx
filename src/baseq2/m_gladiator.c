@@ -25,7 +25,7 @@ GLADIATOR
 
 #include "g_local.h"
 #include "m_gladiator.h"
-
+#include "m_local.h"
 
 static q_soundhandle sound_pain1;
 static q_soundhandle sound_pain2;
@@ -38,93 +38,47 @@ static q_soundhandle sound_idle;
 static q_soundhandle sound_search;
 static q_soundhandle sound_sight;
 
+static mscript_t script;
 
-void gladiator_idle(edict_t *self)
+static void gladiator_idle(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
-void gladiator_sight(edict_t *self, edict_t *other)
+static void gladiator_sight(edict_t *self, edict_t *other)
 {
 	gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
 
-void gladiator_search(edict_t *self)
+static void gladiator_search(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_search, 1, ATTN_NORM, 0);
 }
 
-void gladiator_cleaver_swing(edict_t *self)
+static void gladiator_cleaver_swing(edict_t *self)
 {
 	gi.sound(self, CHAN_WEAPON, sound_cleaver_swing, 1, ATTN_NORM, 0);
 }
 
-mframe_t gladiator_frames_stand [] =
+static void gladiator_stand(edict_t *self)
 {
-	{ ai_stand, 0, NULL }, //
-	{ ai_stand, 0, NULL }, //
-	{ ai_stand, 0, NULL }, //
-	{ ai_stand, 0, NULL }, //
-	{ ai_stand, 0, NULL }, //
-	{ ai_stand, 0, NULL }, //
-	{ ai_stand, 0, NULL }  //
-};
-mmove_t gladiator_move_stand = {FRAME_stand1, FRAME_stand7, gladiator_frames_stand, NULL};
-
-void gladiator_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &gladiator_move_stand;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand");
 }
 
-
-mframe_t gladiator_frames_walk [] =
+static void gladiator_walk(edict_t *self)
 {
-	{ ai_walk, 15, NULL }, //
-	{ ai_walk, 7,  NULL }, //
-	{ ai_walk, 6,  NULL }, //
-	{ ai_walk, 5,  NULL }, //
-	{ ai_walk, 2,  NULL }, //
-	{ ai_walk, 0,  NULL }, //
-	{ ai_walk, 2,  NULL }, //
-	{ ai_walk, 8,  NULL }, //
-	{ ai_walk, 12, NULL }, //
-	{ ai_walk, 8,  NULL }, //
-	{ ai_walk, 5,  NULL }, //
-	{ ai_walk, 5,  NULL }, //
-	{ ai_walk, 2,  NULL }, //
-	{ ai_walk, 2,  NULL }, //
-	{ ai_walk, 1,  NULL }, //
-	{ ai_walk, 8,  NULL }  //
-};
-mmove_t gladiator_move_walk = {FRAME_walk1, FRAME_walk16, gladiator_frames_walk, NULL};
-
-void gladiator_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &gladiator_move_walk;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk");
 }
 
-
-mframe_t gladiator_frames_run [] =
-{
-	{ ai_run, 23, NULL }, //
-	{ ai_run, 14, NULL }, //
-	{ ai_run, 14, NULL }, //
-	{ ai_run, 21, NULL }, //
-	{ ai_run, 12, NULL }, //
-	{ ai_run, 13, NULL }  //
-};
-mmove_t gladiator_move_run = {FRAME_run1, FRAME_run6, gladiator_frames_run, NULL};
-
-void gladiator_run(edict_t *self)
+static void gladiator_run(edict_t *self)
 {
 	if (self->monsterinfo.aiflags & AI_STAND_GROUND)
-		self->monsterinfo.currentmove = &gladiator_move_stand;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand");
 	else
-		self->monsterinfo.currentmove = &gladiator_move_run;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run");
 }
 
-
-void GaldiatorMelee(edict_t *self)
+static void GaldiatorMelee(edict_t *self)
 {
 	vec3_t  aim;
 	VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
@@ -135,35 +89,12 @@ void GaldiatorMelee(edict_t *self)
 		gi.sound(self, CHAN_AUTO, sound_cleaver_miss, 1, ATTN_NORM, 0);
 }
 
-mframe_t gladiator_frames_attack_melee [] =
+static void gladiator_melee(edict_t *self)
 {
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, gladiator_cleaver_swing }, //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, GaldiatorMelee },		   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, gladiator_cleaver_swing }, //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, GaldiatorMelee },		   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL },					   //
-	{ ai_charge, 0, NULL }					   //
-};
-mmove_t gladiator_move_attack_melee = {FRAME_melee1, FRAME_melee17, gladiator_frames_attack_melee, gladiator_run};
-
-void gladiator_melee(edict_t *self)
-{
-	self->monsterinfo.currentmove = &gladiator_move_attack_melee;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack_melee");
 }
 
-
-void GladiatorGun(edict_t *self)
+static void GladiatorGun(edict_t *self)
 {
 	vec3_t  start;
 	vec3_t  dir;
@@ -176,21 +107,7 @@ void GladiatorGun(edict_t *self)
 	monster_fire_railgun(self, start, dir, 50, 100, MZ2_GLADIATOR_RAILGUN_1);
 }
 
-mframe_t gladiator_frames_attack_gun [] =
-{
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, GladiatorGun },	//
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, NULL },			//
-	{ ai_charge, 0, NULL }			//
-};
-mmove_t gladiator_move_attack_gun = {FRAME_attack1, FRAME_attack9, gladiator_frames_attack_gun, gladiator_run};
-
-void gladiator_attack(edict_t *self)
+static void gladiator_attack(edict_t *self)
 {
 	float   range;
 	vec3_t  v;
@@ -205,42 +122,18 @@ void gladiator_attack(edict_t *self)
 	gi.sound(self, CHAN_WEAPON, sound_gun, 1, ATTN_NORM, 0);
 	VectorCopy(self->enemy->s.origin, self->pos1);  //save for aiming the shot
 	self->pos1[2] += self->enemy->viewheight;
-	self->monsterinfo.currentmove = &gladiator_move_attack_gun;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack_gun");
 }
 
-
-mframe_t gladiator_frames_pain [] =
-{
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }  //
-};
-mmove_t gladiator_move_pain = {FRAME_pain1, FRAME_pain6, gladiator_frames_pain, gladiator_run};
-
-mframe_t gladiator_frames_pain_air [] =
-{
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }  //
-};
-mmove_t gladiator_move_pain_air = {FRAME_painup1, FRAME_painup7, gladiator_frames_pain_air, gladiator_run};
-
-void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
+static void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
 		self->s.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 	{
-		if ((self->velocity[2] > 100) && (self->monsterinfo.currentmove == &gladiator_move_pain))
-			self->monsterinfo.currentmove = &gladiator_move_pain_air;
+		if ((self->velocity[2] > 100) && (self->monsterinfo.currentmove == M_GetMonsterMove(&script, "pain")))
+			self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain_air");
 
 		return;
 	}
@@ -256,13 +149,12 @@ void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
 		return;     // no pain anims in nightmare
 
 	if (self->velocity[2] > 100)
-		self->monsterinfo.currentmove = &gladiator_move_pain_air;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain_air");
 	else
-		self->monsterinfo.currentmove = &gladiator_move_pain;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain");
 }
 
-
-void gladiator_dead(edict_t *self)
+static void gladiator_dead(edict_t *self)
 {
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, -8);
@@ -273,34 +165,7 @@ void gladiator_dead(edict_t *self)
 	gi.linkentity(self);
 }
 
-mframe_t gladiator_frames_death [] =
-{
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }, //
-	{ ai_move, 0, NULL }  //
-};
-mmove_t gladiator_move_death = {FRAME_death1, FRAME_death22, gladiator_frames_death, gladiator_dead};
-
-void gladiator_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void gladiator_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int     n;
 
@@ -327,9 +192,18 @@ void gladiator_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 	gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
 	self->takedamage = DAMAGE_YES;
-	self->monsterinfo.currentmove = &gladiator_move_death;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
 
+static const mevent_t events[] =
+{
+	EVENT_FUNC(gladiator_run),
+	EVENT_FUNC(gladiator_cleaver_swing),
+	EVENT_FUNC(GaldiatorMelee),
+	EVENT_FUNC(GladiatorGun),
+	EVENT_FUNC(gladiator_dead),
+	NULL
+};
 
 /*QUAKED monster_gladiator (1 .5 0) (-32 -32 -24) (32 32 64) Ambush Trigger_Spawn Sight
 */
@@ -339,6 +213,14 @@ void SP_monster_gladiator(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/monsters/gladiatr/tris.md2";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q2/gladiator.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	sound_pain1 = gi.soundindex("gladiator/pain.wav");
@@ -353,7 +235,7 @@ void SP_monster_gladiator(edict_t *self)
 	sound_sight = gi.soundindex("gladiator/sight.wav");
 	self->movetype = MOVETYPE_STEP;
 	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex("models/monsters/gladiatr/tris.md2");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -32, -32, -24);
 	VectorSet(self->maxs, 32, 32, 64);
 	self->health = 400;
@@ -371,7 +253,7 @@ void SP_monster_gladiator(edict_t *self)
 	self->monsterinfo.idle = gladiator_idle;
 	self->monsterinfo.search = gladiator_search;
 	gi.linkentity(self);
-	self->monsterinfo.currentmove = &gladiator_move_stand;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand");
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }

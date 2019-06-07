@@ -50,9 +50,6 @@ static inline gtime_t time_diff(gtime_t l, gtime_t r)
 	return l - r;
 }
 
-// features this game supports
-#define G_FEATURES  (GMF_PROPERINUSE|GMF_WANT_ALL_DISCONNECTS|GMF_ENHANCED_SAVEGAMES|GMF_VARIABLE_FPS)
-
 // the "gameversion" client command will print this plus compile date
 #define GAMEVERSION "baseq2"
 
@@ -557,12 +554,10 @@ typedef struct
 
 	bool	    autosaved;
 
-#if USE_FPS
 	int         framerate;
 	int         frametime;
 	int         framediv;
 	float		frameseconds;
-#endif
 
 	time_t		random_seed;
 } game_locals_t;
@@ -860,8 +855,6 @@ extern  cvar_t  *flood_persecond;
 extern  cvar_t  *flood_waitdelay;
 
 extern  cvar_t  *sv_maplist;
-
-extern  cvar_t  *sv_features;
 
 // Generations
 extern	cvar_t	*invasion;
@@ -1222,6 +1215,7 @@ struct gclient_s
 	// known to server
 	player_state_t  ps;             // communicated by server to clients
 	int             ping;
+	int				clientNum;
 
 	// private to game
 	client_persistant_t pers;

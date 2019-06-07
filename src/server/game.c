@@ -658,13 +658,6 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 			continue;
 		}
 
-		// default client doesn't know that bmodels have weird origins
-		if (edict->solid == SOLID_BSP && client->protocol == PROTOCOL_VERSION_DEFAULT)
-		{
-			SV_ClientAddMessage(client, 0);
-			continue;
-		}
-
 		if (LIST_EMPTY(&client->msg_free_list))
 		{
 			Com_WPrintf("%s: %s: out of message slots\n",

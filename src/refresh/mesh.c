@@ -76,11 +76,7 @@ static inline vec_t shadedot(const vec_t *normal)
 
 static inline vec_t *get_static_normal(vec_t *normal, const maliasvert_t *vert)
 {
-	unsigned int lat = vert->norm[0];
-	unsigned int lng = vert->norm[1];
-	normal[0] = TAB_SIN(lat) * TAB_COS(lng);
-	normal[1] = TAB_SIN(lat) * TAB_SIN(lng);
-	normal[2] = TAB_COS(lat);
+	VectorCopy(vert->norm, normal);
 	return normal;
 }
 

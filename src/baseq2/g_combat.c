@@ -417,13 +417,6 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 	}
 }
 
-/*bool CheckTeamDamage(edict_t *targ, edict_t *attacker)
-{
-	//FIXME make the next line real and uncomment this block
-	// if ((ability to damage a teammate == OFF) && (targ's team == attacker's team))
-	return false;
-}*/
-
 void Q1_SpawnBlood(vec3_t org, vec3_t vel, int damage)
 {
 	gi.WriteByte(svc_temp_entity);
@@ -464,7 +457,7 @@ static void ApplyMeansOfDeath(edict_t *target, meansOfDeath_t *mod)
 	target->meansOfDeath.time = mod->time;
 }
 
-void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, meansOfDeath_t mod)
+void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_in, vec3_t point, vec3_t normal, int damage, int knockback, int dflags, meansOfDeath_t mod)
 {
 	gclient_t   *client;
 	int         take;
@@ -506,7 +499,8 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir, 
 	else
 		te_sparks = TE_SPARKS;
 
-	VectorNormalize(dir);
+	vec3_t dir;
+	VectorNormalize2(dir_in, dir);
 
 	// bonus damage for suprising a monster
 	if (!(dflags & DAMAGE_RADIUS) && (targ->svflags & SVF_MONSTER) && (attacker->client) && (!targ->enemy) && (targ->health > 0) && (targ->s.game == GAME_Q2))

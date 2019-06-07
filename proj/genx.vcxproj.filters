@@ -319,6 +319,15 @@
     <ClCompile Include="..\src\sdl\system.c">
       <Filter>Source Files\sdl</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\refresh\md2.c">
+      <Filter>Source Files\refresh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\refresh\wsc.c">
+      <Filter>Source Files\refresh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\refresh\mdl.c">
+      <Filter>Source Files\refresh</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\client\sound\sound.h">
@@ -503,6 +512,12 @@
     </ClInclude>
     <ClInclude Include="..\src\windows\client.h">
       <Filter>Source Files\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\server\server.h">
+      <Filter>Source Files\server</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\refresh\models.h">
+      <Filter>Source Files\refresh</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

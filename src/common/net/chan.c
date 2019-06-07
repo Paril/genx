@@ -121,7 +121,7 @@ void Netchan_Init(void)
 	// pick a port value that should be nice and random
 	port = Sys_Milliseconds() & 0xffff;
 	net_qport = Cvar_Get("qport", va("%d", port), 0);
-	net_maxmsglen = Cvar_Get("net_maxmsglen", va("%d", MAX_PACKETLEN_WRITABLE_DEFAULT), 0);
+	net_maxmsglen = Cvar_Get("net_maxmsglen", va("%d", MAX_PACKETLEN_WRITABLE), 0);
 	net_maxmsglen->changed = net_maxmsglen_changed;
 }
 
@@ -139,7 +139,7 @@ void Netchan_OutOfBand(netsrc_t sock, const netadr_t *address,
 	struct
 	{
 		uint32_t    header;
-		char        data[MAX_PACKETLEN_DEFAULT - 4];
+		char        data[MAX_PACKETLEN - 4];
 	} packet;
 	size_t      len;
 	// write the packet header

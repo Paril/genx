@@ -207,44 +207,25 @@ static void CL_ParseFrame(int extrabits)
 	cl.frameflags = 0;
 	extraflags = 0;
 
-	if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
-	{
-		bits = MSG_ReadLong();
-		currentframe = bits & FRAMENUM_MASK;
-		delta = bits >> FRAMENUM_BITS;
+	bits = MSG_ReadLong();
+	currentframe = bits & FRAMENUM_MASK;
+	delta = bits >> FRAMENUM_BITS;
 
-		if (delta == 31)
-			deltaframe = -1;
-		else
-			deltaframe = currentframe - delta;
-
-		bits = MSG_ReadByte();
-		suppressed = bits & SUPPRESSCOUNT_MASK;
-
-		if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO)
-		{
-			if (suppressed & FF_CLIENTPRED)
-			{
-				// CLIENTDROP is implied, don't draw both
-				suppressed &= ~FF_CLIENTDROP;
-			}
-
-			cl.frameflags |= suppressed;
-		}
-		else if (suppressed)
-			cl.frameflags |= FF_SUPPRESSED;
-
-		extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
-	}
+	if (delta == 31)
+		deltaframe = -1;
 	else
-	{
-		currentframe = MSG_ReadLong();
-		deltaframe = MSG_ReadLong();
-		suppressed = MSG_ReadByte();
+		deltaframe = currentframe - delta;
 
-		if (suppressed)
-			cl.frameflags |= FF_SUPPRESSED;
-	}
+	bits = MSG_ReadByte();
+	suppressed = bits & SUPPRESSCOUNT_MASK;
+
+	if (suppressed & FF_CLIENTPRED)
+		// CLIENTDROP is implied, don't draw both
+		suppressed &= ~FF_CLIENTDROP;
+
+	cl.frameflags |= suppressed;
+
+	extraflags = (extrabits << 4) | (bits >> SUPPRESSCOUNT_BITS);
 
 	frame.number = currentframe;
 	frame.delta = deltaframe;
@@ -316,62 +297,27 @@ static void CL_ParseFrame(int extrabits)
 	else
 		frame.areabytes = 0;
 
-	if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT)
-	{
-		if (MSG_ReadByte() != svc_playerinfo)
-			Com_Error(ERR_DROP, "%s: not playerinfo", __func__);
-	}
-
 	SHOWNET(2, "%3"PRIz":playerinfo\n", msg_read.readcount - 1);
 	// parse playerstate
 	bits = MSG_ReadUShort();
 
-	if (cls.serverProtocol > PROTOCOL_VERSION_DEFAULT)
-	{
-		MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
+	MSG_ParseDeltaPlayerstate_Enhanced(from, &frame.ps, bits, extraflags);
+
 #ifdef _DEBUG
-
-		if (cl_shownet->integer > 2 && (bits || extraflags))
-		{
-			MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
-			Com_LPrintf(PRINT_DEVELOPER, "\n");
-		}
-
+	if (cl_shownet->integer > 2 && (bits || extraflags))
+	{
+		MSG_ShowDeltaPlayerstateBits_Enhanced(bits, extraflags);
+		Com_LPrintf(PRINT_DEVELOPER, "\n");
+	}
 #endif
 
-		if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO)
-		{
-			// parse clientNum
-			if (extraflags & EPS_CLIENTNUM)
-				frame.clientNum = MSG_ReadByte();
-			else if (oldframe)
-				frame.clientNum = oldframe->clientNum;
-		}
-		else
-			frame.clientNum = cl.clientNum;
-	}
-	else
-	{
-		MSG_ParseDeltaPlayerstate_Default(from, &frame.ps, bits);
-#ifdef _DEBUG
-
-		if (cl_shownet->integer > 2 && bits)
-		{
-			MSG_ShowDeltaPlayerstateBits_Default(bits);
-			Com_LPrintf(PRINT_DEVELOPER, "\n");
-		}
-
-#endif
-		frame.clientNum = cl.clientNum;
-	}
+	// parse clientNum
+	if (extraflags & EPS_CLIENTNUM)
+		frame.clientNum = MSG_ReadByte();
+	else if (oldframe)
+		frame.clientNum = oldframe->clientNum;
 
 	// parse packetentities
-	if (cls.serverProtocol <= PROTOCOL_VERSION_DEFAULT)
-	{
-		if (MSG_ReadByte() != svc_packetentities)
-			Com_Error(ERR_DROP, "%s: not packetentities", __func__);
-	}
-
 	SHOWNET(2, "%3"PRIz":packetentities\n", msg_read.readcount - 1);
 	CL_ParsePacketEntities(oldframe, &frame);
 	// save the frame off in the backup array for later delta comparisons
@@ -397,9 +343,6 @@ static void CL_ParseFrame(int extrabits)
 	if (!frame.valid)
 	{
 		cl.frame.valid = false;
-#if USE_FPS
-		cl.keyframe.valid = false;
-#endif
 		return; // do not change anything
 	}
 
@@ -414,15 +357,6 @@ static void CL_ParseFrame(int extrabits)
 
 	cl.oldframe = cl.frame;
 	cl.frame = frame;
-#if USE_FPS
-
-	if (CL_FRAMESYNC)
-	{
-		cl.oldkeyframe = cl.keyframe;
-		cl.keyframe = cl.frame;
-	}
-
-#endif
 
 	CL_DeltaFrame();
 }
@@ -573,117 +507,45 @@ static void CL_ParseServerData(void)
 	MSG_ReadString(levelname, sizeof(levelname));
 	// setup default pmove parameters
 	PmoveInit(&cl.pmp, GAME_NONE);
-#if USE_FPS
-	// setup default frame times
-	cl.frametime = BASE_FRAMETIME;
-	cl.frametime_inv = BASE_1_FRAMETIME;
-	cl.framediv = 1;
-#endif
 	// setup default server state
 	cl.serverstate = ss_game;
 
-	if (cls.serverProtocol == PROTOCOL_VERSION_R1Q2)
+	i = MSG_ReadByte();
+	Com_DPrintf("Q2PRO server state %d\n", i);
+	cl.serverstate = i;
+
+	i = MSG_ReadByte();
+
+	if (i)
 	{
-		i = MSG_ReadByte();
-
-		if (i)
-			Com_Error(ERR_DROP, "'Enhanced' R1Q2 servers are not supported");
-
-		i = MSG_ReadShort();
-
-		// for some reason, R1Q2 servers always report the highest protocol
-		// version they support, while still using the lower version
-		// client specified in the 'connect' packet. oh well...
-		if (!R1Q2_SUPPORTED(i))
-		{
-			Com_WPrintf(
-				"R1Q2 server reports unsupported protocol version %d.\n"
-				"Assuming it really uses our current client version %d.\n"
-				"Things will break if it does not!\n", i, PROTOCOL_VERSION_R1Q2_CURRENT);
-			clamp(i, PROTOCOL_VERSION_R1Q2_MINIMUM, PROTOCOL_VERSION_R1Q2_CURRENT);
-		}
-
-		Com_DPrintf("Using minor R1Q2 protocol version %d\n", i);
-		cls.protocolVersion = i;
-		MSG_ReadByte(); // used to be advanced deltas
-		i = MSG_ReadByte();
-
-		if (i)
-		{
-			Com_DPrintf("R1Q2 strafejump hack enabled\n");
-			cl.pmp.strafehack = true;
-		}
-
-		cl.esFlags |= MSG_ES_BEAMORIGIN;
-
-		if (cls.protocolVersion >= PROTOCOL_VERSION_R1Q2_LONG_SOLID)
-			cl.esFlags |= MSG_ES_LONGSOLID;
-
-		cl.pmp.speedmult = 2;
+		Com_DPrintf("Q2PRO strafejump hack enabled\n");
+		cl.pmp.strafehack = true;
 	}
-	else if (cls.serverProtocol == PROTOCOL_VERSION_Q2PRO)
+
+	i = MSG_ReadByte(); //atu QWMod
+
+	if (i)
 	{
-		i = MSG_ReadShort();
-
-		if (!Q2PRO_SUPPORTED(i))
-		{
-			Com_Error(ERR_DROP,
-				"Q2PRO server reports unsupported protocol version %d.\n"
-				"Current client version is %d.", i, PROTOCOL_VERSION_Q2PRO_CURRENT);
-		}
-
-		Com_DPrintf("Using minor Q2PRO protocol version %d\n", i);
-		cls.protocolVersion = i;
-		i = MSG_ReadByte();
-
-		if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SERVER_STATE)
-		{
-			Com_DPrintf("Q2PRO server state %d\n", i);
-			cl.serverstate = i;
-		}
-
-		i = MSG_ReadByte();
-
-		if (i)
-		{
-			Com_DPrintf("Q2PRO strafejump hack enabled\n");
-			cl.pmp.strafehack = true;
-		}
-
-		i = MSG_ReadByte(); //atu QWMod
-
-		if (i)
-		{
-			Com_DPrintf("Q2PRO QW mode enabled\n");
-			PmoveEnableQW(&cl.pmp);
-		}
-
-		cl.esFlags |= MSG_ES_UMASK;
-
-		if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_LONG_SOLID)
-			cl.esFlags |= MSG_ES_LONGSOLID;
-
-		if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN)
-			cl.esFlags |= MSG_ES_BEAMORIGIN;
-
-		if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES)
-			cl.esFlags |= MSG_ES_SHORTANGLES;
-
-		if (cls.protocolVersion >= PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK)
-		{
-			i = MSG_ReadByte();
-
-			if (i)
-			{
-				Com_DPrintf("Q2PRO waterjump hack enabled\n");
-				cl.pmp.waterhack = true;
-			}
-		}
-
-		cl.pmp.speedmult = 2;
-		cl.pmp.flyhack = true; // fly hack is unconditionally enabled
-		cl.pmp.flyfriction = 4;
+		Com_DPrintf("Q2PRO QW mode enabled\n");
+		PmoveEnableQW(&cl.pmp);
 	}
+
+	cl.esFlags |= MSG_ES_UMASK;
+	cl.esFlags |= MSG_ES_LONGSOLID;
+	cl.esFlags |= MSG_ES_BEAMORIGIN;
+	cl.esFlags |= MSG_ES_SHORTANGLES;
+
+	i = MSG_ReadByte();
+
+	if (i)
+	{
+		Com_DPrintf("Q2PRO waterjump hack enabled\n");
+		cl.pmp.waterhack = true;
+	}
+
+	cl.pmp.speedmult = 2;
+	cl.pmp.flyhack = true; // fly hack is unconditionally enabled
+	cl.pmp.flyfriction = 4;
 
 	if (cl.clientNum == -1)
 		SCR_PlayCinematic(levelname);
@@ -1137,48 +999,6 @@ static void CL_ParseZPacket(void)
 #endif
 }
 
-#if USE_FPS
-static void set_server_fps(int value)
-{
-	int framediv = value / BASE_FRAMERATE;
-	clamp(framediv, 1, MAX_FRAMEDIV);
-	cl.frametime = BASE_FRAMETIME / framediv;
-	cl.frametime_inv = framediv * BASE_1_FRAMETIME;
-	cl.framediv = framediv;
-
-	// fix time delta
-	if (cls.state == ca_active)
-	{
-		int delta = cl.frame.number - cl.servertime / cl.frametime;
-		cl.serverdelta = Q_align(delta, framediv);
-	}
-
-	Com_DPrintf("client framediv=%d time=%d delta=%d\n",
-		framediv, cl.servertime, cl.serverdelta);
-}
-#endif
-
-static void CL_ParseSetting(void)
-{
-	int index;
-	int value;
-	index = MSG_ReadLong();
-	value = MSG_ReadLong();
-
-	switch (index)
-	{
-#if USE_FPS
-
-		case SVS_FPS:
-			set_server_fps(value);
-			break;
-#endif
-
-		default:
-			break;
-	}
-}
-
 /*
 =====================
 CL_ParseServerMessage
@@ -1227,7 +1047,6 @@ void CL_ParseServerMessage(void)
 		switch (cmd)
 		{
 			default:
-badbyte:
 				Com_Error(ERR_DROP, "%s: illegible server message: %d", __func__, cmd);
 
 			case svc_nop:
@@ -1299,38 +1118,19 @@ badbyte:
 				break;
 
 			case svc_zpacket:
-				if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2)
-					goto badbyte;
-
 				CL_ParseZPacket();
 				continue;
 
 			case svc_gamestate:
-				if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-					goto badbyte;
-
 				CL_ParseGamestate();
-				continue;
-
-			case svc_setting:
-				if (cls.serverProtocol < PROTOCOL_VERSION_R1Q2)
-					goto badbyte;
-
-				CL_ParseSetting();
 				continue;
 
 			// Generations
 			case svc_precache:
-				if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-					goto badbyte;
-
 				CL_ParsePrecache();
 				continue;
 
 			case svc_precache_baseline:
-				if (cls.serverProtocol != PROTOCOL_VERSION_Q2PRO)
-					goto badbyte;
-
 				CL_ParsePrecacheBaseline();
 				continue;
 		}

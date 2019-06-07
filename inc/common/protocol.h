@@ -25,36 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define MAX_MSGLEN  0x8000  // max length of a message, 32k
 
-#define PROTOCOL_VERSION_OLD        26
-#define PROTOCOL_VERSION_DEFAULT    34
-#define PROTOCOL_VERSION_R1Q2       35
-#define PROTOCOL_VERSION_Q2PRO      38 // Generations
-
-#define PROTOCOL_VERSION_R1Q2_MINIMUM           1903    // b6377
-#define PROTOCOL_VERSION_R1Q2_UCMD              1904    // b7387
-#define PROTOCOL_VERSION_R1Q2_LONG_SOLID        1905    // b7759
-#define PROTOCOL_VERSION_R1Q2_CURRENT           1905    // b7759
-
-#define PROTOCOL_VERSION_Q2PRO_MINIMUM          1011    // r161
-#define PROTOCOL_VERSION_Q2PRO_UCMD             1012    // r179
-#define PROTOCOL_VERSION_Q2PRO_CLIENTNUM_FIX    1013    // r226
-#define PROTOCOL_VERSION_Q2PRO_LONG_SOLID       1014    // r243
-#define PROTOCOL_VERSION_Q2PRO_WATERJUMP_HACK   1015    // r335
-#define PROTOCOL_VERSION_Q2PRO_RESERVED         1016    // r364
-#define PROTOCOL_VERSION_Q2PRO_BEAM_ORIGIN      1017    // r1037-8
-#define PROTOCOL_VERSION_Q2PRO_SHORT_ANGLES     1018    // r1037-44
-#define PROTOCOL_VERSION_Q2PRO_SERVER_STATE     1019    // r1302
-#define PROTOCOL_VERSION_Q2PRO_EXTENDED_LAYOUT  1020    // r1354
-#define PROTOCOL_VERSION_Q2PRO_ZLIB_DOWNLOADS   1021    // r1358
-#define PROTOCOL_VERSION_Q2PRO_CURRENT          1021    // r1358
-
-#define R1Q2_SUPPORTED(x) \
-	((x) >= PROTOCOL_VERSION_R1Q2_MINIMUM && \
-		(x) <= PROTOCOL_VERSION_R1Q2_CURRENT)
-
-#define Q2PRO_SUPPORTED(x) \
-	((x) >= PROTOCOL_VERSION_Q2PRO_MINIMUM && \
-		(x) <= PROTOCOL_VERSION_Q2PRO_CURRENT)
+#define PROTOCOL_VERSION	1993 // Generations
 
 //=========================================
 
@@ -123,7 +94,6 @@ typedef enum
 	// r1q2 specific operations
 	svc_zpacket,
 	svc_gamestate, // q2pro specific, means svc_playerupdate in r1q2
-	svc_setting,
 
 	// Generations
 	svc_precache,
@@ -141,7 +111,6 @@ typedef enum
 {
 	clc_bad,
 	clc_nop,
-	clc_move,               // [usercmd_t]
 	clc_userinfo,           // [userinfo string]
 	clc_stringcmd,          // [string] message
 
@@ -294,7 +263,6 @@ typedef enum
 	CLS_NOGUN,
 	CLS_NOBLEND,
 	CLS_PLAYERUPDATES,
-	CLS_FPS,
 
 	// q2pro specific
 	CLS_NOGIBS            = 10,
@@ -303,15 +271,6 @@ typedef enum
 
 	CLS_MAX
 } clientSetting_t;
-
-typedef enum
-{
-	// r1q2 specific
-	SVS_PLAYERUPDATES,
-	SVS_FPS,
-
-	SVS_MAX
-} serverSetting_t;
 
 // q2pro frame flags sent by the server
 // only SUPPRESSCOUNT_BITS can be used

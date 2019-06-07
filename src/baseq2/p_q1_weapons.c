@@ -694,41 +694,26 @@ void weapon_q1_lightning_fire(edict_t *ent, gunindex_e gun)
 	ent->client->gunstates[gun].kick_time = level.time + 100;
 }
 
-
-void wall_velocity(edict_t *self, vec3_t vel, vec3_t right, vec3_t up, vec3_t normal)
-{
-	VectorNormalize2(self->velocity, vel);
-	vec3_t vup, vright;
-	VectorScale(up, (random() - 0.5f), vup);
-	VectorScale(right, (random() - 0.5f), vright);
-	VectorAdd(vel, up, vel);
-	VectorAdd(vel, right, vel);
-	VectorNormalize(vel);
-	VectorScale(normal, 2, vup);
-	VectorAdd(vel, vup, vel);
-	VectorScale(vel, 200, vel);
-}
-
 /*
 ================
 spawn_touchblood
 ================
 */
-/*void spawn_touchblood(edict_t *ent, float damage)
+void spawn_touchblood(edict_t *ent, vec3_t plane_normal, float damage)
 {
-	vec3_t vel;
-	vec3_t right, up;
+	vec3_t vel, v_right, v_up, dir;
 
-	AngleVectors(ent->velocity, NULL, right, up);
+	VectorNormalize2(ent->velocity, dir);
 
-	wall_velocity(ent, vel, right, up, vec3_origin);
-	VectorScale(vel, 0.2, vel);
+	AngleVectors(dir, NULL, v_right, v_up);
 
-	vec3_t out;
-	VectorMA(ent->s.origin, 0.01, vel, out);
-
-	SpawnBlood(out, damage);
-};*/
+	VectorMA(dir, crandom(), v_up, vel);
+	VectorMA(vel, crandom(), v_right, vel);
+	VectorNormalize(vel);
+	VectorMA(vel, 2, plane_normal, vel);
+	VectorScale(vel, 200 * 0.02f, vel);
+	Q1_SpawnBlood(ent->s.origin, vel, damage);
+};
 
 /*
 =================
@@ -753,8 +738,8 @@ void spike_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 
 	if (other->takedamage)
 	{
+		spawn_touchblood(self, vec3_origin, self->dmg);
 		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 0, DAMAGE_Q1, self->meansOfDeath);
-		//spawn_touchblood(self, self->dmg);
 	}
 	else
 	{
@@ -1012,8 +997,8 @@ void laser_q1_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *
 
 	if (other->takedamage)
 	{
+		spawn_touchblood(self, vec3_origin, self->dmg);
 		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 0, DAMAGE_Q1, self->meansOfDeath);
-		//spawn_touchblood(self, self->dmg);
 	}
 	else
 	{

@@ -1775,14 +1775,6 @@ ROGUE - VERSIONS
 
 // ROGUE
 
-#define UF_AUTOSCREENSHOT   1
-#define UF_AUTORECORD       2
-#define UF_LOCALFOV         4
-#define UF_MUTE_PLAYERS     8
-#define UF_MUTE_OBSERVERS   16
-#define UF_MUTE_MISC        32
-#define UF_PLAYERFOV        64
-
 /*
 ==========================================================
 
@@ -1793,12 +1785,9 @@ ROGUE - VERSIONS
 
 // default server FPS
 #define BASE_FRAMERATE          10
-#define BASE_FRAMETIME          100
-#define BASE_1_FRAMETIME        0.01f   // 1/BASE_FRAMETIME
-#define BASE_FRAMETIME_1000     0.1f    // BASE_FRAMETIME/1000
-
-// maximum variable FPS factor
-#define MAX_FRAMEDIV    6
+#define BASE_FRAMETIME          ((1.0 / BASE_FRAMERATE) * 1000)
+#define BASE_1_FRAMETIME        (1.0 / BASE_FRAMETIME)
+#define BASE_FRAMETIME_1000     (BASE_FRAMETIME / 1000)
 
 static inline short ANGLE2SHORT(const float x)
 {
@@ -1868,7 +1857,6 @@ typedef enum
 	EV_PLAYER_TELEPORT,
 	EV_OTHER_TELEPORT
 } entity_event_t;
-
 
 // entity_state_t is the information conveyed from the server
 // in an update message about entities that the client will

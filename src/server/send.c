@@ -31,7 +31,7 @@ char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
 
 void SV_FlushRedirect(int redirected, char *outputbuf, size_t len)
 {
-	byte    buffer[MAX_PACKETLEN_DEFAULT];
+	byte    buffer[MAX_PACKETLEN];
 
 	if (redirected == RD_PACKET)
 	{
@@ -70,10 +70,6 @@ static bool SV_RateDrop(client_t *client)
 
 	for (i = 0; i < RATE_MESSAGES; i++)
 		total += client->message_size[i];
-
-#if USE_FPS
-	total = total * sv.framediv / client->framediv;
-#endif
 
 	if (total > client->rate)
 	{
@@ -336,9 +332,6 @@ static size_t max_compressed_len(client_t *client)
 
 static bool can_compress_message(client_t *client)
 {
-	if (!client->has_zlib)
-		return false;
-
 	// compress only sufficiently large layouts
 	if (msg_write.cursize < client->netchan->maxpacketlen / 2)
 		return false;
@@ -350,9 +343,6 @@ static bool compress_message(client_t *client, int flags)
 {
 	byte    buffer[MAX_MSGLEN];
 	int     ret, len;
-
-	if (!client->has_zlib)
-		return false;
 
 	svs.z.next_in = msg_write.data;
 	svs.z.avail_in = msg_write.cursize;
@@ -700,22 +690,6 @@ static void finish_frame(client_t *client)
 	client->msg_unreliable_bytes = 0;
 }
 
-#if (defined _DEBUG) && USE_FPS
-static void check_key_sync(client_t *client)
-{
-	int div = sv.framediv / client->framediv;
-	int key1 = !(sv.framenum % sv.framediv);
-	int key2 = !(client->framenum % div);
-
-	if (key1 != key2)
-	{
-		Com_LPrintf(PRINT_DEVELOPER,
-			"[%d] frame %d for %s not synced (%d != %d)\n",
-			sv.framenum, client->framenum, client->name, key1, key2);
-	}
-}
-#endif
-
 /*
 =======================
 SV_SendClientMessages
@@ -736,13 +710,6 @@ void SV_SendClientMessages(void)
 
 		if (!SV_CLIENTSYNC(client))
 			continue;
-
-#if (defined _DEBUG) && USE_FPS
-
-		if (developer->integer)
-			check_key_sync(client);
-
-#endif
 
 		// if the reliable message overflowed,
 		// drop the client (should never happen)
