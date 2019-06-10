@@ -8,8 +8,6 @@ SOLDIER / PLAYER
 #include "g_local.h"
 #include "m_local.h"
 
-static mscript_t script;
-
 enum
 {
 	stand1, stand2, stand3, stand4, stand5, stand6, stand7, stand8,
@@ -46,6 +44,8 @@ static q_soundhandle sound_pain2;
 static q_soundhandle sound_sattck1;
 static q_soundhandle sound_sight1;
 static q_soundhandle sound_udeath;
+
+static mscript_t script;
 
 static void army_stand(edict_t *self)
 {

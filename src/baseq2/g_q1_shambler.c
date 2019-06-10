@@ -7,6 +7,7 @@ SHAMBLER
 */
 
 #include "g_local.h"
+#include "m_local.h"
 
 enum
 {
@@ -36,34 +37,6 @@ enum
 	death7, death8, death9, death10, death11
 };
 
-mframe_t sham_frames_stand1[] =
-{
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL }
-};
-mmove_t sham_stand1 = { stand1, stand17, sham_frames_stand1, NULL };
-
-void sham_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_stand1;
-}
-
 static q_soundhandle sound_sidle;
 static q_soundhandle sound_smack;
 static q_soundhandle sound_melee1;
@@ -75,53 +48,32 @@ static q_soundhandle sound_sdeath;
 static q_soundhandle sound_ssight;
 static q_soundhandle sound_udeath;
 
-void sham_idle_sound(edict_t *self)
+static mscript_t script;
+
+static void sham_stand(edict_t *self)
+{
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
+}
+
+static void sham_idle_sound(edict_t *self)
 {
 	if (random() > 0.8f)
 		gi.sound(self, CHAN_VOICE, sound_sidle, 1, ATTN_IDLE, 0);
 }
 
-mframe_t sham_frames_walk1[] =
+static void sham_walk(edict_t *self)
 {
-	{ ai_walk, 10,  NULL },
-	{ ai_walk, 9,   NULL },
-	{ ai_walk, 9,   NULL },
-	{ ai_walk, 5,   NULL },
-	{ ai_walk, 6,   NULL },
-	{ ai_walk, 12,  NULL },
-	{ ai_walk, 8,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 13,  NULL },
-	{ ai_walk, 9,   NULL },
-
-	{ ai_walk, 7,   NULL },
-	{ ai_walk, 7,   sham_idle_sound }
-};
-mmove_t sham_walk1 = { walk1, walk12, sham_frames_walk1, NULL };
-
-void sham_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_walk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk1");
 }
 
-mframe_t sham_frames_run1[] =
+static void sham_run(edict_t *self)
 {
-	{ ai_run, 20,  NULL },
-	{ ai_run, 24,  NULL },
-	{ ai_run, 20,  NULL },
-	{ ai_run, 20,  NULL },
-	{ ai_run, 24,  NULL },
-	{ ai_run, 20,  sham_idle_sound }
-};
-mmove_t sham_run1 = { run1, run6, sham_frames_run1, NULL };
-
-void sham_run(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_run1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run1");
 }
 
 void SpawnMeatSpray(edict_t *self, vec3_t org, vec3_t vel);
-void sham_smash_hit(edict_t *self)
+
+static void sham_smash_hit(edict_t *self)
 {
 	vec3_t delta;
 	float ldmg;
@@ -149,35 +101,17 @@ void sham_smash_hit(edict_t *self)
 	SpawnMeatSpray(self, o, v);
 }
 
-void sham_smash_sound(edict_t *self)
+static void sham_smash_sound(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_melee1, 1, ATTN_NORM, 0);
 }
 
-mframe_t sham_frames_smash1[] =
+static void sham_smash(edict_t *self)
 {
-	{ ai_charge, 2,  NULL },
-	{ ai_charge, 6,  NULL },
-	{ ai_charge, 6,  NULL },
-	{ ai_charge, 5,  NULL },
-	{ ai_charge, 4,  NULL },
-	{ ai_charge, 1,  NULL },
-	{ ai_charge, 0,  NULL },
-	{ ai_charge, 0,  NULL },
-	{ ai_charge, 0,  NULL },
-	{ ai_charge, 0,  sham_smash_hit },
-
-	{ ai_charge, 5,  NULL },
-	{ ai_charge, 4,  NULL }
-};
-mmove_t sham_smash1 = { run1, run6, sham_frames_smash1, sham_run };
-
-void sham_smash(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_smash1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "smash1");
 }
 
-void ShamClaw(edict_t *self, float side)
+static void ShamClaw(edict_t *self, float side)
 {
 	vec3_t delta;
 	float ldmg;
@@ -205,74 +139,44 @@ void ShamClaw(edict_t *self, float side)
 	}
 }
 
-void sham_swing_sound(edict_t *self)
+static void sham_swing_sound(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_melee2, 1, ATTN_NORM, 0);
 }
 
-extern mmove_t sham_swingr1;
-
-void sham_swing_left(edict_t *self)
+static void sham_swing_left(edict_t *self)
 {
 	ShamClaw(self, 250);
 }
 
-void sham_swing_left_re(edict_t *self)
+static void sham_swing_left_re(edict_t *self)
 {
 	if (random() < 0.5f)
-		self->monsterinfo.currentmove = &sham_swingr1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "swingr1");
 }
 
-mframe_t sham_frames_swingl1[] =
+static void sham_swingl(edict_t *self)
 {
-	{ ai_charge, 5,  sham_swing_sound },
-	{ ai_charge, 3,  NULL },
-	{ ai_charge, 7,  NULL },
-	{ ai_charge, 3,  NULL },
-	{ ai_charge, 7,  NULL },
-	{ ai_charge, 9,  NULL },
-	{ ai_charge, 15, sham_swing_left },
-	{ ai_charge, 4,  NULL },
-	{ ai_charge, 8,  sham_swing_left_re }
-};
-mmove_t sham_swingl1 = { swingl1, swingl9, sham_frames_swingl1, sham_run };
-
-void sham_swingl(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_swingl1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "swingl1");
 }
 
-void sham_swing_right(edict_t *self)
+static void sham_swing_right(edict_t *self)
 {
 	ShamClaw(self, -250);
 }
 
-void sham_swing_right_re(edict_t *self)
+static void sham_swing_right_re(edict_t *self)
 {
 	if (random() < 0.5f)
-		self->monsterinfo.currentmove = &sham_swingl1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "swingl1");
 }
 
-mframe_t sham_frames_swingr1[] =
+static void sham_swingr(edict_t *self)
 {
-	{ ai_charge, 1,  sham_smash_sound },
-	{ ai_charge, 8,  NULL },
-	{ ai_charge, 14,  NULL },
-	{ ai_charge, 7,  NULL },
-	{ ai_charge, 3,  NULL },
-	{ ai_charge, 6,  NULL },
-	{ ai_charge, 16, sham_swing_right },
-	{ ai_charge, 3,  NULL },
-	{ ai_charge, 11,  sham_swing_right_re }
-};
-mmove_t sham_swingr1 = { swingr1, swingr9, sham_frames_swingr1, sham_run };
-
-void sham_swingr(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_swingr1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "swingr1");
 }
 
-void sham_melee(edict_t *self)
+static void sham_melee(edict_t *self)
 {
 	float chance;
 	chance = random();
@@ -290,7 +194,7 @@ void sham_melee(edict_t *self)
 
 void LightningDamage(edict_t *ent, vec3_t p1, vec3_t p2, edict_t *from, int damage);
 
-void CastLightning(edict_t *self)
+static void CastLightning(edict_t *self)
 {
 	vec3_t org, dir;
 	//self.effects = self.effects | EF_MUZZLEFLASH;
@@ -313,12 +217,12 @@ void CastLightning(edict_t *self)
 	LightningDamage(self, org, tr.endpos, self, 10);
 }
 
-void sham_magic_sound(edict_t *self)
+static void sham_magic_sound(edict_t *self)
 {
 	gi.sound(self, CHAN_WEAPON, sound_sattck1, 1, ATTN_NORM, 0);
 }
 
-void sham_magic_start(edict_t *self)
+static void sham_magic_start(edict_t *self)
 {
 	if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME))
 	{
@@ -340,12 +244,12 @@ void sham_magic_start(edict_t *self)
 		self->monsterinfo.aiflags |= AI_HOLD_FRAME;
 }
 
-void sham_magic_inc(edict_t *self)
+static void sham_magic_inc(edict_t *self)
 {
 	self->owner->s.frame++;
 }
 
-void sham_fire(edict_t *self)
+static void sham_fire(edict_t *self)
 {
 	if (self->s.frame == magic11)
 	{
@@ -364,41 +268,12 @@ void sham_fire(edict_t *self)
 	}
 }
 
-mframe_t sham_frames_magic1[] =
+static void sham_magic(edict_t *self)
 {
-	{ ai_charge, 0,  sham_magic_sound },
-	{ ai_charge, 0,  NULL },
-	{ ai_charge, 0,  sham_magic_start },
-	{ ai_move, 0,  sham_magic_inc },
-	{ ai_move, 0,  sham_magic_inc },
-	{ ai_move, 0,  sham_fire },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  sham_fire },
-	{ ai_move, 0,  sham_fire },
-
-	{ ai_move, 0,  sham_fire },
-	{ ai_move, 0,  NULL }
-};
-mmove_t sham_magic1 = { magic1, magic12, sham_frames_magic1, sham_run };
-
-void sham_magic(edict_t *self)
-{
-	self->monsterinfo.currentmove = &sham_magic1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "magic1");
 }
 
-mframe_t sham_frames_pain1[] =
-{
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL }
-};
-mmove_t sham_pain1 = { pain1, pain6, sham_frames_pain1, sham_run };
-
-void sham_pain(edict_t *self, edict_t *other, float kick, int damage)
+static void sham_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	gi.sound(self, CHAN_VOICE, sound_shurt2, 1, ATTN_NORM, 0);
 
@@ -412,43 +287,23 @@ void sham_pain(edict_t *self, edict_t *other, float kick, int damage)
 		return;
 
 	self->pain_debounce_time = level.time + 2000;
-	self->monsterinfo.currentmove = &sham_pain1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain1");
 }
 
-
-//============================================================================
-
-void sham_unsolid(edict_t *self)
+static void sham_unsolid(edict_t *self)
 {
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-void sham_dead(edict_t *self)
+static void sham_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
 	self->svflags |= SVF_DEADMONSTER;
 	self->nextthink = 0;
 }
 
-mframe_t sham_frames_death1[] =
-{
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  sham_unsolid },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,  NULL },
-
-	{ ai_move, 0,  NULL }
-};
-mmove_t sham_death1 = { death1, death11, sham_frames_death1, sham_dead };
-
-void sham_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void sham_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	// check for gib
 	if (self->health < -60)
@@ -468,15 +323,34 @@ void sham_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	self->deadflag = DEAD_DEAD;
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_sdeath, 1, ATTN_NORM, 0);
-	self->monsterinfo.currentmove = &sham_death1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
 }
 
 //============================================================================
 
-void sham_sight(edict_t *self, edict_t *other)
+static void sham_sight(edict_t *self, edict_t *other)
 {
 	gi.sound(self, CHAN_VOICE, sound_ssight, 1, ATTN_NORM, 0);
 }
+
+static const mevent_t events[] =
+{
+	EVENT_FUNC(sham_idle_sound),
+	EVENT_FUNC(sham_run),
+	EVENT_FUNC(sham_swing_sound),
+	EVENT_FUNC(sham_swing_left),
+	EVENT_FUNC(sham_swing_left_re),
+	EVENT_FUNC(sham_smash_sound),
+	EVENT_FUNC(sham_swing_right),
+	EVENT_FUNC(sham_swing_right_re),
+	EVENT_FUNC(sham_magic_sound),
+	EVENT_FUNC(sham_magic_start),
+	EVENT_FUNC(sham_magic_inc),
+	EVENT_FUNC(sham_fire),
+	EVENT_FUNC(sham_dead),
+	EVENT_FUNC(sham_unsolid),
+	NULL
+};
 
 /*QUAKED monster_shambler (1 0 0) (-32 -32 -24) (32 32 64) Ambush
 */
@@ -486,6 +360,14 @@ void q1_monster_shambler(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/q1/shambler.mdl";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q1/shambler.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	gi.modelindex("models/q1/s_light.mdl");
@@ -503,7 +385,7 @@ void q1_monster_shambler(edict_t *self)
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	gi.setmodel(self, "models/q1/shambler.mdl");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -32, -32, -24);
 	VectorSet(self->maxs, 32, 32, 64);
 	self->health = 600;
@@ -517,6 +399,6 @@ void q1_monster_shambler(edict_t *self)
 	self->pain = sham_pain;
 	walkmonster_start(self);
 	gi.linkentity(self);
-	self->monsterinfo.currentmove = &sham_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 	self->monsterinfo.scale = 1;
 }

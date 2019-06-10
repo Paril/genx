@@ -6,6 +6,7 @@ ZOMBIE
 ==============================================================================
 */
 #include "g_local.h"
+#include "m_local.h"
 
 enum
 {
@@ -61,68 +62,24 @@ static q_soundhandle sound_z_miss;
 static q_soundhandle sound_z_hit;
 static q_soundhandle sound_idle_w2;
 
+static mscript_t script;
+
 //=============================================================================
 
-mframe_t zombie_frames_stand1[] =
+static void zombie_stand(edict_t *self)
 {
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL }
-};
-mmove_t zombie_stand1 = { stand1, stand15, zombie_frames_stand1, NULL };
-
-void zombie_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 }
 
-void zombie_walk_sound(edict_t *self)
+static void zombie_walk_sound(edict_t *self)
 {
 	if (random() < 0.2f)
 		gi.sound(self, CHAN_VOICE, sound_z_idle, 1, ATTN_IDLE, 0);
 }
 
-mframe_t zombie_frames_walk1[] =
+static void zombie_walk(edict_t *self)
 {
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 1,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 1,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   zombie_walk_sound }
-};
-mmove_t zombie_walk1 = { walk1, walk19, zombie_frames_walk1, NULL };
-
-void zombie_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_walk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk1");
 }
 
 /*
@@ -133,12 +90,12 @@ ATTACKS
 =============================================================================
 */
 
-void zombie_reset_pain(edict_t *self)
+static void zombie_reset_pain(edict_t *self)
 {
 	self->count = 0;
 }
 
-void zombie_run_sound(edict_t *self)
+static void zombie_run_sound(edict_t *self)
 {
 	if (random() < 0.2f)
 		gi.sound(self, CHAN_VOICE, sound_z_idle, 1, ATTN_IDLE, 0);
@@ -146,36 +103,12 @@ void zombie_run_sound(edict_t *self)
 		gi.sound(self, CHAN_VOICE, sound_z_idle1, 1, ATTN_IDLE, 0);
 }
 
-mframe_t zombie_frames_run1[] =
+static void zombie_run(edict_t *self)
 {
-	{ ai_run, 1,   zombie_reset_pain },
-	{ ai_run, 1,   NULL },
-	{ ai_run, 0,   NULL },
-	{ ai_run, 1,   NULL },
-	{ ai_run, 2,   NULL },
-	{ ai_run, 3,   NULL },
-	{ ai_run, 4,   NULL },
-	{ ai_run, 4,   NULL },
-	{ ai_run, 2,   NULL },
-	{ ai_run, 0,   NULL },
-
-	{ ai_run, 0,   NULL },
-	{ ai_run, 0,   NULL },
-	{ ai_run, 2,   NULL },
-	{ ai_run, 4,   NULL },
-	{ ai_run, 6,   NULL },
-	{ ai_run, 7,   NULL },
-	{ ai_run, 3,   NULL },
-	{ ai_run, 8,   zombie_run_sound }
-};
-mmove_t zombie_run1 = { run1, run18, zombie_frames_run1, NULL };
-
-void zombie_run(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_run1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run1");
 }
 
-void ZombieGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
+static void ZombieGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
 	if (other == self->owner)
 		return;		// don't explode on owner
@@ -197,7 +130,7 @@ void ZombieGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 ZombieFireGrenade
 ================
 */
-void ZombieFireGrenade(edict_t *self)
+static void ZombieFireGrenade(edict_t *self)
 {
 	edict_t *missile;
 	vec3_t org;
@@ -235,7 +168,7 @@ void ZombieFireGrenade(edict_t *self)
 	// set missile duration
 	missile->nextthink = level.time + 2500;
 	missile->think = G_FreeEdict;
-	gi.setmodel(missile, "models/q1/zom_gib.mdl");
+	missile->s.modelindex = gi.modelindex("models/q1/zom_gib.mdl");
 	VectorClear(missile->mins);
 	VectorClear(missile->maxs);
 	VectorCopy(org, missile->s.origin);
@@ -244,79 +177,22 @@ void ZombieFireGrenade(edict_t *self)
 	gi.linkentity(missile);
 }
 
-mframe_t zombie_frames_atta1[] =
+static void zombie_atta(edict_t *self)
 {
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   ZombieFireGrenade }
-};
-mmove_t zombie_atta1 = { atta1, atta13, zombie_frames_atta1, zombie_run };
-
-void zombie_atta(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_atta1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "atta1");
 }
 
-mframe_t zombie_frames_attb1[] =
+static void zombie_attb(edict_t *self)
 {
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   ZombieFireGrenade }
-};
-mmove_t zombie_attb1 = { attb1, attb14, zombie_frames_attb1, zombie_run };
-
-void zombie_attb(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_attb1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attb1");
 }
 
-mframe_t zombie_frames_attc1[] =
+static void zombie_attc(edict_t *self)
 {
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   ZombieFireGrenade }
-};
-mmove_t zombie_attc1 = { attc1, attc12, zombie_frames_attc1, zombie_run };
-
-void zombie_attc(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_attc1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attc1");
 }
 
-void zombie_missile(edict_t *self)
+static void zombie_missile(edict_t *self)
 {
 	float r = random();
 
@@ -337,144 +213,48 @@ PAIN
 =============================================================================
 */
 
-void zombie_paind1_start(edict_t *self)
+static void zombie_paind1_start(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_z_pain, 1, ATTN_NORM, 0);
 }
 
-mframe_t zombie_frames_paina1[] =
+static void zombie_paina(edict_t *self)
 {
-	{ ai_move, 0,   zombie_paind1_start },
-	{ ai_move, 3,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, -3,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t zombie_paina1 = { paina1, paina12, zombie_frames_paina1, zombie_run };
-
-void zombie_paina(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_paina1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "paina1");
 }
 
-void zombie_painb1_fall(edict_t *self)
+static void zombie_painb1_fall(edict_t *self)
 {
 	gi.sound(self, CHAN_BODY, sound_z_fall, 1, ATTN_NORM, 0);
 }
 
-void zombie_painc1_start(edict_t *self)
+static void zombie_painc1_start(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_z_pain1, 1, ATTN_NORM, 0);
 }
 
-mframe_t zombie_frames_painb1[] =
+static void zombie_painb(edict_t *self)
 {
-	{ ai_move, 0,   zombie_painc1_start },
-	{ ai_move, -2,   NULL },
-	{ ai_move, -8,   NULL },
-	{ ai_move, -6,   NULL },
-	{ ai_move, -2,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,  zombie_painb1_fall },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 1,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t zombie_painb1 = { painb1, painb28, zombie_frames_painb1, zombie_run };
-
-void zombie_painb(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_painb1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "painb1");
 }
 
-mframe_t zombie_frames_painc1[] =
+static void zombie_painc(edict_t *self)
 {
-	{ ai_move, 0,   zombie_painc1_start },
-	{ ai_move, 0,   NULL },
-	{ ai_move, -3,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,  NULL },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 1,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t zombie_painc1 = { painc1, painc18, zombie_frames_painc1, zombie_run };
-
-void zombie_painc(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_painc1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "painc1");
 }
 
-mframe_t zombie_frames_paind1[] =
+static void zombie_paind(edict_t *self)
 {
-	{ ai_move, 0,   zombie_paind1_start },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, -1,  NULL },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t zombie_paind1 = { paind1, paind13, zombie_frames_paind1, zombie_run };
-
-void zombie_paind(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_paind1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "paind1");
 }
 
-void zombie_paine1_start(edict_t *self)
+static void zombie_paine1_start(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_z_pain, 1, ATTN_NORM, 0);
 	self->health = 60;
 }
 
-void zombie_paine1_fall(edict_t *self)
+static void zombie_paine1_fall(edict_t *self)
 {
 	gi.sound(self, CHAN_BODY, sound_z_fall, 1, ATTN_NORM, 0);
 	self->solid = SOLID_NOT;
@@ -482,7 +262,7 @@ void zombie_paine1_fall(edict_t *self)
 	gi.linkentity(self);
 }
 
-void zombie_paine1_pause(edict_t *self)
+static void zombie_paine1_pause(edict_t *self)
 {
 	if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME))
 		self->monsterinfo.pausetime = level.time + 5000;
@@ -495,7 +275,7 @@ void zombie_paine1_pause(edict_t *self)
 	self->health = 60;
 }
 
-void zombie_paine1_check(edict_t *self)
+static void zombie_paine1_check(edict_t *self)
 {
 	// see if ok to stand up
 	self->health = 60;
@@ -512,49 +292,12 @@ void zombie_paine1_check(edict_t *self)
 	gi.linkentity(self);
 }
 
-mframe_t zombie_frames_paine1[] =
+static void zombie_paine(edict_t *self)
 {
-	{ ai_move, 0,   zombie_paine1_start },
-	{ ai_move, -8,   NULL },
-	{ ai_move, -5,   NULL },
-	{ ai_move, -3,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, -2,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, -2,   NULL },
-	{ ai_move, 0,   zombie_paine1_fall },
-
-	{ ai_move, 0,   zombie_paine1_pause },
-	{ ai_move, 0,   zombie_paine1_check },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 5,   NULL },
-	{ ai_move, 3,   NULL },
-	{ ai_move, 1,   NULL },
-	{ ai_move, -1,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t zombie_paine1 = { paine1, paine30, zombie_frames_paine1, zombie_run };
-
-void zombie_paine(edict_t *self)
-{
-	self->monsterinfo.currentmove = &zombie_paine1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "paine1");
 }
 
-void zombie_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void zombie_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	gi.sound(self, CHAN_VOICE, sound_z_gib, 1, ATTN_NORM, 0);
 	ThrowHead(self, "models/q1/h_zombie.mdl", self->health, GIB_Q1);
@@ -583,7 +326,7 @@ A hit of less than 10 points of damage (winged by a shotgun) will be ignored.
 FIXME: don't use pain_finished because of nightmare hack
 =================
 */
-void zombie_pain(edict_t *self, edict_t *attacker, float kick, int take)
+static void zombie_pain(edict_t *self, edict_t *attacker, float kick, int take)
 {
 	float r;
 	self->health = 60;		// allways reset health
@@ -631,7 +374,7 @@ void zombie_pain(edict_t *self, edict_t *attacker, float kick, int take)
 		zombie_paind(self);
 }
 
-void zombie_cruc(edict_t *self)
+static void zombie_cruc(edict_t *self)
 {
 	if (self->s.frame == cruc_1)
 	{
@@ -651,11 +394,28 @@ void zombie_cruc(edict_t *self)
 	self->nextthink = level.time + 100 + random() * 100;
 }
 
-void zombie_sight(edict_t *self, edict_t *other)
+static void zombie_sight(edict_t *self, edict_t *other)
 {
 	gi.sound(self, CHAN_BODY, sound_z_idle, 1, ATTN_NORM, 0);
 }
 //============================================================================
+
+static const mevent_t events[] =
+{
+	EVENT_FUNC(zombie_walk_sound),
+	EVENT_FUNC(zombie_reset_pain),
+	EVENT_FUNC(zombie_run_sound),
+	EVENT_FUNC(zombie_run),
+	EVENT_FUNC(ZombieFireGrenade),
+	EVENT_FUNC(zombie_paind1_start),
+	EVENT_FUNC(zombie_painc1_start),
+	EVENT_FUNC(zombie_painb1_fall),
+	EVENT_FUNC(zombie_paine1_start),
+	EVENT_FUNC(zombie_paine1_fall),
+	EVENT_FUNC(zombie_paine1_pause),
+	EVENT_FUNC(zombie_paine1_check),
+	NULL
+};
 
 /*QUAKED monster_zombie (1 0 0) (-16 -16 -24) (16 16 32) Crucified ambush
 
@@ -667,6 +427,14 @@ void q1_monster_zombie(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/q1/zombie.mdl";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q1/zombie.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	gi.modelindex("models/q1/zombie.mdl");
@@ -684,7 +452,7 @@ void q1_monster_zombie(edict_t *self)
 	sound_idle_w2 = gi.soundindex("q1/zombie/idle_w2.wav");
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	gi.setmodel(self, "models/q1/zombie.mdl");
+	self->s.modelindex = gi.modelindex(model_name);
 
 	if (self->spawnflags & SPAWN_CRUCIFIED)
 	{
@@ -706,7 +474,7 @@ void q1_monster_zombie(edict_t *self)
 		self->die = zombie_die;
 		self->monsterinfo.attack = zombie_missile;
 		self->monsterinfo.sight = zombie_sight;
-		self->monsterinfo.currentmove = &zombie_stand1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 		self->monsterinfo.scale = 1;
 		walkmonster_start(self);
 	}

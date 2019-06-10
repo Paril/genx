@@ -1,0 +1,129 @@
+char_a1 $char_a1 $char_a16 hknight_run
+{
+	charge +speed 20
+	^ +speed 25
+	^ +speed 18
+	^ +speed 16
+	^ +speed 14
+	@0 +event ai_melee
+	^ +speed 21
+	^ +speed 13
+	@5 +repeat 2
+	^ +speed 18
+	@3
+	@4
+	@1
+	^ +speed 21
+	^ +speed 13
+}
+
+stand1 $stand1 $stand9
+{
+	stand +repeat 9
+}
+
+walk1 $walk1 $walk20
+{
+	walk +speed 2 +event hk_idle_sound
+	^ +speed 5 +event none +repeat 2
+	^ +speed 4 +repeat 2
+	^ +speed 2 +repeat 2
+	^ +speed 3 +repeat 2
+	@3
+	@7
+	@3
+	^ +speed 6
+	@5 +repeat 2
+	@3
+	@7 +repeat 3
+	@5
+}
+
+run1 $run1 $run8
+{
+	run +speed 20 +event hk_idle_sound
+	^ +speed 25 +event none
+	^ +speed 18
+	^ +speed 16
+	^ +speed 14
+	@1
+	^ +speed 21
+	^ +speed 13
+}
+
+pain1 $pain1 $pain5 hknight_run
+{
+	move +repeat 5
+}
+
+die1 $death1 $death12 hknight_dead
+{
+	move +speed 10
+	^ +speed 8
+	^ +speed 7 +event hknight_unsolid
+	@0 +speed 0 +repeat 4
+	@0
+	^ +speed 11
+	@3 +repeat 3
+}
+
+dieb1 $deathb1 $deathb9 hknight_dead
+{
+	move +repeat 2
+	^ +event hknight_unsolid
+	@0 +repeat 6
+}
+
+magicc1 $magicc1 $magicc11 hknight_run
+{
+	charge +repeat 5
+	^ +event hknight_magic +repeat 6
+}
+
+slice1 $slice1 $slice10 hknight_run
+{
+	charge +speed 9
+	^ +speed 6
+	^ +speed 13
+	^ +speed 4
+	^ +speed 7
+	^ +speed 15 +event ai_melee
+	^ +speed 8
+	^ +speed 2
+	^ +speed 0
+	^ +speed 3
+}
+
+smash1 $smash1 $smash11 hknight_run
+{
+	charge +speed 1
+	^ +speed 13
+	^ +speed 9
+	^ +speed 11
+	^ +speed 10 +event ai_melee
+	^ +speed 7
+	^ +speed 12
+	^ +speed 2
+	^ +speed 3
+	@0 +speed 0 +repeat 2
+}
+
+watk1 $w_attack1 $w_attack22 hknight_run
+{
+	charge +speed 2
+	^ +speed 0 +repeat 5
+	^ +speed 1
+	^ +speed 4
+	^ +speed 5
+	^ +speed 3 +event ai_melee
+	^ +speed 2 +repeat 2
+	@1 +repeat 3
+	@6
+	^ +event ai_melee
+	@9
+	^ +speed 4
+	@0 +speed 6
+	^ +speed 7
+	^ +speed 3
+}
+

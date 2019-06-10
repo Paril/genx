@@ -1,0 +1,86 @@
+stand1 $stand1 $stand9
+{
+	stand +repeat 9
+}
+
+walk1 $walk1 $walk14
+{
+	walk +speed 3 +event knight_idle_sound
+	^ +speed 2 +event none
+	^ +speed 3
+	^ +speed 4
+	@2 +repeat 3
+	@3
+	@2 +repeat 2
+	@1
+	@2
+	@3
+	@2
+}
+
+run1 $runb1 $runb8
+{
+	run +speed 16 +event knight_idle_sound
+	^ +speed 20 +event none
+	^ +speed 13
+	^ +speed 7
+	^ +speed 16
+	@1
+	^ +speed 14
+	^ +speed 6
+}
+
+atk1 $attackb1 $attackb10 knight_run
+{
+	charge +event knight_sword_sound
+	^ +speed 7 +event none
+	^ +speed 4
+	^ +speed 0
+	^ +speed 3
+	@2 +event ai_melee
+	^ +speed 1
+	^ +speed 3
+	@1 +speed 1
+	^ +speed 5
+}
+
+pain1 $pain1 $pain3 knight_run
+{
+	move +repeat 3
+}
+
+painb1 $painb1 $painb11 knight_run
+{
+	move
+	^ +speed 3
+	@0 +repeat 2
+	^ +speed 2
+	^ +speed 4
+	@4
+	^ +speed 5 +repeat 2
+	@0 +repeat 2
+}
+
+diea1 $death1 $death10 knight_dead
+{
+	move +repeat 2
+	^ +event knight_unsolid
+	@0 +repeat 7
+}
+
+dieb1 $deathb1 $deathb11 knight_dead
+{
+	move +repeat 2
+	^ +event knight_unsolid
+	@0 +repeat 8
+}
+
+runatk1 $runattack1 $runattack11 knight_run
+{
+	charge +speed 20 +event knight_sword2_sound
+	charge_side +repeat 3
+	melee_side +repeat 5
+	@1
+	@0 +speed 10 +event none
+}
+

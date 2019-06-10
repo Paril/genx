@@ -1,0 +1,123 @@
+stand1 $stand1 $stand15
+{
+	stand +repeat 15
+}
+
+walk1 $walk1 $walk19
+{
+	walk
+	^ +speed 2
+	^ +speed 3
+	@1
+	^ +speed 1
+	@0 +repeat 5
+	@1 +repeat 2
+	@4
+	@0 +repeat 5
+	^ +event zombie_walk_sound
+}
+
+run1 $run1 $run18
+{
+	run +speed 1 +event zombie_reset_pain
+	^ +event none
+	^ +speed 0
+	@1
+	^ +speed 2
+	^ +speed 3
+	^ +speed 4 +repeat 2
+	@4
+	@2 +repeat 3
+	@4
+	@6
+	^ +speed 6
+	^ +speed 7
+	@5
+	^ +speed 8 +event zombie_run_sound
+}
+
+atta1 $atta1 $atta13 zombie_run
+{
+	charge +repeat 12
+	^ +event ZombieFireGrenade
+}
+
+attb1 $attb1 $attb14 zombie_run
+{
+	charge +repeat 13
+	^ +event ZombieFireGrenade
+}
+
+attc1 $attc1 $attc12 zombie_run
+{
+	charge +repeat 11
+	^ +event ZombieFireGrenade
+}
+
+paina1 $paina1 $paina12 zombie_run
+{
+	move +event zombie_paind1_start
+	^ +speed 3 +event none
+	^ +speed 1
+	^ +speed -1
+	^ +speed -3
+	@3
+	^ +speed 0 +repeat 6
+}
+
+painb1 $painb1 $painb28 zombie_run
+{
+	move +event zombie_painc1_start
+	^ +speed -2 +event none
+	^ +speed -8
+	^ +speed -6
+	@1
+	^ +speed 0 +repeat 3
+	^ +event zombie_painb1_fall
+	@5
+	^ +speed 1 +repeat 2
+	@5 +repeat 12
+	@10
+	@5 +repeat 3
+}
+
+painc1 $painc1 $painc18 zombie_run
+{
+	move +event zombie_painc1_start
+	^ +event none
+	^ +speed -3
+	^ +speed -1
+	@1 +repeat 6
+	^ +speed 1 +repeat 2
+	@1 +repeat 6
+}
+
+paind1 $paind1 $paind13 zombie_run
+{
+	move +event zombie_paind1_start
+	^ +event none +repeat 7
+	^ +speed -1
+	@1 +repeat 4
+}
+
+paine1 $paine1 $paine30 zombie_run
+{
+	move +event zombie_paine1_start
+	^ +speed -8 +event none
+	^ +speed -5
+	^ +speed -3
+	^ +speed -1
+	^ +speed -2
+	@4 +repeat 2
+	@5
+	@0 +event zombie_paine1_fall
+	^ +event zombie_paine1_pause
+	^ +event zombie_paine1_check
+	^ +event none +repeat 13
+	^ +speed 5
+	^ +speed 3
+	^ +speed 1
+	@4
+	@12
+}
+

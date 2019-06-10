@@ -1,0 +1,46 @@
+stand1 $hover1 $hover8
+{
+	stand +repeat 8
+}
+
+walk1 $hover1 $hover8
+{
+	walk +speed 8 +event Wiz_idlesound
+	^ +event none +repeat 7
+}
+
+side1 $hover1 $hover8
+{
+	run +speed 8 +event Wiz_idlesound
+	^ +event none +repeat 7
+}
+
+run1 $fly1 $fly14
+{
+	run +speed 16 +event Wiz_idlesound
+	^ +event none +repeat 13
+}
+
+fast2 $magatt5 $magatt2 wiz_fastfinish
+{
+	move +repeat 4
+}
+
+fast1 $magatt1 $magatt6 wiz_fastb
+{
+	move +event Wiz_StartFast
+	^ +event none +repeat 5
+}
+
+pain1 $pain1 $pain4 wiz_run
+{
+	move +repeat 4
+}
+
+death1 $death1 $death8 wiz_dead
+{
+	move +repeat 2
+	^ +event wiz_unsolid
+	@0 +repeat 5
+}
+

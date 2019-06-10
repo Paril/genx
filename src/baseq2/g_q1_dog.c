@@ -291,7 +291,6 @@ void q1_monster_dog(edict_t *self)
 	}
 
 	gi.modelindex("models/q1/h_dog.mdl");
-	gi.modelindex("models/q1/dog.mdl");
 	sound_dattack1 = gi.soundindex("q1/dog/dattack1.wav");
 	sound_ddeath = gi.soundindex("q1/dog/ddeath.wav");
 	sound_dpain1 = gi.soundindex("q1/dog/dpain1.wav");

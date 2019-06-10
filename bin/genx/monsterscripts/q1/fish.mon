@@ -1,0 +1,37 @@
+stand1 $swim1 $swim18
+{
+	stand +repeat 18
+}
+
+walk1 $swim1 $swim18
+{
+	walk +speed 8 +repeat 18
+}
+
+run1 $swim2 $swim17
+{
+	run +speed 12 +event fish_run_skip +repeat 16
+}
+
+attack1 $attack1 $attack18 f_run
+{
+	charge +speed 10 +event fish_run_skip +repeat 2
+	^ +event fish_melee
+	@0 +repeat 5
+	@2
+	@0 +repeat 5
+	@2
+	@0 +repeat 3
+}
+
+death1 $death1 $death21 fish_dead
+{
+	move +repeat 21
+}
+
+pain1 $pain1 $pain9 f_run
+{
+	move
+	^ +speed -6 +repeat 8
+}
+

@@ -6,6 +6,7 @@ SHAL-RATH
 ==============================================================================
 */
 #include "g_local.h"
+#include "m_local.h"
 
 enum
 {
@@ -20,17 +21,6 @@ enum
 	walk11, walk12
 };
 
-mframe_t shal_frames_stand1[] =
-{
-	{ ai_stand, 0,   NULL }
-};
-mmove_t shal_stand1 = { walk1, walk1, shal_frames_stand1, NULL };
-
-void shal_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &shal_stand1;
-}
-
 static q_soundhandle sound_idle;
 static q_soundhandle sound_attack;
 static q_soundhandle sound_sight;
@@ -39,64 +29,35 @@ static q_soundhandle sound_udeath;
 static q_soundhandle sound_death;
 static q_soundhandle sound_attack2;
 
-void shal_idle_sound(edict_t *self)
+static mscript_t script;
+
+static void shal_stand(edict_t *self)
+{
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
+}
+
+static void shal_idle_sound(edict_t *self)
 {
 	if (random() < 0.2f)
 		gi.sound(self, CHAN_VOICE, sound_idle, 1, ATTN_IDLE, 0);
 }
 
-mframe_t shal_frames_walk1[] =
+static void shal_walk(edict_t *self)
 {
-	{ ai_walk, 6,   shal_idle_sound },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 0,   NULL },
-	{ ai_walk, 5,   NULL },
-	{ ai_walk, 6,   NULL },
-	{ ai_walk, 5,   NULL },
-	{ ai_walk, 0,   NULL },
-
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 5,   NULL }
-};
-mmove_t shal_walk1 = { walk1, walk12, shal_frames_walk1, NULL };
-
-void shal_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &shal_walk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk1");
 }
 
-mframe_t shal_frames_run1[] =
+static void shal_run(edict_t *self)
 {
-	{ ai_run, 6,   shal_idle_sound },
-	{ ai_run, 4,   NULL },
-	{ ai_run, 0,   NULL },
-	{ ai_run, 0,   NULL },
-	{ ai_run, 0,   NULL },
-	{ ai_run, 0,   NULL },
-	{ ai_run, 5,   NULL },
-	{ ai_run, 6,   NULL },
-	{ ai_run, 5,   NULL },
-	{ ai_run, 0,   NULL },
-
-	{ ai_run, 4,   NULL },
-	{ ai_run, 5,   NULL }
-};
-mmove_t shal_run1 = { walk1, walk12, shal_frames_run1, NULL };
-
-void shal_run(edict_t *self)
-{
-	self->monsterinfo.currentmove = &shal_run1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run1");
 }
 
-void shal_attack_sound(edict_t *self)
+static void shal_attack_sound(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_attack, 1, ATTN_NORM, 0);
 }
 
-void shal_sight_sound(edict_t *self)
+static void shal_sight_sound(edict_t *self)
 {
 	gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
 }
@@ -186,68 +147,29 @@ void ShalMissile(edict_t *self)
 	gi.linkentity(missile);
 }
 
-mframe_t shal_frames_attack1[] =
+static void shal_attack(edict_t *self)
 {
-	{ ai_charge, 6,   shal_attack_sound },
-	{ ai_charge, 4,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 5,   NULL },
-	{ ai_charge, 6,   NULL },
-	{ ai_charge, 5,   ShalMissile },
-	{ ai_charge, 0,   NULL },
-
-	{ ai_charge, 4,   NULL }
-};
-mmove_t shal_attack1 = { attack1, attack11, shal_frames_attack1, shal_run };
-
-void shal_attack(edict_t *self)
-{
-	self->monsterinfo.currentmove = &shal_attack1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack1");
 }
 
-mframe_t shal_frames_pain1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t shal_pain1 = { pain1, pain5, shal_frames_pain1, shal_run };
-
-void shal_pain(edict_t *self, edict_t *other, float kick, int damage)
+static void shal_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->pain_debounce_time > level.time)
 		return;
 
 	gi.sound(self, CHAN_VOICE, sound_pain, 1, ATTN_NORM, 0);
-	self->monsterinfo.currentmove = &shal_pain1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain1");
 	self->pain_debounce_time = level.time + 3000;
 }
 
-void shal_dead(edict_t *self)
+static void shal_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
 	self->svflags |= SVF_DEADMONSTER;
 	self->nextthink = 0;
 }
 
-mframe_t shal_frames_death1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t shal_death1 = { death1, death7, shal_frames_death1, shal_dead };
-
-void shalrath_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void shalrath_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	// check for gib
 	if (self->health < -90)
@@ -266,7 +188,7 @@ void shalrath_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 
 	self->deadflag = DEAD_DEAD;
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
-	self->monsterinfo.currentmove = &shal_death1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 	// insert death sounds here
@@ -274,6 +196,16 @@ void shalrath_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 
 
 //=================================================================
+
+static const mevent_t events[] =
+{
+	EVENT_FUNC(shal_idle_sound),
+	EVENT_FUNC(shal_run),
+	EVENT_FUNC(shal_attack_sound),
+	EVENT_FUNC(ShalMissile),
+	EVENT_FUNC(shal_dead),
+	NULL
+};
 
 /*QUAKED monster_shalrath (1 0 0) (-32 -32 -24) (32 32 48) Ambush
 */
@@ -283,6 +215,14 @@ void q1_monster_shalrath(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/q1/shalrath.mdl";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q1/shalrath.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	gi.modelindex("models/q1/shalrath.mdl");
@@ -297,7 +237,7 @@ void q1_monster_shalrath(edict_t *self)
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	gi.setmodel(self, "models/q1/shalrath.mdl");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -32, -32, -24);
 	VectorSet(self->maxs, 32, 32, 64);
 	self->health = 400;
@@ -310,6 +250,6 @@ void q1_monster_shalrath(edict_t *self)
 	self->think = walkmonster_start;
 	self->nextthink = level.time + (0.1f + random() * 0.1f) * 1000;
 	gi.linkentity(self);
-	self->monsterinfo.currentmove = &shal_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 	self->monsterinfo.scale = 1;
 }

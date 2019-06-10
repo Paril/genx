@@ -7,6 +7,7 @@ KNIGHT
 */
 
 #include "g_local.h"
+#include "m_local.h"
 
 enum
 {
@@ -61,9 +62,11 @@ static q_soundhandle sound_sight1;
 static q_soundhandle sound_pain1;
 static q_soundhandle sound_slash1;
 
+static mscript_t script;
+
 edict_t *fire_spike(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, bool super);
 
-void hknight_shot(edict_t *self, float offset)
+static void hknight_shot(edict_t *self, float offset)
 {
 	vec3_t offang;
 	vec3_t org, vec;
@@ -91,34 +94,7 @@ void hknight_shot(edict_t *self, float offset)
 	gi.linkentity(newmis);
 }
 
-void ai_melee(edict_t *self);
-void hknight_run(edict_t *self);
-
-mframe_t hknight_frames_char_a1[] =
-{
-	{ ai_charge, 20,   NULL },
-	{ ai_charge, 25,   NULL },
-	{ ai_charge, 18,   NULL },
-	{ ai_charge, 16,   NULL },
-	{ ai_charge, 14,   NULL },
-	{ ai_charge, 20,   ai_melee },
-	{ ai_charge, 21,   ai_melee },
-	{ ai_charge, 13,   ai_melee },
-	{ ai_charge, 20,   ai_melee },
-	{ ai_charge, 20,   ai_melee },
-
-	{ ai_charge, 18,   ai_melee },
-	{ ai_charge, 16,   NULL },
-	{ ai_charge, 14,   NULL },
-	{ ai_charge, 25,   NULL },
-	{ ai_charge, 21,   NULL },
-	{ ai_charge, 13,   NULL }
-};
-mmove_t hknight_char_a1 = { char_a1, char_a16, hknight_frames_char_a1, hknight_run };
-
-void hknight_run(edict_t *self);
-
-void CheckForCharge(edict_t *self)
+static void CheckForCharge(edict_t *self)
 {
 	// check for mad charge
 	if (!self->enemy || !visible(self, self->enemy))
@@ -135,10 +111,15 @@ void CheckForCharge(edict_t *self)
 
 	// charge
 	AttackFinished(self, 2);
-	self->monsterinfo.currentmove = &hknight_char_a1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "char_a1");
 }
 
-void CheckContinueCharge(edict_t *self)
+static void hknight_run(edict_t *self)
+{
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "run1");
+}
+
+static void CheckContinueCharge(edict_t *self)
 {
 	if (level.time > self->attack_finished_time)
 	{
@@ -155,28 +136,14 @@ void CheckContinueCharge(edict_t *self)
 
 //===========================================================================
 
-mframe_t hknight_frames_stand1[] =
+static void hknight_stand(edict_t *self)
 {
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL },
-	{ ai_stand, 0,   NULL }
-};
-mmove_t hknight_stand1 = { stand1, stand9, hknight_frames_stand1, NULL };
-
-void hknight_stand(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 }
 
 //===========================================================================
 
-void hk_idle_sound(edict_t *self)
+static void hk_idle_sound(edict_t *self)
 {
 	if (random() < 0.2f)
 		gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_NORM, 0);
@@ -185,117 +152,28 @@ void hk_idle_sound(edict_t *self)
 		CheckForCharge(self);
 }
 
-mframe_t hknight_frames_walk1[] =
+static void hknight_walk(edict_t *self)
 {
-	{ ai_walk, 2,   hk_idle_sound },
-	{ ai_walk, 5,   NULL },
-	{ ai_walk, 5,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 4,   NULL },
-
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 6,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 2,   NULL },
-	{ ai_walk, 4,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 3,   NULL },
-	{ ai_walk, 2,   NULL }
-};
-mmove_t hknight_walk1 = { walk1, walk20, hknight_frames_walk1, NULL };
-
-void hknight_walk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_walk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "walk1");
 }
 
-//===========================================================================
-
-mframe_t hknight_frames_run1[] =
-{
-	{ ai_run, 20,   hk_idle_sound },
-	{ ai_run, 25,   NULL },
-	{ ai_run, 18,   NULL },
-	{ ai_run, 16,   NULL },
-	{ ai_run, 14,   NULL },
-	{ ai_run, 25,   NULL },
-	{ ai_run, 21,   NULL },
-	{ ai_run, 13,   NULL }
-};
-mmove_t hknight_run1 = { run1, run8, hknight_frames_run1, NULL };
-
-void hknight_run(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_run1;
-}
 
 //============================================================================
 
-mframe_t hknight_frames_pain1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-};
-mmove_t hknight_pain1 = { pain1, pain5, hknight_frames_pain1, hknight_run };
-
-//============================================================================
-
-void hknight_unsolid(edict_t *self)
+static void hknight_unsolid(edict_t *self)
 {
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
-void hknight_dead(edict_t *self)
+static void hknight_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
 	self->svflags |= SVF_DEADMONSTER;
 	self->nextthink = 0;
 }
 
-mframe_t hknight_frames_die1[] =
-{
-	{ ai_move, 10,   NULL },
-	{ ai_move, 8,   NULL },
-	{ ai_move, 7,   hknight_unsolid },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 10,   NULL },
-	{ ai_move, 11,   NULL },
-	{ ai_move, 0,   NULL },
-
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-};
-mmove_t hknight_die1 = { death1, death12, hknight_frames_die1, hknight_dead };
-
-mframe_t hknight_frames_dieb1[] =
-{
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   hknight_unsolid },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL },
-	{ ai_move, 0,   NULL }
-};
-mmove_t hknight_dieb1 = { deathb1, deathb9, hknight_frames_dieb1, hknight_dead };
-
-void hknight_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
+static void hknight_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	// check for gib
 	if (self->health < -40)
@@ -317,39 +195,22 @@ void hknight_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
 
 	if (random() > 0.5f)
-		self->monsterinfo.currentmove = &hknight_die1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "die1");
 	else
-		self->monsterinfo.currentmove = &hknight_dieb1;
+		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "dieb1");
 }
 
-void hknight_magic(edict_t *self)
+static void hknight_magic(edict_t *self)
 {
 	hknight_shot(self, self->s.frame - magicc8);
 }
 
-mframe_t hknight_frames_magicc1[] =
+static void hknight_magicc(edict_t *self)
 {
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   hknight_magic },
-	{ ai_charge, 0,   hknight_magic },
-	{ ai_charge, 0,   hknight_magic },
-	{ ai_charge, 0,   hknight_magic },
-	{ ai_charge, 0,   hknight_magic },
-
-	{ ai_charge, 0,   hknight_magic }
-};
-mmove_t hknight_magicc1 = { magicc1, magicc11, hknight_frames_magicc1, hknight_run };
-
-void hknight_magicc(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_magicc1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "magicc1");
 }
 
-void hknight_pain(edict_t *self, edict_t *attacker, float kick, int damage)
+static void hknight_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 {
 	if (self->pain_debounce_time > level.time)
 		return;
@@ -361,98 +222,38 @@ void hknight_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 		return;		// didn't flinch
 
 	self->pain_debounce_time = level.time + 1000;
-	self->monsterinfo.currentmove = &hknight_pain1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "pain1");
 }
 
-void hknight_sight(edict_t *self, edict_t *other)
+static void hknight_sight(edict_t *self, edict_t *other)
 {
 	gi.sound(self, CHAN_VOICE, sound_sight1, 1, ATTN_NORM, 0);
 }
 
 //===========================================================================
 
-mframe_t hknight_frames_slice1[] =
+static void hknight_slice(edict_t *self)
 {
-	{ ai_charge, 9,   NULL },
-	{ ai_charge, 6,   NULL },
-	{ ai_charge, 13,   NULL },
-	{ ai_charge, 4,   NULL },
-	{ ai_charge, 7,   NULL },
-	{ ai_charge, 15,   ai_melee },
-	{ ai_charge, 8,   ai_melee },
-	{ ai_charge, 2,   ai_melee },
-	{ ai_charge, 0,   ai_melee },
-	{ ai_charge, 3,   ai_melee }
-};
-mmove_t hknight_slice1 = { slice1, slice10, hknight_frames_slice1, hknight_run };
-
-void hknight_slice(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_slice1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "slice1");
 }
 
 //===========================================================================
 
-mframe_t hknight_frames_smash1[] =
+static void hknight_smash(edict_t *self)
 {
-	{ ai_charge, 1,   NULL },
-	{ ai_charge, 13,   NULL },
-	{ ai_charge, 9,   NULL },
-	{ ai_charge, 11,   NULL },
-	{ ai_charge, 10,   ai_melee },
-	{ ai_charge, 7,   ai_melee },
-	{ ai_charge, 12,   ai_melee },
-	{ ai_charge, 2,   ai_melee },
-	{ ai_charge, 3,   ai_melee },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL }
-};
-mmove_t hknight_smash1 = { smash1, smash11, hknight_frames_smash1, hknight_run };
-
-void hknight_smash(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_smash1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "smash1");
 }
 
 //============================================================================
 
-mframe_t hknight_frames_watk1[] =
+static void hknight_watk(edict_t *self)
 {
-	{ ai_charge, 2,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 1,   NULL },
-	{ ai_charge, 4,   NULL },
-	{ ai_charge, 5,   NULL },
-	{ ai_charge, 3,   ai_melee },
-
-	{ ai_charge, 2,   ai_melee },
-	{ ai_charge, 2,   ai_melee },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 0,   NULL },
-	{ ai_charge, 1,   NULL },
-	{ ai_charge, 1,   ai_melee },
-	{ ai_charge, 3,   ai_melee },
-	{ ai_charge, 4,   ai_melee },
-	{ ai_charge, 6,   NULL },
-
-	{ ai_charge, 7,   NULL },
-	{ ai_charge, 3,   NULL }
-};
-mmove_t hknight_watk1 = { w_attack1, w_attack22, hknight_frames_watk1, hknight_run };
-
-void hknight_watk(edict_t *self)
-{
-	self->monsterinfo.currentmove = &hknight_watk1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "watk1");
 }
 
 //============================================================================
 
-void hknight_melee(edict_t *self)
+static void hknight_melee(edict_t *self)
 {
 	static byte hknight_type = 0;
 	hknight_type++;
@@ -469,6 +270,19 @@ void hknight_melee(edict_t *self)
 	}
 }
 
+void ai_melee(edict_t *self);
+
+static const mevent_t events[] =
+{
+	EVENT_FUNC(hknight_run),
+	EVENT_FUNC(ai_melee),
+	EVENT_FUNC(hk_idle_sound),
+	EVENT_FUNC(hknight_dead),
+	EVENT_FUNC(hknight_unsolid),
+	EVENT_FUNC(hknight_magic),
+	NULL
+};
+
 /*QUAKED monster_hell_knight (1 0 0) (-16 -16 -24) (16 16 40) Ambush
 */
 void q1_monster_hell_knight(edict_t *self)
@@ -477,6 +291,14 @@ void q1_monster_hell_knight(edict_t *self)
 	{
 		G_FreeEdict(self);
 		return;
+	}
+
+	const char *model_name = "models/q1/hknight.mdl";
+
+	if (!script.initialized)
+	{
+		const char *script_name = "monsterscripts/q1/hknight.mon";
+		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
 	gi.modelindex("models/q1/k_spike.mdl");
@@ -492,7 +314,7 @@ void q1_monster_hell_knight(edict_t *self)
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
 	self->solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	gi.setmodel(self, "models/q1/hknight.mdl");
+	self->s.modelindex = gi.modelindex(model_name);
 	VectorSet(self->mins, -16, -16, -24);
 	VectorSet(self->maxs, 16, 16, 40);
 	self->health = 250;
@@ -504,7 +326,7 @@ void q1_monster_hell_knight(edict_t *self)
 	self->monsterinfo.sight = hknight_sight;
 	self->pain = hknight_pain;
 	self->die = hknight_die;
-	self->monsterinfo.currentmove = &hknight_stand1;
+	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }

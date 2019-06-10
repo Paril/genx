@@ -241,7 +241,6 @@ void q1_monster_enforcer(edict_t *self)
 		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
-	gi.modelindex("models/q1/enforcer.mdl");
 	gi.modelindex("models/q1/h_mega.mdl");
 	gi.modelindex("models/q1/laser.mdl");
 	sound_death1 = gi.soundindex("q1/enforcer/death1.wav");
