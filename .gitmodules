@@ -1,0 +1,3 @@
+[submodule "physfs"]
+	path = physfs
+	url = https://github.com/Didstopia/physfs.git

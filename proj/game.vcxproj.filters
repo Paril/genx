@@ -300,6 +300,9 @@
     <ClCompile Include="..\src\baseq2\m_local.c">
       <Filter>Source Files\baseq2</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\shared\cJSON.c">
+      <Filter>Source Files\shared</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\baseq2\g_local.h">

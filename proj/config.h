@@ -43,3 +43,5 @@
 #define USE_FPS 1
 #define USE_DINPUT 1
 #define USE_TGA 1
+
+#define CJSON_HIDE_SYMBOLS

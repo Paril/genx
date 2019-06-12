@@ -1,6 +1,75 @@
 #include "m_local.h"
 #include "format/mdl.h"
 #include "format/md2.h"
+#include "shared/cJSON.h"
+
+
+
+
+#define WIN32_LEAN_AND_MEAN
+#define PSAPI_VERSION 1
+#include <Windows.h>
+#include <DbgHelp.h>
+#include <Psapi.h>
+#pragma comment(lib, "dbghelp.lib")
+#pragma comment(lib, "psapi.lib")
+
+static HMODULE GetCurrentModule()
+{
+	HMODULE hModule = NULL;
+	GetModuleHandleEx(
+		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
+		(LPCTSTR)GetCurrentModule,
+		&hModule);
+
+	return hModule;
+}
+
+static void SymbolName(const void *addr, char *buffer, size_t buffer_len)
+{
+	static bool init = false;
+
+	if (!init)
+	{
+		init = true;
+		SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
+
+		if (!SymInitialize(GetCurrentProcess(), NULL, TRUE))
+			gi.error("SymInitialize returned error : %d\n", GetLastError());
+	}
+
+	DWORD64  dwDisplacement = 0;
+
+	static char sym_buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
+	PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)sym_buffer;
+
+	pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
+	pSymbol->MaxNameLen = MAX_SYM_NAME;
+
+	if (SymFromAddr(GetCurrentProcess(), (DWORD64)addr, &dwDisplacement, pSymbol))
+	{
+		strncpy_s(buffer, buffer_len, pSymbol->Name, pSymbol->NameLen);
+		return;
+	}
+
+	gi.error("SymFromAddr returned error : %d\n", GetLastError());
+}
+
+static void undecorate_symbol_name(const void *sym, char *name_buf, size_t name_buf_len)
+{
+	SymbolName(sym, name_buf, name_buf_len);
+	
+	if (Q_strncasecmp(name_buf, "ILT+", 4) == 0)
+	{
+		int unused;
+		char sym_buf[64];
+		sscanf_s(name_buf, "ILT+%d(_%[A-Za-z0-9_]s)", &unused, sym_buf, sizeof(sym_buf));
+		Q_snprintf(name_buf, name_buf_len, "%s", sym_buf);
+	}
+}
+
+
+
 
 struct
 {
@@ -407,6 +476,174 @@ static void load_model_frames(const char *model_filename)
 		load_mdl_frames(model_filename);
 }
 
+static size_t frame_score(const mframe_t *src, const mframe_t *other)
+{
+	size_t score = 1;
+
+	if (fabs(other->dist - src->dist) < 0.05)
+		score++;
+	if (other->thinkfunc == src->thinkfunc)
+		score++;
+
+	return score;
+}
+
+const mframe_t *M_FindDittoFrame(const mmove_t *move, const mframe_t *frame, size_t i)
+{
+	if (i <= 0)
+		return NULL;
+
+	const mframe_t *best_frame = NULL;
+	size_t last_score;
+
+	// search from index 0 and on to find a matching frame
+	for (size_t z = 0; z < i; z++)
+	{
+		const mframe_t *check_frame = &move->frame[z];
+
+		if (best_frame == check_frame ||
+			check_frame->aifunc != frame->aifunc)
+			continue;
+
+		size_t score = frame_score(frame, check_frame);
+
+		if (!best_frame || last_score < score)
+		{
+			best_frame = check_frame;
+			last_score = score;
+		}
+	}
+
+	return best_frame;
+}
+
+#define JSON_SPACE "\t"
+
+static void M_ConvertScriptToJson(const char *script_filename, mscript_t *script)
+{
+	char buff[MAX_QPATH];
+
+	Q_snprintf(buff, sizeof(buff), "%s.json", script_filename);
+
+	qhandle_t f;
+
+	gi.FS_FOpenFile(buff, &f, FS_MODE_WRITE);
+
+	gi.FS_FPrintf(f, "{\n");
+
+	mmove_t *move;
+
+	LIST_FOR_EACH(mmove_t, move, &script->moves, listEntry)
+	{
+		gi.FS_FPrintf(f, JSON_SPACE "\"%s\": {\n", move->name);
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
+
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"frames\": [\n");
+
+		const size_t total_frames = abs(move->lastframe - move->firstframe) + 1;
+
+		for (size_t i = 0; i < total_frames; i++)
+		{
+			cJSON *frameJson = cJSON_CreateObject();
+			const mframe_t *frame = &move->frame[i];
+			const mframe_t *ditto = M_FindDittoFrame(move, frame, i);
+			char func_buffer[64];
+			bool needsComma = false;
+
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
+
+			if (ditto)
+			{
+				gi.FS_FPrintf(f, "\"inherit\": %d", ditto - move->frame);
+				needsComma = true;
+			}
+			
+			if ((!ditto && frame->aifunc) || (ditto && frame->aifunc != ditto->aifunc))
+			{
+				if (needsComma)
+					gi.FS_FPrintf(f, ", ");
+
+				if (frame->aifunc)
+				{
+					undecorate_symbol_name(frame->aifunc, func_buffer, sizeof(func_buffer));
+					cJSON_AddStringToObject(frameJson, "ai", func_buffer + 3);
+					gi.FS_FPrintf(f, "\"ai\": \"%s\"", func_buffer + 3);
+				}
+				else
+					gi.FS_FPrintf(f, "\"ai\": \"none\"");
+
+				needsComma = true;
+			}
+
+			if ((!ditto && frame->dist) || (ditto && frame->dist != ditto->dist))
+			{
+				if (needsComma)
+					gi.FS_FPrintf(f, ", ");
+
+				gi.FS_FPrintf(f, "\"dist\": %g", frame->dist);
+				needsComma = true;
+			}
+
+			if ((!ditto && frame->thinkfunc) || (ditto && frame->thinkfunc != ditto->thinkfunc))
+			{
+				if (needsComma)
+					gi.FS_FPrintf(f, ", ");
+
+				if (frame->thinkfunc)
+				{
+					undecorate_symbol_name(frame->thinkfunc, func_buffer, sizeof(func_buffer));
+					cJSON_AddStringToObject(frameJson, "event", func_buffer);
+					gi.FS_FPrintf(f, "\"event\": \"%s\"", func_buffer);
+				}
+				else
+					gi.FS_FPrintf(f, "\"event\": \"none\"");
+
+				needsComma = true;
+			}
+
+			gi.FS_FPrintf(f, " }");
+
+			if (i != total_frames - 1)
+				gi.FS_FPrintf(f, ",");
+
+			gi.FS_FPrintf(f, "\n");
+		}
+
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "]");
+
+		gi.FS_FPrintf(f, "\n" JSON_SPACE "}");
+
+		if (!LIST_TERM(LIST_NEXT(mmove_t, move, listEntry), &script->moves, listEntry))
+			gi.FS_FPrintf(f, ", ");
+
+		gi.FS_FPrintf(f, "\n");
+	}
+
+	gi.FS_FPrintf(f, "}");
+
+	gi.FS_FCloseFile(f);
+}
+
+static void M_ParseMonsterScriptJSON(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
+{
+	char *file_data;
+
+	gi.FS_LoadFile(script_filename, &file_data);
+
+	cJSON *json = cJSON_Parse(file_data);
+	
+	if (!json)
+		gi.error("%s\n", cJSON_GetErrorPtr());
+
+	gi.FS_FreeFile(file_data);
+
+	if (!cJSON_HasObjectItem(json, ""))
+
+	cJSON_Delete(json);
+	script->initialized = true;
+}
+
 void M_ParseMonsterScript(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
 {
 	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
@@ -417,6 +654,15 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 
 	for (size_t i = 0; i < MONSTERSCRIPT_HASH_SIZE; i++)
 		List_Init(&script->moveHash[i]);
+
+	char json_test[MAX_QPATH];
+	Q_snprintf(json_test, sizeof(json_test), "%s.json", script_filename);
+
+	if (gi.FS_LoadFile(json_test, NULL))
+	{
+		M_ParseMonsterScriptJSON(json_test, model_filename, events, script);
+		return;
+	}
 
 	char *file_data;
 
@@ -490,6 +736,8 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 	script_frame_temp.script_ptr = NULL;
 
 	script->initialized = true;
+
+	M_ConvertScriptToJson(script_filename, script);
 }
 
 const mmove_t *M_GetMonsterMove(const mscript_t *script, const char *name)
@@ -505,76 +753,6 @@ const mmove_t *M_GetMonsterMove(const mscript_t *script, const char *name)
 
 	gi.error("No such animation %s", name);
 	return NULL;
-}
-
-#define WIN32_LEAN_AND_MEAN
-#define PSAPI_VERSION 1
-#include <Windows.h>
-#include <DbgHelp.h>
-#include <Psapi.h>
-#pragma comment(lib, "dbghelp.lib")
-#pragma comment(lib, "psapi.lib")
-
-static HMODULE GetCurrentModule()
-{
-	HMODULE hModule = NULL;
-	GetModuleHandleEx(
-		GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
-		(LPCTSTR)GetCurrentModule,
-		&hModule);
-
-	return hModule;
-}
-
-static void SymbolName(const void *addr, char *buffer, size_t buffer_len)
-{
-	static bool init = false;
-	
-	if (!init)
-	{
-		init = true;
-		SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
-
-		if (!SymInitialize(GetCurrentProcess(), NULL, TRUE))
-			gi.error("SymInitialize returned error : %d\n", GetLastError());
-	}
-
-	DWORD64  dwDisplacement = 0;
-
-	static char sym_buffer[sizeof(SYMBOL_INFO) + MAX_SYM_NAME * sizeof(TCHAR)];
-	PSYMBOL_INFO pSymbol = (PSYMBOL_INFO)sym_buffer;
-
-	pSymbol->SizeOfStruct = sizeof(SYMBOL_INFO);
-	pSymbol->MaxNameLen = MAX_SYM_NAME;
-
-	if (SymFromAddr(GetCurrentProcess(), (DWORD64)addr, &dwDisplacement, pSymbol))
-	{
-		strncpy_s(buffer, buffer_len, pSymbol->Name, pSymbol->NameLen);
-		return;
-	}
-	
-	gi.error("SymFromAddr returned error : %d\n", GetLastError());
-}
-
-static void undecorate_symbol_name(const void *sym, char *name_buf, size_t name_buf_len)
-{
-	int unused;
-	char sym_buf[64];
-	SymbolName(sym, name_buf, name_buf_len);
-	sscanf_s(name_buf, "ILT+%d(_%[A-Za-z0-9_]s)", &unused, sym_buf, sizeof(sym_buf));
-	Q_snprintf(name_buf, name_buf_len, "%s", sym_buf);
-}
-
-static size_t frame_score(const mframe_t *src, const mframe_t *other)
-{
-	size_t score = 1;
-
-	if (other->dist == src->dist)
-		score++;
-	if (other->thinkfunc == src->thinkfunc)
-		score++;
-
-	return score;
 }
 
 void M_ConvertFramesToMonsterScript(const char *script_filename, const char *model_filename, const mmove_t **moves)
@@ -640,42 +818,12 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 
 		for (size_t i = 0; i < total_frames; )
 		{
-			mframe_t *ditto_frame = NULL;
-			mframe_t *frame = &move->frame[i];
+			const mframe_t *ditto_frame = NULL;
+			const mframe_t *frame = &move->frame[i];
 			size_t num_repeats = 1;
 
 			if (i > 0)
-			{
-				mframe_t *best_frame = NULL;
-				size_t last_score;
-
-				if ((frame - 1)->aifunc == frame->aifunc)
-				{
-					best_frame = (frame - 1);
-					last_score = frame_score(frame, best_frame);
-				}
-
-				// search from index 0 and on to find a matching frame
-				for (size_t z = 0; z < i - 1; z++)
-				{
-					mframe_t *check_frame = &move->frame[z];
-
-					if (best_frame == check_frame ||
-						check_frame->aifunc != frame->aifunc)
-						continue;
-
-					size_t score = frame_score(frame, check_frame);
-
-					if (!best_frame || last_score < score)
-					{
-						best_frame = check_frame;
-						last_score = score;
-					}
-				}
-
-				if (best_frame != NULL)
-					ditto_frame = best_frame;
-			}
+				ditto_frame = M_FindDittoFrame(move, frame, i);
 
 			for (size_t z = i + 1; z < total_frames; z++)
 			{
