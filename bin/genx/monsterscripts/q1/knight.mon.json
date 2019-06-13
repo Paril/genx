@@ -1,0 +1,151 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "stand1",
+			"end_frame": "stand9",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk14",
+			"frames": [
+				{ "ai": "walk", "dist": 3, "event": "knight_idle_sound" },
+				{ "inherit": 0, "dist": 2, "event": "none" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 3 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 1 },
+				{ "inherit": 2 },
+				{ "inherit": 3 },
+				{ "inherit": 2 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "runb1",
+			"end_frame": "runb8",
+			"frames": [
+				{ "ai": "run", "dist": 16, "event": "knight_idle_sound" },
+				{ "inherit": 0, "dist": 20, "event": "none" },
+				{ "inherit": 1, "dist": 13 },
+				{ "inherit": 1, "dist": 7 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 14 },
+				{ "inherit": 1, "dist": 6 }
+			]
+		}, 
+		"atk1": {
+			"start_frame": "attackb1",
+			"end_frame": "attackb10",
+			"frames": [
+				{ "ai": "charge", "event": "knight_sword_sound" },
+				{ "inherit": 0, "dist": 7, "event": "none" },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1, "dist": 3 },
+				{ "inherit": 2, "event": "ai_melee" },
+				{ "inherit": 5, "dist": 1 },
+				{ "inherit": 4, "event": "ai_melee" },
+				{ "inherit": 1, "dist": 1 },
+				{ "inherit": 1, "dist": 5 }
+			],
+			"post_think": "knight_run"
+		}, 
+		"pain1": {
+			"start_frame": "pain1",
+			"end_frame": "pain3",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "knight_run"
+		}, 
+		"painb1": {
+			"start_frame": "painb1",
+			"end_frame": "painb11",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 7 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "knight_run"
+		}, 
+		"diea1": {
+			"start_frame": "death1",
+			"end_frame": "death10",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "knight_unsolid" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "knight_dead"
+		}, 
+		"dieb1": {
+			"start_frame": "deathb1",
+			"end_frame": "deathb11",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "knight_unsolid" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "knight_dead"
+		}, 
+		"runatk1": {
+			"start_frame": "runattack1",
+			"end_frame": "runattack11",
+			"frames": [
+				{ "ai": "charge", "dist": 20, "event": "knight_sword2_sound" },
+				{ "ai": "charge_side" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "ai": "melee_side" },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 10, "event": "none" }
+			],
+			"post_think": "knight_run"
+		}
+	}
+}

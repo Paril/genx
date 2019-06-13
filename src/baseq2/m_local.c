@@ -73,286 +73,9 @@ static void undecorate_symbol_name(const void *sym, char *name_buf, size_t name_
 
 struct
 {
-	// only set at start
-	mmove_t			*move;
-	mframe_t		*current_frame;
-	const mevent_t	*events;
-	char			*script_ptr;
 	char			md2_frame_names[MD2_MAX_FRAMES][17];
 	int				md2_num_frames;
-
-	// inherited, per-frame
-	mai_func_t		move_type;
-	mevent_func_t	event;
-	float			speed;
 } script_frame_temp;
-
-static const mevent_func_t parse_get_event_func(const char *event_name)
-{
-	if (Q_stricmp(event_name, "none") == 0)
-		return NULL;
-
-	for (const mevent_t *event = script_frame_temp.events; event->name; event++)
-	{
-		if (Q_stricmp(event->name, event_name) == 0)
-			return event->func;
-	}
-
-	gi.error("Missing event func %s", event_name);
-	return NULL;
-}
-
-// skip the specified chars
-static void parse_script_skip(const char *chars)
-{
-	while (*Q_strchrnul(chars, *script_frame_temp.script_ptr))
-		script_frame_temp.script_ptr++;
-}
-
-typedef bool (*script_char_matcher_func) (char c);
-
-static const char *parse_script_token(script_char_matcher_func matcher, bool strict, size_t *len)
-{
-	// skip whitespace
-	parse_script_skip(" \t\r");
-
-	if (strict && !matcher(*script_frame_temp.script_ptr))
-		return NULL;
-
-	const char *start = script_frame_temp.script_ptr;
-
-	while (*script_frame_temp.script_ptr && matcher(*script_frame_temp.script_ptr))
-		script_frame_temp.script_ptr++;
-
-	if (len)
-		*len = script_frame_temp.script_ptr - start;
-
-	return start;
-}
-
-static bool parse_is_arg(char c)
-{
-	return c && c != '+' && c != '\r' && c != '\n';
-}
-
-static void parse_frame_script(void)
-{
-	size_t repeat = 1;
-
-	// figure out what we're parsing
-	switch (*script_frame_temp.script_ptr)
-	{
-		// parse frame type
-		default:
-		{
-			size_t type_len;
-			const char *type_start = parse_script_token(Q_isalpha, true, &type_len);
-
-			if (!type_start)
-				gi.error("Animation script invalid type");
-	
-#define TYPE_IS(x)		Q_stricmpn(type_start, x, type_len) == 0
-
-			if (TYPE_IS("stand"))
-				script_frame_temp.move_type = ai_stand;
-			else if (TYPE_IS("move"))
-				script_frame_temp.move_type = ai_move;
-			else if (TYPE_IS("walk"))
-				script_frame_temp.move_type = ai_walk;
-			else if (TYPE_IS("turn"))
-				script_frame_temp.move_type = ai_turn;
-			else if (TYPE_IS("run"))
-				script_frame_temp.move_type = ai_run;
-			else if (TYPE_IS("charge"))
-				script_frame_temp.move_type = ai_charge;
-			else if (TYPE_IS("none"))
-				script_frame_temp.move_type = NULL;
-			else
-				gi.error("Animation script bad type");
-
-			script_frame_temp.speed = 0;
-			script_frame_temp.event = NULL;
-		}
-			break;
-		case '^':
-			script_frame_temp.script_ptr++;
-
-			if (script_frame_temp.current_frame == script_frame_temp.move->frame)
-				gi.error("Animation script ^ without prior frame");
-
-			break;
-		case '@':
-		{
-			script_frame_temp.script_ptr++;
-
-			size_t digit_len;
-			const char *digit_start = parse_script_token(Q_isdigit, true, &digit_len);
-
-			if (!digit_start)
-				gi.error("Animation script @ without index number");
-
-			char digit_buffer[10] = { 0 };
-			strncpy_s(digit_buffer, sizeof(digit_buffer) - 1, digit_start, digit_len);
-			uint32_t index = atoi(digit_buffer);
-
-			if (index >= (script_frame_temp.move->frame - script_frame_temp.current_frame))
-				gi.error("Animation script @ for frame not parsed yet");
-
-			script_frame_temp.move_type = script_frame_temp.move->frame[index].aifunc;
-			script_frame_temp.speed = script_frame_temp.move->frame[index].dist;
-			script_frame_temp.event = script_frame_temp.move->frame[index].thinkfunc;
-		}
-			break;
-	}
-	
-	// skip whitespace
-	parse_script_skip(" \t\r");
-
-	// parse arguments
-	while (*script_frame_temp.script_ptr != '\n' && *script_frame_temp.script_ptr != '\0' && *script_frame_temp.script_ptr != '}')
-	{
-		if (*script_frame_temp.script_ptr != '+')
-			gi.error("Animation script expected +");
-
-		script_frame_temp.script_ptr++;
-
-		size_t arg_len;
-		const char *arg_start = parse_script_token(Q_isalpha, true, &arg_len);
-
-		// next char has to be alpha
-		if (!arg_start)
-			gi.error("Animation script frame argument without proper name");
-
-		size_t val_len;
-		const char *val_start = parse_script_token(parse_is_arg, true, &val_len);
-
-		// trim end spaces
-		while (val_len && Q_isspace(val_start[val_len - 1]))
-			val_len--;
-
-		// next char has to be valid
-		if (!val_len || !val_start)
-			gi.error("Animation script frame argument without proper value");
-
-#define ARG_IS(x)		Q_stricmpn(arg_start, x, arg_len) == 0
-
-		if (ARG_IS("speed"))
-		{
-			char float_buffer[32] = { 0 };
-			strncpy_s(float_buffer, sizeof(float_buffer) - 1, val_start, val_len);
-			script_frame_temp.speed = atof(float_buffer);
-		}
-		else if (ARG_IS("event"))
-		{
-			char str_buffer[64] = { 0 };
-			strncpy_s(str_buffer, sizeof(str_buffer) - 1, val_start, val_len);
-			script_frame_temp.event = parse_get_event_func(str_buffer);
-		}
-		else if (ARG_IS("repeat"))
-		{
-			char digit_buffer[10] = { 0 };
-			strncpy_s(digit_buffer, sizeof(digit_buffer) - 1, val_start, val_len);
-			repeat = atoi(digit_buffer);
-		}
-		else
-			gi.error("Animation script uses invalid argument");
-
-		// skip whitespace
-		parse_script_skip(" \t\r");
-	}
-
-	// once we reach a \n \0 or }, setup frame and return
-	for (int i = 0; i < repeat; i++)
-	{
-		if (script_frame_temp.current_frame > script_frame_temp.move->frame + (abs(script_frame_temp.move->lastframe - script_frame_temp.move->firstframe)))
-			gi.error("Animation script defines too many frames");
-
-		script_frame_temp.current_frame->aifunc = script_frame_temp.move_type;
-		script_frame_temp.current_frame->dist = script_frame_temp.speed;
-		script_frame_temp.current_frame->thinkfunc = script_frame_temp.event;
-		script_frame_temp.current_frame++;
-	}
-	
-	// skip whitespace
-	parse_script_skip(" \t\r\n");
-}
-
-static void parse_anim_script(void)
-{
-	// skip whitespaces
-	parse_script_skip(" \t\r\n");
-
-	while (*script_frame_temp.script_ptr != '\0' && *script_frame_temp.script_ptr != '}')
-		parse_frame_script();
-
-	if (script_frame_temp.current_frame != script_frame_temp.move->frame + (abs(script_frame_temp.move->lastframe - script_frame_temp.move->firstframe) + 1))
-		gi.error("Animation script missing frames");
-
-	// skip whitespace
-	parse_script_skip(" \t\r\n");
-
-	if (*script_frame_temp.script_ptr != '}')
-		gi.error("Expected } after end of frames");
-}
-
-static mmove_t *M_ParseAnimationScript(const char *script, const mevent_t *events, uint32_t frame_start, uint32_t frame_end, mevent_func_t finished_func)
-{
-	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
-
-	mmove_t *move = gi.TagMalloc(sizeof(mmove_t), TAG_GAME);
-
-	move->frame = gi.TagMalloc(sizeof(mframe_t) * (frame_end - frame_start + 1), TAG_GAME);
-	move->firstframe = frame_start;
-	move->lastframe = frame_end;
-	move->endfunc = finished_func;
-
-	script_frame_temp.move = move;
-	script_frame_temp.current_frame = move->frame;
-
-	parse_anim_script();
-
-	return move;
-}
-
-static bool parse_is_frame(char c)
-{
-	return Q_isalnum(c) || c == '_' || c == '$';
-}
-
-static size_t parse_frame_id(void)
-{
-	char frame_buffer[20] = { 0 };
-	size_t frame_len;
-	const char *frame_start = parse_script_token(parse_is_frame, true, &frame_len);
-	strncpy_s(frame_buffer, sizeof(frame_buffer) - 1, frame_start, frame_len);
-
-	int frame;
-
-	if (frame_buffer[0] == '$')
-	{
-		for (size_t i = 0; i < MD2_MAX_FRAMES; i++)
-		{
-			if (!script_frame_temp.md2_frame_names[i][0])
-				gi.error("No such frame %s", frame_buffer);
-			else if (Q_strncasecmp(frame_buffer + 1, script_frame_temp.md2_frame_names[i], 16) == 0)
-				return i;
-		}
-
-		gi.error("No such frame %s", frame_buffer);
-	}
-
-	frame = atoi(frame_buffer);
-
-	if (frame > script_frame_temp.md2_num_frames)
-		gi.error("No such frame %i", frame);
-
-	return frame;
-}
-
-static inline bool parse_is_name(char c)
-{
-	return Q_isalnum(c) || c == '_';
-}
 
 static void load_md2_frames(const char *model_filename)
 {
@@ -385,170 +108,6 @@ static void load_md2_frames(const char *model_filename)
 		script_frame_temp.md2_num_frames = MD2_MAX_FRAMES;
 }
 
-static size_t frame_score(const mframe_t *src, const mframe_t *other)
-{
-	size_t score = 1;
-
-	if (fabs(other->dist - src->dist) < 0.05)
-		score++;
-	if (other->thinkfunc == src->thinkfunc)
-		score++;
-
-	return score;
-}
-
-const mframe_t *M_FindDittoFrame(const mmove_t *move, const mframe_t *frame, size_t i)
-{
-	if (i <= 0)
-		return NULL;
-
-	const mframe_t *best_frame = NULL;
-	size_t last_score;
-
-	// search from index 0 and on to find a matching frame
-	for (size_t z = 0; z < i; z++)
-	{
-		const mframe_t *check_frame = &move->frame[z];
-
-		if (best_frame == check_frame ||
-			check_frame->aifunc != frame->aifunc)
-			continue;
-
-		size_t score = frame_score(frame, check_frame);
-
-		if (!best_frame || last_score < score)
-		{
-			best_frame = check_frame;
-			last_score = score;
-		}
-	}
-
-	return best_frame;
-}
-
-#define JSON_SPACE "\t"
-
-static void M_ConvertScriptToJson(const char *script_filename, mscript_t *script)
-{
-	char buff[MAX_QPATH];
-
-	Q_snprintf(buff, sizeof(buff), "%s.json", script_filename);
-
-	qhandle_t f;
-
-	gi.FS_FOpenFile(buff, &f, FS_MODE_WRITE);
-
-	gi.FS_FPrintf(f, "{\n" JSON_SPACE "\"moves\": {\n");
-
-	mmove_t *move;
-
-	LIST_FOR_EACH(mmove_t, move, &script->moves, listEntry)
-	{
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"%s\": {\n", move->name);
-
-		if (*script_frame_temp.md2_frame_names[move->firstframe] && *script_frame_temp.md2_frame_names[move->lastframe])
-		{
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->firstframe]);
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->lastframe]);
-		}
-		else
-		{
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
-		}
-
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"frames\": [\n");
-
-		const size_t total_frames = abs(move->lastframe - move->firstframe) + 1;
-		char func_buffer[64];
-
-		for (size_t i = 0; i < total_frames; i++)
-		{
-			cJSON *frameJson = cJSON_CreateObject();
-			const mframe_t *frame = &move->frame[i];
-			const mframe_t *ditto = M_FindDittoFrame(move, frame, i);
-			bool needsComma = false;
-
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
-
-			if (ditto)
-			{
-				gi.FS_FPrintf(f, "\"inherit\": %d", ditto - move->frame);
-				needsComma = true;
-			}
-			
-			if ((!ditto && frame->aifunc) || (ditto && frame->aifunc != ditto->aifunc))
-			{
-				if (needsComma)
-					gi.FS_FPrintf(f, ", ");
-
-				if (frame->aifunc)
-				{
-					undecorate_symbol_name(frame->aifunc, func_buffer, sizeof(func_buffer));
-					cJSON_AddStringToObject(frameJson, "ai", func_buffer + 3);
-					gi.FS_FPrintf(f, "\"ai\": \"%s\"", func_buffer + 3);
-				}
-				else
-					gi.FS_FPrintf(f, "\"ai\": \"none\"");
-
-				needsComma = true;
-			}
-
-			if ((!ditto && frame->dist) || (ditto && frame->dist != ditto->dist))
-			{
-				if (needsComma)
-					gi.FS_FPrintf(f, ", ");
-
-				gi.FS_FPrintf(f, "\"dist\": %g", frame->dist);
-				needsComma = true;
-			}
-
-			if ((!ditto && frame->thinkfunc) || (ditto && frame->thinkfunc != ditto->thinkfunc))
-			{
-				if (needsComma)
-					gi.FS_FPrintf(f, ", ");
-
-				if (frame->thinkfunc)
-				{
-					undecorate_symbol_name(frame->thinkfunc, func_buffer, sizeof(func_buffer));
-					cJSON_AddStringToObject(frameJson, "event", func_buffer);
-					gi.FS_FPrintf(f, "\"event\": \"%s\"", func_buffer);
-				}
-				else
-					gi.FS_FPrintf(f, "\"event\": \"none\"");
-
-				needsComma = true;
-			}
-
-			gi.FS_FPrintf(f, " }");
-
-			if (i != total_frames - 1)
-				gi.FS_FPrintf(f, ",");
-
-			gi.FS_FPrintf(f, "\n");
-		}
-
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "]");
-
-		if (move->endfunc)
-		{
-			undecorate_symbol_name(move->endfunc, func_buffer, sizeof(func_buffer));
-			gi.FS_FPrintf(f, ",\n" JSON_SPACE JSON_SPACE JSON_SPACE "\"post_think\": \"%s\"", func_buffer);
-		}
-		
-		gi.FS_FPrintf(f, "\n" JSON_SPACE JSON_SPACE "}");
-
-		if (!LIST_TERM(LIST_NEXT(mmove_t, move, listEntry), &script->moves, listEntry))
-			gi.FS_FPrintf(f, ", ");
-
-		gi.FS_FPrintf(f, "\n");
-	}
-
-	gi.FS_FPrintf(f, JSON_SPACE "}\n}");
-
-	gi.FS_FCloseFile(f);
-}
-
 static bool M_ParseMonsterFrame(cJSON *frame, int *out_frame)
 {
 	if (!cJSON_IsNumber(frame) && !cJSON_IsString(frame))
@@ -562,7 +121,7 @@ static bool M_ParseMonsterFrame(cJSON *frame, int *out_frame)
 
 	const char *name = cJSON_GetStringValue(frame);
 
-	for (size_t i = 0; i < MD2_MAX_FRAMES; i++)
+	for (int i = script_frame_temp.md2_num_frames - 1; i >= 0; i--)
 	{
 		const char *fn = script_frame_temp.md2_frame_names[i];
 
@@ -593,11 +152,11 @@ static bool M_ParseMonsterFunc(cJSON *func, const mevent_t *events, mthink_t *ou
 	if (Q_stricmp(name, "none") == 0)
 		return true;
 
-	for (const mevent_t *event = script_frame_temp.events; event->name; event++)
+	for (const mevent_t *event = events; event->name; event++)
 	{
 		if (Q_stricmp(event->name, name) == 0)
 		{
-			*out_func = event->func;
+			*out_func = (mthink_t)event->func;
 			return true;
 		}
 	}
@@ -605,7 +164,7 @@ static bool M_ParseMonsterFunc(cJSON *func, const mevent_t *events, mthink_t *ou
 	return false;
 }
 
-static bool M_ParseMonsterAI(cJSON *ai, mai_func_t *out_func)
+static bool M_ParseMonsterAI(cJSON *ai, const mevent_t *events, mai_func_t *out_func)
 {
 #define AIFUNC(f) { #f, ai_ ## f }
 	static const struct
@@ -629,6 +188,7 @@ static bool M_ParseMonsterAI(cJSON *ai, mai_func_t *out_func)
 	if (!string_value)
 		return false;
 
+	// check built-in
 	for (size_t i = 0; i < funcs_num; i++)
 	{
 		if (Q_stricmp(funcs[i].name, string_value) == 0)
@@ -638,18 +198,36 @@ static bool M_ParseMonsterAI(cJSON *ai, mai_func_t *out_func)
 		}
 	}
 
+	// check events
+	for (const mevent_t *event = events; event->name; event++)
+	{
+		if (Q_stricmp(event->name, string_value) == 0 ||
+			Q_stricmp(event->name, va("ai_%s", string_value)) == 0)
+		{
+			*out_func = (mai_func_t)event->func;
+			return true;
+		}
+	}
+
 	return false;
 }
 
-static void M_ParseMonsterScriptJSON(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
+void M_ParseMonsterScript(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
 {
 	const char *err_str = NULL;
 	char *file_data;
 
-	gi.FS_LoadFile(script_filename, &file_data);
+	gi.FS_LoadFile(va("%s.json", script_filename), &file_data);
 
 	if (!file_data)
 		return;
+
+	List_Init(&script->moves);
+
+	for (size_t i = 0; i < MONSTERSCRIPT_HASH_SIZE; i++)
+		List_Init(&script->moveHash[i]);
+
+	load_md2_frames(model_filename);
 
 	cJSON *json = cJSON_Parse(file_data);
 
@@ -718,7 +296,7 @@ static void M_ParseMonsterScriptJSON(const char *script_filename, const char *mo
 			{
 				cJSON *ai = cJSON_GetObjectItem(frame, "ai");
 
-				if (!M_ParseMonsterAI(ai, &cur_frame->aifunc))
+				if (!M_ParseMonsterAI(ai, events, &cur_frame->aifunc))
 					THROW_ERROR("Monster script move frame %u has bad ai for move %s", frame_id, move_out->name);
 			}
 
@@ -763,103 +341,6 @@ err:
 	gi.error(err_str);
 }
 
-void M_ParseMonsterScript(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
-{
-	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
-
-	script_frame_temp.events = events;
-
-	load_md2_frames(model_filename);
-
-	List_Init(&script->moves);
-
-	for (size_t i = 0; i < MONSTERSCRIPT_HASH_SIZE; i++)
-		List_Init(&script->moveHash[i]);
-
-	char json_test[MAX_QPATH];
-	Q_snprintf(json_test, sizeof(json_test), "%s.json", script_filename);
-
-	if (gi.FS_LoadFile(json_test, NULL) > 0)
-	{
-		M_ParseMonsterScriptJSON(json_test, model_filename, events, script);
-		return;
-	}
-
-	char *file_data;
-
-	gi.FS_LoadFile(script_filename, &file_data);
-
-	script_frame_temp.script_ptr = file_data;
-
-	while (*script_frame_temp.script_ptr != '\0')
-	{
-		// skip whitespace
-		parse_script_skip(" \t\r\n");
-
-		// parse anim name
-		size_t name_len;
-		const char *name_start = parse_script_token(parse_is_name, true, &name_len);
-		char name_buffer[32] = { 0 };
-		strncpy_s(name_buffer, sizeof(name_buffer) - 1, name_start, name_len);
-
-		// parse frames
-		size_t	start_frame = parse_frame_id(),
-				end_frame = parse_frame_id();
-
-		// parse end func
-		size_t end_len;
-		const char *end_start = parse_script_token(parse_is_name, false, &end_len);
-
-		mevent_func_t end_func = NULL;
-
-		if (end_len)
-		{
-			char end_func_buffer[32] = { 0 };
-			strncpy_s(end_func_buffer, sizeof(end_func_buffer) - 1, end_start, end_len);
-			end_func = parse_get_event_func(end_func_buffer);
-		}
-
-		// skip whitespace
-		parse_script_skip(" \t\r\n");
-
-		if (*script_frame_temp.script_ptr != '{')
-			gi.error("Expected {");
-
-		// skip the {
-		script_frame_temp.script_ptr++;
-
-		mmove_t *move = script_frame_temp.move = gi.TagMalloc(sizeof(mmove_t), TAG_GAME);
-		move->firstframe = start_frame;
-		move->lastframe = end_frame;
-		script_frame_temp.current_frame = move->frame = gi.TagMalloc(sizeof(mframe_t) * (abs(end_frame - start_frame) + 1), TAG_GAME);
-		move->endfunc = end_func;
-		memcpy(move->name, name_buffer, sizeof(move->name));
-
-		List_Append(&script->moves, &move->listEntry);
-		uint32_t hash = Com_HashString(name_buffer, MONSTERSCRIPT_HASH_SIZE);
-		List_Append(&script->moveHash[hash], &move->hashEntry);
-
-		// skip whitespaces
-		parse_script_skip(" \t\r\n");
-
-		while (*script_frame_temp.script_ptr != '}')
-			parse_anim_script();
-
-		// skip the }
-		script_frame_temp.script_ptr++;
-
-		// skip whitespace
-		parse_script_skip(" \t\r\n");
-	}
-
-	gi.FS_FreeFile(file_data);
-	script_frame_temp.script_ptr = NULL;
-
-	script->initialized = true;
-
-	M_ConvertScriptToJson(script_filename, script);
-}
-
 const mmove_t *M_GetMonsterMove(const mscript_t *script, const char *name)
 {
 	mmove_t *move;
@@ -875,14 +356,79 @@ const mmove_t *M_GetMonsterMove(const mscript_t *script, const char *name)
 	return NULL;
 }
 
+
+
+static size_t frame_score(const mframe_t *src, const mframe_t *other)
+{
+	size_t score = 1;
+
+	if (fabs(other->dist - src->dist) < 0.05)
+		score++;
+	if (other->thinkfunc == src->thinkfunc)
+		score++;
+
+	return score;
+}
+
+const mframe_t *M_FindDittoFrame(const mmove_t *move, const mframe_t *frame, size_t i)
+{
+	if (i <= 0)
+		return NULL;
+
+	const mframe_t *best_frame = NULL;
+	size_t last_score;
+
+	// search from index 0 and on to find a matching frame
+	for (size_t z = 0; z < i; z++)
+	{
+		const mframe_t *check_frame = &move->frame[z];
+
+		if (best_frame == check_frame ||
+			check_frame->aifunc != frame->aifunc)
+			continue;
+
+		size_t score = frame_score(frame, check_frame);
+
+		if (!best_frame || last_score < score)
+		{
+			best_frame = check_frame;
+			last_score = score;
+		}
+	}
+
+	return best_frame;
+}
+
+#define JSON_SPACE "\t"
+
+static void M_AddToEventsList(void **events, size_t *num_events, void *event)
+{
+	for (const void **evt = events; ; evt++)
+	{
+		if (*evt == event)
+			break;
+		else if (*evt && *evt != event)
+			continue;
+
+		*evt = event;
+		*num_events++;
+		break;
+	}
+}
+
 void M_ConvertFramesToMonsterScript(const char *script_filename, const char *model_filename, const mmove_t **moves)
 {
-	qhandle_t f;
+	char buff[MAX_QPATH];
 
-	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
 	load_md2_frames(model_filename);
 
-	gi.FS_FOpenFile(script_filename, &f, FS_MODE_WRITE);
+	Q_snprintf(buff, sizeof(buff), "%s.json", script_filename);
+
+	qhandle_t f;
+
+	gi.FS_FOpenFile(buff, &f, FS_MODE_WRITE);
+
+	gi.FS_FPrintf(f, "{\n" JSON_SPACE "\"moves\": {\n");
 
 #define MAX_EVENTS 64
 	void *events[MAX_EVENTS];
@@ -896,122 +442,116 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 
 		char name_buf[64];
 		SymbolName(move, name_buf, sizeof(name_buf));
-
 		const char *name_skip = strchr(name_buf, '_') + 1;
 
 		if (Q_strncasecmp(name_skip, "move_", 5) == 0)
 			name_skip += 5;
 
-		gi.FS_FPrintf(f, "%s ", name_skip);
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"%s\": {\n", name_skip);
 
-		if (script_frame_temp.md2_frame_names[move->firstframe][0])
-			gi.FS_FPrintf(f, "$%s ", script_frame_temp.md2_frame_names[move->firstframe]);
-		else
-			gi.FS_FPrintf(f, "%d ", move->firstframe);
-
-		if (script_frame_temp.md2_frame_names[move->lastframe][0])
-			gi.FS_FPrintf(f, "$%s", script_frame_temp.md2_frame_names[move->lastframe]);
-		else
-			gi.FS_FPrintf(f, "%d", move->lastframe);
-
-		if (move->endfunc)
+		if (*script_frame_temp.md2_frame_names[move->firstframe] && *script_frame_temp.md2_frame_names[move->lastframe])
 		{
-			undecorate_symbol_name(move->endfunc, name_buf, sizeof(name_buf));
-			gi.FS_FPrintf(f, " %s", name_buf);
-
-			for (const void **evt = events; ; evt++)
-			{
-				if (*evt == move->endfunc)
-					break;
-				else if (*evt  && *evt != move->endfunc)
-					continue;
-				
-				*evt = move->endfunc;
-				num_events++;
-				break;
-			}
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->firstframe]);
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->lastframe]);
+		}
+		else
+		{
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
 		}
 
-		gi.FS_FPrintf(f, "\n{\n");
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"frames\": [\n");
 
-		size_t total_frames = abs(move->lastframe - move->firstframe) + 1;
+		const size_t total_frames = abs(move->lastframe - move->firstframe) + 1;
+		char func_buffer[64];
 
-		for (size_t i = 0; i < total_frames; )
+		for (size_t i = 0; i < total_frames; i++)
 		{
-			const mframe_t *ditto_frame = NULL;
+			cJSON *frameJson = cJSON_CreateObject();
 			const mframe_t *frame = &move->frame[i];
-			size_t num_repeats = 1;
+			const mframe_t *ditto = M_FindDittoFrame(move, frame, i);
+			bool needsComma = false;
 
-			if (i > 0)
-				ditto_frame = M_FindDittoFrame(move, frame, i);
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
 
-			for (size_t z = i + 1; z < total_frames; z++)
+			if (ditto)
 			{
-				mframe_t *next_frame = &move->frame[z];
-
-				if (frame->aifunc != next_frame->aifunc || frame->dist != next_frame->dist ||
-					frame->thinkfunc != next_frame->thinkfunc)
-					break;
-
-				num_repeats++;
+				gi.FS_FPrintf(f, "\"inherit\": %d", ditto - move->frame);
+				needsComma = true;
 			}
 
-			i += num_repeats;
-
-			if (!ditto_frame)
+			if ((!ditto && frame->aifunc) || (ditto && frame->aifunc != ditto->aifunc))
 			{
+				if (needsComma)
+					gi.FS_FPrintf(f, ", ");
+
 				if (frame->aifunc)
 				{
-					undecorate_symbol_name(frame->aifunc, name_buf, sizeof(name_buf));
-					gi.FS_FPrintf(f, "\t%s", name_buf + 3);
+					undecorate_symbol_name(frame->aifunc, func_buffer, sizeof(func_buffer));
+					cJSON_AddStringToObject(frameJson, "ai", func_buffer + 3);
+					gi.FS_FPrintf(f, "\"ai\": \"%s\"", func_buffer + 3);
 				}
 				else
-					gi.FS_FPrintf(f, "\tnone", name_buf + 3);
-			}
-			else
-			{
-				if (ditto_frame == frame - 1)
-					gi.FS_FPrintf(f, "\t^");
-				else
-					gi.FS_FPrintf(f, "\t@%u", (size_t)(ditto_frame - move->frame));
+					gi.FS_FPrintf(f, "\"ai\": \"none\"");
+
+				needsComma = true;
 			}
 
-			if ((!ditto_frame && frame->dist) ||
-				(ditto_frame && frame->dist != ditto_frame->dist))
-				gi.FS_FPrintf(f, " +speed %g", frame->dist);
-
-			if ((!ditto_frame && frame->thinkfunc) ||
-				(ditto_frame && frame->thinkfunc != ditto_frame->thinkfunc))
+			if ((!ditto && frame->dist) || (ditto && frame->dist != ditto->dist))
 			{
+				if (needsComma)
+					gi.FS_FPrintf(f, ", ");
+
+				gi.FS_FPrintf(f, "\"dist\": %g", frame->dist);
+				needsComma = true;
+			}
+
+			if ((!ditto && frame->thinkfunc) || (ditto && frame->thinkfunc != ditto->thinkfunc))
+			{
+				if (needsComma)
+					gi.FS_FPrintf(f, ", ");
+
 				if (frame->thinkfunc)
 				{
-					undecorate_symbol_name(frame->thinkfunc, name_buf, sizeof(name_buf));
-					gi.FS_FPrintf(f, " +event %s", name_buf);
+					undecorate_symbol_name(frame->thinkfunc, func_buffer, sizeof(func_buffer));
+					cJSON_AddStringToObject(frameJson, "event", func_buffer);
+					gi.FS_FPrintf(f, "\"event\": \"%s\"", func_buffer);
 
-					for (const void **evt = events; ; evt++)
-					{
-						if (*evt == frame->thinkfunc)
-							break;
-						else if (*evt && *evt != frame->thinkfunc)
-							continue;
-
-						*evt = frame->thinkfunc;
-						num_events++;
-						break;
-					}
+					M_AddToEventsList(events, &num_events, frame->thinkfunc);
 				}
 				else
-					gi.FS_FPrintf(f, " +event none");
+					gi.FS_FPrintf(f, "\"event\": \"none\"");
+
+				needsComma = true;
 			}
 
-			if (num_repeats != 1)
-				gi.FS_FPrintf(f, " +repeat %i", num_repeats);
+			gi.FS_FPrintf(f, " }");
+
+			if (i != total_frames - 1)
+				gi.FS_FPrintf(f, ",");
 
 			gi.FS_FPrintf(f, "\n");
 		}
 
-		gi.FS_FPrintf(f, "}\n\n");
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "]");
+
+		if (move->endfunc)
+		{
+			undecorate_symbol_name(move->endfunc, func_buffer, sizeof(func_buffer));
+			gi.FS_FPrintf(f, ",\n" JSON_SPACE JSON_SPACE JSON_SPACE "\"post_think\": \"%s\"", func_buffer);
+
+			M_AddToEventsList(events, &num_events, move->endfunc);
+		}
+
+		gi.FS_FPrintf(f, "\n" JSON_SPACE JSON_SPACE "}");
+
+		if (*(move_ptr + 1) != NULL)
+			gi.FS_FPrintf(f, ", ");
+
+		gi.FS_FPrintf(f, "\n");
 	}
+
+	gi.FS_FPrintf(f, JSON_SPACE "}\n}");
 
 	gi.FS_FCloseFile(f);
 

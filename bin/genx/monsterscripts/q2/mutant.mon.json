@@ -1,0 +1,227 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand101",
+			"end_frame": "stand151",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"idle": {
+			"start_frame": "stand152",
+			"end_frame": "stand164",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "mutant_idle_loop" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "mutant_stand"
+		}, 
+		"walk": {
+			"start_frame": "walk05",
+			"end_frame": "walk16",
+			"frames": [
+				{ "ai": "walk", "dist": 3 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 10 },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 16 },
+				{ "inherit": 0, "dist": 15 },
+				{ "inherit": 8 }
+			]
+		}, 
+		"start_walk": {
+			"start_frame": "walk01",
+			"end_frame": "walk04",
+			"frames": [
+				{ "ai": "walk", "dist": 5 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -2 },
+				{ "inherit": 0, "dist": 1 }
+			],
+			"post_think": "mutant_walk_loop"
+		}, 
+		"run": {
+			"start_frame": "run03",
+			"end_frame": "run08",
+			"frames": [
+				{ "ai": "run", "dist": 40 },
+				{ "inherit": 0, "event": "mutant_step" },
+				{ "inherit": 0, "dist": 24 },
+				{ "inherit": 1, "dist": 5 },
+				{ "inherit": 0, "dist": 17 },
+				{ "inherit": 0, "dist": 10 }
+			]
+		}, 
+		"attack": {
+			"start_frame": "attack09",
+			"end_frame": "attack15",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "mutant_hit_left" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "mutant_hit_right" },
+				{ "inherit": 0, "event": "mutant_check_refire" }
+			],
+			"post_think": "mutant_run"
+		}, 
+		"jump": {
+			"start_frame": "attack01",
+			"end_frame": "attack08",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0, "dist": 17 },
+				{ "inherit": 0, "dist": 15, "event": "mutant_jump_takeoff" },
+				{ "inherit": 0, "dist": 15 },
+				{ "inherit": 2, "event": "mutant_check_landing" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0 }
+			],
+			"post_think": "mutant_run"
+		}, 
+		"pain1": {
+			"start_frame": "pain101",
+			"end_frame": "pain105",
+			"frames": [
+				{ "ai": "move", "dist": 4 },
+				{ "inherit": 0, "dist": -3 },
+				{ "inherit": 0, "dist": -8 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 5 }
+			],
+			"post_think": "mutant_run"
+		}, 
+		"pain2": {
+			"start_frame": "pain201",
+			"end_frame": "pain206",
+			"frames": [
+				{ "ai": "move", "dist": -24 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": -2 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 4 }
+			],
+			"post_think": "mutant_run"
+		}, 
+		"pain3": {
+			"start_frame": "pain301",
+			"end_frame": "pain311",
+			"frames": [
+				{ "ai": "move", "dist": -22 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 4 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 1 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 4 }
+			],
+			"post_think": "mutant_run"
+		}, 
+		"death1": {
+			"start_frame": "death101",
+			"end_frame": "death109",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "mutant_dead"
+		}, 
+		"death2": {
+			"start_frame": "death201",
+			"end_frame": "death210",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "mutant_dead"
+		}
+	}
+}

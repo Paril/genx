@@ -258,6 +258,8 @@ static const mevent_t events[] =
 	EVENT_FUNC(knight_dead),
 	EVENT_FUNC(knight_unsolid),
 	EVENT_FUNC(knight_sword2_sound),
+	EVENT_FUNC(ai_melee_side),
+	EVENT_FUNC(ai_charge_side),
 	NULL
 };
 

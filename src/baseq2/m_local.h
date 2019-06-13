@@ -23,15 +23,16 @@ Allowed arguments:
 		repeat (int > 0) = how many frames this frame entry will fill
 */
 
-typedef void (*mevent_func_t) (edict_t *self);
-
 typedef struct
 {
 	const char			*name;
-	const mevent_func_t	func;
+	const void			*func;
 } mevent_t;
 
 #define EVENT_FUNC(func) \
+	{ #func, func }
+
+#define AI_FUNC(func) \
 	{ #func, func }
 
 #define	MONSTERSCRIPT_HASH_SIZE		16
