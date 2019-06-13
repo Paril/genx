@@ -1,0 +1,91 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "walk1",
+			"end_frame": "walk1",
+			"frames": [
+				{ "ai": "stand" }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk12",
+			"frames": [
+				{ "ai": "walk", "dist": 6, "event": "shal_idle_sound" },
+				{ "inherit": 0, "dist": 4, "event": "none" },
+				{ "inherit": 1, "dist": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 1, "dist": 5 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 6 },
+				{ "inherit": 2 },
+				{ "inherit": 1 },
+				{ "inherit": 6 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "walk1",
+			"end_frame": "walk12",
+			"frames": [
+				{ "ai": "run", "dist": 6, "event": "shal_idle_sound" },
+				{ "inherit": 0, "dist": 4, "event": "none" },
+				{ "inherit": 1, "dist": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 1, "dist": 5 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 6 },
+				{ "inherit": 2 },
+				{ "inherit": 1 },
+				{ "inherit": 6 }
+			]
+		}, 
+		"attack1": {
+			"start_frame": "attack1",
+			"end_frame": "attack11",
+			"frames": [
+				{ "ai": "charge", "dist": 6, "event": "shal_attack_sound" },
+				{ "inherit": 0, "dist": 4, "event": "none" },
+				{ "inherit": 1, "dist": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 2 },
+				{ "inherit": 1, "dist": 5 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 6, "event": "ShalMissile" },
+				{ "inherit": 2 },
+				{ "inherit": 1 }
+			],
+			"post_think": "shal_run"
+		}, 
+		"pain1": {
+			"start_frame": "pain1",
+			"end_frame": "pain5",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "shal_run"
+		}, 
+		"death1": {
+			"start_frame": "death1",
+			"end_frame": "death7",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "shal_dead"
+		}
+	}
+}

@@ -1,0 +1,211 @@
+{
+	"moves": {
+		"char_a1": {
+			"start_frame": "char_a1",
+			"end_frame": "char_a16",
+			"frames": [
+				{ "ai": "charge", "dist": 20 },
+				{ "inherit": 0, "dist": 25 },
+				{ "inherit": 0, "dist": 18 },
+				{ "inherit": 0, "dist": 16 },
+				{ "inherit": 0, "dist": 14 },
+				{ "inherit": 0, "event": "ai_melee" },
+				{ "inherit": 5, "dist": 21 },
+				{ "inherit": 5, "dist": 13 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 2, "event": "ai_melee" },
+				{ "inherit": 3 },
+				{ "inherit": 4 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 21 },
+				{ "inherit": 0, "dist": 13 }
+			],
+			"post_think": "hknight_run"
+		}, 
+		"stand1": {
+			"start_frame": "stand1",
+			"end_frame": "stand9",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk20",
+			"frames": [
+				{ "ai": "walk", "dist": 2, "event": "hk_idle_sound" },
+				{ "inherit": 0, "dist": 5, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 5 },
+				{ "inherit": 1, "dist": 3 },
+				{ "inherit": 7 },
+				{ "inherit": 3 },
+				{ "inherit": 7 },
+				{ "inherit": 3 },
+				{ "inherit": 1, "dist": 6 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 3 },
+				{ "inherit": 7 },
+				{ "inherit": 7 },
+				{ "inherit": 7 },
+				{ "inherit": 5 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "run1",
+			"end_frame": "run8",
+			"frames": [
+				{ "ai": "run", "dist": 20, "event": "hk_idle_sound" },
+				{ "inherit": 0, "dist": 25, "event": "none" },
+				{ "inherit": 1, "dist": 18 },
+				{ "inherit": 1, "dist": 16 },
+				{ "inherit": 1, "dist": 14 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 21 },
+				{ "inherit": 1, "dist": 13 }
+			]
+		}, 
+		"pain1": {
+			"start_frame": "pain1",
+			"end_frame": "pain5",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "hknight_run"
+		}, 
+		"die1": {
+			"start_frame": "death1",
+			"end_frame": "death12",
+			"frames": [
+				{ "ai": "move", "dist": 10 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 7, "event": "hknight_unsolid" },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 3 },
+				{ "inherit": 3 },
+				{ "inherit": 3 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 3 },
+				{ "inherit": 3 },
+				{ "inherit": 3 }
+			],
+			"post_think": "hknight_dead"
+		}, 
+		"dieb1": {
+			"start_frame": "deathb1",
+			"end_frame": "deathb9",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "hknight_unsolid" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "hknight_dead"
+		}, 
+		"magicc1": {
+			"start_frame": "magicc1",
+			"end_frame": "magicc11",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "hknight_magic" },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 5 }
+			],
+			"post_think": "hknight_run"
+		}, 
+		"slice1": {
+			"start_frame": "slice1",
+			"end_frame": "slice10",
+			"frames": [
+				{ "ai": "charge", "dist": 9 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 15, "event": "ai_melee" },
+				{ "inherit": 5, "dist": 8 },
+				{ "inherit": 5, "dist": 2 },
+				{ "inherit": 5, "dist": 0 },
+				{ "inherit": 5, "dist": 3 }
+			],
+			"post_think": "hknight_run"
+		}, 
+		"smash1": {
+			"start_frame": "smash1",
+			"end_frame": "smash11",
+			"frames": [
+				{ "ai": "charge", "dist": 1 },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 0, "dist": 10, "event": "ai_melee" },
+				{ "inherit": 4, "dist": 7 },
+				{ "inherit": 4, "dist": 12 },
+				{ "inherit": 4, "dist": 2 },
+				{ "inherit": 4, "dist": 3 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 9 }
+			],
+			"post_think": "hknight_run"
+		}, 
+		"watk1": {
+			"start_frame": "w_attack1",
+			"end_frame": "w_attack22",
+			"frames": [
+				{ "ai": "charge", "dist": 2 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 3, "event": "ai_melee" },
+				{ "inherit": 0, "event": "ai_melee" },
+				{ "inherit": 10 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 6 },
+				{ "inherit": 6, "event": "ai_melee" },
+				{ "inherit": 9 },
+				{ "inherit": 7, "event": "ai_melee" },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 3 }
+			],
+			"post_think": "hknight_run"
+		}
+	}
+}

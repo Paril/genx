@@ -848,10 +848,21 @@ qhandle_t R_RegisterModel(const char *name)
 	// Generations
 	const char *extension = strchr(name, '.') + 1;
 
+	model = MOD_Alloc();
+
+	if (!model)
+	{
+		ret = Q_ERR_OUT_OF_SLOTS;
+		goto fail2;
+	}
+
 	if (!Q_stricmp(extension, "q1m"))
 		load = MOD_LoadQ1M;
 	else if (!Q_stricmp(extension, "mdl"))
-		load = MOD_LoadMDL;
+	{
+		model->nolerp = true;
+		load = MOD_LoadMD2;
+	}
 	else if (!Q_stricmp(extension, "spr"))
 		load = MOD_LoadSPR;
 	else if (!Q_stricmp(extension, "md2"))
@@ -866,14 +877,6 @@ qhandle_t R_RegisterModel(const char *name)
 	else
 	{
 		ret = Q_ERR_UNKNOWN_FORMAT;
-		goto fail2;
-	}
-
-	model = MOD_Alloc();
-
-	if (!model)
-	{
-		ret = Q_ERR_OUT_OF_SLOTS;
 		goto fail2;
 	}
 

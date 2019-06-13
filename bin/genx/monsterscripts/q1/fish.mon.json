@@ -1,0 +1,143 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "swim1",
+			"end_frame": "swim18",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "swim1",
+			"end_frame": "swim18",
+			"frames": [
+				{ "ai": "walk", "dist": 8 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "swim2",
+			"end_frame": "swim17",
+			"frames": [
+				{ "ai": "run", "dist": 12, "event": "fish_run_skip" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"attack1": {
+			"start_frame": "attack1",
+			"end_frame": "attack18",
+			"frames": [
+				{ "ai": "charge", "dist": 10, "event": "fish_run_skip" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "fish_melee" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "f_run"
+		}, 
+		"death1": {
+			"start_frame": "death1",
+			"end_frame": "death21",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "fish_dead"
+		}, 
+		"pain1": {
+			"start_frame": "pain1",
+			"end_frame": "pain9",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0, "dist": -6 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			],
+			"post_think": "f_run"
+		}
+	}
+}

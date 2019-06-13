@@ -1,0 +1,173 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "stand1",
+			"end_frame": "stand7",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk16",
+			"frames": [
+				{ "ai": "walk", "dist": 2, "event": "enf_idle_sound" },
+				{ "inherit": 0, "dist": 4, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 3 },
+				{ "inherit": 1, "dist": 1 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 5 },
+				{ "inherit": 4 },
+				{ "inherit": 5 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 4 },
+				{ "inherit": 5 },
+				{ "inherit": 3 },
+				{ "inherit": 1 },
+				{ "inherit": 5 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "run1",
+			"end_frame": "run8",
+			"frames": [
+				{ "ai": "run", "dist": 18, "event": "enf_idle_sound" },
+				{ "inherit": 0, "dist": 14, "event": "none" },
+				{ "inherit": 1, "dist": 7 },
+				{ "inherit": 1, "dist": 12 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 2 },
+				{ "inherit": 1, "dist": 11 }
+			]
+		}, 
+		"atk1": {
+			"start_frame": "attack1",
+			"end_frame": "attack10",
+			"frames": [
+				{ "ai": "charge", "event": "enf_idle_sound" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "event": "enforcer_fire" },
+				{ "inherit": 1 },
+				{ "inherit": 0, "event": "enf_pew" },
+				{ "inherit": 1 },
+				{ "inherit": 0, "event": "enf_refire" }
+			],
+			"post_think": "enf_run"
+		}, 
+		"paina1": {
+			"start_frame": "paina1",
+			"end_frame": "paina4",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "enf_run"
+		}, 
+		"painb1": {
+			"start_frame": "painb1",
+			"end_frame": "painb5",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "enf_run"
+		}, 
+		"painc1": {
+			"start_frame": "painc1",
+			"end_frame": "painc8",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "enf_run"
+		}, 
+		"paind1": {
+			"start_frame": "paind1",
+			"end_frame": "paind19",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 15 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "enf_run"
+		}, 
+		"die1": {
+			"start_frame": "death1",
+			"end_frame": "death14",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "enf_drop" },
+				{ "inherit": 0, "dist": 14 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 9 },
+				{ "inherit": 9 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "enf_dead"
+		}, 
+		"fdie1": {
+			"start_frame": "fdeath1",
+			"end_frame": "fdeath11",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "enf_drop" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "enf_dead"
+		}
+	}
+}

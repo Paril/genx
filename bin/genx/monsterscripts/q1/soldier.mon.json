@@ -1,0 +1,167 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "stand1",
+			"end_frame": "stand8",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "prowl_1",
+			"end_frame": "prowl_24",
+			"frames": [
+				{ "ai": "walk", "dist": 1, "event": "army_run_sound" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 2 },
+				{ "inherit": 1, "dist": 3 },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 6 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 4 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "run1",
+			"end_frame": "run8",
+			"frames": [
+				{ "ai": "run", "dist": 11, "event": "army_run_sound" },
+				{ "inherit": 0, "dist": 15, "event": "none" },
+				{ "inherit": 1, "dist": 10 },
+				{ "inherit": 2 },
+				{ "inherit": 1, "dist": 8 },
+				{ "inherit": 1 },
+				{ "inherit": 2 },
+				{ "inherit": 4 }
+			]
+		}, 
+		"atk1": {
+			"start_frame": "shoot1",
+			"end_frame": "shoot9",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "army_fire" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "army_checkrefire" },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "army_run"
+		}, 
+		"bdie": {
+			"start_frame": "death1",
+			"end_frame": "death10",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "army_drop" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "army_dead"
+		}, 
+		"cdie": {
+			"start_frame": "deathc1",
+			"end_frame": "deathc11",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0, "dist": -5 },
+				{ "inherit": 0, "dist": -4, "event": "army_drop" },
+				{ "inherit": 0, "dist": -13 },
+				{ "inherit": 0, "dist": -3 },
+				{ "inherit": 0, "dist": -4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "army_dead"
+		}, 
+		"paina": {
+			"start_frame": "pain1",
+			"end_frame": "pain6",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -1 }
+			],
+			"post_think": "army_run"
+		}, 
+		"painb": {
+			"start_frame": "painb1",
+			"end_frame": "painb14",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "army_run"
+		}, 
+		"painc": {
+			"start_frame": "painc1",
+			"end_frame": "painc13",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0 }
+			],
+			"post_think": "army_run"
+		}
+	}
+}

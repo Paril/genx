@@ -12,11 +12,9 @@ namespace asset_transpiler
 {
 	abstract class GameParser
 	{
-		static IDictionary<string, MemoryStream> _memoryFiles = new ConcurrentDictionary<string, MemoryStream>();
+		public static IDictionary<string, MemoryStream> MemoryFiles { get; } = new ConcurrentDictionary<string, MemoryStream>();
 
-		public static IDictionary<string, MemoryStream> MemoryFiles { get => _memoryFiles; }
-
-		public static string[] GetMemoryFiles() => _memoryFiles.Keys.ToArray();
+		public static string[] GetMemoryFiles() => MemoryFiles.Keys.ToArray();
 
 		public class StreamWrapper : Stream
 		{
@@ -55,10 +53,10 @@ namespace asset_transpiler
 			{
 				MemoryStream stream;
 
-				if (!_memoryFiles.TryGetValue(local_file, out stream))
+				if (!MemoryFiles.TryGetValue(local_file, out stream))
 				{
 					stream = new MemoryStream(_initialSize);
-					_memoryFiles.Add(local_file, stream);
+					MemoryFiles.Add(local_file, stream);
 				}
 				else
 					stream.Position = 0;
@@ -75,9 +73,9 @@ namespace asset_transpiler
 		{
 			if (Globals.DoMemoryFiles)
 			{
-				_memoryFiles.TryGetValue(old_name, out var value);
-				_memoryFiles.Remove(old_name);
-				_memoryFiles.Add(new_name, value);
+				MemoryFiles.TryGetValue(old_name, out var value);
+				MemoryFiles.Remove(old_name);
+				MemoryFiles.Add(new_name, value);
 				return;
 			}
 
@@ -211,6 +209,12 @@ namespace asset_transpiler
 								CreateTask(TaskSaveWal, (outwal, walname, next_name, surf, contents, data, palette, width, height)));
 		}
 
+		public static void SaveTga(ImageType bmp, string outtga)
+		{
+			CreateTaskWhenAll(TaskFreeImage, bmp,
+								CreateTask(TaskSaveTga, (bmp, outtga)));
+		}
+
 		public static int NumTasksDone;
 		public static int NumTasksQueued;
 		
@@ -275,6 +279,17 @@ namespace asset_transpiler
 			Interlocked.Exchange(ref NumTasksDone, done);
 		}
 
+		static TaskScheduler _scheduler = SetupScheduler();
+
+		static TaskScheduler SetupScheduler()
+		{
+#if DEBUG
+			return new ConcurrentExclusiveSchedulerPair().ExclusiveScheduler;
+#else
+			return TaskScheduler.Current;
+#endif
+		}
+
 		protected static Task CreateTask<T>(Action<T> func, T arg)
 		{
 			Interlocked.Increment(ref NumTasksQueued);
@@ -282,7 +297,7 @@ namespace asset_transpiler
 			{
 				func(arg);
 				Interlocked.Increment(ref NumTasksDone);
-			});
+			}, CancellationToken.None, TaskCreationOptions.DenyChildAttach, _scheduler);
 		}
 	
 		protected static Task CreateTask(Action func)
@@ -292,7 +307,7 @@ namespace asset_transpiler
 			{
 				func();
 				Interlocked.Increment(ref NumTasksDone);
-			});
+			}, CancellationToken.None, TaskCreationOptions.DenyChildAttach, _scheduler);
 		}
 
 		protected static Task CreateTaskWhenAll<T>(Action<T> func, T arg, params Task[] tasks)
@@ -302,7 +317,7 @@ namespace asset_transpiler
 			{
 				func(arg);
 				Interlocked.Increment(ref NumTasksDone);
-			});
+			}, CancellationToken.None, TaskContinuationOptions.DenyChildAttach, _scheduler);
 		}
 
 		public abstract void Run();

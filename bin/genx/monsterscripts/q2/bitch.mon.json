@@ -1,0 +1,328 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand101",
+			"end_frame": "stand130",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "chick_fidget" }
+			]
+		}, 
+		"fidget": {
+			"start_frame": "stand201",
+			"end_frame": "stand230",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "ChickMoan" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "chick_stand"
+		}, 
+		"start_run": {
+			"start_frame": "walk01",
+			"end_frame": "walk10",
+			"frames": [
+				{ "ai": "run", "dist": 1 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 3 },
+				{ "inherit": 1 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 7 }
+			],
+			"post_think": "chick_run"
+		}, 
+		"run": {
+			"start_frame": "walk11",
+			"end_frame": "walk20",
+			"frames": [
+				{ "ai": "run", "dist": 6 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 4 }
+			]
+		}, 
+		"walk": {
+			"start_frame": "walk11",
+			"end_frame": "walk20",
+			"frames": [
+				{ "ai": "walk", "dist": 6 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 4 }
+			]
+		}, 
+		"pain1": {
+			"start_frame": "pain101",
+			"end_frame": "pain105",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "chick_run"
+		}, 
+		"pain2": {
+			"start_frame": "pain201",
+			"end_frame": "pain205",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "chick_run"
+		}, 
+		"pain3": {
+			"start_frame": "pain301",
+			"end_frame": "pain321",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -6 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 3 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -3 },
+				{ "inherit": 0, "dist": -4 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": -2 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": -5 },
+				{ "inherit": 15 },
+				{ "inherit": 0, "dist": -8 },
+				{ "inherit": 0, "dist": 2 }
+			],
+			"post_think": "chick_run"
+		}, 
+		"death1": {
+			"start_frame": "death101",
+			"end_frame": "death112",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -7 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "chick_dead"
+		}, 
+		"death2": {
+			"start_frame": "death201",
+			"end_frame": "death223",
+			"frames": [
+				{ "ai": "move", "dist": -6 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 0, "dist": -5 },
+				{ "inherit": 1 },
+				{ "inherit": 2 },
+				{ "inherit": 0, "dist": -2 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 0, "dist": 10 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 7 },
+				{ "inherit": 9 },
+				{ "inherit": 1 },
+				{ "inherit": 10 },
+				{ "inherit": 10 },
+				{ "inherit": 7 },
+				{ "inherit": 0, "dist": -3 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 15 },
+				{ "inherit": 0, "dist": 14 },
+				{ "inherit": 7 }
+			],
+			"post_think": "chick_dead"
+		}, 
+		"duck": {
+			"start_frame": "duck01",
+			"end_frame": "duck07",
+			"frames": [
+				{ "ai": "move", "event": "chick_duck_down" },
+				{ "inherit": 0, "dist": 1, "event": "none" },
+				{ "inherit": 0, "dist": 4, "event": "chick_duck_hold" },
+				{ "inherit": 1, "dist": -4 },
+				{ "inherit": 0, "dist": -5, "event": "chick_duck_up" },
+				{ "inherit": 1, "dist": 3 },
+				{ "inherit": 1 }
+			],
+			"post_think": "chick_run"
+		}, 
+		"start_attack1": {
+			"start_frame": "attak101",
+			"end_frame": "attak113",
+			"frames": [
+				{ "ai": "charge", "event": "Chick_PreAttack1" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": -3 },
+				{ "inherit": 1, "dist": 3 },
+				{ "inherit": 1, "dist": 5 },
+				{ "inherit": 1, "dist": 7 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "event": "chick_attack1" }
+			]
+		}, 
+		"attack1": {
+			"start_frame": "attak114",
+			"end_frame": "attak127",
+			"frames": [
+				{ "ai": "charge", "dist": 19, "event": "ChickRocket" },
+				{ "inherit": 0, "dist": -6, "event": "none" },
+				{ "inherit": 1, "dist": -5 },
+				{ "inherit": 1, "dist": -2 },
+				{ "inherit": 1, "dist": -7 },
+				{ "inherit": 1, "dist": 0 },
+				{ "inherit": 1, "dist": 1 },
+				{ "inherit": 0, "dist": 10, "event": "ChickReload" },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 1, "dist": 5 },
+				{ "inherit": 1, "dist": 6 },
+				{ "inherit": 10 },
+				{ "inherit": 8 },
+				{ "inherit": 0, "dist": 3, "event": "chick_rerocket" }
+			]
+		}, 
+		"end_attack1": {
+			"start_frame": "attak128",
+			"end_frame": "attak132",
+			"frames": [
+				{ "ai": "charge", "dist": -3 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 0, "dist": -6 },
+				{ "inherit": 0, "dist": -4 },
+				{ "inherit": 0, "dist": -2 }
+			],
+			"post_think": "chick_run"
+		}, 
+		"start_slash": {
+			"start_frame": "attak201",
+			"end_frame": "attak203",
+			"frames": [
+				{ "ai": "charge", "dist": 1 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 3 }
+			],
+			"post_think": "chick_slash"
+		}, 
+		"slash": {
+			"start_frame": "attak204",
+			"end_frame": "attak212",
+			"frames": [
+				{ "ai": "charge", "dist": 1 },
+				{ "inherit": 0, "dist": 7, "event": "ChickSlash" },
+				{ "inherit": 0, "dist": -7 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -2, "event": "chick_reslash" }
+			]
+		}, 
+		"end_slash": {
+			"start_frame": "attak213",
+			"end_frame": "attak216",
+			"frames": [
+				{ "ai": "charge", "dist": -6 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 0 }
+			],
+			"post_think": "chick_run"
+		}
+	}
+}

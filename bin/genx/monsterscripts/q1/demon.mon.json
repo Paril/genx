@@ -1,0 +1,119 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "stand1",
+			"end_frame": "stand13",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk8",
+			"frames": [
+				{ "ai": "walk", "dist": 8, "event": "demon_idle_sound" },
+				{ "inherit": 0, "dist": 6, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 7 },
+				{ "inherit": 1, "dist": 4 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 10 },
+				{ "inherit": 6 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "run1",
+			"end_frame": "run6",
+			"frames": [
+				{ "ai": "run", "dist": 20, "event": "demon_idle_sound" },
+				{ "inherit": 0, "dist": 15, "event": "none" },
+				{ "inherit": 1, "dist": 36 },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1, "dist": 45 },
+				{ "inherit": 2 }
+			]
+		}, 
+		"jump1": {
+			"start_frame": "leap1",
+			"end_frame": "leap12",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 15, "event": "demon_do_jump" },
+				{ "ai": "move" },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 4, "event": "demon_do_lock" },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "demon_run"
+		}, 
+		"atta1": {
+			"start_frame": "attacka1",
+			"end_frame": "attacka15",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "Demon_Swipe" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "demon_run"
+		}, 
+		"pain1": {
+			"start_frame": "pain6",
+			"end_frame": "pain1",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "demon_run"
+		}, 
+		"die1": {
+			"start_frame": "death1",
+			"end_frame": "death9",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "demon_unsolid" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "demon_dead"
+		}
+	}
+}

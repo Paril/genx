@@ -9,6 +9,7 @@ using System.Threading;
 using DotNet.Globbing;
 using ImageType = SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Bgra32>;
 using SixLabors.ImageSharp.Advanced;
+using System.Runtime.InteropServices;
 
 namespace asset_transpiler
 {
@@ -1841,6 +1842,344 @@ namespace asset_transpiler
 				}
 		}
 
+		[StructLayout(LayoutKind.Sequential)]
+		struct vec3_t
+		{
+			public float x, y, z;
+		}
+
+		/* MDL header */
+		[StructLayout(LayoutKind.Sequential)]
+		struct dmdlheader_t
+		{
+			public int ident;            /* magic number: "IDPO" */
+			public int version;          /* version: 6 */
+
+			public vec3_t scale;         /* scale factor */
+			public vec3_t translate;     /* translation vector */
+			public float boundingradius;
+			public vec3_t eyeposition;   /* eyes' position */
+
+			public int num_skins;        /* number of textures */
+			public int skinwidth;        /* texture width */
+			public int skinheight;       /* texture height */
+
+			public int num_verts;        /* number of vertices */
+			public int num_tris;         /* number of triangles */
+			public int num_frames;       /* number of frames */
+
+			public int synctype;         /* 0 = synchron, 1 = random */
+			public int flags;            /* state flag */
+			public float size;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		/* Texture coords */
+		struct dmdltexcoord_t
+		{
+			public int onseam;
+			public int s;
+			public int t;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		/* Triangle info */
+		unsafe struct dmdltriangle_t
+		{
+			public int facesfront;  /* 0 = backface, 1 = frontface */
+			public fixed int vertex[3];   /* vertex indices */
+		};
+
+		[StructLayout(LayoutKind.Sequential)]
+		/* Compressed vertex */
+		unsafe struct dmdlvertex_t
+		{
+			public fixed byte v[3];
+			public sbyte normalIndex;
+		}
+
+		unsafe static T ReadStruct<T>(BinaryReader reader) where T : unmanaged
+		{
+			fixed (byte* bp = reader.ReadBytes(sizeof(T)))
+				return Marshal.PtrToStructure<T>((IntPtr)bp);
+		}
+
+		unsafe static T[] ReadStructs<T>(BinaryReader reader, int size) where T : unmanaged
+		{
+			T[] values = new T[size];
+
+			for (var i = 0; i < size; i++)
+				values[i] = ReadStruct<T>(reader);
+
+			return values;
+		}
+
+		unsafe static void WriteStruct<T>(BinaryWriter writer, T value) where T : unmanaged
+		{
+			writer.Write(new ReadOnlySpan<byte>(&value, sizeof(T)));
+		}
+
+		unsafe static void WriteStructs<T>(BinaryWriter writer, T[] values) where T : unmanaged
+		{
+			foreach (var val in values)
+				WriteStruct(writer, val);
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		struct dmd2header_t
+		{
+			public uint ident;
+			public uint version;
+
+			public uint skinwidth;
+			public uint skinheight;
+			public uint framesize;      // byte size of each frame
+
+			public uint num_skins;
+			public uint num_xyz;
+			public uint num_st;         // greater than num_xyz for seams
+			public uint num_tris;
+			public uint num_glcmds;     // dwords in strip/fan command list
+			public uint num_frames;
+
+			public uint ofs_skins;      // each skin is a MAX_SKINNAME string
+			public uint ofs_st;         // byte offset from start for stverts
+			public uint ofs_tris;       // offset for dtriangles
+			public uint ofs_frames;     // offset for first frame
+			public uint ofs_glcmds;
+			public uint ofs_end;        // end of file
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		struct dmd2stvert_t
+		{
+			public short s;
+			public short t;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		unsafe struct dmd2triangle_t
+		{
+			public fixed ushort index_xyz[3];
+			public fixed ushort index_st[3];
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		unsafe struct dmd2trivertx_t
+		{
+			public fixed byte v[3];            // scaled byte to fit in frame mins/maxs
+			public byte lightnormalindex;
+		}
+
+		[StructLayout(LayoutKind.Sequential)]
+		unsafe struct dmd2frame_t
+		{
+			public fixed float scale[3];       // multiply byte verts by this
+			public fixed float translate[3];   // then add this
+			public fixed byte name[16];       // frame name from grabbing
+											  //dmd2trivertx_t  verts[1];       // variable sized
+		}
+
+		unsafe void TaskMdl((string pakname, IArchiveFile pakfile, string output) info)
+		{
+			using (var br = new BinaryReader(OpenArchive(info.pakname)))
+			using (var bw = new BinaryWriter(OpenFileStream(info.output + ".mdl")))
+			{
+				br.BaseStream.Position = info.pakfile.Offset;
+
+				// header
+				var mdl_header = ReadStruct<dmdlheader_t>(br);
+
+				// skins
+				var skins = new string[mdl_header.num_skins];
+
+				for (var i = 0; i < mdl_header.num_skins; i++)
+				{
+					var type = br.ReadInt32();
+
+					if (type != 0)
+						throw new Exception("Can't do grouped skins");
+
+					var texture = br.ReadBytes(mdl_header.skinwidth * mdl_header.skinheight);
+					var bmp = new ImageType(mdl_header.skinwidth, mdl_header.skinheight);
+					var span = bmp.GetPixelSpan();
+
+					for (var p = 0; p < texture.Length; p++)
+						span[p] = Globals.GetMappedColor(PaletteID.Q1, texture[p]);
+
+					skins[i] = info.output + "_" + i;
+					SaveTga(bmp, skins[i] + ".tga");
+					skins[i] += ".pcx";
+				}
+
+				// texcoords
+				var mdl_texcoords = ReadStructs<dmdltexcoord_t>(br, mdl_header.num_verts);
+
+				// triangles
+				var mdl_triangles = ReadStructs<dmdltriangle_t>(br, mdl_header.num_tris);
+
+				dmd2header_t md2_header;
+				md2_header.ident = (('2' << 24) + ('P' << 16) + ('D' << 8) + 'I');
+				md2_header.version = 8;
+				md2_header.skinwidth = (uint)mdl_header.skinwidth;
+				md2_header.skinheight = (uint)mdl_header.skinheight;
+				md2_header.framesize = (uint)((mdl_header.num_verts * sizeof(dmd2trivertx_t)) + sizeof(dmd2frame_t));
+				md2_header.num_skins = (uint)mdl_header.num_skins;
+				md2_header.num_xyz = (uint)mdl_header.num_verts;
+				md2_header.num_st = (uint)mdl_header.num_verts * 2;
+				md2_header.num_tris = (uint)mdl_header.num_tris;
+				md2_header.num_glcmds = 0;
+				md2_header.num_frames = 0;
+
+				// calc num frames
+				var readPos = br.BaseStream.Position;
+
+				for (var i = 0; i < mdl_header.num_frames; i++)
+				{
+					var type = br.ReadInt32();
+
+					if (type != 0)
+					{
+						var num = br.ReadInt32();
+						br.BaseStream.Position += sizeof(dmdlvertex_t) * 2;
+
+						br.BaseStream.Position += sizeof(float) * num;
+
+						md2_header.num_frames += (uint)num;
+
+						br.BaseStream.Position += ((sizeof(dmdlvertex_t) * 2) + 16 + sizeof(dmdlvertex_t) * mdl_header.num_verts) * num;
+
+						continue;
+					}
+
+					md2_header.num_frames++;
+					br.BaseStream.Position += (sizeof(dmdlvertex_t) * 2) + 16 + sizeof(dmdlvertex_t) * mdl_header.num_verts;
+				}
+
+				br.BaseStream.Position = readPos;
+
+				md2_header.ofs_skins = (uint)sizeof(dmd2header_t);
+				md2_header.ofs_st = md2_header.ofs_skins + (md2_header.num_skins * 64);
+				md2_header.ofs_tris = (uint)(md2_header.ofs_st + (md2_header.num_st * sizeof(dmd2stvert_t)));
+				md2_header.ofs_frames = (uint)(md2_header.ofs_tris + (md2_header.num_tris * sizeof(dmd2triangle_t)));
+				md2_header.ofs_glcmds = 0;
+				md2_header.ofs_end = md2_header.ofs_frames + (md2_header.num_frames * md2_header.framesize);
+
+				// write header
+				WriteStruct(bw, md2_header);
+
+				if (bw.BaseStream.Position != md2_header.ofs_skins)
+					throw new Exception("bad md2");
+
+				// write skins
+				foreach (var skin in skins)
+				{
+					foreach (var c in skin)
+						bw.Write((sbyte)c);
+
+					for (int s = skin.Length; s < 64; s++)
+						bw.Write((sbyte)0);
+				}
+
+				if (bw.BaseStream.Position != md2_header.ofs_st)
+					throw new Exception("bad md2");
+
+				// write STs
+				for (var i = 0; i < md2_header.num_st; i++)
+				{
+					var coord = mdl_texcoords[i % mdl_header.num_verts];
+
+					float s = coord.s;
+					float t = coord.t;
+
+					if (i >= mdl_header.num_verts && coord.onseam != 0)
+						s += mdl_header.skinwidth * 0.5f;
+
+					bw.Write((short)Math.Round(s));
+					bw.Write((short)Math.Round(t));
+				}
+
+				if (bw.BaseStream.Position != md2_header.ofs_tris)
+					throw new Exception("bad md2");
+
+				// write triangles
+				for (var i = 0; i < md2_header.num_tris; i++)
+				{
+					var tri = mdl_triangles[i];
+
+					bw.Write((ushort)tri.vertex[0]);
+					bw.Write((ushort)tri.vertex[1]);
+					bw.Write((ushort)tri.vertex[2]);
+
+					if (tri.facesfront == 1)
+					{
+						bw.Write((ushort)tri.vertex[0]);
+						bw.Write((ushort)tri.vertex[1]);
+						bw.Write((ushort)tri.vertex[2]);
+					}
+					else
+					{
+						bw.Write((ushort)(mdl_header.num_verts + tri.vertex[0]));
+						bw.Write((ushort)(mdl_header.num_verts + tri.vertex[1]));
+						bw.Write((ushort)(mdl_header.num_verts + tri.vertex[2]));
+					}
+				}
+
+				if (bw.BaseStream.Position != md2_header.ofs_frames)
+					throw new Exception("bad md2");
+
+				Action CopySimpleFrame = () =>
+				{
+					br.BaseStream.Position += sizeof(dmdlvertex_t) * 2;
+					var name = Encoding.ASCII.GetString(br.ReadBytes(16));
+
+					if (name.IndexOf('\0') != -1)
+						name = name.Substring(0, name.IndexOf('\0'));
+
+					var mdl_verts = ReadStructs<dmdlvertex_t>(br, mdl_header.num_verts);
+
+					bw.Write(mdl_header.scale.x);
+					bw.Write(mdl_header.scale.y);
+					bw.Write(mdl_header.scale.z);
+					bw.Write(mdl_header.translate.x);
+					bw.Write(mdl_header.translate.y);
+					bw.Write(mdl_header.translate.z);
+
+					foreach (var c in name)
+						bw.Write((sbyte)c);
+
+					for (int s = name.Length; s < 16; s++)
+						bw.Write((sbyte)0);
+
+					WriteStructs(bw, mdl_verts);
+				};
+
+				// read/write frames
+				for (var i = 0; i < mdl_header.num_frames; i++)
+				{
+					var type = br.ReadInt32();
+
+					if (type != 0)
+					{
+						var num = br.ReadInt32();
+
+						br.BaseStream.Position += sizeof(dmdlvertex_t) * 2;
+						br.BaseStream.Position += sizeof(float) * num;
+
+						for (var f = 0; f < num; f++)
+							CopySimpleFrame();
+
+						continue;
+					}
+
+					CopySimpleFrame();
+				}
+
+				if (bw.BaseStream.Position != md2_header.ofs_end)
+					throw new Exception("bad md2");
+			}
+		}
+
 		void RunThroughPak(string pakname)
 		{
 			using (var pak = new PAK(File.Open(pakname, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -1864,7 +2203,8 @@ namespace asset_transpiler
 					if (pakfile.Name.EndsWith(".bsp") && !Path.GetFileName(pakfile.Name).StartsWith("b_"))
 						CreateTask(TaskBsp, (pakname, pakfile));
 					else if (pakfile.Name.EndsWith(".mdl"))
-						CreateTask(TaskCopy, (pakname, pakfile, "models/q1/" + pakfile.Name.Substring("progs/".Length)));
+						//CreateTask(TaskCopy, (pakname, pakfile, "models/q1/" + pakfile.Name.Substring("progs/".Length)));
+						CreateTask(TaskMdl, (pakname, pakfile, "models/q1/" + Path.GetFileNameWithoutExtension(pakfile.Name.Substring("progs/".Length))));
 					else if (pakfile.Name.EndsWith(".wav"))
 						CreateTask(TaskCopy, (pakname, pakfile, "sound/q1/" + pakfile.Name.Substring("sound/".Length)));
 					else if (pakfile.Name.EndsWith(".spr"))

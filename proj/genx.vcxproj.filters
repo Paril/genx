@@ -468,9 +468,6 @@
     <ClInclude Include="..\inc\format\mdl.h">
       <Filter>Header Files\format</Filter>
     </ClInclude>
-    <ClInclude Include="..\inc\format\mdx.h">
-      <Filter>Header Files\format</Filter>
-    </ClInclude>
     <ClInclude Include="..\inc\format\pak.h">
       <Filter>Header Files\format</Filter>
     </ClInclude>

@@ -1,0 +1,116 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "hover1",
+			"end_frame": "hover8",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "hover1",
+			"end_frame": "hover8",
+			"frames": [
+				{ "ai": "walk", "dist": 8, "event": "Wiz_idlesound" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"side1": {
+			"start_frame": "hover1",
+			"end_frame": "hover8",
+			"frames": [
+				{ "ai": "run", "dist": 8, "event": "Wiz_idlesound" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "fly1",
+			"end_frame": "fly14",
+			"frames": [
+				{ "ai": "run", "dist": 16, "event": "Wiz_idlesound" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"fast2": {
+			"start_frame": "magatt5",
+			"end_frame": "magatt2",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "wiz_fastfinish"
+		}, 
+		"fast1": {
+			"start_frame": "magatt1",
+			"end_frame": "magatt6",
+			"frames": [
+				{ "ai": "move", "event": "Wiz_StartFast" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			],
+			"post_think": "wiz_fastb"
+		}, 
+		"pain1": {
+			"start_frame": "pain1",
+			"end_frame": "pain4",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "wiz_run"
+		}, 
+		"death1": {
+			"start_frame": "death1",
+			"end_frame": "death8",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "wiz_unsolid" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "wiz_dead"
+		}
+	}
+}

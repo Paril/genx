@@ -1,0 +1,147 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand1",
+			"end_frame": "stand7",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk": {
+			"start_frame": "walk1",
+			"end_frame": "walk16",
+			"frames": [
+				{ "ai": "walk", "dist": 15 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 12 },
+				{ "inherit": 7 },
+				{ "inherit": 3 },
+				{ "inherit": 3 },
+				{ "inherit": 4 },
+				{ "inherit": 4 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 7 }
+			]
+		}, 
+		"run": {
+			"start_frame": "run1",
+			"end_frame": "run6",
+			"frames": [
+				{ "ai": "run", "dist": 23 },
+				{ "inherit": 0, "dist": 14 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 21 },
+				{ "inherit": 0, "dist": 12 },
+				{ "inherit": 0, "dist": 13 }
+			]
+		}, 
+		"attack_melee": {
+			"start_frame": "melee1",
+			"end_frame": "melee17",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "gladiator_cleaver_swing" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "GaldiatorMelee" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 6 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gladiator_run"
+		}, 
+		"attack_gun": {
+			"start_frame": "attack1",
+			"end_frame": "attack9",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "GladiatorGun" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gladiator_run"
+		}, 
+		"pain": {
+			"start_frame": "pain1",
+			"end_frame": "pain6",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gladiator_run"
+		}, 
+		"pain_air": {
+			"start_frame": "painup1",
+			"end_frame": "painup7",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gladiator_run"
+		}, 
+		"death": {
+			"start_frame": "death1",
+			"end_frame": "death22",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gladiator_dead"
+		}
+	}
+}

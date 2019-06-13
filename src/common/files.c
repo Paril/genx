@@ -174,6 +174,7 @@ cvar_t              *fs_game;
 	static void open_zip_file(file_t *file);
 	static void close_zip_file(file_t *file);
 	static int tell_zip_file(file_t *file);
+	static int seek_zip_file(file_t *file, int64_t offset);
 	static int read_zip_file(file_t *file, void *buf, size_t len);
 #endif
 
@@ -555,6 +556,9 @@ int FS_Seek(qhandle_t f, int64_t offset)
 				return Q_ERR_LIBRARY_ERROR;
 
 			return Q_ERR_SUCCESS;
+
+		case FS_ZIP:
+			return seek_zip_file(file, offset);
 #endif
 
 		default:
@@ -1059,6 +1063,35 @@ static int tell_zip_file(file_t *file)
 {
 	zipstream_t *s = file->zfp;
 	return s->stream.total_out;
+}
+
+static int seek_zip_file(file_t *file, int64_t offset)
+{
+	int64_t left_to_read;
+	zipstream_t *s = file->zfp;
+
+	if (offset > s->stream.total_out)
+		left_to_read = offset - s->stream.total_out;
+	else
+	{
+		left_to_read = offset;
+		open_zip_file(file);
+	}
+
+	static byte buffer[4096];
+	size_t num_read = 0;
+
+	while (left_to_read)
+	{
+		size_t num_to_read = min(sizeof(left_to_read), left_to_read);
+
+		read_zip_file(file, buffer, num_to_read);
+
+		num_read += num_to_read;
+		left_to_read -= num_to_read;
+	}
+
+	return num_read;
 }
 
 static int read_zip_file(file_t *file, void *buf, size_t len)

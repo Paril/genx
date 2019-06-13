@@ -1,0 +1,291 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand01",
+			"end_frame": "stand51",
+			"frames": [
+				{ "ai": "stand", "event": "jorg_idle" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 19 },
+				{ "inherit": 0, "dist": 11, "event": "jorg_step_left" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 6 },
+				{ "inherit": 0, "dist": 9, "event": "jorg_step_right" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": -2 },
+				{ "inherit": 34, "dist": -17 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": -12 },
+				{ "inherit": 38, "dist": -14 }
+			]
+		}, 
+		"run": {
+			"start_frame": "walk06",
+			"end_frame": "walk19",
+			"frames": [
+				{ "ai": "run", "dist": 17, "event": "jorg_step_left" },
+				{ "inherit": 0, "dist": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 12 },
+				{ "inherit": 1, "dist": 8 },
+				{ "inherit": 1, "dist": 10 },
+				{ "inherit": 0, "dist": 33, "event": "jorg_step_right" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1, "dist": 9 },
+				{ "inherit": 11 },
+				{ "inherit": 11 }
+			]
+		}, 
+		"start_walk": {
+			"start_frame": "walk01",
+			"end_frame": "walk05",
+			"frames": [
+				{ "ai": "walk", "dist": 5 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 0, "dist": 15 }
+			]
+		}, 
+		"walk": {
+			"start_frame": "walk06",
+			"end_frame": "walk19",
+			"frames": [
+				{ "ai": "walk", "dist": 17 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 12 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 10 },
+				{ "inherit": 0, "dist": 33 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 11 },
+				{ "inherit": 11 }
+			]
+		}, 
+		"end_walk": {
+			"start_frame": "walk20",
+			"end_frame": "walk25",
+			"frames": [
+				{ "ai": "walk", "dist": 11 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": -8 }
+			]
+		}, 
+		"pain1": {
+			"start_frame": "pain101",
+			"end_frame": "pain103",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "jorg_run"
+		}, 
+		"pain2": {
+			"start_frame": "pain201",
+			"end_frame": "pain203",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "jorg_run"
+		}, 
+		"pain3": {
+			"start_frame": "pain301",
+			"end_frame": "pain325",
+			"frames": [
+				{ "ai": "move", "dist": -28 },
+				{ "inherit": 0, "dist": -6 },
+				{ "inherit": 0, "dist": -3, "event": "jorg_step_left" },
+				{ "inherit": 0, "dist": -9 },
+				{ "inherit": 0, "dist": 0, "event": "jorg_step_right" },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 0, "dist": -7 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 0, "dist": -11 },
+				{ "inherit": 0, "dist": -4 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 0, "dist": 10 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 5 },
+				{ "inherit": 14 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 14 },
+				{ "inherit": 2, "dist": 7 },
+				{ "inherit": 0, "dist": 17 },
+				{ "inherit": 5 },
+				{ "inherit": 5 },
+				{ "inherit": 4 }
+			],
+			"post_think": "jorg_run"
+		}, 
+		"death": {
+			"start_frame": "death01",
+			"end_frame": "death50",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "MakronToss" },
+				{ "inherit": 0, "event": "BossExplode" }
+			]
+		}, 
+		"start_attack1": {
+			"start_frame": "attak101",
+			"end_frame": "attak108",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "jorg_attack1"
+		}, 
+		"attack1": {
+			"start_frame": "attak109",
+			"end_frame": "attak114",
+			"frames": [
+				{ "ai": "charge", "event": "jorg_firebullet" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "jorg_reattack1"
+		}, 
+		"end_attack1": {
+			"start_frame": "attak115",
+			"end_frame": "attak118",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "jorg_run"
+		}, 
+		"attack2": {
+			"start_frame": "attak201",
+			"end_frame": "attak213",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "jorgBFG" },
+				{ "ai": "move" },
+				{ "inherit": 7 },
+				{ "inherit": 7 },
+				{ "inherit": 7 },
+				{ "inherit": 7 },
+				{ "inherit": 7 }
+			],
+			"post_think": "jorg_run"
+		}
+	}
+}

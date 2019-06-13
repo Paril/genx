@@ -1,0 +1,178 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand1",
+			"end_frame": "stand5",
+			"frames": [
+				{ "ai": "stand", "event": "berserk_fidget" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"stand_fidget": {
+			"start_frame": "standb1",
+			"end_frame": "standb20",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_stand"
+		}, 
+		"walk": {
+			"start_frame": "walkc1",
+			"end_frame": "walkc11",
+			"frames": [
+				{ "ai": "walk", "dist": 9.1 },
+				{ "inherit": 0, "dist": 6.3 },
+				{ "inherit": 0, "dist": 4.9 },
+				{ "inherit": 0, "dist": 6.7 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 8.2 },
+				{ "inherit": 0, "dist": 7.2 },
+				{ "inherit": 0, "dist": 6.1 },
+				{ "inherit": 2 },
+				{ "inherit": 0, "dist": 4.7 },
+				{ "inherit": 9 }
+			]
+		}, 
+		"run": {
+			"start_frame": "run1",
+			"end_frame": "run6",
+			"frames": [
+				{ "ai": "run", "dist": 21 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 25 },
+				{ "inherit": 0, "dist": 18 },
+				{ "inherit": 0, "dist": 19 }
+			]
+		}, 
+		"attack_spike": {
+			"start_frame": "att_c1",
+			"end_frame": "att_c8",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "berserk_swing" },
+				{ "inherit": 0, "event": "berserk_attack_spike" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_run"
+		}, 
+		"attack_club": {
+			"start_frame": "att_c9",
+			"end_frame": "att_c20",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "berserk_swing" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "berserk_attack_club" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_run"
+		}, 
+		"pain1": {
+			"start_frame": "painc1",
+			"end_frame": "painc4",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_run"
+		}, 
+		"pain2": {
+			"start_frame": "painb1",
+			"end_frame": "painb20",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_run"
+		}, 
+		"death1": {
+			"start_frame": "death1",
+			"end_frame": "death13",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_dead"
+		}, 
+		"death2": {
+			"start_frame": "deathc1",
+			"end_frame": "deathc8",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "berserk_dead"
+		}
+	}
+}

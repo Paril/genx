@@ -1,0 +1,150 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "stand1",
+			"end_frame": "stand9",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk8",
+			"frames": [
+				{ "ai": "walk", "dist": 8, "event": "dog_idle_sound" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "run1",
+			"end_frame": "run12",
+			"frames": [
+				{ "ai": "run", "dist": 16 },
+				{ "inherit": 0, "dist": 32 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 20 },
+				{ "inherit": 0, "dist": 64 },
+				{ "inherit": 1 },
+				{ "inherit": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 3 },
+				{ "inherit": 4 },
+				{ "inherit": 1 }
+			]
+		}, 
+		"atta1": {
+			"start_frame": "attack1",
+			"end_frame": "attack8",
+			"frames": [
+				{ "ai": "charge", "dist": 10 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "dog_bite_func" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "dog_run"
+		}, 
+		"leap1": {
+			"start_frame": "leap1",
+			"end_frame": "leap9",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0, "event": "dog_leap_func" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "dog_run"
+		}, 
+		"pain1": {
+			"start_frame": "pain1",
+			"end_frame": "pain6",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "dog_run"
+		}, 
+		"painb1": {
+			"start_frame": "painb1",
+			"end_frame": "painb16",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 12 },
+				{ "inherit": 3 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 10 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "dog_run"
+		}, 
+		"die1": {
+			"start_frame": "death1",
+			"end_frame": "death9",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "dog_dead"
+		}, 
+		"dieb1": {
+			"start_frame": "deathb1",
+			"end_frame": "deathb9",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "dog_dead"
+		}
+	}
+}

@@ -252,7 +252,6 @@
     <ClInclude Include="..\inc\format\md2.h" />
     <ClInclude Include="..\inc\format\md3.h" />
     <ClInclude Include="..\inc\format\mdl.h" />
-    <ClInclude Include="..\inc\format\mdx.h" />
     <ClInclude Include="..\inc\format\pak.h" />
     <ClInclude Include="..\inc\format\pcx.h" />
     <ClInclude Include="..\inc\format\sp2.h" />

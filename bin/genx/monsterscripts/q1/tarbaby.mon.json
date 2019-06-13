@@ -1,0 +1,104 @@
+{
+	"moves": {
+		"stand1": {
+			"start_frame": "walk1",
+			"end_frame": "walk1",
+			"frames": [
+				{ "ai": "stand" }
+			]
+		}, 
+		"walk1": {
+			"start_frame": "walk1",
+			"end_frame": "walk25",
+			"frames": [
+				{ "ai": "walk" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 }
+			]
+		}, 
+		"run1": {
+			"start_frame": "run1",
+			"end_frame": "run25",
+			"frames": [
+				{ "ai": "run" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 },
+				{ "inherit": 11 }
+			]
+		}, 
+		"fly1": {
+			"start_frame": "fly1",
+			"end_frame": "fly4",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "tbaby_fly_go" }
+			]
+		}, 
+		"jump1": {
+			"start_frame": "jump1",
+			"end_frame": "jump6",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "tbaby_jump_do" },
+				{ "inherit": 0 }
+			],
+			"post_think": "tbaby_fly"
+		}, 
+		"die1": {
+			"start_frame": "exp",
+			"end_frame": "exp",
+			"frames": [
+				{ "ai": "move", "event": "tbaby_nohurt" }
+			],
+			"post_think": "tbaby_explode"
+		}
+	}
+}

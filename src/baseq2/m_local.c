@@ -385,97 +385,6 @@ static void load_md2_frames(const char *model_filename)
 		script_frame_temp.md2_num_frames = MD2_MAX_FRAMES;
 }
 
-#define READ_BYTES(num) \
-		buffer; buffer += num
-
-#define READ_TYPE(t) \
-		*((t *)buffer); buffer += sizeof(t);
-
-#define SKIP_BYTES(num) \
-		buffer += num
-
-static void load_mdl_frames(const char *model_filename)
-{
-	if (model_filename)
-	{
-		byte *buffer = NULL;
-
-		gi.FS_LoadFile(model_filename, &buffer);
-
-		if (!buffer)
-			gi.error("Can't find model %s", model_filename);
-
-		dmdlheader_t *header = (dmdlheader_t *)READ_BYTES(sizeof(dmdlheader_t));
-
-		script_frame_temp.md2_num_frames = LittleLong(header->num_frames);
-
-		int skinsize = header->skinwidth * header->skinheight;
-		int64_t filepos = 0;
-
-		// skip skins
-		for (int i = 0; i < LittleLong(header->num_skins); i++)
-		{
-			int group = READ_TYPE(int);
-
-			if (!group)
-				SKIP_BYTES(skinsize);
-			else
-			{
-				int nb = READ_TYPE(int);
-				SKIP_BYTES(skinsize * nb);
-			}
-		}
-
-		// skip texcoords
-		SKIP_BYTES(sizeof(dmdltexcoord_t) * header->num_verts);
-
-		// skip tris
-		SKIP_BYTES(sizeof(dmdltriangle_t) * header->num_tris);
-
-		script_frame_temp.md2_num_frames = 0;
-
-		for (int i = 0; i < LittleLong(header->num_frames); i++)
-		{
-			int type = READ_TYPE(int);
-
-			if (type == 0)
-			{
-				SKIP_BYTES(sizeof(dmdlvertex_t) * 2);
-				memcpy(script_frame_temp.md2_frame_names[script_frame_temp.md2_num_frames], buffer, sizeof(*script_frame_temp.md2_frame_names));
-				script_frame_temp.md2_num_frames++;
-				SKIP_BYTES(16 + sizeof(dmdlvertex_t) * header->num_verts);
-			}
-			else
-			{
-				int num = READ_TYPE(int);
-				SKIP_BYTES(sizeof(dmdlvertex_t) * 2) + (sizeof(float) * num);
-
-				for (int x = 0; x < num; x++)
-				{
-					SKIP_BYTES(sizeof(dmdlvertex_t) * 2);
-					memcpy(script_frame_temp.md2_frame_names[script_frame_temp.md2_num_frames], buffer, sizeof(*script_frame_temp.md2_frame_names));
-					script_frame_temp.md2_num_frames++;
-					SKIP_BYTES(16 + sizeof(dmdlvertex_t) * header->num_verts);
-				}
-			}
-		}
-
-		gi.FS_FreeFile((byte*)header);
-	}
-	else
-		script_frame_temp.md2_num_frames = MD2_MAX_FRAMES;
-}
-
-static void load_model_frames(const char *model_filename)
-{
-	const char *ext = COM_FileExtension(model_filename);
-
-	if (Q_stricmp(ext, ".md2") == 0)
-		load_md2_frames(model_filename);
-	else if (Q_stricmp(ext, ".mdl") == 0)
-		load_mdl_frames(model_filename);
-}
-
 static size_t frame_score(const mframe_t *src, const mframe_t *other)
 {
 	size_t score = 1;
@@ -529,29 +438,38 @@ static void M_ConvertScriptToJson(const char *script_filename, mscript_t *script
 
 	gi.FS_FOpenFile(buff, &f, FS_MODE_WRITE);
 
-	gi.FS_FPrintf(f, "{\n");
+	gi.FS_FPrintf(f, "{\n" JSON_SPACE "\"moves\": {\n");
 
 	mmove_t *move;
 
 	LIST_FOR_EACH(mmove_t, move, &script->moves, listEntry)
 	{
-		gi.FS_FPrintf(f, JSON_SPACE "\"%s\": {\n", move->name);
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"%s\": {\n", move->name);
 
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"frames\": [\n");
+		if (*script_frame_temp.md2_frame_names[move->firstframe] && *script_frame_temp.md2_frame_names[move->lastframe])
+		{
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->firstframe]);
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->lastframe]);
+		}
+		else
+		{
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
+		}
+
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"frames\": [\n");
 
 		const size_t total_frames = abs(move->lastframe - move->firstframe) + 1;
+		char func_buffer[64];
 
 		for (size_t i = 0; i < total_frames; i++)
 		{
 			cJSON *frameJson = cJSON_CreateObject();
 			const mframe_t *frame = &move->frame[i];
 			const mframe_t *ditto = M_FindDittoFrame(move, frame, i);
-			char func_buffer[64];
 			bool needsComma = false;
 
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
+			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
 
 			if (ditto)
 			{
@@ -610,9 +528,15 @@ static void M_ConvertScriptToJson(const char *script_filename, mscript_t *script
 			gi.FS_FPrintf(f, "\n");
 		}
 
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "]");
+		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "]");
 
-		gi.FS_FPrintf(f, "\n" JSON_SPACE "}");
+		if (move->endfunc)
+		{
+			undecorate_symbol_name(move->endfunc, func_buffer, sizeof(func_buffer));
+			gi.FS_FPrintf(f, ",\n" JSON_SPACE JSON_SPACE JSON_SPACE "\"post_think\": \"%s\"", func_buffer);
+		}
+		
+		gi.FS_FPrintf(f, "\n" JSON_SPACE JSON_SPACE "}");
 
 		if (!LIST_TERM(LIST_NEXT(mmove_t, move, listEntry), &script->moves, listEntry))
 			gi.FS_FPrintf(f, ", ");
@@ -620,35 +544,232 @@ static void M_ConvertScriptToJson(const char *script_filename, mscript_t *script
 		gi.FS_FPrintf(f, "\n");
 	}
 
-	gi.FS_FPrintf(f, "}");
+	gi.FS_FPrintf(f, JSON_SPACE "}\n}");
 
 	gi.FS_FCloseFile(f);
 }
 
+static bool M_ParseMonsterFrame(cJSON *frame, int *out_frame)
+{
+	if (!cJSON_IsNumber(frame) && !cJSON_IsString(frame))
+		return false;
+
+	if (cJSON_IsNumber(frame))
+	{
+		*out_frame = frame->valueint;
+		return true;
+	}
+
+	const char *name = cJSON_GetStringValue(frame);
+
+	for (size_t i = 0; i < MD2_MAX_FRAMES; i++)
+	{
+		const char *fn = script_frame_temp.md2_frame_names[i];
+
+		if (!fn[0])
+			gi.error("No such frame %s", name);
+		else if (Q_strncasecmp(name, fn, 16) == 0)
+		{
+			*out_frame = i;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+typedef void (*mthink_t) (edict_t *);
+
+static bool M_ParseMonsterFunc(cJSON *func, const mevent_t *events, mthink_t *out_func)
+{
+	*out_func = NULL;
+
+	// nothing
+	if (!func)
+		return true;
+
+	const char *name = cJSON_GetStringValue(func);
+
+	if (Q_stricmp(name, "none") == 0)
+		return true;
+
+	for (const mevent_t *event = script_frame_temp.events; event->name; event++)
+	{
+		if (Q_stricmp(event->name, name) == 0)
+		{
+			*out_func = event->func;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static bool M_ParseMonsterAI(cJSON *ai, mai_func_t *out_func)
+{
+#define AIFUNC(f) { #f, ai_ ## f }
+	static const struct
+	{
+		const char *name;
+		const mai_func_t func;
+	} funcs[] = {
+		{ "none", NULL },
+		AIFUNC(stand),
+		AIFUNC(move),
+		AIFUNC(walk),
+		AIFUNC(turn),
+		AIFUNC(run),
+		AIFUNC(charge)
+	};
+
+	static const size_t funcs_num = q_countof(funcs);
+
+	const char *string_value = cJSON_GetStringValue(ai);
+
+	if (!string_value)
+		return false;
+
+	for (size_t i = 0; i < funcs_num; i++)
+	{
+		if (Q_stricmp(funcs[i].name, string_value) == 0)
+		{
+			*out_func = funcs[i].func;
+			return true;
+		}
+	}
+
+	return false;
+}
+
 static void M_ParseMonsterScriptJSON(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
 {
+	const char *err_str = NULL;
 	char *file_data;
 
 	gi.FS_LoadFile(script_filename, &file_data);
 
+	if (!file_data)
+		return;
+
 	cJSON *json = cJSON_Parse(file_data);
-	
-	if (!json)
-		gi.error("%s\n", cJSON_GetErrorPtr());
 
 	gi.FS_FreeFile(file_data);
 
-	if (!cJSON_HasObjectItem(json, ""))
+#define THROW_ERROR(str, ...) \
+	{ err_str = va(str, __VA_ARGS__); goto err; }
+	
+	if (!json)
+		THROW_ERROR(cJSON_GetErrorPtr());
+
+	if (!cJSON_HasObjectItem(json, "moves"))
+		THROW_ERROR("Monster script missing moves section");
+
+	cJSON *moves = cJSON_GetObjectItem(json, "moves"), *move;
+
+	cJSON_ArrayForEach(move, moves)
+	{
+		mmove_t *move_out = gi.TagMalloc(sizeof(mmove_t), TAG_GAME);
+		const char *name = move->string;
+
+		if (!*name)
+			THROW_ERROR("Monster script missing move name");
+		if (!cJSON_HasObjectItem(move, "start_frame") || !cJSON_HasObjectItem(move, "end_frame") || !cJSON_HasObjectItem(move, "frames"))
+			THROW_ERROR("Monster script missing data for move %s", move_out->name);
+		
+		Q_strlcpy(move_out->name, name, sizeof(move_out->name));
+
+		if (!M_ParseMonsterFrame(cJSON_GetObjectItem(move, "start_frame"), &move_out->firstframe))
+			THROW_ERROR("Monster script missing start frame for move %s", move_out->name);
+		if (!M_ParseMonsterFrame(cJSON_GetObjectItem(move, "end_frame"), &move_out->lastframe))
+			THROW_ERROR("Monster script missing last frame for move %s", move_out->name);
+		if (cJSON_HasObjectItem(move, "post_think") && !M_ParseMonsterFunc(cJSON_GetObjectItem(move, "post_think"), events, &move_out->endfunc))
+			THROW_ERROR("Monster script has bad post think for move %s", move_out->name);
+
+		cJSON *frames = cJSON_GetObjectItem(move, "frames"), *frame;
+
+		if (!cJSON_IsArray(frames))
+			THROW_ERROR("Monster script has bad frames for move %s", move_out->name);
+
+		const size_t frames_count = cJSON_GetArraySize(frames);
+
+		if (frames_count != abs(move_out->lastframe - move_out->firstframe) + 1)
+			THROW_ERROR("Monster script has invalid frames for move %s", move_out->name);
+
+		mframe_t *cur_frame = move_out->frame = gi.TagMalloc(sizeof(mframe_t) * frames_count, TAG_GAME);
+
+		cJSON_ArrayForEach(frame, frames)
+		{
+			if (!cJSON_IsObject(frame))
+				THROW_ERROR("Monster script move frame isn't frame for move %s", move_out->name);
+
+			const size_t frame_id = cur_frame - move_out->frame;
+
+			if (cJSON_HasObjectItem(frame, "inherit"))
+			{
+				const cJSON *inherit = cJSON_GetObjectItem(frame, "inherit");
+
+				if (!cJSON_IsNumber(inherit) || inherit->valueint < 0 || inherit->valueint >= frame_id)
+					THROW_ERROR("Monster script move frame %u has bad inherit for move %s", frame_id, move_out->name);
+
+				memcpy(cur_frame, &move_out->frame[inherit->valueint], sizeof(mframe_t));
+			}
+
+			if (cJSON_HasObjectItem(frame, "ai"))
+			{
+				cJSON *ai = cJSON_GetObjectItem(frame, "ai");
+
+				if (!M_ParseMonsterAI(ai, &cur_frame->aifunc))
+					THROW_ERROR("Monster script move frame %u has bad ai for move %s", frame_id, move_out->name);
+			}
+
+			if (cJSON_HasObjectItem(frame, "dist"))
+			{
+				const cJSON *dist = cJSON_GetObjectItem(frame, "dist");
+
+				if (!cJSON_IsNumber(dist))
+					THROW_ERROR("Monster script move frame %u has bad dist for move %s", frame_id, move_out->name);
+
+				cur_frame->dist = dist->valuedouble;
+			}
+
+			if (cJSON_HasObjectItem(frame, "event") && !M_ParseMonsterFunc(cJSON_GetObjectItem(frame, "event"), events, &cur_frame->thinkfunc))
+				THROW_ERROR("Monster script move frame %u has bad event think for move %s", frame_id, move_out->name);
+
+			if (cJSON_HasObjectItem(frame, "model_frame"))
+			{
+				const cJSON *model_frame = cJSON_GetObjectItem(frame, "model_frame");
+
+				if (!cJSON_IsNumber(model_frame))
+					THROW_ERROR("Monster script move frame %u has bad model_frame for move %s", frame_id, move_out->name);
+
+				cur_frame->real_frame = model_frame->valueint;
+			}
+
+			cur_frame++;
+		}
+
+		List_Append(&script->moves, &move_out->listEntry);
+		List_Append(&script->moveHash[Com_HashString(name, MONSTERSCRIPT_HASH_SIZE)], &move_out->hashEntry);
+	}
 
 	cJSON_Delete(json);
 	script->initialized = true;
+	return;
+
+err:
+	if (json)
+		cJSON_Delete(json);
+
+	gi.error(err_str);
 }
 
 void M_ParseMonsterScript(const char *script_filename, const char *model_filename, const mevent_t *events, mscript_t *script)
 {
 	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
 
-	load_model_frames(model_filename);
+	script_frame_temp.events = events;
+
+	load_md2_frames(model_filename);
 
 	List_Init(&script->moves);
 
@@ -658,7 +779,7 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 	char json_test[MAX_QPATH];
 	Q_snprintf(json_test, sizeof(json_test), "%s.json", script_filename);
 
-	if (gi.FS_LoadFile(json_test, NULL))
+	if (gi.FS_LoadFile(json_test, NULL) > 0)
 	{
 		M_ParseMonsterScriptJSON(json_test, model_filename, events, script);
 		return;
@@ -669,7 +790,6 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 	gi.FS_LoadFile(script_filename, &file_data);
 
 	script_frame_temp.script_ptr = file_data;
-	script_frame_temp.events = events;
 
 	while (*script_frame_temp.script_ptr != '\0')
 	{
@@ -760,7 +880,7 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 	qhandle_t f;
 
 	memset(&script_frame_temp, 0, sizeof(script_frame_temp));
-	load_model_frames(model_filename);
+	load_md2_frames(model_filename);
 
 	gi.FS_FOpenFile(script_filename, &f, FS_MODE_WRITE);
 

@@ -1,0 +1,276 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand01",
+			"end_frame": "stand30",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "gunner_fidget" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 9 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 9 }
+			]
+		}, 
+		"fidget": {
+			"start_frame": "stand31",
+			"end_frame": "stand70",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "gunner_idlesound" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gunner_stand"
+		}, 
+		"walk": {
+			"start_frame": "walk07",
+			"end_frame": "walk19",
+			"frames": [
+				{ "ai": "walk" },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0, "dist": 4 },
+				{ "inherit": 0, "dist": 5 },
+				{ "inherit": 0, "dist": 7 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 2 },
+				{ "inherit": 5 },
+				{ "inherit": 4 },
+				{ "inherit": 3 },
+				{ "inherit": 4 },
+				{ "inherit": 2 }
+			]
+		}, 
+		"run": {
+			"start_frame": "run01",
+			"end_frame": "run08",
+			"frames": [
+				{ "ai": "run", "dist": 26 },
+				{ "inherit": 0, "dist": 9 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 15 },
+				{ "inherit": 0, "dist": 10 },
+				{ "inherit": 0, "dist": 13 },
+				{ "inherit": 0, "dist": 6 }
+			]
+		}, 
+		"pain1": {
+			"start_frame": "pain101",
+			"end_frame": "pain118",
+			"frames": [
+				{ "ai": "move", "dist": 2 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 0, "dist": -5 },
+				{ "inherit": 0, "dist": 3 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 9 },
+				{ "inherit": 0 },
+				{ "inherit": 9 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": -2 },
+				{ "inherit": 14 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			],
+			"post_think": "gunner_run"
+		}, 
+		"pain2": {
+			"start_frame": "pain201",
+			"end_frame": "pain208",
+			"frames": [
+				{ "ai": "move", "dist": -2 },
+				{ "inherit": 0, "dist": 11 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 2 },
+				{ "inherit": 0, "dist": -1 },
+				{ "inherit": 0, "dist": -7 },
+				{ "inherit": 0 },
+				{ "inherit": 5 }
+			],
+			"post_think": "gunner_run"
+		}, 
+		"pain3": {
+			"start_frame": "pain301",
+			"end_frame": "pain305",
+			"frames": [
+				{ "ai": "move", "dist": -3 },
+				{ "inherit": 0, "dist": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 0, "dist": 0 },
+				{ "inherit": 1 }
+			],
+			"post_think": "gunner_run"
+		}, 
+		"death": {
+			"start_frame": "death01",
+			"end_frame": "death11",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": -7 },
+				{ "inherit": 0, "dist": -3 },
+				{ "inherit": 0, "dist": -5 },
+				{ "inherit": 0, "dist": 8 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gunner_dead"
+		}, 
+		"duck": {
+			"start_frame": "duck01",
+			"end_frame": "duck08",
+			"frames": [
+				{ "ai": "move", "dist": 1, "event": "gunner_duck_down" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 0, "event": "gunner_duck_hold" },
+				{ "inherit": 1, "dist": 0 },
+				{ "inherit": 1, "dist": -1 },
+				{ "inherit": 4 },
+				{ "inherit": 3, "event": "gunner_duck_up" },
+				{ "inherit": 4 }
+			],
+			"post_think": "gunner_run"
+		}, 
+		"attack_chain": {
+			"start_frame": "attak209",
+			"end_frame": "attak215",
+			"frames": [
+				{ "ai": "charge", "event": "gunner_opengun" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			],
+			"post_think": "gunner_fire_chain"
+		}, 
+		"fire_chain": {
+			"start_frame": "attak216",
+			"end_frame": "attak223",
+			"frames": [
+				{ "ai": "charge", "event": "GunnerFire" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gunner_refire_chain"
+		}, 
+		"endfire_chain": {
+			"start_frame": "attak224",
+			"end_frame": "attak230",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gunner_run"
+		}, 
+		"attack_grenade": {
+			"start_frame": "attak101",
+			"end_frame": "attak121",
+			"frames": [
+				{ "ai": "charge" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "GunnerGrenade" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 4 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "gunner_run"
+		}
+	}
+}

@@ -1,0 +1,168 @@
+{
+	"moves": {
+		"stand": {
+			"start_frame": "stand01",
+			"end_frame": "stand17",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0, "event": "parasite_tap" },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 2 },
+				{ "inherit": 0 },
+				{ "inherit": 2 }
+			],
+			"post_think": "parasite_stand"
+		}, 
+		"start_fidget": {
+			"start_frame": "stand18",
+			"end_frame": "stand21",
+			"frames": [
+				{ "ai": "stand" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "parasite_do_fidget"
+		}, 
+		"fidget": {
+			"start_frame": "stand22",
+			"end_frame": "stand27",
+			"frames": [
+				{ "ai": "stand", "event": "parasite_scratch" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 0 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			],
+			"post_think": "parasite_refidget"
+		}, 
+		"end_fidget": {
+			"start_frame": "stand28",
+			"end_frame": "stand35",
+			"frames": [
+				{ "ai": "stand", "event": "parasite_scratch" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 },
+				{ "inherit": 1 }
+			],
+			"post_think": "parasite_stand"
+		}, 
+		"start_run": {
+			"start_frame": "run01",
+			"end_frame": "run02",
+			"frames": [
+				{ "ai": "run" },
+				{ "inherit": 0, "dist": 30 }
+			],
+			"post_think": "parasite_run"
+		}, 
+		"run": {
+			"start_frame": "run03",
+			"end_frame": "run09",
+			"frames": [
+				{ "ai": "run", "dist": 30 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 22 },
+				{ "inherit": 0, "dist": 19 },
+				{ "inherit": 0, "dist": 24 },
+				{ "inherit": 0, "dist": 28 },
+				{ "inherit": 0, "dist": 25 }
+			]
+		}, 
+		"start_walk": {
+			"start_frame": "run01",
+			"end_frame": "run02",
+			"frames": [
+				{ "ai": "walk" },
+				{ "inherit": 0, "dist": 30, "event": "parasite_walk" }
+			]
+		}, 
+		"walk": {
+			"start_frame": "run03",
+			"end_frame": "run09",
+			"frames": [
+				{ "ai": "walk", "dist": 30 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 22 },
+				{ "inherit": 0, "dist": 19 },
+				{ "inherit": 0, "dist": 24 },
+				{ "inherit": 0, "dist": 28 },
+				{ "inherit": 0, "dist": 25 }
+			],
+			"post_think": "parasite_walk"
+		}, 
+		"pain1": {
+			"start_frame": "pain101",
+			"end_frame": "pain111",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0, "dist": 6 },
+				{ "inherit": 0, "dist": 16 },
+				{ "inherit": 0, "dist": -6 },
+				{ "inherit": 0, "dist": -7 },
+				{ "inherit": 0 }
+			],
+			"post_think": "parasite_start_run"
+		}, 
+		"drain": {
+			"start_frame": "drain01",
+			"end_frame": "drain18",
+			"frames": [
+				{ "ai": "charge", "event": "parasite_launch" },
+				{ "inherit": 0, "event": "none" },
+				{ "inherit": 0, "dist": 15, "event": "parasite_drain_attack" },
+				{ "inherit": 0, "event": "parasite_drain_attack" },
+				{ "inherit": 3 },
+				{ "inherit": 3 },
+				{ "inherit": 3 },
+				{ "inherit": 2, "dist": -2 },
+				{ "inherit": 7 },
+				{ "inherit": 2, "dist": -3 },
+				{ "inherit": 7 },
+				{ "inherit": 3 },
+				{ "inherit": 2, "dist": -1 },
+				{ "inherit": 0, "event": "parasite_reel_in" },
+				{ "inherit": 1, "dist": -2 },
+				{ "inherit": 14 },
+				{ "inherit": 1, "dist": -3 },
+				{ "inherit": 1 }
+			],
+			"post_think": "parasite_start_run"
+		}, 
+		"death": {
+			"start_frame": "death101",
+			"end_frame": "death107",
+			"frames": [
+				{ "ai": "move" },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 },
+				{ "inherit": 0 }
+			],
+			"post_think": "parasite_dead"
+		}
+	}
+}
