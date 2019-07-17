@@ -115,7 +115,7 @@ static const save_field_t gamefields[] =
 static void write_data(void *buf, size_t len, FILE *f)
 {
 	if (fwrite(buf, 1, len, f) != len)
-		gi.error("%s: couldn't write %"PRIz" bytes", __func__, len);
+		Com_Error(ERR_FATAL, "%s: couldn't write %"PRIz" bytes", __func__, len);
 }
 
 static void write_byte(FILE *f, byte v)
@@ -184,7 +184,7 @@ static void write_field(FILE *f, const save_field_t *field, void *base)
 			break;
 
 		default:
-			gi.error("%s: unknown field type", __func__);
+			Com_Error(ERR_FATAL, "%s: unknown field type", __func__);
 	}
 }
 
@@ -199,7 +199,7 @@ static void write_fields(FILE *f, const save_field_t *fields, void *base)
 static void read_data(void *buf, size_t len, FILE *f)
 {
 	if (fread(buf, 1, len, f) != len)
-		gi.error("%s: couldn't read %"PRIz" bytes", __func__, len);
+		Com_Error(ERR_FATAL, "%s: couldn't read %"PRIz" bytes", __func__, len);
 }
 
 static int read_byte(FILE *f)
@@ -235,9 +235,9 @@ static char *read_string(FILE *f)
 		return NULL;
 
 	if (len < 0 || len > 65536)
-		gi.error("%s: bad length", __func__);
+		Com_Error(ERR_FATAL, "%s: bad length", __func__);
 
-	s = gi.TagMalloc(len + 1, TAG_LEVEL);
+	s = Z_TagMalloc(len + 1, TAG_LEVEL);
 	read_data(s, len, f);
 	s[len] = 0;
 	return s;
@@ -285,7 +285,7 @@ static void read_field(FILE *f, const save_field_t *field, void *base)
 			break;
 
 		default:
-			gi.error("%s: unknown field type", __func__);
+			Com_Error(ERR_FATAL, "%s: unknown field type", __func__);
 	}
 }
 
@@ -328,7 +328,7 @@ void WriteGame(const char *filename, bool autosave)
 	f = fopen(filename, "wb");
 
 	if (!f)
-		gi.error("Couldn't open %s", filename);
+		Com_Error(ERR_FATAL, "Couldn't open %s", filename);
 
 	write_int(f, SAVE_MAGIC1);
 	write_int(f, SAVE_VERSION);
@@ -359,25 +359,25 @@ void WriteGame(const char *filename, bool autosave)
 	}
 
 	if (fclose(f))
-		gi.error("Couldn't write %s", filename);
+		Com_Error(ERR_FATAL, "Couldn't write %s", filename);
 }
 
 void ReadGame(const char *filename)
 {
 	FILE    *f;
 	int     i;
-	gi.FreeTags(TAG_GAME);
+	Z_FreeTags(TAG_GAME);
 	f = fopen(filename, "rb");
 
 	if (!f)
-		gi.error("Couldn't open %s", filename);
+		Com_Error(ERR_FATAL, "Couldn't open %s", filename);
 
 	i = read_int(f);
 
 	if (i != SAVE_MAGIC1)
 	{
 		fclose(f);
-		gi.error("Not a save game");
+		Com_Error(ERR_FATAL, "Not a save game");
 	}
 
 	i = read_int(f);
@@ -385,7 +385,7 @@ void ReadGame(const char *filename)
 	if (i != SAVE_VERSION)
 	{
 		fclose(f);
-		gi.error("Savegame from an older version");
+		Com_Error(ERR_FATAL, "Savegame from an older version");
 	}
 
 	read_rle(f, &game, sizeof(game));
@@ -395,19 +395,19 @@ void ReadGame(const char *filename)
 	if (game.maxclients != (int)maxclients->value)
 	{
 		fclose(f);
-		gi.error("Savegame has bad maxclients");
+		Com_Error(ERR_FATAL, "Savegame has bad maxclients");
 	}
 
 	if (game.maxentities <= game.maxclients || game.maxentities > MAX_EDICTS)
 	{
 		fclose(f);
-		gi.error("Savegame has bad maxentities");
+		Com_Error(ERR_FATAL, "Savegame has bad maxentities");
 	}
 
-	g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts = Z_TagMallocz(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 	globals.max_edicts = game.maxentities;
-	game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = Z_TagMallocz(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 
 	for (i = 0; i < game.maxclients; i++)
 	{
@@ -438,7 +438,7 @@ void WriteLevel(const char *filename)
 	f = fopen(filename, "wb");
 
 	if (!f)
-		gi.error("Couldn't open %s", filename);
+		Com_Error(ERR_FATAL, "Couldn't open %s", filename);
 
 	write_int(f, SAVE_MAGIC2);
 	write_int(f, SAVE_VERSION);
@@ -475,7 +475,7 @@ void WriteLevel(const char *filename)
 	write_short(f, -1);
 
 	if (fclose(f))
-		gi.error("Couldn't write %s", filename);
+		Com_Error(ERR_FATAL, "Couldn't write %s", filename);
 }
 
 
@@ -503,11 +503,11 @@ void ReadLevel(const char *filename)
 	edict_t *ent;
 	// free any dynamic memory allocated by loading the level
 	// base state
-	gi.FreeTags(TAG_LEVEL);
+	Z_FreeTags(TAG_LEVEL);
 	f = fopen(filename, "rb");
 
 	if (!f)
-		gi.error("Couldn't open %s", filename);
+		Com_Error(ERR_FATAL, "Couldn't open %s", filename);
 
 	// wipe all the entities
 	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
@@ -517,7 +517,7 @@ void ReadLevel(const char *filename)
 	if (i != SAVE_MAGIC2)
 	{
 		fclose(f);
-		gi.error("Not a save game");
+		Com_Error(ERR_FATAL, "Not a save game");
 	}
 
 	i = read_int(f);
@@ -525,7 +525,7 @@ void ReadLevel(const char *filename)
 	if (i != SAVE_VERSION)
 	{
 		fclose(f);
-		gi.error("Savegame from an older version");
+		Com_Error(ERR_FATAL, "Savegame from an older version");
 	}
 
 	// load the level locals
@@ -541,7 +541,7 @@ void ReadLevel(const char *filename)
 			break;
 
 		if (entnum < 0 || entnum >= game.maxentities)
-			gi.error("%s: bad entity number", __func__);
+			Com_Error(ERR_FATAL, "%s: bad entity number", __func__);
 
 		if (entnum >= globals.num_edicts)
 			globals.num_edicts = entnum + 1;

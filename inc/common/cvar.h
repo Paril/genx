@@ -82,11 +82,6 @@ cvar_t *Cvar_FindVar(const char *var_name);
 xgenerator_t Cvar_FindGenerator(const char *var_name);
 bool Cvar_Exists(const char *name, bool weak);
 
-cvar_t *Cvar_Get(const char *var_name, const char *value, int flags);
-// creates the variable if it doesn't exist, or returns the existing one
-// if it exists, the value will not be changed, but flags will be ORed in
-// that allows variables to be unarchived without needing bitflags
-
 cvar_t *Cvar_WeakGet(const char *var_name);
 // creates weak variable without value
 
@@ -94,10 +89,6 @@ void Cvar_SetByVar(cvar_t *var, const char *value, from_t from);
 // set by cvar pointer
 
 cvar_t *Cvar_SetEx(const char *var_name, const char *value, from_t from);
-// will create the variable if it doesn't exist
-cvar_t *Cvar_Set(const char *var_name, const char *value);
-// will set the variable even if NOSET or LATCH
-cvar_t *Cvar_UserSet(const char *var_name, const char *value);
 cvar_t *Cvar_FullSet(const char *var_name, const char *value,
 	int flags, from_t from);
 

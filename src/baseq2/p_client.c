@@ -56,7 +56,7 @@ void SP_FixCoopSpots(edict_t *self)
 		{
 			if ((!self->targetname) || Q_stricmp(self->targetname, spot->targetname) != 0)
 			{
-				//              gi.dprintf("FixCoopSpots changed %s at %s targetname from %s to %s\n", self->classname, vtos(self->s.origin), self->targetname, spot->targetname);
+				//              Com_Printf("FixCoopSpots changed %s at %s targetname from %s to %s\n", self->classname, vtos(self->s.origin), self->targetname, spot->targetname);
 				self->targetname = spot->targetname;
 			}
 
@@ -707,7 +707,7 @@ void ClientObituary(edict_t *self)
 		const char *attacker_name = GetEntityName(mod->attacker, mod->attacker_type, false);
 
 		if (!attacker_name)
-			gi.error("killed by something with no name");
+			Com_Error(ERR_FATAL, "killed by something with no name");
 
 		// set up attacker message.
 		// try direct association
@@ -1201,9 +1201,9 @@ void player_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage
 
 	if (self->freeze_time > level.time)
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_DUKE_GLASS);
-		gi.WritePosition(self->s.origin);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_DUKE_GLASS);
+		MSG_WritePos(self->s.origin);
 		gi.multicast(self->s.origin, MULTICAST_PVS);
 		self->s.modelindex = 0;
 		self->takedamage = DAMAGE_NO;
@@ -1668,7 +1668,7 @@ void    SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
 			}
 
 			if (!spot)
-				gi.error("Couldn't find spawn point %s", game.spawnpoint);
+				Com_Error(ERR_FATAL, "Couldn't find spawn point %s", game.spawnpoint);
 		}
 	}
 
@@ -1751,10 +1751,10 @@ void CopyToBodyQue(edict_t *ent)
 	// send an effect on the removed body
 	if (body->s.modelindex && body->s.game == GAME_Q2)
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_BLOOD);
-		gi.WritePosition(body->s.origin);
-		gi.WriteDir(vec3_origin);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_BLOOD);
+		MSG_WritePos(body->s.origin);
+		MSG_WriteDir(vec3_origin);
 		gi.multicast(body->s.origin, MULTICAST_PVS);
 	}
 
@@ -1845,8 +1845,8 @@ void spectator_respawn(edict_t *ent)
 		{
 			gi.cprintf(ent, PRINT_HIGH, "Spectator password incorrect.\n");
 			ent->client->pers.spectator = false;
-			gi.WriteByte(svc_stufftext);
-			gi.WriteString("spectator 0\n");
+			MSG_WriteByte(svc_stufftext);
+			MSG_WriteString("spectator 0\n");
 			gi.unicast(ent, true);
 			return;
 		}
@@ -1861,8 +1861,8 @@ void spectator_respawn(edict_t *ent)
 			gi.cprintf(ent, PRINT_HIGH, "Server spectator limit is full.");
 			ent->client->pers.spectator = false;
 			// reset his spectator var
-			gi.WriteByte(svc_stufftext);
-			gi.WriteString("spectator 0\n");
+			MSG_WriteByte(svc_stufftext);
+			MSG_WriteString("spectator 0\n");
 			gi.unicast(ent, true);
 			return;
 		}
@@ -1878,8 +1878,8 @@ void spectator_respawn(edict_t *ent)
 		{
 			gi.cprintf(ent, PRINT_HIGH, "Password incorrect.\n");
 			ent->client->pers.spectator = true;
-			gi.WriteByte(svc_stufftext);
-			gi.WriteString("spectator 1\n");
+			MSG_WriteByte(svc_stufftext);
+			MSG_WriteString("spectator 1\n");
 			gi.unicast(ent, true);
 			return;
 		}
@@ -1894,9 +1894,9 @@ void spectator_respawn(edict_t *ent)
 	if (!ent->client->pers.spectator)
 	{
 		// send effect
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_LOGIN);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_LOGIN);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		// hold in place briefly
 		ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
@@ -2163,9 +2163,9 @@ void ClientBeginDeathmatch(edict_t *ent)
 	else if (!ent->client->pers.spectator)
 	{
 		// send effect
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_LOGIN);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_LOGIN);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 	}
 
@@ -2228,9 +2228,9 @@ void ClientBegin(edict_t *ent)
 		// send effect if in a multiplayer game
 		if (game.maxclients > 1)
 		{
-			gi.WriteByte(svc_muzzleflash);
-			gi.WriteShort(ent - g_edicts);
-			gi.WriteByte(MZ_LOGIN);
+			MSG_WriteByte(svc_muzzleflash);
+			MSG_WriteShort(ent - g_edicts);
+			MSG_WriteByte(MZ_LOGIN);
 			gi.multicast(ent->s.origin, MULTICAST_PVS);
 			gi.bprintf(PRINT_HIGH, "%s entered the game\n", ent->client->pers.netname);
 		}
@@ -2410,7 +2410,7 @@ bool ClientConnect(edict_t *ent, char *userinfo)
 		InitClientItems(ent);
 
 	if (game.maxclients > 1)
-		gi.dprintf("%s connected\n", ent->client->pers.netname);
+		Com_Printf("%s connected\n", ent->client->pers.netname);
 
 	ent->svflags = 0; // make sure we start with known default
 	ent->client->pers.connected = true;
@@ -2433,9 +2433,9 @@ void ClientDisconnect(edict_t *ent)
 	// send effect
 	if (ent->inuse)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_LOGOUT);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_LOGOUT);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 	}
 
@@ -2565,7 +2565,7 @@ void ClientThink(edict_t *ent, usercmd_t *ucmd)
 		if (memcmp(&client->old_pmove, &pm.s, sizeof(pm.s)))
 		{
 			pm.snapinitial = true;
-			//      gi.dprintf ("pmove changed!\n");
+			//      Com_Printf("pmove changed!\n");
 		}
 
 		pm.cmd = *ucmd;

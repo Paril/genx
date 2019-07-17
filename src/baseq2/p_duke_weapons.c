@@ -149,9 +149,9 @@ void Pipe_Explode(edict_t *ent)
 	ent->owner = ent->activator;
 	T_DukeRadiusDamage(ent, ent->activator, ent, PIPE_RADIUS, PIPE_STRENGTH >> 2, PIPE_STRENGTH - (PIPE_STRENGTH >> 1), PIPE_STRENGTH - (PIPE_STRENGTH >> 2), PIPE_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
 	VectorMA(ent->s.origin, -0.02, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DUKE_EXPLODE_PIPE);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DUKE_EXPLODE_PIPE);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent->chain);
 	G_FreeEdict(ent);
@@ -357,9 +357,9 @@ void duke_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(ent->spawnflags == 1 ? TE_DUKE_EXPLODE_SMALL : TE_DUKE_EXPLODE);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(ent->spawnflags == 1 ? TE_DUKE_EXPLODE_SMALL : TE_DUKE_EXPLODE);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
@@ -422,9 +422,9 @@ void weapon_duke_devastate_fire(edict_t *ent, gunindex_e gun, bool first)
 	if (ent->client->ps.guns[gun].frame == 1 || ent->client->ps.guns[gun].frame == 3)
 	{
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_GRENADE | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_GRENADE | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		vec3_t start, forward, right, offset;
 		vec3_t angles;
@@ -454,9 +454,9 @@ void weapon_duke_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame == 1)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_ROCKET | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_ROCKET | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -505,9 +505,9 @@ void weapon_duke_foot_fire_generic(edict_t *ent, gunindex_e gun)
 
 			if (tr.ent->takedamage)
 			{
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(TE_DUKE_BLOOD);
-				gi.WritePosition(org);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(TE_DUKE_BLOOD);
+				MSG_WritePos(org);
 				gi.multicast(org, MULTICAST_PVS);
 				int damage = (ent->client->quad_time > level.time) ? 42 : 12;
 				vec3_t dir;
@@ -519,9 +519,9 @@ void weapon_duke_foot_fire_generic(edict_t *ent, gunindex_e gun)
 				T_Damage(tr.ent, ent, ent, dir, vec3_origin, vec3_origin, damage, damage, DAMAGE_NO_PARTICLES, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
 			}
 
-			gi.WriteByte(svc_temp_entity);
-			gi.WriteByte(TE_DUKE_GUNSHOT);
-			gi.WritePosition(org);
+			MSG_WriteByte(svc_temp_entity);
+			MSG_WriteByte(TE_DUKE_GUNSHOT);
+			MSG_WritePos(org);
 			gi.multicast(org, MULTICAST_PVS);
 			gi.sound(ent, CHAN_WEAPON, gi.soundindex("duke/KICKHIT.wav"), 1, ATTN_NORM, 0);
 		}
@@ -631,9 +631,9 @@ void duke_freezer_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_
 
 		if (freeze_fx)
 		{
-			gi.WriteByte(svc_temp_entity);
-			gi.WriteByte(TE_DUKE_FREEZE_HIT);
-			gi.WritePosition(origin);
+			MSG_WriteByte(svc_temp_entity);
+			MSG_WriteByte(TE_DUKE_FREEZE_HIT);
+			MSG_WritePos(origin);
 			gi.multicast(ent->s.origin, MULTICAST_PHS);
 		}
 
@@ -646,9 +646,9 @@ void duke_freezer_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_
 
 	if (!ent->count || (ent->count <= 2 && dot > -0.4f))
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_DUKE_FREEZE_HIT);
-		gi.WritePosition(origin);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_DUKE_FREEZE_HIT);
+		MSG_WritePos(origin);
 		gi.multicast(ent->s.origin, MULTICAST_PHS);
 		G_FreeEdict(ent);
 	}
@@ -708,9 +708,9 @@ void weapon_duke_freezer_fire(edict_t *ent, gunindex_e gun, bool first)
 	if (ent->client->ps.guns[gun].frame >= 4)
 		ent->client->ps.guns[gun].frame = 1;
 
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_BFG | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_BFG | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	vec3_t start, forward, right, offset;
 	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -749,9 +749,9 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/KNUCKLE.wav"), 1, ATTN_NORM, 0);
 	else if (ent->client->ps.guns[gun].frame == 1)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_BLASTER | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_BLASTER | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -775,9 +775,9 @@ void weapon_duke_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 		return;
 	}
 
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_CHAINGUN1 | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_CHAINGUN1 | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -805,17 +805,17 @@ void weapon_duke_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/SHOTGNCK.wav"), 1, ATTN_NORM, 0);
 	else if (ent->client->ps.guns[gun].frame == 7)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_SSHOTGUN | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_SSHOTGUN | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 	}
 
 	if (ent->client->ps.guns[gun].frame == 1)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_SHOTGUN | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_SHOTGUN | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -838,9 +838,9 @@ void tripwire_laser_explode(edict_t *laser)
 {
 	laser->deadflag = laser->goalentity->deadflag = DEAD_DEAD;
 	T_DukeRadiusDamage(laser, laser->activator, laser, TRIP_RADIUS, TRIP_STRENGTH >> 2, TRIP_STRENGTH >> 1, TRIP_STRENGTH - (TRIP_STRENGTH >> 2), TRIP_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, laser->goalentity->meansOfDeath);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DUKE_EXPLODE_PIPE);
-	gi.WritePosition(laser->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DUKE_EXPLODE_PIPE);
+	MSG_WritePos(laser->s.origin);
 	gi.multicast(laser->s.origin, MULTICAST_PHS);
 	G_FreeEdict(laser->goalentity);
 	G_FreeEdict(laser);

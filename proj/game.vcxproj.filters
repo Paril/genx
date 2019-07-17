@@ -31,6 +31,9 @@
     <Filter Include="Source Files\duke">
       <UniqueIdentifier>{4557fb3c-8855-4bd8-bfc1-da773e382d40}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\format">
+      <UniqueIdentifier>{410f624f-d60f-4f16-8453-6fab67e1a195}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\shared\m_flash.c">
@@ -300,8 +303,14 @@
     <ClCompile Include="..\src\baseq2\m_local.c">
       <Filter>Source Files\baseq2</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\shared\cJSON.c">
-      <Filter>Source Files\shared</Filter>
+    <ClCompile Include="..\src\format\cJSON.c">
+      <Filter>Source Files\format</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\format\md2.c">
+      <Filter>Source Files\format</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\baseq2\g_shared.c">
+      <Filter>Source Files\baseq2</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -406,6 +415,12 @@
     </ClInclude>
     <ClInclude Include="..\src\baseq2\m_local.h">
       <Filter>Source Files\baseq2</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\cJSON.h">
+      <Filter>Source Files\format</Filter>
+    </ClInclude>
+    <ClInclude Include="..\inc\format\md2.h">
+      <Filter>Source Files\format</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

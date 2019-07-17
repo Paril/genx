@@ -148,7 +148,7 @@ edict_t *G_PickTarget(char *targetname)
 
 	if (!targetname)
 	{
-		gi.dprintf("G_PickTarget called with NULL targetname\n");
+		Com_Printf("G_PickTarget called with NULL targetname\n");
 		return NULL;
 	}
 
@@ -167,7 +167,7 @@ edict_t *G_PickTarget(char *targetname)
 
 	if (!num_choices)
 	{
-		gi.dprintf("G_PickTarget: target %s not found\n", targetname);
+		Com_Printf("G_PickTarget: target %s not found\n", targetname);
 		return NULL;
 	}
 
@@ -214,7 +214,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 		t->activator = activator;
 
 		if (!activator)
-			gi.dprintf("Think_Delay with no activator\n");
+			Com_Printf("Think_Delay with no activator\n");
 
 		t->message = ent->message;
 		t->target = ent->target;
@@ -248,7 +248,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 
 			if (!ent->inuse)
 			{
-				gi.dprintf("entity was removed while using killtargets\n");
+				Com_Printf("entity was removed while using killtargets\n");
 				return;
 			}
 		}
@@ -269,7 +269,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 				continue;
 
 			if (t == ent)
-				gi.dprintf("WARNING: Entity used itself.\n");
+				Com_Printf("WARNING: Entity used itself.\n");
 			else
 			{
 				if (t->use)
@@ -278,7 +278,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 
 			if (!ent->inuse)
 			{
-				gi.dprintf("entity was removed while using targets\n");
+				Com_Printf("entity was removed while using targets\n");
 				return;
 			}
 		}
@@ -459,7 +459,7 @@ void vectoangles2(const vec3_t value1, vec3_t angles)
 char *G_CopyString(char *in)
 {
 	char    *out;
-	out = gi.TagMalloc(strlen(in) + 1, TAG_LEVEL);
+	out = Z_TagMalloc(strlen(in) + 1, TAG_LEVEL);
 	strcpy(out, in);
 	return out;
 }
@@ -503,7 +503,7 @@ edict_t *G_Spawn(void)
 	}
 
 	if (i == game.maxentities)
-		gi.error("ED_Alloc: no free edicts");
+		Com_Error(ERR_FATAL, "ED_Alloc: no free edicts");
 
 	globals.num_edicts++;
 	G_InitEdict(e);
@@ -527,7 +527,7 @@ void G_FreeEdict(edict_t *ed)
 
 	if ((ed - g_edicts) <= (maxclients->value + BODY_QUEUE_SIZE))
 	{
-		//      gi.dprintf("tried to free special edict\n");
+		//      Com_Printf("tried to free special edict\n");
 		return;
 	}
 

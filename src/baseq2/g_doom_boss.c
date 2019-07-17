@@ -182,9 +182,9 @@ void doom_boss_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurfac
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DOOM_BOSS_BOOM);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DOOM_BOSS_BOOM);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }

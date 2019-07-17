@@ -244,10 +244,8 @@ typedef enum
 	PRINT_NOTICE        // print in cyan color
 } print_type_t;
 
-void    Com_LPrintf(print_type_t type, const char *fmt, ...)
-q_printf(2, 3);
-void    Com_Error(error_type_t code, const char *fmt, ...)
-q_noreturn q_printf(2, 3);
+void    Com_LPrintf(print_type_t type, const char *fmt, ...) q_printf(2, 3);
+void    Com_Error(error_type_t code, const char *fmt, ...) q_noreturn q_printf(2, 3);
 
 #define Com_Printf(...) Com_LPrintf(PRINT_ALL, __VA_ARGS__)
 #define Com_WPrintf(...) Com_LPrintf(PRINT_WARNING, __VA_ARGS__)
@@ -2060,7 +2058,122 @@ typedef bool(*nav_igator_node_func)(nav_node_id node);
 
 typedef struct nav_igator_s nav_igator_t;
 
+// MSG
+void    MSG_WriteChar(int c);
+void    MSG_WriteByte(int c);
+void    MSG_WriteShort(int c);
+void    MSG_WriteUShort(int c);
+void    MSG_WriteLong(int c);
+void    MSG_WriteString(const char *s);
+void    MSG_WritePos(const vec3_t pos);
+void    MSG_WriteAngle(float f);
+void    MSG_WriteDir(const vec3_t vector);
+
+// CMD
+int     Cmd_Argc(void);
+char *Cmd_Argv(int arg);
+char *Cmd_Args(void);
+
+// CVAR
+cvar_t *Cvar_Get(const char *var_name, const char *value, int flags);
+cvar_t *Cvar_Set(const char *var_name, const char *value);
+cvar_t *Cvar_UserSet(const char *var_name, const char *value);
+
+// MEMORY
+typedef uint16_t memtag_t;
+
+#define		TAG_FREE		((memtag_t)0) // should have never been set
+#define		TAG_STATIC		((memtag_t)1) // special built-in memory
+
+void    Z_Free(void *ptr);
+void	*Z_Realloc(void *ptr, size_t size);
+void	*Z_TagMalloc(size_t size, memtag_t tag) q_malloc;
+void	*Z_TagMallocz(size_t size, memtag_t tag) q_malloc;
+void    Z_FreeTags(memtag_t tag);
+
+/*
+================
+Z_TagCopyString
+================
+*/
+static inline char *Z_TagCopyString(const char *in, memtag_t tag)
+{
+	size_t len;
+
+	if (!in)
+		return NULL;
+
+	len = strlen(in) + 1;
+	return memcpy(Z_TagMalloc(len, tag), in, len);
+}
+
+typedef struct
+{
+	void *memory;
+	size_t		allocated, used;
+} mem_chunk_t;
+
+static inline void	Z_TagChunkCreate(memtag_t tag, mem_chunk_t *chunk, size_t size)
+{
+	chunk->memory = Z_TagMallocz(size, tag);
+	chunk->allocated = size;
+	chunk->used = 0;
+}
+
+static inline void	Z_ChunkFree(mem_chunk_t *chunk)
+{
+	if (!chunk->memory || !chunk->allocated)
+		return;
+
+	Z_Free(chunk->memory);
+}
+
+static inline void	*Z_ChunkAlloc(mem_chunk_t *chunk, size_t size)
+{
+	if (chunk->used + size > chunk->allocated)
+		Com_Error(ERR_FATAL, "%s: buffer overrun", __func__);
+
+	void *ptr = (byte *)chunk->memory + chunk->used;
+	chunk->used += size;
+	return ptr;
+}
+
 // FILE SYSTEM
+int64_t FS_FOpenFile(const char *filename, qhandle_t *f, unsigned mode);
+int64_t	FS_Tell(qhandle_t f);
+int		FS_Seek(qhandle_t f, int64_t offset);
+int64_t FS_Length(qhandle_t f);
+int		FS_Read(void *buffer, size_t len, qhandle_t f);
+int		FS_Write(const void *buffer, size_t len, qhandle_t f);
+int		FS_VPrintf(qhandle_t f, const char *format, va_list args);
+int		FS_FPrintf(qhandle_t f, const char *format, ...) q_printf(2, 3);
+int		FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag);
+int     FS_FCloseFile(qhandle_t f);
+
+#define MIN_LISTED_FILES    1024
+#define MAX_LISTED_FILES    250000000
+#define MAX_LISTED_DEPTH    8
+
+//
+// Limit the maximum file size FS_LoadFile can handle, as a protection from
+// malicious paks causing memory exhaustion.
+//
+// Maximum size of legitimate BSP file on disk is ~12.7 MiB, let's round this
+// up to 16 MiB. Assume that no loadable Q2 resource should ever exceed this
+// limit.
+//
+#define MAX_LOADFILE            0x1000000
+
+int FS_LoadFile(const char *path, void **buf);
+bool FS_FileExistsEx(const char *path, unsigned flags);
+
+#define FS_FreeFile Z_Free
+
+static inline bool FS_FileExists(const char *path)
+{
+	return FS_FileExistsEx(path, 0);
+}
+
 // bits 0 - 1, enum
 #define FS_MODE_APPEND          0x00000000
 #define FS_MODE_READ            0x00000001

@@ -350,14 +350,12 @@ M_ChangeYaw
 
 ===============
 */
-void M_ChangeYaw(edict_t *ent)
+static void M_ChangeAngle(edict_t *ent, int which, float ideal, bool mod)
 {
-	float   ideal;
 	float   current;
 	float   move;
 	float   speed;
-	current = anglemod(ent->s.angles[YAW]);
-	ideal = ent->ideal_yaw;
+	current = mod ? anglemod(ent->s.angles[which]) : ent->s.angles[which];
 
 	if (current == ideal)
 		return;
@@ -387,7 +385,19 @@ void M_ChangeYaw(edict_t *ent)
 			move = -speed;
 	}
 
-	ent->s.angles[YAW] = anglemod(current + move);
+	ent->s.angles[which] = mod ? anglemod(current + move) : (current + move);
+}
+
+/*
+===============
+M_ChangeYaw
+
+===============
+*/
+void M_ChangeYaw(edict_t *ent)
+{
+	M_ChangeAngle(ent, YAW, ent->ideal_yaw, true);
+	M_ChangeAngle(ent, PITCH, ent->ideal_pitch, false);
 }
 
 
@@ -707,10 +717,10 @@ void M_MoveToGoal(edict_t *ent, float dist)
 
 	if (ent->monsterinfo.aiflags & AI_NODE_PATH)
 	{
-		/*gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_BFG_LASER);
-		gi.WritePosition(ent->s.origin);
-		gi.WritePosition(ent->monsterinfo.navigator_pos);
+		/*MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_BFG_LASER);
+		MSG_WritePos(ent->s.origin);
+		MSG_WritePos(ent->monsterinfo.navigator_pos);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);*/
 		vec3_t path_absmin = { -4, -4, -4 }, path_absmax = { 4, 4, 4 };
 		VectorAdd(ent->monsterinfo.navigator_pos, path_absmin, path_absmin);

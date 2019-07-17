@@ -73,6 +73,9 @@
     <Filter Include="Header Files\system">
       <UniqueIdentifier>{a4d5dc00-84c3-42a8-9f08-025091c8b512}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\format">
+      <UniqueIdentifier>{cc8db4b0-09aa-47e2-9b8e-7a52709971c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\windows\res\q2pro.rc">
@@ -327,6 +330,9 @@
     </ClCompile>
     <ClCompile Include="..\src\refresh\mdl.c">
       <Filter>Source Files\refresh</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\format\md2.c">
+      <Filter>Source Files\format</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

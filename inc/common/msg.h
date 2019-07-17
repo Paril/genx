@@ -109,19 +109,10 @@ extern const usercmd_t          nullUserCmd;
 void    MSG_Init(void);
 
 void    MSG_BeginWriting(void);
-void    MSG_WriteChar(int c);
-void    MSG_WriteByte(int c);
-void    MSG_WriteShort(int c);
-void    MSG_WriteUShort(int c);
-void    MSG_WriteLong(int c);
-void    MSG_WriteString(const char *s);
-void    MSG_WritePos(const vec3_t pos);
-void    MSG_WriteAngle(float f);
 #if USE_CLIENT
 	void    MSG_WriteBits(int value, int bits);
 	int     MSG_WriteDeltaUsercmd_Enhanced(const usercmd_t *from, const usercmd_t *cmd);
 #endif
-void    MSG_WriteDir(const vec3_t vector);
 void    MSG_PackEntity(entity_packed_t *out, const entity_state_t *in, bool short_angles);
 void    MSG_WriteDeltaEntity(const entity_packed_t *from, const entity_packed_t *to, msgEsFlags_t flags);
 void    MSG_PackPlayer(player_packed_t *out, const player_state_t *in);

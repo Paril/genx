@@ -205,9 +205,9 @@ void pain_launch_soul(edict_t *self, float yaw)
 
 	if (tr.fraction != 1.0f)
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_DOOM_IMP_BOOM);
-		gi.WritePosition(start);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_DOOM_IMP_BOOM);
+		MSG_WritePos(start);
 		gi.multicast(start, MULTICAST_PHS);
 		return;
 	}

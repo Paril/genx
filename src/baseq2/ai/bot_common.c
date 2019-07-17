@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 bool BOT_Commands(edict_t *ent)
 {
 	char	*cmd;
-	cmd = gi.argv(0);
+	cmd = Cmd_Argv(0);
 
 	if (!Q_stricmp(cmd, "showplinks"))
 	{
@@ -53,21 +53,21 @@ bool BOT_Commands(edict_t *ent)
 bool BOT_ServerCommand(void)
 {
 	char	*cmd;
-	cmd = gi.argv(1);
+	cmd = Cmd_Argv(1);
 
 	if (!Q_stricmp(cmd, "addbot"))
 	{
 #if CTF
 
 		if (ctf->value) // name, skin, team
-			BOT_SpawnBot(gi.argv(2), gi.argv(3), gi.argv(4), NULL);
+			BOT_SpawnBot(Cmd_Argv(2), Cmd_Argv(3), Cmd_Argv(4), NULL);
 		else // name, skin
 #endif
-			BOT_SpawnBot(NULL, gi.argv(2), gi.argv(3), NULL);
+			BOT_SpawnBot(NULL, Cmd_Argv(2), Cmd_Argv(3), NULL);
 	}
 	// removebot
 	else if (!Q_stricmp(cmd, "removebot"))
-		BOT_RemoveBot(gi.argv(2));
+		BOT_RemoveBot(Cmd_Argv(2));
 	else if (!Q_stricmp(cmd, "editnodes"))
 		AITools_InitEditnodes();
 	else if (!Q_stricmp(cmd, "makenodes"))

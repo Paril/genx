@@ -1297,7 +1297,7 @@ void SP_func_door_rotating(edict_t *ent)
 
 	if (!spawnTemp.distance)
 	{
-		gi.dprintf("%s at %s with no distance set\n", spawnTemp.classname, vtos(ent->s.origin));
+		Com_Printf("%s at %s with no distance set\n", spawnTemp.classname, vtos(ent->s.origin));
 		spawnTemp.distance = 90;
 	}
 
@@ -1555,7 +1555,7 @@ again:
 
 	if (!self->target)
 	{
-		//      gi.dprintf ("train_next: no next target\n");
+		//      Com_Printf("train_next: no next target\n");
 		return;
 	}
 
@@ -1563,7 +1563,7 @@ again:
 
 	if (!ent)
 	{
-		gi.dprintf("train_next: bad target %s\n", self->target);
+		Com_Printf("train_next: bad target %s\n", self->target);
 		return;
 	}
 
@@ -1574,7 +1574,7 @@ again:
 	{
 		if (!first)
 		{
-			gi.dprintf("connected teleport path_corners, see %s at %s\n", spawnTemp.classname, vtos(ent->s.origin));
+			Com_Printf("connected teleport path_corners, see %s at %s\n", spawnTemp.classname, vtos(ent->s.origin));
 			return;
 		}
 
@@ -1624,7 +1624,7 @@ void func_train_find(edict_t *self)
 
 	if (!self->target)
 	{
-		gi.dprintf("train_find: no target\n");
+		Com_Printf("train_find: no target\n");
 		return;
 	}
 
@@ -1632,7 +1632,7 @@ void func_train_find(edict_t *self)
 
 	if (!ent)
 	{
-		gi.dprintf("train_find: target %s not found\n", self->target);
+		Com_Printf("train_find: target %s not found\n", self->target);
 		return;
 	}
 
@@ -1710,7 +1710,7 @@ void SP_func_train(edict_t *self)
 		self->think = func_train_find;
 	}
 	else
-		gi.dprintf("func_train without a target at %s\n", vtos(self->absmin));
+		Com_Printf("func_train without a target at %s\n", vtos(self->absmin));
 }
 
 
@@ -1722,13 +1722,13 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
 
 	if (self->movetarget->nextthink)
 	{
-		//      gi.dprintf("elevator busy\n");
+		//      Com_Printf("elevator busy\n");
 		return;
 	}
 
 	if (!other->pathtarget)
 	{
-		gi.dprintf("elevator used with no pathtarget\n");
+		Com_Printf("elevator used with no pathtarget\n");
 		return;
 	}
 
@@ -1736,7 +1736,7 @@ void trigger_elevator_use(edict_t *self, edict_t *other, edict_t *activator)
 
 	if (!target)
 	{
-		gi.dprintf("elevator used with bad pathtarget: %s\n", other->pathtarget);
+		Com_Printf("elevator used with bad pathtarget: %s\n", other->pathtarget);
 		return;
 	}
 
@@ -1748,7 +1748,7 @@ void trigger_elevator_init(edict_t *self)
 {
 	if (!self->target)
 	{
-		gi.dprintf("trigger_elevator has no target\n");
+		Com_Printf("trigger_elevator has no target\n");
 		return;
 	}
 
@@ -1756,13 +1756,13 @@ void trigger_elevator_init(edict_t *self)
 
 	if (!self->movetarget)
 	{
-		gi.dprintf("trigger_elevator unable to find target %s\n", self->target);
+		Com_Printf("trigger_elevator unable to find target %s\n", self->target);
 		return;
 	}
 
 	if (self->movetarget->entitytype != ET_FUNC_TRAIN)
 	{
-		gi.dprintf("trigger_elevator target %s is not a train\n", self->target);
+		Com_Printf("trigger_elevator target %s is not a train\n", self->target);
 		return;
 	}
 
@@ -1826,7 +1826,7 @@ void SP_func_timer(edict_t *self)
 	if (self->random >= self->wait)
 	{
 		self->random = self->wait - 0.1f;
-		gi.dprintf("func_timer at %s has random >= wait\n", vtos(self->s.origin));
+		Com_Printf("func_timer at %s has random >= wait\n", vtos(self->s.origin));
 	}
 
 	if (self->spawnflags & 1)

@@ -152,9 +152,9 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 
 	if ((targ->svflags & SVF_MONSTER) && targ->freeze_time > level.time)
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_DUKE_GLASS);
-		gi.WritePosition(targ->s.origin);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_DUKE_GLASS);
+		MSG_WritePos(targ->s.origin);
 		gi.multicast(targ->s.origin, MULTICAST_PVS);
 		G_FreeEdict(targ);
 	}
@@ -173,11 +173,11 @@ static void SpawnDamage(int type, vec3_t origin, vec3_t normal, int damage)
 	if (damage > 255)
 		damage = 255;
 
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(type);
-	//  gi.WriteByte (damage);
-	gi.WritePosition(origin);
-	gi.WriteDir(normal);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(type);
+	//  MSG_WriteByte (damage);
+	MSG_WritePos(origin);
+	MSG_WriteDir(normal);
 	gi.multicast(origin, MULTICAST_PVS);
 }
 
@@ -419,16 +419,16 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 
 void Q1_SpawnBlood(vec3_t org, vec3_t vel, int damage)
 {
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_BLOOD);
-	gi.WritePosition(org);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_BLOOD);
+	MSG_WritePos(org);
 
 	if (vel)
-		gi.WritePosition(vel);
+		MSG_WritePos(vel);
 	else
-		gi.WritePosition(vec3_origin);
+		MSG_WritePos(vec3_origin);
 
-	gi.WriteByte((byte)min((byte)255, (byte)damage));
+	MSG_WriteByte((byte)min((byte)255, (byte)damage));
 	gi.multicast(org, MULTICAST_PVS);
 }
 
@@ -637,9 +637,9 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 				vec3_t diff = { targ->s.origin[0] - attacker->s.origin[0], targ->s.origin[1] - attacker->s.origin[1], 0 };
 				VectorNormalize(diff);
 				vectoangles2(diff, diff);
-				/*gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(TE_DAMAGE_DIRECTION);
-				gi.WriteAngle(diff[1]);
+				/*MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(TE_DAMAGE_DIRECTION);
+				MSG_WriteAngle(diff[1]);
 				gi.unicast(targ, qtrue);*/
 				targ->client->damage_dir = diff[1];
 			}

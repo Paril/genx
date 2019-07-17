@@ -61,7 +61,7 @@ typedef struct
 	float           scale[3];       // multiply byte verts by this
 	float           translate[3];   // then add this
 	char            name[16];       // frame name from grabbing
-	dmd2trivertx_t  verts[1];       // variable sized
+	dmd2trivertx_t  verts[0];       // variable sized
 } dmd2frame_t;
 
 #define MD2_MAX_FRAMESIZE \
@@ -76,7 +76,7 @@ typedef struct
 // and an integer vertex index.
 
 
-typedef struct dmd2header_s
+typedef struct
 {
 	uint32_t        ident;
 	uint32_t        version;
@@ -99,5 +99,33 @@ typedef struct dmd2header_s
 	uint32_t        ofs_glcmds;
 	uint32_t        ofs_end;        // end of file
 } dmd2header_t;
+
+typedef enum
+{
+	MD2_LOAD_SKINS		= 1,
+	MD2_LOAD_ST			= 2,
+	MD2_LOAD_TRIS		= 4,
+	MD2_LOAD_FRAMES		= 8,
+	MD2_LOAD_FRAMEDATA	= 16
+} dmd2loadflags_t;
+
+typedef struct
+{
+	dmd2header_t	header;
+
+	char			*skins;
+	dmd2stvert_t	*texcoords;
+	dmd2triangle_t	*triangles;
+	dmd2frame_t		*frames;
+	size_t			framesize;
+
+	mem_chunk_t		memory;
+} dmd2_t;
+
+int MD2_Load(qhandle_t f, dmd2_t *md2, dmd2loadflags_t load_flags, memtag_t tag);
+void MD2_Free(dmd2_t *md2);
+const char *MD2_GetSkin(const dmd2_t *md2, size_t index);
+const dmd2frame_t *MD2_GetFrame(const dmd2_t *md2, size_t index);
+
 
 #endif // FORMAT_MD2_H

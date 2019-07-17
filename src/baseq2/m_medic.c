@@ -389,11 +389,11 @@ static void medic_cable_attack(edict_t *self)
 	// adjust end z for end spot since the monster is currently dead
 	VectorCopy(self->enemy->s.origin, end);
 	end[2] = self->enemy->absmin[2] + self->enemy->size[2] / 2;
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_MEDIC_CABLE_ATTACK);
-	gi.WriteShort(self - g_edicts);
-	gi.WritePosition(start);
-	gi.WritePosition(end);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_MEDIC_CABLE_ATTACK);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WritePos(start);
+	MSG_WritePos(end);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 }
 

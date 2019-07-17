@@ -40,11 +40,11 @@ ai_navigation_t	nav;
 void AI_Init(void)
 {
 	//Init developer mode
-	bot_showpath = gi.cvar("bot_showpath", "0", CVAR_SERVERINFO);
-	bot_showcombat = gi.cvar("bot_showcombat", "0", CVAR_SERVERINFO);
-	bot_showsrgoal = gi.cvar("bot_showsrgoal", "0", CVAR_SERVERINFO);
-	bot_showlrgoal = gi.cvar("bot_showlrgoal", "0", CVAR_SERVERINFO);
-	bot_debugmonster = gi.cvar("bot_debugmonster", "0", CVAR_SERVERINFO | CVAR_ARCHIVE);
+	bot_showpath = Cvar_Get("bot_showpath", "0", CVAR_SERVERINFO);
+	bot_showcombat = Cvar_Get("bot_showcombat", "0", CVAR_SERVERINFO);
+	bot_showsrgoal = Cvar_Get("bot_showsrgoal", "0", CVAR_SERVERINFO);
+	bot_showlrgoal = Cvar_Get("bot_showlrgoal", "0", CVAR_SERVERINFO);
+	bot_debugmonster = Cvar_Get("bot_debugmonster", "0", CVAR_SERVERINFO | CVAR_ARCHIVE);
 	AIDevel.debugMode = false;
 	AIDevel.debugChased = false;
 	AIDevel.chaseguy = NULL;
@@ -72,7 +72,7 @@ void G_FreeAI(edict_t *ent)
 	if (!ent->ai)
 		return;
 
-	gi.TagFree(ent->ai);
+	Z_Free(ent->ai);
 	ent->ai = NULL;
 }
 
@@ -83,9 +83,7 @@ void G_FreeAI(edict_t *ent)
 void G_SpawnAI(edict_t *ent)
 {
 	if (!ent->ai)
-		ent->ai = (ai_handle_t *)gi.TagMalloc(sizeof(ai_handle_t), TAG_LEVEL);
-
-	memset(ent->ai, 0, sizeof(ai_handle_t));
+		ent->ai = (ai_handle_t *)Z_TagMallocz(sizeof(ai_handle_t), TAG_LEVEL);
 }
 
 //==========================================

@@ -208,11 +208,11 @@ static void CastLightning(edict_t *self)
 	vec3_t end;
 	VectorMA(self->s.origin, 600, dir, end);
 	trace_t tr = gi.trace(org, vec3_origin, vec3_origin, end, self, MASK_SHOT);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_LIGHTNING1);
-	gi.WriteShort(self - g_edicts);
-	gi.WritePosition(org);
-	gi.WritePosition(tr.endpos);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_LIGHTNING1);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WritePos(org);
+	MSG_WritePos(tr.endpos);
 	gi.multicast(tr.endpos, MULTICAST_PVS);
 	LightningDamage(self, org, tr.endpos, self, 10);
 }

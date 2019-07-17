@@ -178,7 +178,7 @@ static void Cmd_Spawn_f(edict_t *ent)
 	s->s.origin[2] += 3;
 	VectorClear(s->s.angles);
 	s->s.angles[1] = ang[1];
-	Q_snprintf(spawnTemp.classname, sizeof(spawnTemp.classname), "%s", gi.args());
+	Q_snprintf(spawnTemp.classname, sizeof(spawnTemp.classname), "%s", Cmd_Args());
 	ED_CallSpawn(s);
 	gi.linkentity(s);
 	last_spawn = s;
@@ -217,17 +217,17 @@ static void Cmd_Give_f(edict_t *ent)
 		return;
 	}
 
-	name = gi.args();
+	name = Cmd_Args();
 
 	if (Q_stricmp(name, "all") == 0)
 		give_all = true;
 	else
 		give_all = false;
 
-	if (give_all || Q_stricmp(gi.argv(1), "health") == 0)
+	if (give_all || Q_stricmp(Cmd_Argv(1), "health") == 0)
 	{
-		if (gi.argc() == 3)
-			ent->health = atoi(gi.argv(2));
+		if (Cmd_Argc() == 3)
+			ent->health = atoi(Cmd_Argv(2));
 		else
 			ent->health = ent->max_health;
 
@@ -310,7 +310,7 @@ static void Cmd_Give_f(edict_t *ent)
 
 	if (!it)
 	{
-		name = gi.argv(1);
+		name = Cmd_Argv(1);
 		it = FindItem(name);
 
 		if (!it)
@@ -330,8 +330,8 @@ static void Cmd_Give_f(edict_t *ent)
 
 	if (it->flags & IT_AMMO)
 	{
-		/*if (gi.argc() == 3)
-		    ent->client->pers.inventory[index] = atoi(gi.argv(2));
+		/*if (Cmd_Argc() == 3)
+		    ent->client->pers.inventory[index] = atoi(Cmd_Argv(2));
 		else
 		    ent->client->pers.inventory[index] += game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];*/
 	}
@@ -451,7 +451,7 @@ static void Cmd_Use_f(edict_t *ent)
 	int         index;
 	gitem_t     *it;
 	char        *s;
-	s = gi.args();
+	s = Cmd_Args();
 	it = FindItem(s);
 
 	if (!it)
@@ -500,7 +500,7 @@ static void Cmd_Drop_f(edict_t *ent)
 	int         index;
 	gitem_t     *it;
 	char        *s;
-	s = gi.args();
+	s = Cmd_Args();
 	it = FindItem(s);
 
 	if (!it)
@@ -547,10 +547,10 @@ static void Cmd_Inven_f(edict_t *ent)
 	}
 
 	cl->showinventory = true;
-	gi.WriteByte(svc_inventory);
+	MSG_WriteByte(svc_inventory);
 
 	for (i = ITI_NULL; i < ITI_TOTAL; i++)
-		gi.WriteShort(cl->pers.inventory[i]);
+		MSG_WriteShort(cl->pers.inventory[i]);
 
 	gi.unicast(ent, true);
 }
@@ -831,7 +831,7 @@ Cmd_Wave_f
 static void Cmd_Wave_f(edict_t *ent)
 {
 	int     i;
-	i = atoi(gi.argv(1));
+	i = atoi(Cmd_Argv(1));
 
 	// can't wave when ducked
 	if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
@@ -890,7 +890,7 @@ static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 	char    text[2048];
 	gclient_t *cl;
 
-	if (gi.argc() < 2 && !arg0)
+	if (Cmd_Argc() < 2 && !arg0)
 		return;
 
 	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
@@ -903,13 +903,13 @@ static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 
 	if (arg0)
 	{
-		strcat(text, gi.argv(0));
+		strcat(text, Cmd_Argv(0));
 		strcat(text, " ");
-		strcat(text, gi.args());
+		strcat(text, Cmd_Args());
 	}
 	else
 	{
-		p = gi.args();
+		p = Cmd_Args();
 
 		if (*p == '"')
 		{
@@ -1027,10 +1027,10 @@ static void line_think(edict_t *ent)
 		vec3_t from, to;
 		VectorCopy(line_pos[i], from);
 		VectorCopy(line_pos[i + 1], to);
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_BFG_LASER);
-		gi.WritePosition(from);
-		gi.WritePosition(to);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_BFG_LASER);
+		MSG_WritePos(from);
+		MSG_WritePos(to);
 		gi.multicast(from, MULTICAST_ALL);
 	}
 
@@ -1040,9 +1040,9 @@ static void line_think(edict_t *ent)
 static void Cmd_Line_f(edict_t *ent)
 {
 	vec3_t v;
-	v[0] = atof(gi.argv(1));
-	v[1] = atof(gi.argv(2));
-	v[2] = atof(gi.argv(3));
+	v[0] = atof(Cmd_Argv(1));
+	v[1] = atof(Cmd_Argv(2));
+	v[2] = atof(Cmd_Argv(3));
 	VectorCopy(v, line_pos[line_nums]);
 	line_nums++;
 
@@ -1068,7 +1068,7 @@ void ClientCommand(edict_t *ent)
 	if (!ent->client)
 		return;     // not fully in game yet
 
-	cmd = gi.argv(0);
+	cmd = Cmd_Argv(0);
 
 	//JABot[start]
 	if (BOT_Commands(ent))

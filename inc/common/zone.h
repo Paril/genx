@@ -26,12 +26,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 // memory tags to allow dynamic memory to be cleaned up
 // game DLL has separate tag namespace starting at TAG_MAX
-typedef enum
+enum
 {
-	TAG_FREE,       // should have never been set
-	TAG_STATIC,
+	// TAG_NONE and TAG_STATIC are globals
 
-	TAG_GENERAL,
+	TAG_GENERAL = 2,
 	TAG_CMD,
 	TAG_CVAR,
 	TAG_FILESYSTEM,
@@ -47,15 +46,9 @@ typedef enum
 	TAG_LAYOUT,
 
 	TAG_MAX
-} memtag_t;
+};
 
 void    Z_Init(void);
-void    Z_Free(void *ptr);
-void    *Z_Realloc(void *ptr, size_t size);
-void    *Z_TagMalloc(size_t size, memtag_t tag) q_malloc;
-void    *Z_TagMallocz(size_t size, memtag_t tag) q_malloc;
-char    *Z_TagCopyString(const char *in, memtag_t tag) q_malloc;
-void    Z_FreeTags(memtag_t tag);
 void    Z_LeakTest(memtag_t tag);
 void    Z_Stats_f(void);
 
@@ -66,18 +59,5 @@ char    *Z_ReservedCopyString(const char *in) q_malloc;
 
 // may return pointer to static memory
 char    *Z_CvarCopyString(const char *in);
-
-typedef struct
-{
-	void		*memory;
-	size_t		allocated, used;
-} mem_chunk_t;
-
-void	Z_TagChunkCreate(memtag_t tag, mem_chunk_t *chunk, size_t size);
-void	Z_ChunkFree(mem_chunk_t *chunk);
-void	*Z_ChunkAlloc(mem_chunk_t *chunk, size_t size);
-
-#define Z_ChunkCreate(c, s)	Z_TagChunkCreate(TAG_GENERAL, c, s)
-
 
 #endif // ZONE_H

@@ -164,7 +164,7 @@ void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod
 	if (hit->hit_index == 0)
 	{
 		if (multi_hits == MAX_MULTIHIT)
-			gi.error("Too many multihits");
+			Com_Error(ERR_FATAL, "Too many multihits");
 
 		hit->hit_index = ++multi_hits;
 		multi_ent[hit->hit_index - 1].hit = hit;
@@ -207,10 +207,10 @@ static void TraceAttack(edict_t *ent, trace_t *tr, int damage, vec3_t dir, vec3_
 	}
 	else
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_Q1_GUNSHOT);
-		gi.WriteByte(1);
-		gi.WritePosition(org);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_Q1_GUNSHOT);
+		MSG_WriteByte(1);
+		MSG_WritePos(org);
 		gi.multicast(org, MULTICAST_PVS);
 	}
 }
@@ -257,9 +257,9 @@ void Q1Grenade_Explode(edict_t *ent)
 
 	T_RadiusDamage(ent, ent->owner, ent->dmg, ent, DAMAGE_Q1, ent->dmg, ent->meansOfDeath);
 	VectorMA(ent->s.origin, -0.02, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_EXPLODE);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_EXPLODE);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
@@ -347,9 +347,9 @@ void weapon_q1_gl_fire(edict_t *ent, gunindex_e gun)
 	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
 	fire_q1_grenade(ent, start, forward, damage, 2.5);
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_GRENADE | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_GRENADE | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	ent->client->ps.guns[gun].frame++;
 
@@ -391,9 +391,9 @@ void q1_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *
 	T_RadiusDamage(ent, ent->owner, ent->dmg, other, DAMAGE_Q1, ent->dmg_radius, ent->meansOfDeath);
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_EXPLODE);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_EXPLODE);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
@@ -454,9 +454,9 @@ void weapon_q1_rl_fire(edict_t *ent, gunindex_e gun)
 	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
 	fire_q1_rocket(ent, start, forward, damage, 120, 1000);
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_ROCKET | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_ROCKET | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	ent->client->ps.guns[gun].frame++;
 
@@ -532,10 +532,10 @@ void weapon_q1_axe_fire(edict_t *ent, gunindex_e gun)
 			{
 				// hit wall
 				gi.sound(ent, CHAN_WEAPON, gi.soundindex("q1/player/axhit2.wav"), 1, ATTN_NORM, 0);
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(TE_Q1_GUNSHOT);
-				gi.WriteByte(3);
-				gi.WritePosition(org);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(TE_Q1_GUNSHOT);
+				MSG_WriteByte(3);
+				MSG_WritePos(org);
 				gi.multicast(org, MULTICAST_PVS);
 			}
 		}
@@ -546,9 +546,9 @@ void weapon_q1_axe_fire(edict_t *ent, gunindex_e gun)
 
 void LightningHit(edict_t *ent, edict_t *from, vec3_t pos, int damage)
 {
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_LIGHTNINGBLOOD);
-	gi.WritePosition(pos);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_LIGHTNINGBLOOD);
+	MSG_WritePos(pos);
 	gi.multicast(pos, MULTICAST_PVS);
 	meansOfDeath_t mod;
 
@@ -640,11 +640,11 @@ void W_FireLightning(edict_t *ent, gunindex_e gun, int damage, int blowup_damage
 	vec3_t end;
 	VectorMA(org, 600, forward, end);
 	trace_t tr = gi.trace(org, vec3_origin, vec3_origin, end, ent, MASK_SOLID);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_LIGHTNING2);
-	gi.WriteShort(ent - g_edicts);
-	gi.WritePosition(org);
-	gi.WritePosition(tr.endpos);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_LIGHTNING2);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WritePos(org);
+	MSG_WritePos(tr.endpos);
 	gi.multicast(org, MULTICAST_PVS);
 	VectorMA(tr.endpos, 4, forward, end);
 	LightningDamage(ent, org, end, ent, damage);
@@ -671,9 +671,9 @@ void weapon_q1_lightning_fire(edict_t *ent, gunindex_e gun)
 	// send muzzle flash
 	if (ent->client->gunstates[gun].weaponstate != WEAPON_FIRING)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_HYPERBLASTER | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_HYPERBLASTER | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		ent->decel = 0;
 	}
@@ -743,9 +743,9 @@ void spike_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 	}
 	else
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(self->count);
-		gi.WritePosition(self->s.origin);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(self->count);
+		MSG_WritePos(self->s.origin);
 		gi.multicast(self->s.origin, MULTICAST_PVS);
 	}
 
@@ -841,9 +841,9 @@ void weapon_q1_nailgun_fire(edict_t *ent, gunindex_e gun)
 
 	W_FireSpikes(ent, damage, (ent->client->ps.guns[gun].frame % 2) == 0 ? 4 : -4);
 	// send muzzle flash
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_MACHINEGUN | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_MACHINEGUN | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 
 	if (!((int)dmflags->value & DF_INFINITE_AMMO))
@@ -880,9 +880,9 @@ void weapon_q1_snailgun_fire(edict_t *ent, gunindex_e gun)
 	//else
 	//	W_FireSpikes(ent, damage, (ent->client->ps.guns[gun].frame % 2) == 0 ? 4 : -4);
 	// send muzzle flash
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_CHAINGUN1 | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_CHAINGUN1 | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -922,9 +922,9 @@ void weapon_q1_shotgun_fire(edict_t *ent, gunindex_e gun)
 	vec3_t spread = { 0.04, 0.04, 0 };
 	FireBullets(ent, 6, damage, forward, spread, up, right, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
 	// send muzzle flash
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_SHOTGUN | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_SHOTGUN | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	ent->client->ps.guns[gun].frame++;
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
@@ -961,9 +961,9 @@ void weapon_q1_sshotgun_fire(edict_t *ent, gunindex_e gun)
 	vec3_t spread = { 0.14, 0.08, 0 };
 	FireBullets(ent, 14, damage, forward, spread, up, right, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
 	// send muzzle flash
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_SSHOTGUN | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_SSHOTGUN | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	ent->client->ps.guns[gun].frame++;
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
@@ -1002,10 +1002,10 @@ void laser_q1_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *
 	}
 	else
 	{
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_Q1_GUNSHOT);
-		gi.WriteByte(1);
-		gi.WritePosition(org);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_Q1_GUNSHOT);
+		MSG_WriteByte(1);
+		MSG_WritePos(org);
 		gi.multicast(org, MULTICAST_PVS);
 	}
 

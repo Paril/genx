@@ -58,7 +58,7 @@ static void Init_WaveMonsterEntries()
 				percents++;
 		}
 
-		entry->chances = (wave_monster_entry_chances_t *)gi.TagMalloc(sizeof(*entry->chances) * percents, TAG_GAME);
+		entry->chances = (wave_monster_entry_chances_t *)Z_TagMalloc(sizeof(*entry->chances) * percents, TAG_GAME);
 		entry->count = percents;
 		const char *buffer = entry->chancesString;
 
@@ -193,7 +193,7 @@ entitytype_e Wave_PickSpawnableMonster()
 			return wave_globals.spawnable_monsters[i].id;
 	}
 
-	gi.error("Couldn't pick monster");
+	Com_Error(ERR_FATAL, "Couldn't pick monster");
 }
 
 bool ED_CallSpawnByType(edict_t *ent, entitytype_e type);
@@ -358,7 +358,7 @@ bool Wave_Commands(edict_t *ent)
 	if (!ent->client)
 		return false;     // not fully in game yet
 
-	cmd = gi.argv(0);
+	cmd = Cmd_Argv(0);
 
 	if (!strcmp(cmd, "wave_start"))
 	{

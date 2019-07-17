@@ -215,9 +215,9 @@ void fire_doom_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 
 void cpos_fire_gun(edict_t *self)
 {
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(MZ_SHOTGUN);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(MZ_SHOTGUN);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	vec3_t start, forward, right, offset;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);

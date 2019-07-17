@@ -855,7 +855,7 @@ void ED_CallSpawn(edict_t *ent)
 {
 	if (!spawnTemp.classname[0])
 	{
-		gi.dprintf("ED_CallSpawn: NULL classname\n");
+		Com_Printf("ED_CallSpawn: NULL classname\n");
 		return;
 	}
 
@@ -890,7 +890,7 @@ void ED_CallSpawn(edict_t *ent)
 		return;
 	}
 
-	gi.dprintf("%s doesn't have a spawn function\n", spawnTemp.classname);
+	Com_Printf("%s doesn't have a spawn function\n", spawnTemp.classname);
 }
 
 /*
@@ -903,7 +903,7 @@ static char *ED_NewString(const char *string)
 	char    *newb, *new_p;
 	int     i, l;
 	l = strlen(string) + 1;
-	newb = gi.TagMalloc(l, TAG_LEVEL);
+	newb = Z_TagMalloc(l, TAG_LEVEL);
 	new_p = newb;
 
 	for (i = 0 ; i < l ; i++)
@@ -955,7 +955,7 @@ static bool ED_ParseField(const spawn_field_t *fields, const char *key, const ch
 				case F_VECTOR:
 					if (sscanf(value, "%f %f %f", &vec[0], &vec[1], &vec[2]) != 3)
 					{
-						gi.dprintf("%s: couldn't parse '%s'\n", __func__, key);
+						Com_Printf("%s: couldn't parse '%s'\n", __func__, key);
 						VectorClear(vec);
 					}
 
@@ -984,7 +984,7 @@ static bool ED_ParseField(const spawn_field_t *fields, const char *key, const ch
 
 				case F_ZSTRING:
 					if (strlen(value) >= f->len)
-						gi.error("%s: key '%s' out of bounds", __func__, key);
+						Com_Error(ERR_FATAL, "%s: key '%s' out of bounds", __func__, key);
 
 					{
 						char *ptr = (char *)(b + f->ofs);
@@ -1028,16 +1028,16 @@ void ED_ParseEdict(const char **data, edict_t *ent)
 			break;
 
 		if (!*data)
-			gi.error("%s: EOF without closing brace", __func__);
+			Com_Error(ERR_FATAL, "%s: EOF without closing brace", __func__);
 
 		// parse value
 		value = COM_Parse(data);
 
 		if (!*data)
-			gi.error("%s: EOF without closing brace", __func__);
+			Com_Error(ERR_FATAL, "%s: EOF without closing brace", __func__);
 
 		if (value[0] == '}')
-			gi.error("%s: closing brace without data", __func__);
+			Com_Error(ERR_FATAL, "%s: closing brace without data", __func__);
 
 		init = true;
 
@@ -1049,7 +1049,7 @@ void ED_ParseEdict(const char **data, edict_t *ent)
 		if (!ED_ParseField(spawn_fields, key, value, (byte *)ent))
 		{
 			if (!ED_ParseField(temp_fields, key, value, (byte *)&spawnTemp))
-				gi.dprintf("%s: %s is not a field\n", __func__, key);
+				Com_Printf("%s: %s is not a field\n", __func__, key);
 		}
 	}
 
@@ -1114,7 +1114,7 @@ void G_FindTeams(void)
 		}
 	}
 
-	gi.dprintf("%i teams with %i entities\n", c, c2);
+	Com_Printf("%i teams with %i entities\n", c, c2);
 }
 
 void Spawn_Weapons();
@@ -1147,10 +1147,10 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 		skill_level = 3;
 
 	if (skill->value != skill_level)
-		gi.cvar_forceset("skill", va("%f", skill_level));
+		Cvar_Set("skill", va("%f", skill_level));
 
 	SaveClientData();
-	gi.FreeTags(TAG_LEVEL);
+	Z_FreeTags(TAG_LEVEL);
 	memset(&level, 0, sizeof(level));
 	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
 	Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
@@ -1176,7 +1176,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 			break;
 
 		if (com_token[0] != '{')
-			gi.error("ED_LoadFromFile: found %s when expecting {", com_token);
+			Com_Error(ERR_FATAL, "ED_LoadFromFile: found %s when expecting {", com_token);
 
 		if (!ent)
 			ent = g_edicts;
@@ -1222,7 +1222,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 	}
 
 	randomize_enemies = false;
-	gi.dprintf("%i entities inhibited\n", inhibit);
+	Com_Printf("%i entities inhibited\n", inhibit);
 #ifdef DEBUG
 	i = 1;
 	ent = EDICT_NUM(i);
@@ -1328,9 +1328,9 @@ void SP_worldspawn(edict_t *ent)
 	gi.imageindex("field_3");
 
 	if (!spawnTemp.gravity)
-		gi.cvar_set("sv_gravity", "800");
+		Cvar_UserSet("sv_gravity", "800");
 	else
-		gi.cvar_set("sv_gravity", spawnTemp.gravity);
+		Cvar_UserSet("sv_gravity", spawnTemp.gravity);
 
 	snd_fry = gi.soundindex("player/fry.wav");  // standing in lava / slime
 	gi.soundindex("player/lava1.wav");

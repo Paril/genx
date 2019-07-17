@@ -170,6 +170,9 @@
     <ClCompile Include="..\src\common\sizebuf.c" />
     <ClCompile Include="..\src\common\utils.c" />
     <ClCompile Include="..\src\common\zone.c" />
+    <ClCompile Include="..\src\format\md2.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)_2</ObjectFileName>
+    </ClCompile>
     <ClCompile Include="..\src\refresh\draw.c" />
     <ClCompile Include="..\src\refresh\glad.c" />
     <ClCompile Include="..\src\refresh\hq2x.c" />

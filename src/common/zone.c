@@ -326,22 +326,6 @@ void Z_Init(void)
 
 /*
 ================
-Z_TagCopyString
-================
-*/
-char *Z_TagCopyString(const char *in, memtag_t tag)
-{
-	size_t len;
-
-	if (!in)
-		return NULL;
-
-	len = strlen(in) + 1;
-	return memcpy(Z_TagMalloc(len, tag), in, len);
-}
-
-/*
-================
 Z_CvarCopyString
 ================
 */
@@ -364,27 +348,4 @@ char *Z_CvarCopyString(const char *in)
 	z = &z_static[i];
 	Z_CountAlloc(&z->z);
 	return z->data;
-}
-
-
-void	Z_TagChunkCreate(memtag_t tag, mem_chunk_t *chunk, size_t size)
-{
-	chunk->memory = Z_TagMallocz(size, tag);
-	chunk->allocated = size;
-	chunk->used = 0;
-}
-
-void	Z_ChunkFree(mem_chunk_t *chunk)
-{
-	Z_Free(chunk->memory);
-}
-
-void	*Z_ChunkAlloc(mem_chunk_t *chunk, size_t size)
-{
-	if (chunk->used + size > chunk->allocated)
-		Com_Error(ERR_FATAL, "%s: buffer overrun", __func__);
-
-	void *ptr = (byte *)chunk->memory + chunk->used;
-	chunk->used += size;
-	return ptr;
 }

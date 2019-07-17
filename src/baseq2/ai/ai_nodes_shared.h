@@ -35,7 +35,7 @@ in NO WAY supported by Steve Yeager.
 #define	NODES_MAX_PLINKS	16
 #define	NAV_FILE_VERSION	11
 #define NAV_FILE_EXTENSION	"nav"
-#define AI_MOD_FOLDER		(*gi.cvar("game", "", 0)->string ? gi.cvar("game", "", 0)->string : "jabot")
+#define AI_MOD_FOLDER		(*Cvar_Get("game", "", 0)->string ? Cvar_Get("game", "", 0)->string : "jabot")
 #define AI_NODES_FOLDER		"navigation"
 
 #define MASK_NODESOLID		(CONTENTS_SOLID|CONTENTS_PLAYERCLIP|CONTENTS_MONSTERCLIP|CONTENTS_WINDOW)

@@ -29,7 +29,7 @@ Used to group brushes together just for editor convenience.
 void Use_Areaportal(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	ent->count ^= 1;        // toggle state
-	//  gi.dprintf ("portalstate: %i = %i\n", ent->style, ent->count);
+	//  Com_Printf("portalstate: %i = %i\n", ent->style, ent->count);
 	gi.SetAreaPortalState(ent->style, ent->count);
 }
 
@@ -154,9 +154,9 @@ void duke_gib_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *
 	if (plane && plane->normal[2] > 0.7f)
 	{
 		VectorMA(self->s.origin, 1, plane->normal, self->s.origin);
-		gi.WriteByte(svc_temp_entity);
-		gi.WriteByte(TE_DUKE_BLOOD_SPLAT);
-		gi.WritePosition(self->s.origin);
+		MSG_WriteByte(svc_temp_entity);
+		MSG_WriteByte(TE_DUKE_BLOOD_SPLAT);
+		MSG_WritePos(self->s.origin);
 		gi.multicast(self->s.origin, MULTICAST_PVS);
 		G_FreeEdict(self);
 	}
@@ -402,9 +402,9 @@ void ThrowDebris(edict_t *self, char *modelname, float speed, vec3_t origin)
 
 void BecomeExplosion1(edict_t *self)
 {
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_EXPLOSION1);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_EXPLOSION1);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	G_FreeEdict(self);
 }
@@ -412,9 +412,9 @@ void BecomeExplosion1(edict_t *self)
 
 void BecomeExplosion2(edict_t *self)
 {
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_EXPLOSION2);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_EXPLOSION2);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	G_FreeEdict(self);
 }
@@ -491,7 +491,7 @@ void SP_path_corner(edict_t *self)
 {
 	if (!self->targetname)
 	{
-		gi.dprintf("path_corner with no targetname at %s\n", vtos(self->s.origin));
+		Com_Printf("path_corner with no targetname at %s\n", vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}
@@ -524,7 +524,7 @@ void point_combat_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 
 		if (!other->goalentity)
 		{
-			gi.dprintf("entityid %i at %s target %s does not exist\n", self->entitytype, vtos(self->s.origin), self->target);
+			Com_Printf("entityid %i at %s target %s does not exist\n", self->entitytype, vtos(self->s.origin), self->target);
 			other->movetarget = self;
 		}
 
@@ -593,7 +593,7 @@ void TH_viewthing(edict_t *ent)
 
 void SP_viewthing(edict_t *ent)
 {
-	gi.dprintf("viewthing spawned\n");
+	Com_Printf("viewthing spawned\n");
 	ent->movetype = MOVETYPE_NONE;
 	ent->solid = SOLID_BBOX;
 	ent->s.renderfx = RF_FRAMELERP;
@@ -727,7 +727,7 @@ void SP_func_wall(edict_t *self)
 	// it must be TRIGGER_SPAWN
 	if (!(self->spawnflags & 1))
 	{
-		//      gi.dprintf("func_wall missing TRIGGER_SPAWN\n");
+		//      Com_Printf("func_wall missing TRIGGER_SPAWN\n");
 		self->spawnflags |= 1;
 	}
 
@@ -736,7 +736,7 @@ void SP_func_wall(edict_t *self)
 	{
 		if (!(self->spawnflags & 2))
 		{
-			gi.dprintf("func_wall START_ON without TOGGLE\n");
+			Com_Printf("func_wall START_ON without TOGGLE\n");
 			self->spawnflags |= 2;
 		}
 	}
@@ -1116,9 +1116,9 @@ void SP_misc_explobox(edict_t *self)
 void misc_blackhole_use(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	/*
-	gi.WriteByte (svc_temp_entity);
-	gi.WriteByte (TE_BOSSTPORT);
-	gi.WritePosition (ent->s.origin);
+	MSG_WriteByte (svc_temp_entity);
+	MSG_WriteByte (TE_BOSSTPORT);
+	MSG_WritePos (ent->s.origin);
 	gi.multicast (ent->s.origin, MULTICAST_PVS);
 	*/
 	G_FreeEdict(ent);
@@ -1381,7 +1381,7 @@ void SP_misc_viper(edict_t *ent)
 {
 	if (!ent->target)
 	{
-		gi.dprintf("misc_viper without a target at %s\n", vtos(ent->absmin));
+		Com_Printf("misc_viper without a target at %s\n", vtos(ent->absmin));
 		G_FreeEdict(ent);
 		return;
 	}
@@ -1501,7 +1501,7 @@ void SP_misc_strogg_ship(edict_t *ent)
 {
 	if (!ent->target)
 	{
-		gi.dprintf("%s without a target at %s\n", spawnTemp.classname, vtos(ent->absmin));
+		Com_Printf("%s without a target at %s\n", spawnTemp.classname, vtos(ent->absmin));
 		G_FreeEdict(ent);
 		return;
 	}
@@ -1847,14 +1847,14 @@ void SP_func_clock(edict_t *self)
 {
 	if (!self->target)
 	{
-		gi.dprintf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}
 
 	if ((self->spawnflags & 2) && (!self->count))
 	{
-		gi.dprintf("%s with no count at %s\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("%s with no count at %s\n", spawnTemp.classname, vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}
@@ -1863,7 +1863,7 @@ void SP_func_clock(edict_t *self)
 		self->count = 60 * 60;;
 
 	func_clock_reset(self);
-	self->message = gi.TagMalloc(CLOCK_MESSAGE_SIZE, TAG_LEVEL);
+	self->message = Z_TagMalloc(CLOCK_MESSAGE_SIZE, TAG_LEVEL);
 	self->think = func_clock_think;
 
 	if (self->spawnflags & 4)
@@ -1886,7 +1886,7 @@ void teleporter_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t
 
 	if (!dest)
 	{
-		gi.dprintf("Couldn't find destination\n");
+		Com_Printf("Couldn't find destination\n");
 		return;
 	}
 
@@ -1924,7 +1924,7 @@ void SP_misc_teleporter(edict_t *ent)
 
 	if (!ent->target)
 	{
-		gi.dprintf("teleporter without a target.\n");
+		Com_Printf("teleporter without a target.\n");
 		G_FreeEdict(ent);
 		return;
 	}

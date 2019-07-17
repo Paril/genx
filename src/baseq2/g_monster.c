@@ -29,63 +29,63 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 void monster_fire_bullet(edict_t *self, vec3_t start, vec3_t dir, int damage, int kick, int hspread, int vspread, int flashtype)
 {
 	fire_bullet(self, start, dir, damage, kick, hspread, vspread, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
 void monster_fire_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int hspread, int vspread, int count, int flashtype)
 {
 	fire_shotgun(self, start, aimdir, damage, kick, hspread, vspread, count, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
 void monster_fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, int flashtype, int effect)
 {
 	fire_blaster(self, start, dir, damage, speed, effect, false);
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
 void monster_fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, int flashtype)
 {
 	fire_grenade(self, start, aimdir, damage, speed, 2.5f, damage + 40);
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
 void monster_fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, int flashtype)
 {
 	fire_rocket(self, start, dir, damage, speed, damage + 20, damage);
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
 void monster_fire_railgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int flashtype)
 {
 	fire_rail(self, start, aimdir, damage, kick);
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
 void monster_fire_bfg(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed, int kick, float damage_radius, int flashtype)
 {
 	fire_bfg(self, start, aimdir, damage, speed, damage_radius);
-	gi.WriteByte(svc_muzzleflash2);
-	gi.WriteShort(self - g_edicts);
-	gi.WriteByte(flashtype);
+	MSG_WriteByte(svc_muzzleflash2);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WriteByte(flashtype);
 	gi.multicast(start, MULTICAST_PVS);
 }
 
@@ -590,7 +590,7 @@ bool monster_start(edict_t *self)
 	{
 		self->spawnflags &= ~4;
 		self->spawnflags |= 1;
-		//      gi.dprintf("fixed spawnflags on %s at %s\n", self->classname, vtos(self->s.origin));
+		//      Com_Printf("fixed spawnflags on %s at %s\n", self->classname, vtos(self->s.origin));
 	}
 
 	if (!(self->monsterinfo.aiflags & AI_GOOD_GUY))
@@ -628,7 +628,7 @@ bool monster_start(edict_t *self)
 		self->item = FindItemByClassname(spawnTemp.item);
 
 		if (!self->item)
-			gi.dprintf("entityid %i at %s has bad item: %s\n", self->entitytype, vtos(self->s.origin), spawnTemp.item);
+			Com_Printf("entityid %i at %s has bad item: %s\n", self->entitytype, vtos(self->s.origin), spawnTemp.item);
 	}
 
 	// randomize what frame they start on
@@ -638,7 +638,7 @@ bool monster_start(edict_t *self)
 	if (invasion->value)
 	{
 		if (!self->health)
-			gi.error("whoops");
+			Com_Error(ERR_FATAL, "whoops");
 
 		self->think(self);
 	}
@@ -756,7 +756,7 @@ void monster_start_go(edict_t *self)
 		}
 
 		if (notcombat && self->combattarget)
-			gi.dprintf("entityid %i at %s has target with mixed types\n", self->entitytype, vtos(self->s.origin));
+			Com_Printf("entityid %i at %s has target with mixed types\n", self->entitytype, vtos(self->s.origin));
 
 		if (fixup)
 			self->target = NULL;
@@ -772,7 +772,7 @@ void monster_start_go(edict_t *self)
 		{
 			if (target->entitytype != ET_POINT_COMBAT)
 			{
-				gi.dprintf("entityid %i at (%i %i %i) has a bad combattarget %s : entityid %i at (%i %i %i)\n",
+				Com_Printf("entityid %i at (%i %i %i) has a bad combattarget %s : entityid %i at (%i %i %i)\n",
 					self->entitytype, (int)self->s.origin[0], (int)self->s.origin[1], (int)self->s.origin[2],
 					self->combattarget, target->entitytype, (int)target->s.origin[0], (int)target->s.origin[1],
 					(int)target->s.origin[2]);
@@ -786,7 +786,7 @@ void monster_start_go(edict_t *self)
 
 		if (!self->movetarget)
 		{
-			gi.dprintf("entityid %i can't find target %s at %s\n", self->entitytype, self->target, vtos(self->s.origin));
+			Com_Printf("entityid %i can't find target %s at %s\n", self->entitytype, self->target, vtos(self->s.origin));
 			self->target = NULL;
 			self->monsterinfo.pausetime = GTIME_MAX;
 			self->monsterinfo.stand(self);
@@ -858,12 +858,12 @@ void monster_start_go(edict_t *self)
 					self->flags |= FL_STUCK;
 					VectorCopy(old_mins, self->pos1);
 					VectorCopy(old_maxs, self->pos2);
-					gi.dprintf("entityid %i in solid, refit with new bbox at %s\n", self->entitytype, vtos(self->s.origin));
+					Com_Printf("entityid %i in solid, refit with new bbox at %s\n", self->entitytype, vtos(self->s.origin));
 					gi.linkentity(self);
 				}
 			}
 			else
-				gi.dprintf("entityid %i in solid, couldn't refit, at %s\n", self->entitytype, vtos(self->s.origin));
+				Com_Printf("entityid %i in solid, couldn't refit, at %s\n", self->entitytype, vtos(self->s.origin));
 		}
 
 		if (!(self->flags & (FL_FLY | FL_SWIM)))

@@ -100,9 +100,9 @@ void ShalMissileTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t
 		T_Damage(other, self, self, vec3_origin, vec3_origin, vec3_origin, 110, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, self->meansOfDeath);
 
 	T_RadiusDamage(self, self->owner, 40, world, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, 40, self->meansOfDeath);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_EXPLODE);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_EXPLODE);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	G_FreeEdict(self);
 }

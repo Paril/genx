@@ -173,9 +173,6 @@ void Cmd_RemoveCommand(const char *cmd_name);
 void Cmd_AddMacro(const char *name, xmacro_t function);
 
 from_t  Cmd_From(void);
-int     Cmd_Argc(void);
-char    *Cmd_Argv(int arg);
-char    *Cmd_Args(void);
 char    *Cmd_RawArgs(void);
 char    *Cmd_ArgsFrom(int from);
 char    *Cmd_RawArgsFrom(int from);

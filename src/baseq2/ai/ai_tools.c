@@ -40,16 +40,16 @@ void AIDebug_ToogleBotDebug(void)
 	}
 
 	//Activate debug mode
-	gi.dprintf("\n======================================\n");
-	gi.dprintf("--==[ D E B U G ]==--\n");
-	gi.dprintf("======================================\n");
-	gi.dprintf("'addnode [nodetype]' -- Add [specified] node to players current location\n");
-	gi.dprintf("'movenode [node] [x y z]' -- Move [node] to [x y z] coordinates\n");
-	gi.dprintf("'findnode' -- Finds closest node\n");
-	gi.dprintf("'removelink [node1 node2]' -- Removes link between two nodes\n");
-	gi.dprintf("'addlink [node1 node2]' -- Adds a link between two nodes\n");
-	gi.dprintf("======================================\n\n");
-	gi.dprintf("BOT: Debug Mode On\n");
+	Com_Printf("\n======================================\n");
+	Com_Printf("--==[ D E B U G ]==--\n");
+	Com_Printf("======================================\n");
+	Com_Printf("'addnode [nodetype]' -- Add [specified] node to players current location\n");
+	Com_Printf("'movenode [node] [x y z]' -- Move [node] to [x y z] coordinates\n");
+	Com_Printf("'findnode' -- Finds closest node\n");
+	Com_Printf("'removelink [node1 node2]' -- Removes link between two nodes\n");
+	Com_Printf("'addlink [node1 node2]' -- Adds a link between two nodes\n");
+	Com_Printf("======================================\n\n");
+	Com_Printf("BOT: Debug Mode On\n");
 	AIDevel.debugMode = true;
 }
 
@@ -110,10 +110,10 @@ void AITools_DrawLine(vec3_t origin, vec3_t dest)
 		event->svflags = SVF_FORCEOLDORIGIN;
 		VectorCopy ( dest, event->s.origin2 );
 	*/
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_BFG_LASER);
-	gi.WritePosition(origin);
-	gi.WritePosition(dest);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_BFG_LASER);
+	MSG_WritePos(origin);
+	MSG_WritePos(dest);
 	gi.unicast(AIDevel.plinkguy, false);
 }
 

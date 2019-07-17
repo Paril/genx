@@ -1079,19 +1079,22 @@ static int seek_zip_file(file_t *file, int64_t offset)
 	}
 
 	static byte buffer[4096];
-	size_t num_read = 0;
 
 	while (left_to_read)
 	{
-		size_t num_to_read = min(sizeof(left_to_read), left_to_read);
+		size_t num_to_read = min(sizeof(buffer), left_to_read);
 
-		read_zip_file(file, buffer, num_to_read);
+		int ret = read_zip_file(file, buffer, num_to_read);
 
-		num_read += num_to_read;
-		left_to_read -= num_to_read;
+		if (ret < 0)
+			return ret;
+		else if (!ret)
+			return Q_ERR_BADF;
+
+		left_to_read -= ret;
 	}
 
-	return num_read;
+	return Q_ERR_SUCCESS;
 }
 
 static int read_zip_file(file_t *file, void *buf, size_t len)
@@ -2048,22 +2051,34 @@ int FS_RenameFile(const char *from, const char *to)
 
 /*
 ================
+FS_VPrintf
+================
+*/
+int FS_VPrintf(qhandle_t f, const char *format, va_list args)
+{
+	char string[MAXPRINTMSG];
+	size_t len = Q_vsnprintf(string, sizeof(string), format, args);
+
+	if (len >= sizeof(string))
+		return Q_ERR_STRING_TRUNCATED;
+
+	return FS_Write(string, len, f);
+}
+
+/*
+================
 FS_FPrintf
 ================
 */
 int FS_FPrintf(qhandle_t f, const char *format, ...)
 {
 	va_list argptr;
-	char string[MAXPRINTMSG];
-	size_t len;
+
 	va_start(argptr, format);
-	len = Q_vsnprintf(string, sizeof(string), format, argptr);
+	size_t len = FS_VPrintf(f, format, argptr);
 	va_end(argptr);
 
-	if (len >= sizeof(string))
-		return Q_ERR_STRING_TRUNCATED;
-
-	return FS_Write(string, len, f);
+	return len;
 }
 
 // references pack_t instance
@@ -3345,6 +3360,16 @@ static void fs_game_changed(cvar_t *self)
 	Com_AddConfigFile(COM_AUTOEXEC_CFG, FS_TYPE_REAL | FS_PATH_GAME);
 	// exec postexec.cfg (must be a real file)
 	Com_AddConfigFile(COM_POSTEXEC_CFG, FS_TYPE_REAL);
+}
+
+int FS_LoadFile(const char *path, void **buf)
+{
+	return FS_LoadFileEx(path, buf, 0, TAG_FILESYSTEM);
+}
+
+bool FS_FileExistsEx(const char *path, unsigned flags)
+{
+	return FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT;
 }
 
 /*

@@ -104,9 +104,9 @@ void G_RunFrame(void);
 
 void ShutdownGame(void)
 {
-	gi.dprintf("==== ShutdownGame ====\n");
-	gi.FreeTags(TAG_LEVEL);
-	gi.FreeTags(TAG_GAME);
+	Com_Printf("==== ShutdownGame ====\n");
+	Z_FreeTags(TAG_LEVEL);
+	Z_FreeTags(TAG_GAME);
 }
 
 void Wave_Init();
@@ -122,60 +122,60 @@ is loaded.
 */
 void InitGame(void)
 {
-	gi.dprintf("==== InitGame ====\n");
-	gun_x = gi.cvar("gun_x", "0", 0);
-	gun_y = gi.cvar("gun_y", "0", 0);
-	gun_z = gi.cvar("gun_z", "0", 0);
+	Com_Printf("==== InitGame ====\n");
+	gun_x = Cvar_Get("gun_x", "0", 0);
+	gun_y = Cvar_Get("gun_y", "0", 0);
+	gun_z = Cvar_Get("gun_z", "0", 0);
 	//FIXME: sv_ prefix is wrong for these
-	sv_rollspeed = gi.cvar("sv_rollspeed", "200", 0);
-	sv_rollangle = gi.cvar("sv_rollangle", "2", 0);
-	sv_maxvelocity = gi.cvar("sv_maxvelocity", "2000", 0);
-	sv_gravity = gi.cvar("sv_gravity", "800", 0);
+	sv_rollspeed = Cvar_Get("sv_rollspeed", "200", 0);
+	sv_rollangle = Cvar_Get("sv_rollangle", "2", 0);
+	sv_maxvelocity = Cvar_Get("sv_maxvelocity", "2000", 0);
+	sv_gravity = Cvar_Get("sv_gravity", "800", 0);
 	// noset vars
-	dedicated = gi.cvar("dedicated", "0", CVAR_NOSET);
+	dedicated = Cvar_Get("dedicated", "0", CVAR_NOSET);
 	// latched vars
-	sv_cheats = gi.cvar("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
-	gi.cvar("gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH);
-	gi.cvar("gamedate", __DATE__, CVAR_SERVERINFO | CVAR_LATCH);
-	maxclients = gi.cvar("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
-	maxspectators = gi.cvar("maxspectators", "4", CVAR_SERVERINFO);
-	deathmatch = gi.cvar("deathmatch", "0", CVAR_LATCH);
-	coop = gi.cvar("coop", "0", CVAR_LATCH);
-	invasion = gi.cvar("invasion", "0", CVAR_LATCH);
-	skill = gi.cvar("skill", "1", CVAR_LATCH);
-	maxentities = gi.cvar("maxentities", "1024", CVAR_LATCH);
+	sv_cheats = Cvar_Get("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
+	Cvar_Get("gamename", GAMEVERSION, CVAR_SERVERINFO | CVAR_LATCH);
+	Cvar_Get("gamedate", __DATE__, CVAR_SERVERINFO | CVAR_LATCH);
+	maxclients = Cvar_Get("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
+	maxspectators = Cvar_Get("maxspectators", "4", CVAR_SERVERINFO);
+	deathmatch = Cvar_Get("deathmatch", "0", CVAR_LATCH);
+	coop = Cvar_Get("coop", "0", CVAR_LATCH);
+	invasion = Cvar_Get("invasion", "0", CVAR_LATCH);
+	skill = Cvar_Get("skill", "1", CVAR_LATCH);
+	maxentities = Cvar_Get("maxentities", "1024", CVAR_LATCH);
 	// change anytime vars
-	dmflags = gi.cvar("dmflags", "0", CVAR_SERVERINFO);
-	fraglimit = gi.cvar("fraglimit", "0", CVAR_SERVERINFO);
-	timelimit = gi.cvar("timelimit", "0", CVAR_SERVERINFO);
-	password = gi.cvar("password", "", CVAR_USERINFO);
-	spectator_password = gi.cvar("spectator_password", "", CVAR_USERINFO);
-	needpass = gi.cvar("needpass", "0", CVAR_SERVERINFO);
-	filterban = gi.cvar("filterban", "1", 0);
-	g_select_empty = gi.cvar("g_select_empty", "0", CVAR_ARCHIVE);
-	run_pitch = gi.cvar("run_pitch", "0.002", 0);
-	run_roll = gi.cvar("run_roll", "0.005", 0);
-	bob_up  = gi.cvar("bob_up", "0.005", 0);
-	bob_pitch = gi.cvar("bob_pitch", "0.002", 0);
-	bob_roll = gi.cvar("bob_roll", "0.002", 0);
+	dmflags = Cvar_Get("dmflags", "0", CVAR_SERVERINFO);
+	fraglimit = Cvar_Get("fraglimit", "0", CVAR_SERVERINFO);
+	timelimit = Cvar_Get("timelimit", "0", CVAR_SERVERINFO);
+	password = Cvar_Get("password", "", CVAR_USERINFO);
+	spectator_password = Cvar_Get("spectator_password", "", CVAR_USERINFO);
+	needpass = Cvar_Get("needpass", "0", CVAR_SERVERINFO);
+	filterban = Cvar_Get("filterban", "1", 0);
+	g_select_empty = Cvar_Get("g_select_empty", "0", CVAR_ARCHIVE);
+	run_pitch = Cvar_Get("run_pitch", "0.002", 0);
+	run_roll = Cvar_Get("run_roll", "0.005", 0);
+	bob_up  = Cvar_Get("bob_up", "0.005", 0);
+	bob_pitch = Cvar_Get("bob_pitch", "0.002", 0);
+	bob_roll = Cvar_Get("bob_roll", "0.002", 0);
 	// flood control
-	flood_msgs = gi.cvar("flood_msgs", "4", 0);
-	flood_persecond = gi.cvar("flood_persecond", "4", 0);
-	flood_waitdelay = gi.cvar("flood_waitdelay", "10", 0);
+	flood_msgs = Cvar_Get("flood_msgs", "4", 0);
+	flood_persecond = Cvar_Get("flood_persecond", "4", 0);
+	flood_waitdelay = Cvar_Get("flood_waitdelay", "10", 0);
 	// dm map list
-	sv_maplist = gi.cvar("sv_maplist", "", 0);
+	sv_maplist = Cvar_Get("sv_maplist", "", 0);
 	// items
 	InitItems();
 	game.helpmessage1[0] = 0;
 	game.helpmessage2[0] = 0;
 	// initialize all entities for this game
 	game.maxentities = maxentities->value;
-	g_edicts = gi.TagMalloc(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
+	g_edicts = Z_TagMallocz(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	globals.edicts = g_edicts;
 	globals.max_edicts = game.maxentities;
 	// initialize all clients for this game
 	game.maxclients = maxclients->value;
-	game.clients = gi.TagMalloc(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
+	game.clients = Z_TagMallocz(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
 	globals.num_edicts = game.maxclients + 1;
 	AI_Init();//JABot
 	game.framerate = BASE_FRAMERATE;
@@ -220,33 +220,6 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
 	globals.edict_size = sizeof(edict_t);
 	return &globals;
 }
-
-#ifndef GAME_HARD_LINKED
-// this is only here so the functions in q_shared.c can link
-void Com_LPrintf(print_type_t type, const char *fmt, ...)
-{
-	va_list     argptr;
-	char        text[MAX_STRING_CHARS];
-
-	if (type == PRINT_DEVELOPER)
-		return;
-
-	va_start(argptr, fmt);
-	Q_vsnprintf(text, sizeof(text), fmt, argptr);
-	va_end(argptr);
-	gi.dprintf("%s", text);
-}
-
-void Com_Error(error_type_t type, const char *fmt, ...)
-{
-	va_list     argptr;
-	char        text[MAX_STRING_CHARS];
-	va_start(argptr, fmt);
-	Q_vsnprintf(text, sizeof(text), fmt, argptr);
-	va_end(argptr);
-	gi.error("%s", text);
-}
-#endif
 
 //======================================================================
 
@@ -389,7 +362,7 @@ void CheckNeedPass(void)
 		if (*spectator_password->string && Q_stricmp(spectator_password->string, "none"))
 			need |= 2;
 
-		gi.cvar_set("needpass", va("%d", need));
+		Cvar_UserSet("needpass", va("%d", need));
 	}
 }
 

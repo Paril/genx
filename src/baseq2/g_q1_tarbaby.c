@@ -122,9 +122,9 @@ static void tbaby_explode(edict_t *self)
 	gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
 	VectorNormalize(self->velocity);
 	VectorMA(self->s.origin, -8, self->velocity, self->s.origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_TAREXPLOSION);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_TAREXPLOSION);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	self->think = G_FreeEdict;
 	self->nextthink = level.time + 100;

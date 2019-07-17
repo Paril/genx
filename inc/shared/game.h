@@ -103,9 +103,10 @@ typedef struct
 {
 	// special messages
 	void (* q_printf(2, 3) bprintf)(int printlevel, const char *fmt, ...);
-	void (* q_printf(1, 2) dprintf)(const char *fmt, ...);
-	void (* q_printf(3, 4) cprintf)(edict_t *ent, int printlevel, const char *fmt, ...);
+	void (*q_printf(3, 4) cprintf)(edict_t *ent, int printlevel, const char *fmt, ...);
 	void (* q_printf(2, 3) centerprintf)(edict_t *ent, const char *fmt, ...);
+	void (*q_noreturn q_printf(1, 2) error)(error_type_t type, const char *fmt, ...);
+	void (*q_printf(1, 2) dprintf)(print_type_t type, const char *fmt, ...);
 	void (*sound)(edict_t *ent, int channel, q_soundhandle soundindex, float volume, float attenuation, float timeofs);
 	void (*positioned_sound)(vec3_t origin, edict_t *ent, int channel, q_soundhandle soundinedex, float volume, float attenuation, float timeofs);
 
@@ -114,8 +115,6 @@ typedef struct
 	// All of the current configstrings are sent to clients when
 	// they connect, and changes are sent to all connected clients.
 	void (*configstring)(int num, const char *string);
-
-	void (* q_noreturn q_printf(1, 2) error)(const char *fmt, ...);
 
 	// the *index functions create configstrings and some internal server state
 	q_modelhandle (*modelindex)(const char *name);
@@ -143,46 +142,38 @@ typedef struct
 	// network messaging
 	void (*multicast)(vec3_t origin, multicast_t to);
 	void (*unicast)(edict_t *ent, bool reliable);
-	void (*WriteChar)(int c);
-	void (*WriteByte)(int c);
-	void (*WriteShort)(int c);
-	void (*WriteLong)(int c);
-	void (*WriteFloat)(float f);
-	void (*WriteString)(const char *s);
-	void (*WritePosition)(const vec3_t pos);    // some fractional bits
-	void (*WriteDir)(const vec3_t pos);         // single byte encoded, very coarse
-	void (*WriteAngle)(float f);
-
-	// managed memory allocation
-	void *(*TagMalloc)(unsigned size, unsigned tag);
-	void (*TagFree)(void *block);
-	void (*FreeTags)(unsigned tag);
+	void (*MSG_WriteChar)(int c);
+	void (*MSG_WriteByte)(int c);
+	void (*MSG_WriteShort)(int c);
+	void (*MSG_WriteUShort)(int c);
+	void (*MSG_WriteLong)(int c);
+	void (*MSG_WriteFloat)(float f);
+	void (*MSG_WriteString)(const char *s);
+	void (*MSG_WritePos)(const vec3_t pos);    // some fractional bits
+	void (*MSG_WriteDir)(const vec3_t pos);         // single byte encoded, very coarse
+	void (*MSG_WriteAngle)(float f);
 
 	// console variable interaction
-	cvar_t *(*cvar)(const char *var_name, const char *value, int flags);
-	cvar_t *(*cvar_set)(const char *var_name, const char *value);
-	cvar_t *(*cvar_forceset)(const char *var_name, const char *value);
+	cvar_t *(*Cvar_Get)(const char *var_name, const char *value, int flags);
+	cvar_t *(*Cvar_UserSet)(const char *var_name, const char *value);
+	cvar_t *(*Cvar_Set)(const char *var_name, const char *value);
 
 	// ClientCommand and ServerCommand parameter access
-	int (*argc)(void);
-	char *(*argv)(int n);
-	char *(*args)(void);     // concatenation of all argv >= 1
+	int (*Cmd_Argc)(void);
+	char *(*Cmd_Argv)(int n);
+	char *(*Cmd_Args)(void);     // concatenation of all argv >= 1
 
 	// add commands to the server console as if they were typed in
 	// for map changing, etc
 	void (*AddCommandString)(const char *text);
 
-	void (*DebugGraph)(float value, int color);
-
 	// Navigation stuff
 	uint32_t (*Nav_NumNodes)();
-
 	void (*Nav_GetNodePosition)(nav_node_id node, vec3_t position);
 	nav_node_type_e(*Nav_GetNodeType)(nav_node_id node);
 	uint32_t (*Nav_GetNodeNumConnections)(nav_node_id node);
 	uint32_t (*Nav_GetNodeConnection)(nav_node_id node, uint32_t connection_id);
 	nav_node_id(*Nav_GetClosestNode)(vec3_t position);
-
 	nav_igator_t	*(*Nav_CreateNavigator)();
 	void (*Nav_SetNavigatorStartNode)(nav_igator_t *navigator, nav_node_id node);
 	void (*Nav_SetNavigatorHeuristicFunction)(nav_igator_t *navigator, nav_igator_heuristic_func function);
@@ -193,15 +184,22 @@ typedef struct
 	bool (*Nav_NavigatorAStar)(nav_igator_t *navigator);
 	void (*Nav_DestroyNavigator)(nav_igator_t *navigator);
 
+	// memory
+	void    (*Z_Free)(void *ptr);
+	void	*(*Z_Realloc)(void *ptr, size_t size);
+	void	*(*Z_TagMalloc)(size_t size, memtag_t tag) q_malloc;
+	void	*(*Z_TagMallocz)(size_t size, memtag_t tag) q_malloc;
+	void    (*Z_FreeTags)(memtag_t tag);
+
+	// filesystem
 	int64_t (*FS_FOpenFile)(const char *filename, qhandle_t *f, unsigned mode);
 	int64_t	(*FS_Tell)(qhandle_t f);
 	int		(*FS_Seek)(qhandle_t f, int64_t offset);
 	int64_t (*FS_Length)(qhandle_t f);
 	int		(*FS_Read)(void *buffer, size_t len, qhandle_t f);
 	int		(*FS_Write)(const void *buffer, size_t len, qhandle_t f);
-	int		(*FS_FPrintf)(qhandle_t f, const char *format, ...) q_printf(2, 3);
-	int		(*FS_LoadFile)(const char *path, void **buf);
-	void	(*FS_FreeFile)(void *buf);
+	int		(*FS_VPrintf)(qhandle_t f, const char *format, va_list args);
+	int		(*FS_LoadFileEx)(const char *path, void **buf, unsigned flags, memtag_t tag);
 	int     (*FS_FCloseFile)(qhandle_t f);
 } game_import_t;
 
@@ -244,7 +242,7 @@ typedef struct
 
 	// ServerCommand will be called when an "sv <command>" command is issued on the
 	// server console.
-	// The game can issue gi.argc() / gi.argv() commands to get the rest
+	// The game can issue Cmd_Argx commands to get the rest
 	// of the parameters
 	void (*ServerCommand)(void);
 

@@ -174,7 +174,7 @@ void SP_trigger_once(edict_t *ent)
 		VectorMA(ent->mins, 0.5f, ent->size, v);
 		ent->spawnflags &= ~1;
 		ent->spawnflags |= 4;
-		gi.dprintf("fixed TRIGGERED flag on %s at %s\n", spawnTemp.classname, vtos(v));
+		Com_Printf("fixed TRIGGERED flag on %s at %s\n", spawnTemp.classname, vtos(v));
 	}
 
 	ent->wait = -1;
@@ -289,7 +289,7 @@ void SP_trigger_key(edict_t *self)
 {
 	if (!spawnTemp.item)
 	{
-		gi.dprintf("no key item for trigger_key at %s\n", vtos(self->s.origin));
+		Com_Printf("no key item for trigger_key at %s\n", vtos(self->s.origin));
 		return;
 	}
 
@@ -297,13 +297,13 @@ void SP_trigger_key(edict_t *self)
 
 	if (!self->item)
 	{
-		gi.dprintf("item %s not found for trigger_key at %s\n", spawnTemp.item, vtos(self->s.origin));
+		Com_Printf("item %s not found for trigger_key at %s\n", spawnTemp.item, vtos(self->s.origin));
 		return;
 	}
 
 	if (!self->target)
 	{
-		gi.dprintf("%s at %s has no target\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("%s at %s has no target\n", spawnTemp.classname, vtos(self->s.origin));
 		return;
 	}
 
@@ -551,7 +551,7 @@ void SP_trigger_gravity(edict_t *self)
 {
 	if (spawnTemp.gravity == NULL)
 	{
-		gi.dprintf("trigger_gravity without gravity set at %s\n", vtos(self->s.origin));
+		Com_Printf("trigger_gravity without gravity set at %s\n", vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}

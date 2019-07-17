@@ -170,7 +170,7 @@ void SVCmd_AddIP_f(void)
 {
 	int     i;
 
-	if (gi.argc() < 3)
+	if (Cmd_Argc() < 3)
 	{
 		gi.cprintf(NULL, PRINT_HIGH, "Usage:  addip <ip-mask>\n");
 		return;
@@ -191,7 +191,7 @@ void SVCmd_AddIP_f(void)
 		numipfilters++;
 	}
 
-	if (!StringToFilter(gi.argv(2), &ipfilters[i]))
+	if (!StringToFilter(Cmd_Argv(2), &ipfilters[i]))
 		ipfilters[i].compare = 0xffffffff;
 }
 
@@ -205,13 +205,13 @@ void SVCmd_RemoveIP_f(void)
 	ipfilter_t  f;
 	int         i, j;
 
-	if (gi.argc() < 3)
+	if (Cmd_Argc() < 3)
 	{
 		gi.cprintf(NULL, PRINT_HIGH, "Usage:  sv removeip <ip-mask>\n");
 		return;
 	}
 
-	if (!StringToFilter(gi.argv(2), &f))
+	if (!StringToFilter(Cmd_Argv(2), &f))
 		return;
 
 	for (i = 0 ; i < numipfilters ; i++)
@@ -226,7 +226,7 @@ void SVCmd_RemoveIP_f(void)
 			return;
 		}
 
-	gi.cprintf(NULL, PRINT_HIGH, "Didn't find %s.\n", gi.argv(2));
+	gi.cprintf(NULL, PRINT_HIGH, "Didn't find %s.\n", Cmd_Argv(2));
 }
 
 /*
@@ -268,7 +268,7 @@ void SVCmd_WriteIP_f(void)
 	} b;
 	int     i;
 	cvar_t  *sv_game;
-	sv_game = gi.cvar("game", "genx", 0);
+	sv_game = Cvar_Get("game", "genx", 0);
 
 	if (!*sv_game->string)
 		len = Q_snprintf(name, sizeof(name), "%s/listip.cfg", GAMEVERSION);
@@ -306,7 +306,7 @@ void SVCmd_WriteIP_f(void)
 ServerCommand
 
 ServerCommand will be called when an "sv" command is issued.
-The game can issue gi.argc() / gi.argv() commands to get the rest
+The game can issue Cmd_Argc() / Cmd_Argv() commands to get the rest
 of the parameters
 =================
 */
@@ -319,7 +319,7 @@ void    ServerCommand(void)
 		return;
 
 	// [end]
-	cmd = gi.argv(1);
+	cmd = Cmd_Argv(1);
 
 	if (Q_stricmp(cmd, "test") == 0)
 		Svcmd_Test_f();

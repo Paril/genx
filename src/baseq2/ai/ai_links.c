@@ -424,7 +424,7 @@ droptofloor:
 		if (trace.startsolid)
 		{
 			return LINK_INVALID;
-			//gi.error("AI_GravityBoxStep: Trace startsolid in droptofloor\n");
+			//Com_Error("AI_GravityBoxStep: Trace startsolid in droptofloor\n");
 		}
 
 		VectorCopy(trace.endpos, neworigin);
@@ -445,7 +445,7 @@ droptofloor:
 		eternalfall++;
 	}
 
-	//gi.error ("ETERNAL FALL\n");
+	//Com_Error ("ETERNAL FALL\n");
 	return LINK_INVALID;	//jabot092
 }
 
@@ -547,7 +547,7 @@ static int AI_RunGravityBox(int n1, int n2)
 		eternalcount++;
 	}
 
-	gi.error("ETERNAL COUNT\n");  //should never get here
+	Com_Error(ERR_FATAL, "ETERNAL COUNT\n");  //should never get here
 }
 
 //==========================================
@@ -646,7 +646,7 @@ static int	AI_FindFallOrigin(int n1, int n2, vec3_t fallorigin)
 		eternalcount++;
 
 		if (eternalcount > 200000000)
-			gi.error("ETERNAL COUNT\n");
+			Com_Error(ERR_FATAL, "ETERNAL COUNT\n");
 	}
 
 	return LINK_INVALID;

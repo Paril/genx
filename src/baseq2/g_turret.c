@@ -206,7 +206,7 @@ void turret_breach_finish_init(edict_t *self)
 {
 	// get and save info for muzzle location
 	if (!self->target)
-		gi.dprintf("entityid %i at %s needs a target\n", self->entitytype, vtos(self->s.origin));
+		Com_Printf("entityid %i at %s needs a target\n", self->entitytype, vtos(self->s.origin));
 	else
 	{
 		self->target_ent = G_PickTarget(self->target);

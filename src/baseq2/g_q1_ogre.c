@@ -65,9 +65,9 @@ static void OgreGrenadeExplode(edict_t *self)
 {
 	T_RadiusDamage(self, self->owner, 40, NULL, DAMAGE_Q1, 40, self->meansOfDeath);
 	gi.sound(self, CHAN_VOICE, gi.soundindex("q1/weapons/r_exp3.wav"), 1, ATTN_NORM, 0);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_Q1_EXPLODE);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_Q1_EXPLODE);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	G_FreeEdict(self);
 }

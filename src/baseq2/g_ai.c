@@ -26,7 +26,7 @@ bool ai_checkattack(edict_t *self, float dist);
 
 static bool        enemy_vis;
 static int         enemy_range;
-static float       enemy_yaw;
+static float       enemy_yaw, enemy_pitch;
 
 //============================================================================
 
@@ -125,6 +125,7 @@ void ai_stand(edict_t *self, float dist)
 		{
 			VectorSubtract(self->enemy->s.origin, self->s.origin, v);
 			self->ideal_yaw = vectoyaw(v);
+			self->ideal_pitch = 0;
 
 			if (self->s.angles[YAW] != self->ideal_yaw && self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND)
 			{
@@ -225,7 +226,13 @@ void ai_charge(edict_t *self, float dist)
 {
 	vec3_t  v;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, v);
-	self->ideal_yaw = vectoyaw(v);
+	vec3_t	a;
+	vectoangles2(v, a);
+	self->ideal_yaw = a[YAW];
+
+	if (self->flags & FL_FLY)
+		self->ideal_pitch = a[PITCH];
+
 	M_ChangeYaw(self);
 
 	if (dist)
@@ -374,7 +381,14 @@ static void HuntTarget(edict_t *self)
 		self->monsterinfo.run(self);
 
 	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
-	self->ideal_yaw = vectoyaw(vec);
+
+	vec3_t a;
+
+	vectoangles2(vec, a);
+	self->ideal_yaw = a[YAW];
+
+	if (self->flags & FL_FLY)
+		self->ideal_pitch = a[PITCH];
 
 	// wait a while before first attack
 	if (!(self->monsterinfo.aiflags & AI_STAND_GROUND))
@@ -406,7 +420,7 @@ void FoundTarget(edict_t *self)
 	{
 		self->goalentity = self->movetarget = self->enemy;
 		HuntTarget(self);
-		gi.dprintf("%d at %s, combattarget %s not found\n", self->entitytype, vtos(self->s.origin), self->combattarget);
+		Com_Printf("%d at %s, combattarget %s not found\n", self->entitytype, vtos(self->s.origin), self->combattarget);
 		return;
 	}
 
@@ -986,6 +1000,8 @@ Turn and close until within an angle to launch a melee attack
 static void ai_run_melee(edict_t *self)
 {
 	self->ideal_yaw = enemy_yaw;
+	if (self->flags & FL_FLY)
+		self->ideal_pitch = enemy_pitch;
 	M_ChangeYaw(self);
 
 	if (FacingIdeal(self))
@@ -1006,6 +1022,8 @@ Turn in place until within an angle to launch a missile attack
 static void ai_run_missile(edict_t *self)
 {
 	self->ideal_yaw = enemy_yaw;
+	if (self->flags & FL_FLY)
+		self->ideal_pitch = enemy_pitch;
 	M_ChangeYaw(self);
 
 	if (FacingIdeal(self))
@@ -1027,6 +1045,8 @@ static void ai_run_slide(edict_t *self, float distance)
 {
 	float   ofs;
 	self->ideal_yaw = enemy_yaw;
+	if (self->flags & FL_FLY)
+		self->ideal_pitch = enemy_pitch;
 	M_ChangeYaw(self);
 
 	if (self->monsterinfo.lefty)
@@ -1171,7 +1191,10 @@ bool ai_checkattack(edict_t *self, float dist)
 	//  }
 	enemy_range = range(self, self->enemy);
 	VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
-	enemy_yaw = vectoyaw(temp);
+	vec3_t a;
+	vectoangles2(temp, a);
+	enemy_yaw = a[YAW];
+	enemy_pitch = a[PITCH];
 
 	// JDC self->ideal_yaw = enemy_yaw;
 

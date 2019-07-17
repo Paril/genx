@@ -221,9 +221,9 @@ void doom_skel_missile_touch(edict_t *ent, edict_t *other, cplane_t *plane, csur
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DOOM_FBXP_BOOM);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DOOM_FBXP_BOOM);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
@@ -244,9 +244,9 @@ void doom_skel_think(edict_t *self)
 	AngleVectors(ideal_angle, self->velocity, NULL, NULL);
 	vectoangles(self->velocity, self->s.angles);
 	VectorScale(self->velocity, speed, self->velocity);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DOOM_PUFF);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DOOM_PUFF);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PHS);
 	self->nextthink = level.time + 100;
 }

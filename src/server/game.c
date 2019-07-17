@@ -22,8 +22,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 game_export_t    *ge;
 
-static void PF_configstring(int index, const char *val);
-
 /*
 ================
 PF_FindIndex
@@ -219,14 +217,14 @@ PF_dprintf
 Debug print to server console.
 ===============
 */
-static void PF_dprintf(const char *fmt, ...)
+static void PF_dprintf(print_type_t type, const char *fmt, ...)
 {
 	char        msg[MAXPRINTMSG];
 	va_list     argptr;
 	va_start(argptr, fmt);
 	Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
 	va_end(argptr);
-	Com_Printf("%s", msg);
+	Com_LPrintf(type, "%s", msg);
 }
 
 /*
@@ -329,14 +327,14 @@ PF_error
 Abort the server with a game error
 ===============
 */
-static q_noreturn void PF_error(const char *fmt, ...)
+static q_noreturn void PF_error(error_type_t type, const char *fmt, ...)
 {
 	char        msg[MAXERRORMSG];
 	va_list     argptr;
 	va_start(argptr, fmt);
 	Q_vsnprintf(msg, sizeof(msg), fmt, argptr);
 	va_end(argptr);
-	Com_Error(ERR_DROP, "Game Error: %s", msg);
+	Com_Error(type, "Game Error: %s", msg);
 }
 
 /*
@@ -709,7 +707,7 @@ void PF_Pmove(pmove_t *pm)
 		Pmove(pm, &sv_pmp);
 }
 
-static cvar_t *PF_cvar(const char *name, const char *value, int flags)
+static cvar_t *SV_Cvar_Get(const char *name, const char *value, int flags)
 {
 	if (flags & CVAR_EXTENDED_MASK)
 	{
@@ -739,29 +737,6 @@ static bool PF_AreasConnected(int area1, int area2)
 		Com_Error(ERR_DROP, "%s: no map loaded", __func__);
 
 	return CM_AreasConnected(&sv.cm, area1, area2);
-}
-
-static void *PF_TagMalloc(unsigned size, unsigned tag)
-{
-	if (tag + TAG_MAX < tag)
-		Com_Error(ERR_FATAL, "%s: bad tag", __func__);
-
-	if (!size)
-		return NULL;
-
-	return memset(Z_TagMalloc(size, tag + TAG_MAX), 0, size);
-}
-
-static void PF_FreeTags(unsigned tag)
-{
-	if (tag + TAG_MAX < tag)
-		Com_Error(ERR_FATAL, "%s: bad tag", __func__);
-
-	Z_FreeTags(tag + TAG_MAX);
-}
-
-static void PF_DebugGraph(float value, int color)
-{
 }
 
 static uint32_t PF_Nav_NumNodes()
@@ -911,12 +886,6 @@ static void *SV_LoadGameLibrary(const char *game, const char *prefix)
 	return _SV_LoadGameLibrary(path);
 }
 
-static inline int PF_FS_LoadFile(const char *path, void **buf)
-{
-	// TODO: ???
-	return FS_LoadFileEx(path, buf, 0, 765);
-}
-
 /*
 ===============
 SV_InitGameProgs
@@ -980,29 +949,21 @@ void SV_InitGameProgs(void)
 	import.configstring = PF_configstring;
 	import.sound = PF_StartSound;
 	import.positioned_sound = SV_StartSound;
-	import.WriteChar = MSG_WriteChar;
-	import.WriteByte = MSG_WriteByte;
-	import.WriteShort = MSG_WriteShort;
-	import.WriteLong = MSG_WriteLong;
-	import.WriteFloat = PF_WriteFloat;
-	import.WriteString = MSG_WriteString;
-	import.WritePosition = MSG_WritePos;
-	import.WriteDir = MSG_WriteDir;
-	import.WriteAngle = MSG_WriteAngle;
-	import.TagMalloc = PF_TagMalloc;
-	import.TagFree = Z_Free;
-	import.FreeTags = PF_FreeTags;
-	import.cvar = PF_cvar;
-	import.cvar_set = Cvar_UserSet;
-	import.cvar_forceset = Cvar_Set;
-	import.argc = Cmd_Argc;
-	import.argv = Cmd_Argv;
-	// original Cmd_Args() did actually return raw arguments
-	import.args = Cmd_RawArgs;
 	import.AddCommandString = PF_AddCommandString;
-	import.DebugGraph = PF_DebugGraph;
 	import.SetAreaPortalState = PF_SetAreaPortalState;
 	import.AreasConnected = PF_AreasConnected;
+
+	// cvar
+	import.Cvar_Get = SV_Cvar_Get;
+	import.Cvar_UserSet = Cvar_UserSet;
+	import.Cvar_Set = Cvar_Set;
+
+	// args
+	import.Cmd_Argc = Cmd_Argc;
+	import.Cmd_Argv = Cmd_Argv;
+	import.Cmd_Args = Cmd_RawArgs;
+
+	// navigation
 	import.Nav_NumNodes = PF_Nav_NumNodes;
 	import.Nav_GetNodePosition = PF_Nav_GetNodePosition;
 	import.Nav_GetNodeType = PF_Nav_GetNodeType;
@@ -1019,15 +980,34 @@ void SV_InitGameProgs(void)
 	import.Nav_NavigatorAStar = PF_Nav_NavigatorAStar;
 	import.Nav_DestroyNavigator = PF_Nav_DestroyNavigator;
 
+	// msg
+	import.MSG_WriteChar = MSG_WriteChar;
+	import.MSG_WriteByte = MSG_WriteByte;
+	import.MSG_WriteShort = MSG_WriteShort;
+	import.MSG_WriteUShort = MSG_WriteUShort;
+	import.MSG_WriteLong = MSG_WriteLong;
+	import.MSG_WriteFloat = PF_WriteFloat;
+	import.MSG_WriteString = MSG_WriteString;
+	import.MSG_WritePos = MSG_WritePos;
+	import.MSG_WriteDir = MSG_WriteDir;
+	import.MSG_WriteAngle = MSG_WriteAngle;
+
+	// memory
+	import.Z_Free = Z_Free;
+	import.Z_Realloc = Z_Realloc;
+	import.Z_TagMalloc = Z_TagMalloc;
+	import.Z_TagMallocz = Z_TagMallocz;
+	import.Z_FreeTags = Z_FreeTags;
+
+	// files
 	import.FS_FOpenFile = FS_FOpenFile;
 	import.FS_Tell = FS_Tell;
 	import.FS_Seek = FS_Seek;
 	import.FS_Length = FS_Length;
 	import.FS_Read = FS_Read;
 	import.FS_Write = FS_Write;
-	import.FS_FPrintf = FS_FPrintf;
-	import.FS_LoadFile = PF_FS_LoadFile;
-	import.FS_FreeFile = FS_FreeFile;
+	import.FS_VPrintf = FS_VPrintf;
+	import.FS_LoadFileEx = FS_LoadFileEx;
 	import.FS_FCloseFile = FS_FCloseFile;
 
 	ge = entry(&import);

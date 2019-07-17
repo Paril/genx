@@ -260,7 +260,7 @@ static bool Boss2_CheckAttack(edict_t *self)
 	float   chance;
 	trace_t tr;
 	int         enemy_range;
-	float       enemy_yaw;
+	float       enemy_yaw, enemy_pitch;
 
 	if (self->enemy->health > 0)
 	{
@@ -278,8 +278,14 @@ static bool Boss2_CheckAttack(edict_t *self)
 
 	enemy_range = range(self, self->enemy);
 	VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
-	enemy_yaw = vectoyaw(temp);
+	vec3_t a;
+	vectoangles2(temp, a);
+	enemy_yaw = a[YAW];
+	enemy_pitch = a[PITCH];
 	self->ideal_yaw = enemy_yaw;
+
+	if (self->flags & FL_FLY)
+		self->ideal_pitch = enemy_pitch;
 
 	// melee attack
 	if (enemy_range == RANGE_MELEE)

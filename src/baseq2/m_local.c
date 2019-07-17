@@ -1,7 +1,7 @@
 #include "m_local.h"
 #include "format/mdl.h"
 #include "format/md2.h"
-#include "shared/cJSON.h"
+#include "format/cJSON.h"
 
 
 
@@ -35,7 +35,7 @@ static void SymbolName(const void *addr, char *buffer, size_t buffer_len)
 		SymSetOptions(SYMOPT_UNDNAME | SYMOPT_DEFERRED_LOADS);
 
 		if (!SymInitialize(GetCurrentProcess(), NULL, TRUE))
-			gi.error("SymInitialize returned error : %d\n", GetLastError());
+			Com_Error(ERR_FATAL, "SymInitialize returned error : %d\n", GetLastError());
 	}
 
 	DWORD64  dwDisplacement = 0;
@@ -52,7 +52,7 @@ static void SymbolName(const void *addr, char *buffer, size_t buffer_len)
 		return;
 	}
 
-	gi.error("SymFromAddr returned error : %d\n", GetLastError());
+	Com_Error(ERR_FATAL, "SymFromAddr returned error : %d\n", GetLastError());
 }
 
 static void undecorate_symbol_name(const void *sym, char *name_buf, size_t name_buf_len)
@@ -68,47 +68,7 @@ static void undecorate_symbol_name(const void *sym, char *name_buf, size_t name_
 	}
 }
 
-
-
-
-struct
-{
-	char			md2_frame_names[MD2_MAX_FRAMES][17];
-	int				md2_num_frames;
-} script_frame_temp;
-
-static void load_md2_frames(const char *model_filename)
-{
-	if (model_filename)
-	{
-		qhandle_t f;
-
-		gi.FS_FOpenFile(model_filename, &f, FS_MODE_READ);
-
-		if (!f)
-			gi.error("Can't find model %s", model_filename);
-
-		dmd2header_t header;
-
-		gi.FS_Read(&header, sizeof(header), f);
-
-		script_frame_temp.md2_num_frames = LittleLong(header.num_frames);
-		size_t ofs_frames = LittleLong(header.ofs_frames);
-		size_t framesize = LittleLong(header.framesize);
-
-		for (size_t i = 0; i < script_frame_temp.md2_num_frames; i++)
-		{
-			gi.FS_Seek(f, ofs_frames + (framesize * i) + q_offsetof(dmd2frame_t, name));
-			gi.FS_Read(script_frame_temp.md2_frame_names[i], sizeof(script_frame_temp.md2_frame_names[i]) - 1, f);
-		}
-
-		gi.FS_FCloseFile(f);
-	}
-	else
-		script_frame_temp.md2_num_frames = MD2_MAX_FRAMES;
-}
-
-static bool M_ParseMonsterFrame(cJSON *frame, int *out_frame)
+static bool M_ParseMonsterFrame(cJSON *frame, const dmd2_t *md2, int *out_frame)
 {
 	if (!cJSON_IsNumber(frame) && !cJSON_IsString(frame))
 		return false;
@@ -119,15 +79,16 @@ static bool M_ParseMonsterFrame(cJSON *frame, int *out_frame)
 		return true;
 	}
 
+	if (!md2->header.num_frames)
+		return false;
+
 	const char *name = cJSON_GetStringValue(frame);
 
-	for (int i = script_frame_temp.md2_num_frames - 1; i >= 0; i--)
+	for (int i = md2->header.num_frames - 1; i >= 0; i--)
 	{
-		const char *fn = script_frame_temp.md2_frame_names[i];
+		const char *fn = MD2_GetFrame(md2, i)->name;
 
-		if (!fn[0])
-			gi.error("No such frame %s", name);
-		else if (Q_strncasecmp(name, fn, 16) == 0)
+		if (Q_strncasecmp(name, fn, 16) == 0)
 		{
 			*out_frame = i;
 			return true;
@@ -217,7 +178,7 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 	const char *err_str = NULL;
 	char *file_data;
 
-	gi.FS_LoadFile(va("%s.json", script_filename), &file_data);
+	FS_LoadFile(va("%s.json", script_filename), &file_data);
 
 	if (!file_data)
 		return;
@@ -227,11 +188,27 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 	for (size_t i = 0; i < MONSTERSCRIPT_HASH_SIZE; i++)
 		List_Init(&script->moveHash[i]);
 
-	load_md2_frames(model_filename);
+	dmd2_t md2;
+	memset(&md2, 0, sizeof(md2));
+
+	if (model_filename)
+	{
+		qhandle_t model_handle;
+
+		int ret = FS_FOpenFile(model_filename, &model_handle, FS_MODE_READ);
+
+		if (!model_handle)
+			Com_Printf("Invalid model for monster script: %s (%s)", model_filename, Q_ErrorString(ret));
+		else
+		{
+			MD2_Load(model_handle, &md2, MD2_LOAD_FRAMES, TAG_LEVEL);
+			FS_FCloseFile(model_handle);
+		}
+	}
 
 	cJSON *json = cJSON_Parse(file_data);
 
-	gi.FS_FreeFile(file_data);
+	FS_FreeFile(file_data);
 
 #define THROW_ERROR(str, ...) \
 	{ err_str = va(str, __VA_ARGS__); goto err; }
@@ -246,7 +223,7 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 
 	cJSON_ArrayForEach(move, moves)
 	{
-		mmove_t *move_out = gi.TagMalloc(sizeof(mmove_t), TAG_GAME);
+		mmove_t *move_out = Z_TagMallocz(sizeof(mmove_t), TAG_GAME);
 		const char *name = move->string;
 
 		if (!*name)
@@ -256,9 +233,9 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 		
 		Q_strlcpy(move_out->name, name, sizeof(move_out->name));
 
-		if (!M_ParseMonsterFrame(cJSON_GetObjectItem(move, "start_frame"), &move_out->firstframe))
+		if (!M_ParseMonsterFrame(cJSON_GetObjectItem(move, "start_frame"), &md2, &move_out->firstframe))
 			THROW_ERROR("Monster script missing start frame for move %s", move_out->name);
-		if (!M_ParseMonsterFrame(cJSON_GetObjectItem(move, "end_frame"), &move_out->lastframe))
+		if (!M_ParseMonsterFrame(cJSON_GetObjectItem(move, "end_frame"), &md2, &move_out->lastframe))
 			THROW_ERROR("Monster script missing last frame for move %s", move_out->name);
 		if (cJSON_HasObjectItem(move, "post_think") && !M_ParseMonsterFunc(cJSON_GetObjectItem(move, "post_think"), events, &move_out->endfunc))
 			THROW_ERROR("Monster script has bad post think for move %s", move_out->name);
@@ -273,7 +250,7 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 		if (frames_count != abs(move_out->lastframe - move_out->firstframe) + 1)
 			THROW_ERROR("Monster script has invalid frames for move %s", move_out->name);
 
-		mframe_t *cur_frame = move_out->frame = gi.TagMalloc(sizeof(mframe_t) * frames_count, TAG_GAME);
+		mframe_t *cur_frame = move_out->frame = Z_TagMallocz(sizeof(mframe_t) * frames_count, TAG_GAME);
 
 		cJSON_ArrayForEach(frame, frames)
 		{
@@ -330,6 +307,7 @@ void M_ParseMonsterScript(const char *script_filename, const char *model_filenam
 		List_Append(&script->moveHash[Com_HashString(name, MONSTERSCRIPT_HASH_SIZE)], &move_out->hashEntry);
 	}
 
+	MD2_Free(&md2);
 	cJSON_Delete(json);
 	script->initialized = true;
 	return;
@@ -338,7 +316,7 @@ err:
 	if (json)
 		cJSON_Delete(json);
 
-	gi.error(err_str);
+	Com_Error(ERR_FATAL, err_str);
 }
 
 const mmove_t *M_GetMonsterMove(const mscript_t *script, const char *name)
@@ -352,13 +330,13 @@ const mmove_t *M_GetMonsterMove(const mscript_t *script, const char *name)
 			return move;
 	}
 
-	gi.error("No such animation %s", name);
+	Com_Error(ERR_FATAL, "No such animation %s", name);
 	return NULL;
 }
 
 
 
-static size_t frame_score(const mframe_t *src, const mframe_t *other)
+/*static size_t frame_score(const mframe_t *src, const mframe_t *other)
 {
 	size_t score = 1;
 
@@ -426,9 +404,9 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 
 	qhandle_t f;
 
-	gi.FS_FOpenFile(buff, &f, FS_MODE_WRITE);
+	FS_FOpenFile(buff, &f, FS_MODE_WRITE);
 
-	gi.FS_FPrintf(f, "{\n" JSON_SPACE "\"moves\": {\n");
+	FS_FPrintf(f, "{\n" JSON_SPACE "\"moves\": {\n");
 
 #define MAX_EVENTS 64
 	void *events[MAX_EVENTS];
@@ -447,20 +425,20 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 		if (Q_strncasecmp(name_skip, "move_", 5) == 0)
 			name_skip += 5;
 
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"%s\": {\n", name_skip);
+		FS_FPrintf(f, JSON_SPACE JSON_SPACE "\"%s\": {\n", name_skip);
 
 		if (*script_frame_temp.md2_frame_names[move->firstframe] && *script_frame_temp.md2_frame_names[move->lastframe])
 		{
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->firstframe]);
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->lastframe]);
+			FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->firstframe]);
+			FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": \"%s\",\n", script_frame_temp.md2_frame_names[move->lastframe]);
 		}
 		else
 		{
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
+			FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"start_frame\": %d,\n", move->firstframe);
+			FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"end_frame\": %d,\n", move->lastframe);
 		}
 
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"frames\": [\n");
+		FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "\"frames\": [\n");
 
 		const size_t total_frames = abs(move->lastframe - move->firstframe) + 1;
 		char func_buffer[64];
@@ -472,27 +450,27 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 			const mframe_t *ditto = M_FindDittoFrame(move, frame, i);
 			bool needsComma = false;
 
-			gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
+			FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE JSON_SPACE "{ ");
 
 			if (ditto)
 			{
-				gi.FS_FPrintf(f, "\"inherit\": %d", ditto - move->frame);
+				FS_FPrintf(f, "\"inherit\": %d", ditto - move->frame);
 				needsComma = true;
 			}
 
 			if ((!ditto && frame->aifunc) || (ditto && frame->aifunc != ditto->aifunc))
 			{
 				if (needsComma)
-					gi.FS_FPrintf(f, ", ");
+					FS_FPrintf(f, ", ");
 
 				if (frame->aifunc)
 				{
 					undecorate_symbol_name(frame->aifunc, func_buffer, sizeof(func_buffer));
 					cJSON_AddStringToObject(frameJson, "ai", func_buffer + 3);
-					gi.FS_FPrintf(f, "\"ai\": \"%s\"", func_buffer + 3);
+					FS_FPrintf(f, "\"ai\": \"%s\"", func_buffer + 3);
 				}
 				else
-					gi.FS_FPrintf(f, "\"ai\": \"none\"");
+					FS_FPrintf(f, "\"ai\": \"none\"");
 
 				needsComma = true;
 			}
@@ -500,79 +478,79 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 			if ((!ditto && frame->dist) || (ditto && frame->dist != ditto->dist))
 			{
 				if (needsComma)
-					gi.FS_FPrintf(f, ", ");
+					FS_FPrintf(f, ", ");
 
-				gi.FS_FPrintf(f, "\"dist\": %g", frame->dist);
+				FS_FPrintf(f, "\"dist\": %g", frame->dist);
 				needsComma = true;
 			}
 
 			if ((!ditto && frame->thinkfunc) || (ditto && frame->thinkfunc != ditto->thinkfunc))
 			{
 				if (needsComma)
-					gi.FS_FPrintf(f, ", ");
+					FS_FPrintf(f, ", ");
 
 				if (frame->thinkfunc)
 				{
 					undecorate_symbol_name(frame->thinkfunc, func_buffer, sizeof(func_buffer));
 					cJSON_AddStringToObject(frameJson, "event", func_buffer);
-					gi.FS_FPrintf(f, "\"event\": \"%s\"", func_buffer);
+					FS_FPrintf(f, "\"event\": \"%s\"", func_buffer);
 
 					M_AddToEventsList(events, &num_events, frame->thinkfunc);
 				}
 				else
-					gi.FS_FPrintf(f, "\"event\": \"none\"");
+					FS_FPrintf(f, "\"event\": \"none\"");
 
 				needsComma = true;
 			}
 
-			gi.FS_FPrintf(f, " }");
+			FS_FPrintf(f, " }");
 
 			if (i != total_frames - 1)
-				gi.FS_FPrintf(f, ",");
+				FS_FPrintf(f, ",");
 
-			gi.FS_FPrintf(f, "\n");
+			FS_FPrintf(f, "\n");
 		}
 
-		gi.FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "]");
+		FS_FPrintf(f, JSON_SPACE JSON_SPACE JSON_SPACE "]");
 
 		if (move->endfunc)
 		{
 			undecorate_symbol_name(move->endfunc, func_buffer, sizeof(func_buffer));
-			gi.FS_FPrintf(f, ",\n" JSON_SPACE JSON_SPACE JSON_SPACE "\"post_think\": \"%s\"", func_buffer);
+			FS_FPrintf(f, ",\n" JSON_SPACE JSON_SPACE JSON_SPACE "\"post_think\": \"%s\"", func_buffer);
 
 			M_AddToEventsList(events, &num_events, move->endfunc);
 		}
 
-		gi.FS_FPrintf(f, "\n" JSON_SPACE JSON_SPACE "}");
+		FS_FPrintf(f, "\n" JSON_SPACE JSON_SPACE "}");
 
 		if (*(move_ptr + 1) != NULL)
-			gi.FS_FPrintf(f, ", ");
+			FS_FPrintf(f, ", ");
 
-		gi.FS_FPrintf(f, "\n");
+		FS_FPrintf(f, "\n");
 	}
 
-	gi.FS_FPrintf(f, JSON_SPACE "}\n}");
+	FS_FPrintf(f, JSON_SPACE "}\n}");
 
-	gi.FS_FCloseFile(f);
+	FS_FCloseFile(f);
 
 	if (num_events)
 	{
 		char file_buf[64];
 		Q_snprintf(file_buf, sizeof(file_buf), "%s.evt", script_filename);
 
-		gi.FS_FOpenFile(file_buf, &f, FS_MODE_WRITE);
+		FS_FOpenFile(file_buf, &f, FS_MODE_WRITE);
 
-		gi.FS_FPrintf(f, "static const mevent_t events[] =\n{\n");
+		FS_FPrintf(f, "static const mevent_t events[] =\n{\n");
 
 		for (const void **evt = events; *evt; evt++)
 		{
 			char sym_buf[64];
 			undecorate_symbol_name(*evt, sym_buf, sizeof(sym_buf));
-			gi.FS_FPrintf(f, "\tEVENT_FUNC(%s),\n", sym_buf);
+			FS_FPrintf(f, "\tEVENT_FUNC(%s),\n", sym_buf);
 		}
 
-		gi.FS_FPrintf(f, "\tNULL\n};");
+		FS_FPrintf(f, "\tNULL\n};");
 
-		gi.FS_FCloseFile(f);
+		FS_FCloseFile(f);
 	}
-}
+}*/

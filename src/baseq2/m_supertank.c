@@ -267,9 +267,9 @@ void BossExplode(edict_t *self)
 			return;
 	}
 
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_EXPLOSION1);
-	gi.WritePosition(org);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_EXPLOSION1);
+	MSG_WritePos(org);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	self->nextthink = level.time + game.frametime;
 }

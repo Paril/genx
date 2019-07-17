@@ -23,9 +23,9 @@ Fire an origin based temp entity event to the clients.
 */
 void Use_Target_Tent(edict_t *ent, edict_t *other, edict_t *activator)
 {
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(ent->style);
-	gi.WritePosition(ent->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(ent->style);
+	MSG_WritePos(ent->s.origin);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 }
 
@@ -85,7 +85,7 @@ void SP_target_speaker(edict_t *ent)
 
 	if (!spawnTemp.noise)
 	{
-		gi.dprintf("target_speaker with no noise set at %s\n", vtos(ent->s.origin));
+		Com_Printf("target_speaker with no noise set at %s\n", vtos(ent->s.origin));
 		return;
 	}
 
@@ -141,7 +141,7 @@ void SP_target_help(edict_t *ent)
 
 	if (!ent->message)
 	{
-		gi.dprintf("%s with no message at %s\n", spawnTemp.classname, vtos(ent->s.origin));
+		Com_Printf("%s with no message at %s\n", spawnTemp.classname, vtos(ent->s.origin));
 		G_FreeEdict(ent);
 		return;
 	}
@@ -235,9 +235,9 @@ Spawns an explosion temporary entity when used.
 void target_explosion_explode(edict_t *self)
 {
 	float       save;
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_EXPLOSION1);
-	gi.WritePosition(self->s.origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_EXPLOSION1);
+	MSG_WritePos(self->s.origin);
 	gi.multicast(self->s.origin, MULTICAST_PHS);
 	T_RadiusDamage(self, self->activator, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
 	save = self->delay;
@@ -308,7 +308,7 @@ void SP_target_changelevel(edict_t *ent)
 {
 	if (!ent->map)
 	{
-		gi.dprintf("target_changelevel with no map at %s\n", vtos(ent->s.origin));
+		Com_Printf("target_changelevel with no map at %s\n", vtos(ent->s.origin));
 		G_FreeEdict(ent);
 		return;
 	}
@@ -342,12 +342,12 @@ Set "sounds" to one of the following:
 
 void use_target_splash(edict_t *self, edict_t *other, edict_t *activator)
 {
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_SPLASH);
-	gi.WriteByte(self->count);
-	gi.WritePosition(self->s.origin);
-	gi.WriteDir(self->movedir);
-	gi.WriteByte(self->sounds);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_SPLASH);
+	MSG_WriteByte(self->count);
+	MSG_WritePos(self->s.origin);
+	MSG_WriteDir(self->movedir);
+	MSG_WriteByte(self->sounds);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 
 	if (self->dmg)
@@ -548,12 +548,12 @@ void target_laser_think(edict_t *self)
 			if (self->spawnflags & 0x80000000)
 			{
 				self->spawnflags &= ~0x80000000;
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(TE_LASER_SPARKS);
-				gi.WriteByte(count);
-				gi.WritePosition(tr.endpos);
-				gi.WriteDir(tr.plane.normal);
-				gi.WriteByte(self->s.skinnum);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(TE_LASER_SPARKS);
+				MSG_WriteByte(count);
+				MSG_WritePos(tr.endpos);
+				MSG_WriteDir(tr.plane.normal);
+				MSG_WriteByte(self->s.skinnum);
 				gi.multicast(tr.endpos, MULTICAST_PVS);
 			}
 
@@ -629,7 +629,7 @@ void target_laser_start(edict_t *self)
 			ent = G_Find(NULL, FOFS(targetname), self->target);
 
 			if (!ent)
-				gi.dprintf("entityid %i at %s: %s is a bad target\n", self->entitytype, vtos(self->s.origin), self->target);
+				Com_Printf("entityid %i at %s: %s is a bad target\n", self->entitytype, vtos(self->s.origin), self->target);
 
 			self->enemy = ent;
 		}
@@ -703,8 +703,8 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
 
 			if (e->entitytype != ET_LIGHT)
 			{
-				gi.dprintf("entityid %i at %s ", self->entitytype, vtos(self->s.origin));
-				gi.dprintf("target %s (entityid %i at %s) is not a light\n", self->target, e->entitytype, vtos(e->s.origin));
+				Com_Printf("entityid %i at %s ", self->entitytype, vtos(self->s.origin));
+				Com_Printf("target %s (entityid %i at %s) is not a light\n", self->target, e->entitytype, vtos(e->s.origin));
 			}
 			else
 				self->enemy = e;
@@ -712,7 +712,7 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
 
 		if (!self->enemy)
 		{
-			gi.dprintf("entityid %i target %s not found at %s\n", self->entitytype, self->target, vtos(self->s.origin));
+			Com_Printf("entityid %i target %s not found at %s\n", self->entitytype, self->target, vtos(self->s.origin));
 			G_FreeEdict(self);
 			return;
 		}
@@ -726,7 +726,7 @@ void SP_target_lightramp(edict_t *self)
 {
 	if (!self->message || strlen(self->message) != 2 || self->message[0] < 'a' || self->message[0] > 'z' || self->message[1] < 'a' || self->message[1] > 'z' || self->message[0] == self->message[1])
 	{
-		gi.dprintf("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->s.origin));
+		Com_Printf("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}
@@ -739,7 +739,7 @@ void SP_target_lightramp(edict_t *self)
 
 	if (!self->target)
 	{
-		gi.dprintf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
 		G_FreeEdict(self);
 		return;
 	}
@@ -804,7 +804,7 @@ void target_earthquake_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_earthquake(edict_t *self)
 {
 	if (!self->targetname)
-		gi.dprintf("untargeted %s at %s\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("untargeted %s at %s\n", spawnTemp.classname, vtos(self->s.origin));
 
 	if (!self->count)
 		self->count = 5;

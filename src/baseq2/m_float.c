@@ -110,12 +110,12 @@ static void floater_zap(edict_t *self)
 	//  G_ProjectSource (self->s.origin, monster_flash_offset[flash_number], forward, right, origin);
 	gi.sound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM, 0);
 	//FIXME use the flash, Luke
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_SPLASH);
-	gi.WriteByte(32);
-	gi.WritePosition(origin);
-	gi.WriteDir(dir);
-	gi.WriteByte(1);    //sparks
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_SPLASH);
+	MSG_WriteByte(32);
+	MSG_WritePos(origin);
+	MSG_WriteDir(dir);
+	MSG_WriteByte(1);    //sparks
 	gi.multicast(origin, MULTICAST_PVS);
 	T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 5 + Q_rand() % 6, -10, DAMAGE_ENERGY, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 }

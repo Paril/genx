@@ -796,7 +796,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 		else
 		{
 			count = 1;
-			gi.dprintf("No pickup count for %i %s\n", other->s.game, item->pickup_name);
+			Com_Printf("No pickup count for %i %s\n", other->s.game, item->pickup_name);
 		}
 	}
 
@@ -1445,9 +1445,9 @@ void droptofloor(edict_t *ent)
 	if (tr.startsolid)
 	{
 		if (ent->item)
-			gi.dprintf("droptofloor: %s startsolid at %s\n", ent->item->classname, vtos(ent->s.origin));
+			Com_Printf("droptofloor: %s startsolid at %s\n", ent->item->classname, vtos(ent->s.origin));
 		else
-			gi.dprintf("droptofloor: entityid %i startsolid at %s\n", ent->entitytype, vtos(ent->s.origin));
+			Com_Printf("droptofloor: entityid %i startsolid at %s\n", ent->entitytype, vtos(ent->s.origin));
 
 		G_FreeEdict(ent);
 		return;
@@ -1542,7 +1542,7 @@ void PrecacheItem(gitem_t *it)
 		len = s - start;
 
 		if (len >= MAX_QPATH || len < 5)
-			gi.error("PrecacheItem: %s has bad precache string", it->classname);
+			Com_Error(ERR_FATAL, "PrecacheItem: %s has bad precache string", it->classname);
 
 		memcpy(data, start, len);
 		data[len] = 0;
@@ -1583,7 +1583,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 		if (GetIndexByItem(item) != ITI_POWER_CUBE)
 		{
 			ent->spawnflags = 0;
-			gi.dprintf("%s at %s has invalid spawnflags set\n", item->classname, vtos(ent->s.origin));
+			Com_Printf("%s at %s has invalid spawnflags set\n", item->classname, vtos(ent->s.origin));
 		}
 	}
 
@@ -1846,7 +1846,7 @@ void CheckWeaponBalanceCvars()
 
 			char cvar_name[MAX_QPATH];
 			Q_snprintf(cvar_name, sizeof(cvar_name), "balance_%s_%s", game_names[game], weapon_name);
-			cvar_t *cvar = gi.cvar(cvar_name, "", CVAR_ARCHIVE);
+			cvar_t *cvar = Cvar_Get(cvar_name, "", CVAR_ARCHIVE);
 
 			if (!cvar->value)
 			{

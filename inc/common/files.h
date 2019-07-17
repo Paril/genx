@@ -23,10 +23,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/error.h"
 #include "common/zone.h"
 
-#define MIN_LISTED_FILES    1024
-#define MAX_LISTED_FILES    250000000
-#define MAX_LISTED_DEPTH    8
-
 typedef struct file_info_s
 {
 	int64_t size;
@@ -34,16 +30,6 @@ typedef struct file_info_s
 	time_t  mtime;
 	char    name[1];
 } file_info_t;
-
-//
-// Limit the maximum file size FS_LoadFile can handle, as a protection from
-// malicious paks causing memory exhaustion.
-//
-// Maximum size of legitimate BSP file on disk is ~12.7 MiB, let's round this
-// up to 16 MiB. Assume that no loadable Q2 resource should ever exceed this
-// limit.
-//
-#define MAX_LOADFILE            0x1000000
 
 #define FS_Malloc(size)         Z_TagMalloc(size, TAG_FILESYSTEM)
 #define FS_Mallocz(size)        Z_TagMallocz(size, TAG_FILESYSTEM)
@@ -70,42 +56,8 @@ void    FS_Restart(bool total);
 
 int FS_CreatePath(char *path);
 
-int64_t FS_FOpenFile(const char *filename, qhandle_t *f, unsigned mode);
-int64_t	FS_Tell(qhandle_t f);
-int		FS_Seek(qhandle_t f, int64_t offset);
-int64_t FS_Length(qhandle_t f);
-int		FS_Read(void *buffer, size_t len, qhandle_t f);
-int		FS_Write(const void *buffer, size_t len, qhandle_t f);
-int		FS_FPrintf(qhandle_t f, const char *format, ...) q_printf(2, 3);
-int		FS_LoadFileEx(const char *path, void **buffer, unsigned flags, memtag_t tag);
-int     FS_FCloseFile(qhandle_t f);
-
 qhandle_t FS_EasyOpenFile(char *buf, size_t size, unsigned mode,
 	const char *dir, const char *name, const char *ext);
-
-static inline int FS_LoadFile(const char *path, void **buf)
-{
-	return FS_LoadFileEx(path, buf, 0, TAG_FILESYSTEM);
-}
-
-static inline void FS_FreeFile(void *buf)
-{
-	Z_Free(buf);
-}
-
-// a NULL buffer will just return the file length without loading
-// length < 0 indicates error
-
-static inline bool FS_FileExistsEx(const char *path, unsigned flags)
-{
-	return FS_LoadFileEx(path, NULL, flags, TAG_FREE) != Q_ERR_NOENT;
-}
-
-static inline bool FS_FileExists(const char *path)
-{
-	return FS_FileExistsEx(path, 0);
-}
-
 
 int FS_WriteFile(const char *path, const void *data, size_t len);
 

@@ -295,7 +295,7 @@ int SV_FlyMove(edict_t *ent, float time, int mask)
 			// go along the crease
 			if (numplanes != 2)
 			{
-				//              gi.dprintf ("clip velocity, numplanes == %i\n",numplanes);
+				//              Com_Printf("clip velocity, numplanes == %i\n",numplanes);
 				VectorClear(ent->velocity);
 				return 7;
 			}
@@ -616,7 +616,7 @@ void SV_Physics_Pusher(edict_t *ent)
 	}
 
 	if (pushed_p > &pushed[MAX_EDICTS])
-		gi.error("pushed_p > &pushed[MAX_EDICTS], memory corrupted");
+		Com_Error(ERR_FATAL, "pushed_p > &pushed[MAX_EDICTS], memory corrupted");
 
 	if (part)
 	{
@@ -1054,6 +1054,6 @@ void G_RunEntity(edict_t *ent)
 			break;
 
 		default:
-			gi.error("SV_Physics: bad movetype %i", (int)ent->movetype);
+			Com_Error(ERR_FATAL, "SV_Physics: bad movetype %i", (int)ent->movetype);
 	}
 }

@@ -198,9 +198,9 @@ void doom_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 	T_RadiusDamage(ent, ent->owner, ent->radius_dmg, ent, DAMAGE_NO_PARTICLES, ent->dmg_radius, ent->meansOfDeath);
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DOOM_EXPLODE);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DOOM_EXPLODE);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
@@ -260,9 +260,9 @@ void weapon_doom_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame == 2 || fire)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_ROCKET | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_ROCKET | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -301,9 +301,9 @@ void weapon_doom_punch_fire(edict_t *ent, gunindex_e gun, bool first)
 
 			if (tr.ent->takedamage)
 			{
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(TE_DOOM_BLOOD);
-				gi.WritePosition(org);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(TE_DOOM_BLOOD);
+				MSG_WritePos(org);
 				gi.multicast(org, MULTICAST_PVS);
 				int damage = (Q_rand() % 10 + 1) << 1;
 
@@ -321,9 +321,9 @@ void weapon_doom_punch_fire(edict_t *ent, gunindex_e gun, bool first)
 			}
 			else
 			{
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(TE_DOOM_GUNSHOT);
-				gi.WritePosition(org);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(TE_DOOM_GUNSHOT);
+				MSG_WritePos(org);
 				gi.multicast(org, MULTICAST_PVS);
 			}
 		}
@@ -353,9 +353,9 @@ void doom_plasma_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 
 	VectorNormalize(ent->velocity);
 	VectorMA(ent->s.origin, -8, ent->velocity, origin);
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_DOOM_PLASMA);
-	gi.WritePosition(origin);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_DOOM_PLASMA);
+	MSG_WritePos(origin);
 	gi.multicast(ent->s.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
@@ -410,9 +410,9 @@ void weapon_doom_hyperblaster_fire(edict_t *ent, gunindex_e gun, bool first)
 		return;
 	}
 
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_HYPERBLASTER | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_HYPERBLASTER | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	vec3_t start, forward, right, offset;
 	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -460,16 +460,16 @@ static void fire_doom_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damag
 			if (tr.ent->takedamage)
 			{
 				AddMultiDamage(tr.ent, damage, kick, mod, DAMAGE_BULLET | DAMAGE_NO_PARTICLES, false, tr.endpos, tr.plane.normal);
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(te_impact == TE_DUKE_GUNSHOT ? TE_DUKE_BLOOD : TE_DOOM_BLOOD);
-				gi.WritePosition(puff);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(te_impact == TE_DUKE_GUNSHOT ? TE_DUKE_BLOOD : TE_DOOM_BLOOD);
+				MSG_WritePos(puff);
 				gi.multicast(puff, MULTICAST_PVS);
 			}
 			else if (strncmp(tr.surface->name, "sky", 3) != 0)
 			{
-				gi.WriteByte(svc_temp_entity);
-				gi.WriteByte(te_impact);
-				gi.WritePosition(puff);
+				MSG_WriteByte(svc_temp_entity);
+				MSG_WriteByte(te_impact);
+				MSG_WritePos(puff);
 				gi.multicast(puff, MULTICAST_PVS);
 
 				if (self->client)
@@ -504,9 +504,9 @@ void weapon_doom_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame == 1)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_BLASTER | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_BLASTER | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -533,9 +533,9 @@ void weapon_doom_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 		return;
 	}
 
-	gi.WriteByte(svc_muzzleflash);
-	gi.WriteShort(ent - g_edicts);
-	gi.WriteByte(MZ_BLASTER | is_silenced);
+	MSG_WriteByte(svc_muzzleflash);
+	MSG_WriteShort(ent - g_edicts);
+	MSG_WriteByte(MZ_BLASTER | is_silenced);
 	gi.multicast(ent->s.origin, MULTICAST_PVS);
 	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -559,9 +559,9 @@ void weapon_doom_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame == 1)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_SHOTGUN | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_SHOTGUN | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -587,9 +587,9 @@ void weapon_doom_sshotgun_fire(edict_t *ent, gunindex_e gun, bool first)
 
 	if (ent->client->ps.guns[gun].frame == 1)
 	{
-		gi.WriteByte(svc_muzzleflash);
-		gi.WriteShort(ent - g_edicts);
-		gi.WriteByte(MZ_SSHOTGUN | is_silenced);
+		MSG_WriteByte(svc_muzzleflash);
+		MSG_WriteShort(ent - g_edicts);
+		MSG_WriteByte(MZ_SSHOTGUN | is_silenced);
 		gi.multicast(ent->s.origin, MULTICAST_PVS);
 		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
@@ -642,18 +642,18 @@ void weapon_doom_chainsaw_fire(edict_t *ent, gunindex_e gun, bool first)
 
 		if (tr.ent->takedamage)
 		{
-			gi.WriteByte(svc_temp_entity);
-			gi.WriteByte(TE_DOOM_BLOOD);
-			gi.WritePosition(org);
+			MSG_WriteByte(svc_temp_entity);
+			MSG_WriteByte(TE_DOOM_BLOOD);
+			MSG_WritePos(org);
 			gi.multicast(org, MULTICAST_PVS);
 			T_Damage(tr.ent, ent, ent, vec3_origin, vec3_origin, vec3_origin, damage, 0, DAMAGE_NO_PARTICLES, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
 			gi.sound(ent, CHAN_WEAPON, gi.soundindex("doom/SAWHIT.wav"), 1, ATTN_NORM, 0);
 		}
 		else
 		{
-			gi.WriteByte(svc_temp_entity);
-			gi.WriteByte(TE_DOOM_GUNSHOT);
-			gi.WritePosition(org);
+			MSG_WriteByte(svc_temp_entity);
+			MSG_WriteByte(TE_DOOM_GUNSHOT);
+			MSG_WritePos(org);
 			gi.multicast(org, MULTICAST_PVS);
 			gi.sound(ent, CHAN_WEAPON, gi.soundindex("doom/SAWFUL.wav"), 1, ATTN_NORM, 0);
 		}
@@ -704,9 +704,9 @@ void bfg_doom_explode(edict_t *self)
 				linetarget->y,
 				linetarget->z + (linetarget->height >> 2),
 				MT_EXTRABFG);*/
-			gi.WriteByte(svc_temp_entity);
-			gi.WriteByte(TE_BFG_EXPLOSION);
-			gi.WritePosition(tr.ent->s.origin);
+			MSG_WriteByte(svc_temp_entity);
+			MSG_WriteByte(TE_BFG_EXPLOSION);
+			MSG_WritePos(tr.ent->s.origin);
 			gi.multicast(tr.ent->s.origin, MULTICAST_PHS);
 			damage = 0;
 
@@ -803,9 +803,9 @@ refire:
 		switch (ent->client->ps.guns[gun].frame)
 		{
 			case 0:
-				gi.WriteByte(svc_muzzleflash);
-				gi.WriteShort(ent - g_edicts);
-				gi.WriteByte(MZ_BFG | is_silenced);
+				MSG_WriteByte(svc_muzzleflash);
+				MSG_WriteShort(ent - g_edicts);
+				MSG_WriteByte(MZ_BFG | is_silenced);
 				gi.multicast(ent->s.origin, MULTICAST_PVS);
 				PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 				ent->yaw_speed = 0.5f;

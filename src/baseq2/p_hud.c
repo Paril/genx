@@ -260,8 +260,8 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
 		stringlength += j;
 	}
 
-	gi.WriteByte(svc_layout);
-	gi.WriteString(string);
+	MSG_WriteByte(svc_layout);
+	MSG_WriteString(string);
 }
 
 
@@ -343,8 +343,8 @@ void HelpComputer(edict_t *ent)
 		level.killed_monsters, level.total_monsters,
 		level.found_goals, level.total_goals,
 		level.found_secrets, level.total_secrets);
-	gi.WriteByte(svc_layout);
-	gi.WriteString(string);
+	MSG_WriteByte(svc_layout);
+	MSG_WriteString(string);
 	gi.unicast(ent, true);
 }
 

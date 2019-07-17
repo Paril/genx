@@ -209,11 +209,11 @@ static void parasite_drain_attack(edict_t *self)
 		damage = 2;
 	}
 
-	gi.WriteByte(svc_temp_entity);
-	gi.WriteByte(TE_PARASITE_ATTACK);
-	gi.WriteShort(self - g_edicts);
-	gi.WritePosition(start);
-	gi.WritePosition(end);
+	MSG_WriteByte(svc_temp_entity);
+	MSG_WriteByte(TE_PARASITE_ATTACK);
+	MSG_WriteShort(self - g_edicts);
+	MSG_WritePos(start);
+	MSG_WritePos(end);
 	gi.multicast(self->s.origin, MULTICAST_PVS);
 	VectorSubtract(start, end, dir);
 	T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, damage, 0, DAMAGE_NO_KNOCKBACK, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
