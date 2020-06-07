@@ -22,6 +22,7 @@ brain
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_brain.h"
@@ -80,7 +81,7 @@ static void brain_duck_down(edict_t *self)
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
 	self->maxs[2] -= 32;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -96,7 +97,7 @@ static void brain_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
 	self->maxs[2] += 32;
-	self->takedamage = DAMAGE_AIM;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -264,7 +265,7 @@ static void brain_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 
 	if (random() <= 0.5f)
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
@@ -347,3 +348,5 @@ void SP_monster_brain(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

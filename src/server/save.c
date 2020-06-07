@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "server.h"
 
+#ifdef ENABLE_COOP
 #define SAVE_MAGIC1     (('2'<<24)|('V'<<16)|('S'<<8)|'S')  // "SSV2"
 #define SAVE_MAGIC2     (('2'<<24)|('V'<<16)|('A'<<8)|'S')  // "SAV2"
 #define SAVE_VERSION    1
@@ -257,9 +258,11 @@ fail:
 	FS_FCloseFile(f);
 	return -1;
 }
+#endif
 
 char *SV_GetSaveInfo(const char *dir)
 {
+#ifdef ENABLE_COOP
 	char        name[MAX_QPATH], date[MAX_QPATH];
 	size_t      len;
 	uint64_t    timestamp;
@@ -309,8 +312,12 @@ char *SV_GetSaveInfo(const char *dir)
 		strcpy(date, "???");
 
 	return Z_CopyString(va("%s %s", date, name));
+#else
+	return NULL;
+#endif
 }
 
+#ifdef ENABLE_COOP
 static void abort_func(void *arg)
 {
 	CM_FreeMap(arg);
@@ -468,9 +475,11 @@ static int no_save_games(void)
 
 	return 0;
 }
+#endif
 
 void SV_AutoSaveBegin(mapcmd_t *cmd)
 {
+#ifdef ENABLE_COOP
 	byte        bitmap[MAX_CLIENTS / CHAR_BIT];
 	edict_t     *ent;
 	int         i;
@@ -514,10 +523,12 @@ void SV_AutoSaveBegin(mapcmd_t *cmd)
 		ent = EDICT_NUM(i + 1);
 		ent->inuse = Q_IsBitSet(bitmap, i);
 	}
+#endif
 }
 
 void SV_AutoSaveEnd(void)
 {
+#ifdef ENABLE_COOP
 	if (sv.state != ss_game)
 		return;
 
@@ -544,10 +555,12 @@ void SV_AutoSaveEnd(void)
 		Com_EPrintf("Couldn't write '%s' directory.\n", SAVE_AUTO);
 		return;
 	}
+#endif
 }
 
 void SV_CheckForSavegame(mapcmd_t *cmd)
 {
+#ifdef ENABLE_COOP
 	if (no_save_games())
 		return;
 
@@ -576,8 +589,10 @@ void SV_CheckForSavegame(mapcmd_t *cmd)
 		for (i = 0; i < 100; i++)
 			ge->RunFrame();
 	}
+#endif
 }
 
+#ifdef ENABLE_COOP
 static void SV_Savegame_c(genctx_t *ctx, int argnum)
 {
 	if (argnum == 1)
@@ -719,8 +734,11 @@ static const cmdreg_t c_savegames[] =
 	{ "load", SV_Loadgame_f, SV_Savegame_c },
 	{ NULL }
 };
+#endif
 
 void SV_RegisterSavegames(void)
 {
+#ifdef ENABLE_COOP
 	Cmd_Register(c_savegames);
+#endif
 }

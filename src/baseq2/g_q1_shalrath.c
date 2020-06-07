@@ -5,6 +5,8 @@ SHAL-RATH
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 #include "m_local.h"
 
@@ -253,3 +255,5 @@ void q1_monster_shalrath(edict_t *self)
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");
 	self->monsterinfo.scale = 1;
 }
+
+#endif

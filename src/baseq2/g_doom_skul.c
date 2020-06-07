@@ -1,3 +1,4 @@
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 static q_soundhandle sound_action;
@@ -124,7 +125,7 @@ void skul_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	self->deadflag = DEAD_DEAD;
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &skul_die1;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->solid = SOLID_NOT;
 	self->svflags |= SVF_DEADMONSTER;
 	skul_reset(self);
@@ -289,3 +290,5 @@ void doom_monster_skul(edict_t *self)
 	self->monsterinfo.scale = 1;
 	flymonster_start(self);
 }
+
+#endif

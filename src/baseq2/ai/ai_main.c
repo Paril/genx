@@ -242,7 +242,7 @@ void AI_PickLongRangeGoal(edict_t *self)
 			continue;
 
 		//ignore items wich can't be weighted (must have a valid item flag)
-		if (!nav.items[i].ent->item || !(nav.items[i].ent->item->flags & (IT_AMMO | IT_HEALTH | IT_ARMOR | IT_WEAPON | IT_POWERUP
+		if (!nav.items[i].ent->item || !(nav.items[i].ent->item->flags.flags & (IT_AMMO | IT_HEALTH | IT_ARMOR | IT_WEAPON | IT_POWERUP
 #if CTF
 					| IT_FLAG | IT_TECH
 #endif
@@ -258,17 +258,17 @@ void AI_PickLongRangeGoal(edict_t *self)
 		dist = AI_Distance(self->s.origin, nav.items[i].ent->s.origin);
 
 		//different distance limits for different types
-		if (nav.items[i].ent->item->flags & (IT_AMMO
+		if (nav.items[i].ent->item->flags.flags & (IT_AMMO
 #if CTF
 				| IT_TECH
 #endif
 			) && dist > 2000)
 			continue;
 
-		if (nav.items[i].ent->item->flags & (IT_HEALTH | IT_ARMOR | IT_POWERUP) && dist > 4000)
+		if (nav.items[i].ent->item->flags.flags & (IT_HEALTH | IT_ARMOR | IT_POWERUP) && dist > 4000)
 			continue;
 
-		if (nav.items[i].ent->item->flags & (IT_WEAPON
+		if (nav.items[i].ent->item->flags.flags & (IT_WEAPON
 #if CTF
 				| IT_FLAG
 #endif
@@ -421,7 +421,11 @@ static void AI_CategorizePosition(edict_t *ent)
 	ent->was_swim = ent->is_swim;
 	ent->was_step = ent->is_step;
 	ent->is_ladder = AI_IsLadder(ent->s.origin, ent->s.angles, ent->mins, ent->maxs, ent);
+
+	// FIXME
+#if ENABLE_COOP
 	M_CatagorizePosition(ent);
+#endif
 
 	if (ent->waterlevel > 2 || (ent->waterlevel && !stepping))
 	{

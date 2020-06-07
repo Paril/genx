@@ -18,56 +18,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 #include "m_player.h"
 
-
-static char *ClientTeam(edict_t *ent)
-{
-	char        *p;
-	static char value[512];
-	value[0] = 0;
-
-	if (!ent->client)
-		return value;
-
-	strcpy(value, Info_ValueForKey(ent->client->pers.userinfo, "skin"));
-	p = strchr(value, '/');
-
-	if (!p)
-		return value;
-
-	if ((int)(dmflags->value) & DF_MODELTEAMS)
-	{
-		*p = 0;
-		return value;
-	}
-
-	// if ((int)(dmflags->value) & DF_SKINTEAMS)
-	return ++p;
-}
-
 bool OnSameTeam(edict_t *ent1, edict_t *ent2)
 {
-	if (invasion->value)
-	{
-		if ((ent1->svflags & SVF_MONSTER) && (ent2->svflags & SVF_MONSTER))
-			return true;
+#if ENABLE_COOP
+	if (invasion->value || coop->value)
+		return (!!ent1->client) != (!!ent2->client);
+#endif
 
-		if (ent1->client && ent2->client && ((int)(dmflags->value) & DF_NO_FRIENDLY_FIRE))
-			return true;
-
-		return false;
-	}
-
-	char    ent1Team [512];
-	char    ent2Team [512];
-
-	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
-		return false;
-
-	strcpy(ent1Team, ClientTeam(ent1));
-	strcpy(ent2Team, ClientTeam(ent2));
-
-	if (strcmp(ent1Team, ent2Team) == 0)
-		return true;
+	if (dmflags.game_teams)
+		return ent1->s.game == ent2->s.game;
 
 	return false;
 }
@@ -99,7 +58,7 @@ static void SelectNextItem(edict_t *ent, int itflags)
 		if (!it->use)
 			continue;
 
-		if (!(it->flags & itflags))
+		if (!(it->flags.flags & itflags))
 			continue;
 
 		cl->pers.selected_item = index;
@@ -135,7 +94,7 @@ static void SelectPrevItem(edict_t *ent, int itflags)
 		if (!it->use)
 			continue;
 
-		if (!(it->flags & itflags))
+		if (!(it->flags.flags & itflags))
 			continue;
 
 		cl->pers.selected_item = index;
@@ -161,15 +120,23 @@ void ValidateSelectedItem(edict_t *ent)
 
 void ED_CallSpawn(edict_t *);
 
+static bool SV_CheatsOK(edict_t *ent)
+{
+	if (!sv_cheats->integer)
+	{
+		gi.cprintf(ent, PRINT_HIGH, "You must set \"cheats\" to 1 to enable this command.\n");
+		return false;
+	}
+
+	return true;
+}
+
 static edict_t *last_spawn;
 
 static void Cmd_Spawn_f(edict_t *ent)
 {
-	if (deathmatch->value && !sv_cheats->value)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+	if (!SV_CheatsOK(ent))
 		return;
-	}
 
 	vec3_t fwd, ang = { 0, ent->client->v_angle[1], 0 };
 	AngleVectors(ang, fwd, NULL, NULL);
@@ -184,6 +151,7 @@ static void Cmd_Spawn_f(edict_t *ent)
 	last_spawn = s;
 }
 
+#if ENABLE_COOP
 bool M_NavigatorPathToSpot(edict_t *self, vec3_t spot);
 
 static void Cmd_Path_f(edict_t *ent)
@@ -194,6 +162,7 @@ static void Cmd_Path_f(edict_t *ent)
 	M_NavigatorPathToSpot(last_spawn, ent->s.origin);
 	last_spawn->monsterinfo.run(last_spawn);
 }
+#endif
 
 /*
 ==================
@@ -210,12 +179,9 @@ static void Cmd_Give_f(edict_t *ent)
 	int         i;
 	bool        give_all;
 	edict_t     *it_ent;
-
-	if (deathmatch->value && !sv_cheats->value)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+	
+	if (!SV_CheatsOK(ent))
 		return;
-	}
 
 	name = Cmd_Args();
 
@@ -244,7 +210,7 @@ static void Cmd_Give_f(edict_t *ent)
 			if (!it->pickup)
 				continue;
 
-			if (!(it->flags & IT_WEAPON))
+			if (!it->flags.is_weapon)
 				continue;
 
 			ent->client->pers.inventory[i] += 1;
@@ -297,7 +263,7 @@ static void Cmd_Give_f(edict_t *ent)
 			if (!it->pickup)
 				continue;
 
-			if (it->flags & (IT_ARMOR | IT_WEAPON | IT_AMMO))
+			if (it->flags.flags & (IT_ARMOR | IT_WEAPON | IT_AMMO))
 				continue;
 
 			ent->client->pers.inventory[i] = 1;
@@ -328,7 +294,7 @@ static void Cmd_Give_f(edict_t *ent)
 
 	index = ITEM_INDEX(it);
 
-	if (it->flags & IT_AMMO)
+	if (it->flags.is_ammo)
 	{
 		/*if (Cmd_Argc() == 3)
 		    ent->client->pers.inventory[index] = atoi(Cmd_Argv(2));
@@ -359,12 +325,9 @@ argv(0) god
 static void Cmd_God_f(edict_t *ent)
 {
 	char    *msg;
-
-	if (deathmatch->value && !sv_cheats->value)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+	
+	if (!SV_CheatsOK(ent))
 		return;
-	}
 
 	ent->flags ^= FL_GODMODE;
 
@@ -389,12 +352,9 @@ argv(0) notarget
 static void Cmd_Notarget_f(edict_t *ent)
 {
 	char    *msg;
-
-	if (deathmatch->value && !sv_cheats->value)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+	
+	if (!SV_CheatsOK(ent))
 		return;
-	}
 
 	ent->flags ^= FL_NOTARGET;
 
@@ -417,12 +377,9 @@ argv(0) noclip
 static void Cmd_Noclip_f(edict_t *ent)
 {
 	char    *msg;
-
-	if (deathmatch->value && !sv_cheats->value)
-	{
-		gi.cprintf(ent, PRINT_HIGH, "You must run the server with '+set cheats 1' to enable this command.\n");
+	
+	if (!SV_CheatsOK(ent))
 		return;
-	}
 
 	if (ent->movetype == MOVETYPE_NOCLIP)
 	{
@@ -538,7 +495,10 @@ static void Cmd_Inven_f(edict_t *ent)
 	itemid_e	i;
 	cl = ent->client;
 	cl->showscores = false;
+
+#if ENABLE_COOP
 	cl->showhelp = false;
+#endif
 
 	if (cl->showinventory)
 	{
@@ -613,7 +573,7 @@ static void Cmd_WeapPrev_f(edict_t *ent)
 		if (!it->use)
 			continue;
 
-		if (!(it->flags & IT_WEAPON))
+		if (!it->flags.is_weapon)
 			continue;
 
 		it->use(ent, it);
@@ -654,7 +614,7 @@ static void Cmd_WeapNext_f(edict_t *ent)
 		if (!it->use)
 			continue;
 
-		if (!(it->flags & IT_WEAPON))
+		if (!it->flags.is_weapon)
 			continue;
 
 		it->use(ent, it);
@@ -689,7 +649,7 @@ static void Cmd_WeapLast_f(edict_t *ent)
 	if (!it->use)
 		return;
 
-	if (!(it->flags & IT_WEAPON))
+	if (!it->flags.is_weapon)
 		return;
 
 	it->use(ent, it);
@@ -756,7 +716,9 @@ Cmd_PutAway_f
 static void Cmd_PutAway_f(edict_t *ent)
 {
 	ent->client->showscores = false;
+#if ENABLE_COOP
 	ent->client->showhelp = false;
+#endif
 	ent->client->showinventory = false;
 }
 
@@ -893,7 +855,7 @@ static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 	if (Cmd_Argc() < 2 && !arg0)
 		return;
 
-	if (!((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS)))
+	if (!dmflags.game_teams)
 		team = false;
 
 	if (team)
@@ -1054,8 +1016,6 @@ static void Cmd_Line_f(edict_t *ent)
 	}
 }
 
-bool Wave_Commands(edict_t *ent);
-
 /*
 =================
 ClientCommand
@@ -1073,8 +1033,10 @@ void ClientCommand(edict_t *ent)
 	//JABot[start]
 	if (BOT_Commands(ent))
 		return;
+#if ENABLE_COOP
 	else if (Wave_Commands(ent))
 		return;
+#endif
 
 	//[end]
 
@@ -1102,11 +1064,13 @@ void ClientCommand(edict_t *ent)
 		return;
 	}
 
+#if ENABLE_COOP
 	if (Q_stricmp(cmd, "help") == 0)
 	{
 		Cmd_Help_f(ent);
 		return;
 	}
+#endif
 
 	if (level.intermissiontime)
 		return;
@@ -1115,8 +1079,10 @@ void ClientCommand(edict_t *ent)
 		Cmd_Use_f(ent);
 	else if (Q_stricmp(cmd, "spawn") == 0)
 		Cmd_Spawn_f(ent);
+#if ENABLE_COOP
 	else if (Q_stricmp(cmd, "spawn_path") == 0)
 		Cmd_Path_f(ent);
+#endif
 	else if (Q_stricmp(cmd, "drop") == 0)
 		Cmd_Drop_f(ent);
 	else if (Q_stricmp(cmd, "give") == 0)

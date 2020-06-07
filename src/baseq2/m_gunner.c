@@ -22,6 +22,7 @@ GUNNER
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_gunner.h"
@@ -142,7 +143,7 @@ static void gunner_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
 
@@ -183,7 +184,7 @@ static void gunner_duck_down(edict_t *self)
 	}
 
 	self->maxs[2] -= 32;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
 }
@@ -200,7 +201,7 @@ static void gunner_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
 	self->maxs[2] += 32;
-	self->takedamage = DAMAGE_AIM;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -332,3 +333,5 @@ void SP_monster_gunner(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

@@ -442,17 +442,19 @@ static void SV_NextServer_f(void)
 
 	if (Q_stricmp(sv.name, "victory.pcx"))
 		return;
-
+	
+#ifdef ENABLE_COOP
 	if (Cvar_VariableInteger("deathmatch"))
 		return;
 
 	sv.name[0] = 0; // make sure another doesn't sneak in
 
 	// Generations
-	if (Cvar_VariableInteger("coop") || Cvar_VariableInteger("invasion"))
+	if (Cvar_VariableInteger("coop"))
 		Cbuf_AddText(&cmd_buffer, "gamemap \"*base1\"\n");
 	else
 		Cbuf_AddText(&cmd_buffer, "killserver\n");
+#endif
 }
 
 // the client is going to disconnect, so remove the connection immediately

@@ -23,6 +23,7 @@ mutant
 ==============================================================================
 */
 
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_mutant.h"
 #include "m_local.h"
@@ -381,7 +382,7 @@ static void mutant_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->s.skinnum = 1;
 
 	if (random() < 0.5f)
@@ -466,3 +467,5 @@ void SP_monster_mutant(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

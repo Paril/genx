@@ -3006,53 +3006,68 @@ static void SCR_DrawCrosshair(void)
 
 #endif
 
-layout_string_t *layout_singleplayer;
+#ifdef ENABLE_COOP
+static layout_string_t *layout_q2_singleplayer;
+#endif
+static layout_string_t *layout_q2_deathmatch;
+static layout_string_t *layout_q1;
+static layout_string_t *layout_doom;
+static layout_string_t *layout_duke;
 
-layout_string_t *layout_deathmatch;
-layout_string_t *layout_q1;
-layout_string_t *layout_doom;
-layout_string_t *layout_duke;
+static bool layouts_loaded = false;
 
 void SCR_FreeHUDLayouts()
 {
-	if (!layout_singleplayer)
+	if (!layouts_loaded)
 		return;
-
-	SCR_FreeLayoutString(layout_singleplayer);
-	SCR_FreeLayoutString(layout_deathmatch);
-	SCR_FreeLayoutString(layout_q1);
-	SCR_FreeLayoutString(layout_doom);
-	SCR_FreeLayoutString(layout_duke);
+	
+#ifdef ENABLE_COOP
+	SCR_FreeLayoutString(layout_q2_singleplayer);
 	layout_singleplayer = NULL;
-	layout_deathmatch = NULL;
+#endif
+	SCR_FreeLayoutString(layout_q2_deathmatch);
+	layout_q2_deathmatch = NULL;
+	SCR_FreeLayoutString(layout_q1);
 	layout_q1 = NULL;
+	SCR_FreeLayoutString(layout_doom);
 	layout_doom = NULL;
+	SCR_FreeLayoutString(layout_duke);
 	layout_duke = NULL;
+
+	layouts_loaded = false;
 }
 
 layout_string_t *SCR_GetHUDLayoutStruct()
 {
-	if (!layout_singleplayer)
+	if (!layouts_loaded)
 	{
-		layout_singleplayer = SCR_ParseLayoutString("hudscripts/q2_single.hsc");
-		layout_deathmatch = SCR_ParseLayoutString("hudscripts/q2_dm.hsc");
+#ifdef ENABLE_COOP
+		layout_q2_singleplayer = SCR_ParseLayoutString("hudscripts/q2_single.hsc");
+#endif
+		layout_q2_deathmatch = SCR_ParseLayoutString("hudscripts/q2_dm.hsc");
 		layout_q1 = SCR_ParseLayoutString("hudscripts/q1.hsc");
 		layout_doom = SCR_ParseLayoutString("hudscripts/doom.hsc");
 		layout_duke = SCR_ParseLayoutString("hudscripts/duke.hsc");
+
+		layouts_loaded = true;
 	}
 
 	switch (cl_entities[cl.clientNum + 1].current.game)
 	{
 		default:
+#ifdef ENABLE_COOP
 			switch (cl.gamemode)
 			{
 				case GAMEMODE_COOP:
 				case GAMEMODE_SINGLEPLAYER:
-					return layout_singleplayer;
+					return layout_q2_singleplayer;
 
 				default:
-					return layout_deathmatch;
+#endif
+					return layout_q2_deathmatch;
+#ifdef ENABLE_COOP
 			}
+#endif
 
 		case GAME_Q1:
 			return layout_q1;

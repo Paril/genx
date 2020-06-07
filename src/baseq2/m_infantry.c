@@ -22,6 +22,7 @@ INFANTRY
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_infantry.h"
@@ -186,7 +187,7 @@ void infantry_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int dama
 
 	// regular death
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	n = Q_rand() % 3;
 
 	if (n == 0)
@@ -213,7 +214,7 @@ static void infantry_duck_down(edict_t *self)
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
 	self->maxs[2] -= 32;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
 }
@@ -230,7 +231,7 @@ static void infantry_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
 	self->maxs[2] += 32;
-	self->takedamage = DAMAGE_AIM;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -353,3 +354,5 @@ void SP_monster_infantry(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

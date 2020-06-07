@@ -23,6 +23,7 @@ SUPERTANK
 ==============================================================================
 */
 
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_supertank.h"
 #include "m_local.h"
@@ -278,7 +279,7 @@ static void supertank_die(edict_t *self, edict_t *inflictor, edict_t *attacker, 
 {
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->count = 0;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
@@ -343,3 +344,5 @@ void SP_monster_supertank(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

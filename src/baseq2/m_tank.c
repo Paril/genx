@@ -22,6 +22,7 @@ TANK
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_tank.h"
@@ -335,7 +336,7 @@ static void tank_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
 
@@ -428,3 +429,5 @@ void SP_monster_tank(edict_t *self)
 	if (self->entitytype == ET_MONSTER_TANK_COMMANDER)
 		self->s.skinnum = 2;
 }
+
+#endif

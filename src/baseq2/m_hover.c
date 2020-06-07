@@ -22,6 +22,7 @@ hover
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_hover.h"
@@ -195,7 +196,7 @@ static void hover_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 		gi.sound(self, CHAN_VOICE, sound_death2, 1, ATTN_NORM, 0);
 
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
 }
 
@@ -257,3 +258,5 @@ void SP_monster_hover(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	flymonster_start(self);
 }
+
+#endif

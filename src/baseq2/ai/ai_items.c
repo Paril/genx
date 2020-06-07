@@ -146,15 +146,15 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 		return 0;
 
 	//IT_WEAPON
-	if (it->item->flags & IT_WEAPON)
+	if (it->item->flags.is_weapon)
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
 
 	//IT_AMMO
-	if (it->item->flags & IT_AMMO)
+	if (it->item->flags.is_ammo)
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
 
 	//IT_ARMOR
-	if (it->item->flags & IT_ARMOR)
+	if (it->item->flags.is_armor)
 		return self->ai->status.inventoryWeights[ITEM_INDEX(it->item)];
 
 #if CTF
@@ -166,7 +166,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 #endif
 
 	//IT_HEALTH
-	if (it->item->flags & IT_HEALTH)
+	if (it->item->flags.is_health)
 	{
 		//CanPickup_Health
 		if (!(it->style & 1))  	//#define HEALTH_IGNORE_MAX	1
@@ -195,7 +195,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 	}
 
 	//IT_POWERUP
-	if (it->item->flags & IT_POWERUP)
+	if (it->item->flags.is_powerup)
 		return 0.7f;
 
 #if CTF
@@ -207,7 +207,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 #endif
 
 	//IT_STAY_COOP
-	if (it->item->flags & IT_STAY_COOP)
+	if (it->item->flags.stay_coop)
 		return 0;
 
 	//item didn't have a recognizable item flag

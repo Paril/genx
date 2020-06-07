@@ -19,14 +19,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "g_local.h"
 
-void Weapon_Doom(edict_t *ent, int num_frames, void(*fire)(edict_t *ent, gunindex_e gun, bool first), gunindex_e gun);
 void Weapon_Doom_Anim_Regular(edict_t *ent);
 
 void fire_doom_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int hspread, int vspread, meansOfDeath_t mod);
 void fire_doom_shotgun(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick, int te_impact, int count, int hspread, int vspread, meansOfDeath_t mod);
 
 extern bool     is_quad;
-extern byte     is_silenced;
 
 #define DUKE_ANIM_TIME 400
 #define DUKE_ANIM_FRAC DUKE_ANIM_TIME
@@ -124,12 +122,14 @@ void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, 
 			if (CanDamage(ent, inflictor))
 			{
 				VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
-
+				
+#ifdef ENABLE_COOP
 				// shambler takes half damage
 				if (ent->entitytype == ET_Q1_MONSTER_SHAMBLER)
-					T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)(points * 0.5f), (int)(points * 0.5f), dflags | DAMAGE_RADIUS, mod);
-				else
-					T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
+					points *= 0.5f;
+#endif
+
+				T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
 			}
 		}
 	}
@@ -140,11 +140,12 @@ void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, 
 
 void Pipe_Explode(edict_t *ent)
 {
-	ent->takedamage = DAMAGE_NO;
+	ent->takedamage = false;
 	vec3_t      origin;
-
-	if (ent->activator->client)
-		PlayerNoise(ent->activator, ent->s.origin, PNOISE_IMPACT);
+	
+#ifdef ENABLE_COOP
+	PlayerNoise(ent->activator, ent->s.origin, PNOISE_IMPACT);
+#endif
 
 	ent->owner = ent->activator;
 	T_DukeRadiusDamage(ent, ent->activator, ent, PIPE_RADIUS, PIPE_STRENGTH >> 2, PIPE_STRENGTH - (PIPE_STRENGTH >> 1), PIPE_STRENGTH - (PIPE_STRENGTH >> 2), PIPE_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
@@ -235,7 +236,7 @@ void fire_pipe(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed
 	grenade->s.clip_contents = CONTENTS_BULLETS;
 	grenade->solid = SOLID_BBOX;
 	grenade->health = 1;
-	grenade->takedamage = DAMAGE_YES;
+	grenade->takedamage = true;
 	grenade->die = pipe_die;
 	grenade->s.game = GAME_DUKE;
 	VectorSet(grenade->mins, -8, -8, -4);
@@ -274,9 +275,9 @@ void fire_pipe(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed
 	gi.linkentity(trigger);
 }
 
-void weapon_duke_pipebomb_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_pipebomb_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (ent->client->ps.guns[gun].frame == 3)
+	if (gun->frame == 3)
 	{
 		if (ent->client->buttons & BUTTON_ATTACK)
 		{
@@ -288,8 +289,7 @@ void weapon_duke_pipebomb_fire(edict_t *ent, gunindex_e gun, bool first)
 
 		if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
 		{
-			if (!((int)dmflags->value & DF_INFINITE_AMMO))
-				RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 			vec3_t start, forward, right, offset;
 			AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -300,29 +300,29 @@ void weapon_duke_pipebomb_fire(edict_t *ent, gunindex_e gun, bool first)
 	}
 
 	ent->client->pers.pipebomb_hold = 0;
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame >= 9)
+	if (gun->frame >= 9)
 	{
 		ent->client->pers.alt_weapon = true;
-		ent->client->ps.guns[gun].offset[2] = DUKE_ANIM_FRAC;
-		ent->client->ps.guns[gun].index = pipe_detonator_index;
-		ent->client->ps.guns[gun].frame = 0;
-		ent->client->gunstates[gun].weaponstate = WEAPON_ACTIVATING;
+		gun->offset[2] = DUKE_ANIM_FRAC;
+		gun->index = pipe_detonator_index;
+		gun->frame = 0;
+		gun_state->weaponstate = WEAPON_ACTIVATING;
 		ent->last_move_time = 0;
 	}
 }
 
-void weapon_duke_detonator_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_detonator_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame >= 3)
+	if (gun->frame >= 3)
 	{
 		if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
-			ent->client->gunstates[gun].newweapon = ent->client->pers.weapon;
+			gun_state->newweapon = ent->client->pers.weapon;
 		else
-			NoAmmoWeaponChange(ent, gun);
+			NoAmmoWeaponChange(ent, gun_state);
 	}
 }
 
@@ -338,9 +338,10 @@ void duke_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 		G_FreeEdict(ent);
 		return;
 	}
-
-	if (ent->owner->client)
-		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	
+#ifdef ENABLE_COOP
+	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+#endif
 
 	if (other->takedamage)
 		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
@@ -396,8 +397,9 @@ void fire_duke_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int r
 	else
 		rocket->dmg_radius = radius_damage + 400;
 
-	if (self->client)
-		check_dodge(self, rocket->s.origin, dir, speed);
+#if ENABLE_COOP
+	check_dodge(self, rocket->s.origin, dir, speed);
+#endif
 
 	if (self->client)
 		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), rocket, DT_DIRECT);
@@ -407,25 +409,22 @@ void fire_duke_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int r
 	gi.linkentity(rocket);
 }
 
-void weapon_duke_devastate_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_devastate_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame == 3 && (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon))
+	if (gun->frame == 3 && (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || gun_state->newweapon))
 	{
-		ent->client->ps.guns[gun].frame = 6;
+		gun->frame = 6;
 		return;
 	}
-	else if (ent->client->ps.guns[gun].frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon)
-		ent->client->ps.guns[gun].frame = 1;
+	else if (gun->frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !gun_state->newweapon)
+		gun->frame = 1;
 
-	if (ent->client->ps.guns[gun].frame == 1 || ent->client->ps.guns[gun].frame == 3)
+	if (gun->frame == 1 || gun->frame == 3)
 	{
-		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
-		MSG_WriteByte(svc_muzzleflash);
-		MSG_WriteShort(ent - g_edicts);
-		MSG_WriteByte(MZ_GRENADE | is_silenced);
-		gi.multicast(ent->s.origin, MULTICAST_PVS);
+		G_SendMuzzleFlash(ent, MZ_GRENADE);
+
 		vec3_t start, forward, right, offset;
 		vec3_t angles;
 
@@ -438,30 +437,24 @@ void weapon_duke_devastate_fire(edict_t *ent, gunindex_e gun, bool first)
 			angles[0] += crandom() * 2;
 			angles[1] += crandom() * 2;
 			AngleVectors(angles, forward, right, NULL);
-			VectorSet(offset, 0, ent->client->ps.guns[gun].frame == 1 ? 8 : -8, ent->viewheight - 8);
+			VectorSet(offset, 0, gun->frame == 1 ? 8 : -8, ent->viewheight - 8);
 			P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
 			fire_duke_rocket(ent, start, forward, 38, 50, 850 - i * 50, true);
 
-			if (!((int)dmflags->value & DF_INFINITE_AMMO))
-				RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 		}
 	}
 }
 
-void weapon_duke_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_rocket_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame == 1)
+	if (gun->frame == 1)
 	{
-		MSG_WriteByte(svc_muzzleflash);
-		MSG_WriteShort(ent - g_edicts);
-		MSG_WriteByte(MZ_ROCKET | is_silenced);
-		gi.multicast(ent->s.origin, MULTICAST_PVS);
-		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
+		G_SendMuzzleFlash(ent, MZ_ROCKET);
 
-		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -472,11 +465,11 @@ void weapon_duke_rocket_fire(edict_t *ent, gunindex_e gun, bool first)
 	}
 }
 
-void weapon_duke_foot_fire_generic(edict_t *ent, gunindex_e gun)
+void weapon_duke_foot_fire_generic(edict_t *ent, player_gun_t *gun)
 {
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame >= 3 && ent->client->ps.guns[gun].frame <= 5)
+	if (gun->frame >= 3 && gun->frame <= 5)
 	{
 		ent->client->anim_priority = ANIM_ATTACK;
 		ent->s.frame = 6;
@@ -489,7 +482,7 @@ void weapon_duke_foot_fire_generic(edict_t *ent, gunindex_e gun)
 		ent->client->anim_end = 6;
 	}
 
-	if (ent->client->ps.guns[gun].frame == 3)
+	if (gun->frame == 3)
 	{
 		vec3_t source, org;
 		vec3_t forward;
@@ -528,31 +521,34 @@ void weapon_duke_foot_fire_generic(edict_t *ent, gunindex_e gun)
 	}
 }
 
-void weapon_duke_foot_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_foot_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (ent->client->ps.guns[gun].frame == 5 && (ent->client->buttons & BUTTON_ATTACK) && !ent->client->gunstates[gun].newweapon)
-		ent->client->ps.guns[gun].frame = 0;
+	if (gun->frame == 5 && (ent->client->buttons & BUTTON_ATTACK) && !gun_state->newweapon)
+		gun->frame = 0;
 
 	weapon_duke_foot_fire_generic(ent, gun);
 }
 
-void weapon_duke_offfoot_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_offfoot_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
 	weapon_duke_foot_fire_generic(ent, gun);
 
-	if (ent->client->ps.guns[gun].frame == 5)
+	if (gun->frame == 5)
 	{
-		ent->client->ps.guns[gun].index = 0;
-		ent->client->ps.guns[gun].frame = 0;
+		gun->index = 0;
+		gun->frame = 0;
 	}
 }
 
-void Weapon_Duke_Offhand_Foot(edict_t *ent)
+static void Weapon_Duke_Offhand_Foot(edict_t *ent)
 {
 	if (ent->deadflag || !ent->solid || ent->freeze_time > level.time)
 		return;
 
-	if (ent->client->ps.guns[GUN_OFFHAND].index != foot_index)
+	player_gun_t *gun = &ent->client->ps.guns[GUN_OFFHAND];
+	gun_state_t *gun_state = &ent->client->gunstates[GUN_OFFHAND];
+
+	if (gun->index != foot_index)
 	{
 		vec3_t source, org;
 		vec3_t forward;
@@ -568,18 +564,18 @@ void Weapon_Duke_Offhand_Foot(edict_t *ent)
 
 			if (tr.ent->takedamage && tr.ent->freeze_time > level.time)
 			{
-				ent->client->ps.guns[GUN_OFFHAND].index = foot_index;
-				ent->client->ps.guns[GUN_OFFHAND].frame = 0;
-				ent->client->ps.guns[GUN_OFFHAND].offset[1] = 0;
-				ent->client->gunstates[GUN_OFFHAND].weaponstate = WEAPON_FIRING;
+				gun->index = foot_index;
+				gun->frame = 0;
+				gun->offset[1] = 0;
+				gun_state->weaponstate = WEAPON_FIRING;
 			}
 		}
 	}
 
-	if (ent->client->ps.guns[GUN_OFFHAND].index == foot_index)
+	if (gun->index == foot_index)
 	{
-		Weapon_Doom(ent, 7, weapon_duke_offfoot_fire, GUN_OFFHAND);
-		ent->client->ps.guns[GUN_OFFHAND].offset[1] = 0;
+		Weapon_Doom(ent, 7, weapon_duke_offfoot_fire, gun, gun_state);
+		gun->offset[1] = 0;
 	}
 }
 
@@ -689,74 +685,65 @@ void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
 	else
 		rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, rocket, MD_NONE, DT_DIRECT);
 
-	if (self->client)
-		check_dodge(self, rocket->s.origin, dir, speed);
+#if ENABLE_COOP
+	check_dodge(self, rocket->s.origin, dir, speed);
+#endif
 
 	gi.linkentity(rocket);
 }
 
-void weapon_duke_freezer_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_freezer_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon || !((ent->client->buttons | ent->client->latched_buttons) & BUTTON_ATTACK))
+	if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || gun_state->newweapon || !((ent->client->buttons | ent->client->latched_buttons) & BUTTON_ATTACK))
 	{
-		ent->client->ps.guns[gun].frame = 5;
+		gun->frame = 5;
 		return;
 	}
 
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame >= 4)
-		ent->client->ps.guns[gun].frame = 1;
+	if (gun->frame >= 4)
+		gun->frame = 1;
 
-	MSG_WriteByte(svc_muzzleflash);
-	MSG_WriteShort(ent - g_edicts);
-	MSG_WriteByte(MZ_BFG | is_silenced);
-	gi.multicast(ent->s.origin, MULTICAST_PVS);
+	G_SendMuzzleFlash(ent, MZ_BFG);
+
 	vec3_t start, forward, right, offset;
 	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
 	VectorSet(offset, 0, 0, ent->viewheight - 8);
 	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
 	fire_duke_freezer(ent, start, forward, 20, 900);
-	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
 
-	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 }
 
-void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_pistol_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (ent->client->ps.guns[gun].frame == 0 ||
-		ent->client->ps.guns[gun].frame == 2)
+	if (gun->frame == 0 || gun->frame == 2)
 	{
-		if ((ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !ent->client->gunstates[gun].newweapon && ent->client->pers.pistol_clip)
-			ent->client->ps.guns[gun].frame = 1;
+		if ((ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !gun_state->newweapon && ent->client->pers.pistol_clip)
+			gun->frame = 1;
 		else
-			ent->client->ps.guns[gun].frame = 21;
+			gun->frame = 21;
 	}
 	else
-		ent->client->ps.guns[gun].frame++;
+		gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame == 4)
+	if (gun->frame == 4)
 	{
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPOUT.wav"), 1, ATTN_NORM, 0);
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPIN.wav"), 1, ATTN_NORM, 0);
 	}
-	else if (ent->client->ps.guns[gun].frame == 7)
+	else if (gun->frame == 7)
 		ent->client->pers.pistol_clip = 12;
-	else if (ent->client->ps.guns[gun].frame == 13)
-		ent->client->ps.guns[gun].frame = 21;
-	else if (ent->client->ps.guns[gun].frame == 15)
+	else if (gun->frame == 13)
+		gun->frame = 21;
+	else if (gun->frame == 15)
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/KNUCKLE.wav"), 1, ATTN_NORM, 0);
-	else if (ent->client->ps.guns[gun].frame == 1)
+	else if (gun->frame == 1)
 	{
-		MSG_WriteByte(svc_muzzleflash);
-		MSG_WriteShort(ent - g_edicts);
-		MSG_WriteByte(MZ_BLASTER | is_silenced);
-		gi.multicast(ent->s.origin, MULTICAST_PVS);
-		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
+		G_SendMuzzleFlash(ent, MZ_BLASTER);
 
-		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -767,22 +754,17 @@ void weapon_duke_pistol_fire(edict_t *ent, gunindex_e gun, bool first)
 	}
 }
 
-void weapon_duke_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_chaingun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || ent->client->gunstates[gun].newweapon)
+	if (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || gun_state->newweapon)
 	{
-		ent->client->ps.guns[gun].frame = 5;
+		gun->frame = 5;
 		return;
 	}
 
-	MSG_WriteByte(svc_muzzleflash);
-	MSG_WriteShort(ent - g_edicts);
-	MSG_WriteByte(MZ_CHAINGUN1 | is_silenced);
-	gi.multicast(ent->s.origin, MULTICAST_PVS);
-	PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
+	G_SendMuzzleFlash(ent, MZ_CHAINGUN1);
 
-	if (!((int)dmflags->value & DF_INFINITE_AMMO))
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 	vec3_t start, forward, right, offset;
 	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -790,37 +772,27 @@ void weapon_duke_chaingun_fire(edict_t *ent, gunindex_e gun, bool first)
 	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
 	fire_doom_bullet(ent, start, forward, 9, 0, TE_DUKE_GUNSHOT, 300, 300, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
 
-	if (++ent->client->ps.guns[gun].frame == 5)
-		ent->client->ps.guns[gun].frame = 2;
+	if (++gun->frame == 5)
+		gun->frame = 2;
 
 	//ent->attack_finished_time = level.time + DOOM_TIC_TO_TIME(4);
 	//Weapon_Doom_Anim_Fast(ent);
 }
 
-void weapon_duke_shotgun_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_shotgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 
-	if (ent->client->ps.guns[gun].frame == 5)
+	if (gun->frame == 5)
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/SHOTGNCK.wav"), 1, ATTN_NORM, 0);
-	else if (ent->client->ps.guns[gun].frame == 7)
-	{
-		MSG_WriteByte(svc_muzzleflash);
-		MSG_WriteShort(ent - g_edicts);
-		MSG_WriteByte(MZ_SSHOTGUN | is_silenced);
-		gi.multicast(ent->s.origin, MULTICAST_PVS);
-	}
+	else if (gun->frame == 7)
+		G_SendMuzzleFlash(ent, MZ_SSHOTGUN);
 
-	if (ent->client->ps.guns[gun].frame == 1)
+	if (gun->frame == 1)
 	{
-		MSG_WriteByte(svc_muzzleflash);
-		MSG_WriteShort(ent - g_edicts);
-		MSG_WriteByte(MZ_SHOTGUN | is_silenced);
-		gi.multicast(ent->s.origin, MULTICAST_PVS);
-		PlayerNoise(ent, ent->s.origin, PNOISE_WEAPON);
+		G_SendMuzzleFlash(ent, MZ_SHOTGUN);
 
-		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
 		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
@@ -899,9 +871,9 @@ void tripwire_die(edict_t *ent, edict_t *inflictor, edict_t *attacker, int damag
 	tripwire_laser_explode(ent->goalentity);
 }
 
-void weapon_duke_tripwire_fire(edict_t *ent, gunindex_e gun, bool first)
+void weapon_duke_tripwire_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (ent->client->ps.guns[gun].frame == 0)
+	if (gun->frame == 0)
 	{
 		trace_t tr;
 		vec3_t start, forward, right, offset;
@@ -913,15 +885,14 @@ void weapon_duke_tripwire_fire(edict_t *ent, gunindex_e gun, bool first)
 
 		if (tr.fraction == 1.0)
 		{
-			ent->client->gunstates[gun].weaponstate = WEAPON_READY;
-			ent->client->ps.guns[gun].frame = 0;
+			gun_state->weaponstate = WEAPON_READY;
+			gun->frame = 0;
 			return;
 		}
 
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/LSRBMBPT.wav"), 1, ATTN_IDLE, 0);
 
-		if (!((int)dmflags->value & DF_INFINITE_AMMO))
-			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
 
 		edict_t *trip = G_Spawn();
 		vectoangles2(tr.plane.normal, trip->s.angles);
@@ -935,12 +906,12 @@ void weapon_duke_tripwire_fire(edict_t *ent, gunindex_e gun, bool first)
 		trip->meansOfDeath = MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), trip, DT_DIRECT);
 		trip->health = 1;
 		trip->solid = SOLID_BBOX;
-		trip->takedamage = DAMAGE_YES;
+		trip->takedamage = true;
 		trip->die = tripwire_die;
 		gi.linkentity(trip);
 	}
 
-	ent->client->ps.guns[gun].frame++;
+	gun->frame++;
 }
 
 // only Duke uses this atm
@@ -950,102 +921,79 @@ void Weapons_Init()
 	foot_index = gi.modelindex("weaponscripts/duke/v_off_foot.wsc");
 }
 
-static void Weapon_Duke_Foot(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Foot(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 7, weapon_duke_foot_fire, gun);
+	Weapon_Doom(ent, 7, weapon_duke_foot_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_Pistol(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Pistol(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (ent->client->gunstates[gun].weaponstate == WEAPON_READY && !ent->client->pers.pistol_clip &&
-		HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && ent->client->ps.guns[gun].frame < 3)
+	if (gun_state->weaponstate == WEAPON_READY && !ent->client->pers.pistol_clip &&
+		HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && gun->frame < 3)
 	{
-		ent->client->gunstates[gun].weaponstate = WEAPON_FIRING;
-		ent->client->ps.guns[gun].frame = 3;
+		gun_state->weaponstate = WEAPON_FIRING;
+		gun->frame = 3;
 	}
 
-	Weapon_Doom(ent, 21, weapon_duke_pistol_fire, gun);
+	Weapon_Doom(ent, 21, weapon_duke_pistol_fire, gun, gun_state);
 
-	if (ent->client->ps.guns[gun].frame > 3)
-		ent->client->ps.guns[gun].offset[1] = 0;
+	if (gun->frame > 3)
+		gun->offset[1] = 0;
 }
 
-static void Weapon_Duke_Shotgun(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Shotgun(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 10, weapon_duke_shotgun_fire, gun);
+	Weapon_Doom(ent, 10, weapon_duke_shotgun_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_Cannon(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Cannon(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 5, weapon_duke_chaingun_fire, gun);
+	Weapon_Doom(ent, 5, weapon_duke_chaingun_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_RPG(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_RPG(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 8, weapon_duke_rocket_fire, gun);
+	Weapon_Doom(ent, 8, weapon_duke_rocket_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_Pipebombs(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Pipebombs(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
 	if (ent->client->pers.alt_weapon)
-		Weapon_Doom(ent, 3, weapon_duke_detonator_fire, gun);
+		Weapon_Doom(ent, 3, weapon_duke_detonator_fire, gun, gun_state);
 	else
-		Weapon_Doom(ent, 9, weapon_duke_pipebomb_fire, gun);
+		Weapon_Doom(ent, 9, weapon_duke_pipebomb_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_Devastator(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Devastator(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 5, weapon_duke_devastate_fire, gun);
+	Weapon_Doom(ent, 5, weapon_duke_devastate_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_Freezer(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Freezer(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 4, weapon_duke_freezer_fire, gun);
+	Weapon_Doom(ent, 4, weapon_duke_freezer_fire, gun, gun_state);
 }
 
-static void Weapon_Duke_Tripwire(edict_t *ent, gunindex_e gun)
+static void Weapon_Duke_Tripwire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	Weapon_Doom(ent, 7, weapon_duke_tripwire_fire, gun);
+	Weapon_Doom(ent, 7, weapon_duke_tripwire_fire, gun, gun_state);
 }
 
-void Weapon_Duke_Run(edict_t *ent, gunindex_e gun)
+static G_WeaponRunFunc duke_weapon_run_funcs[] =
 {
-	switch (ITEM_INDEX(ent->client->pers.weapon))
-	{
-		case ITI_DUKE_FOOT:
-			Weapon_Duke_Foot(ent, gun);
-			break;
+	[ITI_DUKE_FOOT - ITI_WEAPONS_START] = Weapon_Duke_Foot,
+	[ITI_DUKE_PISTOL - ITI_WEAPONS_START] = Weapon_Duke_Pistol,
+	[ITI_DUKE_SHOTGUN - ITI_WEAPONS_START] = Weapon_Duke_Shotgun,
+	[ITI_DUKE_CANNON - ITI_WEAPONS_START] = Weapon_Duke_Cannon,
+	[ITI_DUKE_RPG - ITI_WEAPONS_START] = Weapon_Duke_RPG,
+	[ITI_DUKE_PIPEBOMBS - ITI_WEAPONS_START] = Weapon_Duke_Pipebombs,
+	[ITI_DUKE_DEVASTATOR - ITI_WEAPONS_START] = Weapon_Duke_Devastator,
+	[ITI_DUKE_TRIPWIRES - ITI_WEAPONS_START] = Weapon_Duke_Tripwire,
+	[ITI_DUKE_FREEZER - ITI_WEAPONS_START] = Weapon_Duke_Freezer
+};
 
-		case ITI_DUKE_PISTOL:
-			Weapon_Duke_Pistol(ent, gun);
-			break;
-
-		case ITI_DUKE_SHOTGUN:
-			Weapon_Duke_Shotgun(ent, gun);
-			break;
-
-		case ITI_DUKE_CANNON:
-			Weapon_Duke_Cannon(ent, gun);
-			break;
-
-		case ITI_DUKE_RPG:
-			Weapon_Duke_RPG(ent, gun);
-			break;
-
-		case ITI_DUKE_PIPEBOMBS:
-			Weapon_Duke_Pipebombs(ent, gun);
-			break;
-
-		case ITI_DUKE_DEVASTATOR:
-			Weapon_Duke_Devastator(ent, gun);
-			break;
-
-		case ITI_DUKE_TRIPWIRES:
-			Weapon_Duke_Tripwire(ent, gun);
-			break;
-
-		case ITI_DUKE_FREEZER:
-			Weapon_Duke_Freezer(ent, gun);
-			break;
-	}
+void Weapon_Duke_Run(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
+{
+	duke_weapon_run_funcs[ITEM_INDEX(ent->client->pers.weapon) - ITI_WEAPONS_START](ent, gun, gun_state);
+	Weapon_Duke_Offhand_Foot(ent);
 }

@@ -1,3 +1,4 @@
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 static q_soundhandle sound_active;
@@ -152,7 +153,7 @@ void cybr_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	self->deadflag = DEAD_DEAD;
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &cybr_die1;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
@@ -183,10 +184,7 @@ int Doom_MissileDamageRandomizer(int);
 
 void cybr_fire_gun(edict_t *self)
 {
-	MSG_WriteByte(svc_muzzleflash);
-	MSG_WriteShort(self - g_edicts);
-	MSG_WriteByte(MZ_ROCKET);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	G_SendMuzzleFlash(self, MZ_ROCKET);
 	vec3_t start, forward, right, offset;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);
 	VectorNormalize(forward);
@@ -269,3 +267,5 @@ void doom_monster_cybr(edict_t *self)
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }
+
+#endif

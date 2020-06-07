@@ -455,7 +455,6 @@ void vectoangles2(const vec3_t value1, vec3_t angles)
 	angles[ROLL] = 0;
 }
 
-
 char *G_CopyString(char *in)
 {
 	char    *out;
@@ -464,7 +463,6 @@ char *G_CopyString(char *in)
 	return out;
 }
 
-
 void G_InitEdict(edict_t *e)
 {
 	e->inuse = true;
@@ -472,6 +470,9 @@ void G_InitEdict(edict_t *e)
 	e->gravity = 1.0f;
 	e->s.number = e - g_edicts;
 	e->s.clip_contents = CONTENTS_MONSTER;
+
+	if (e->s.number >= 1 && e->s.number <= maxclients->integer)
+		e->client = &game.clients[e->s.number - 1];
 }
 
 /*
@@ -519,8 +520,6 @@ Marks the edict as free
 */
 const char *freed_classname = "freed";
 
-void Wave_MonsterFreed(edict_t *self);
-
 void G_FreeEdict(edict_t *ed)
 {
 	gi.unlinkentity(ed);        // unlink from world
@@ -530,9 +529,11 @@ void G_FreeEdict(edict_t *ed)
 		//      Com_Printf("tried to free special edict\n");
 		return;
 	}
-
+	
+#ifdef ENABLE_COOP
 	if (ed->monsterinfo.wave_entry.next)
 		Wave_MonsterFreed(ed);
+#endif
 
 	G_FreeAI(ed); //jabot092(2)
 	memset(ed, 0, sizeof(*ed));
@@ -652,4 +653,55 @@ bool G_KillBox(edict_t *ent, vec3_t origin, vec3_t mins, vec3_t maxs)
 bool KillBox(edict_t *ent)
 {
 	return G_KillBox(ent, ent->s.origin, ent->mins, ent->maxs);
+}
+
+/*
+=============
+visible
+
+returns 1 if the entity is visible to self, even if not infront ()
+=============
+*/
+bool visible(edict_t *self, edict_t *other)
+{
+	if (other->flags & FL_NOTARGET)
+		return false;
+
+	vec3_t  spot1;
+	vec3_t  spot2;
+	trace_t trace;
+	VectorCopy(self->s.origin, spot1);
+	spot1[2] += self->viewheight;
+	VectorCopy(other->s.origin, spot2);
+	spot2[2] += other->viewheight;
+	trace = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_OPAQUE);
+
+	if (trace.fraction == 1.0f)
+		return true;
+
+	return false;
+}
+
+
+/*
+=============
+infront
+
+returns 1 if the entity is in front (in sight) of self
+=============
+*/
+bool infront(edict_t *self, edict_t *other)
+{
+	vec3_t  vec;
+	float   dot;
+	vec3_t  forward;
+	AngleVectors(self->s.angles, forward, NULL, NULL);
+	VectorSubtract(other->s.origin, self->s.origin, vec);
+	VectorNormalize(vec);
+	dot = DotProduct(vec, forward);
+
+	if (dot > 0.3f)
+		return true;
+
+	return false;
 }

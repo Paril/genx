@@ -113,6 +113,7 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 
 	if (targ->deadflag == DEAD_NO)
 	{
+#ifdef ENABLE_COOP
 		if (targ->svflags & SVF_MONSTER)
 		{
 			//      targ->svflags |= SVF_DEADMONSTER;   // now treat as a different content type
@@ -128,6 +129,7 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 			targ->touch = NULL;
 			monster_death_use(targ);
 		}
+#endif
 
 		ClientObituary(targ);
 
@@ -231,11 +233,13 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 		if (power_armor_type != POWER_ARMOR_NONE)
 			power = floorf(AMMO_PER_POWER_ARMOR_ABSORB * client->pers.ammo);
 	}
+#ifdef ENABLE_COOP
 	else if (ent->svflags & SVF_MONSTER)
 	{
 		power_armor_type = ent->monsterinfo.power_armor_type;
 		power = ent->monsterinfo.power_armor_power;
 	}
+#endif
 	else
 		return 0;
 
@@ -284,8 +288,10 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 
 	if (client)
 		client->pers.ammo = max(0, client->pers.ammo - (power_used * AMMO_PER_POWER_ARMOR_ABSORB));
+#ifdef ENABLE_COOP
 	else
 		ent->monsterinfo.power_armor_power -= power_used;
+#endif
 
 	return save;
 }
@@ -331,6 +337,7 @@ static int CheckArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int
 	return save;
 }
 
+#ifdef ENABLE_COOP
 static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 {
 	if (!(attacker->client) && !(attacker->svflags & SVF_MONSTER))
@@ -416,6 +423,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 			FoundTarget(targ);
 	}
 }
+#endif
 
 void Q1_SpawnBlood(vec3_t org, vec3_t vel, int damage)
 {
@@ -472,25 +480,24 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 	// friendly fire avoidance
 	// if enabled you can't hurt teammates (but you can hurt yourself)
 	// knockback still occurs
-	if ((targ != attacker) && ((deathmatch->value && ((int)(dmflags->value) & (DF_MODELTEAMS | DF_SKINTEAMS))) || coop->value || invasion->value))
+	if (targ != attacker && OnSameTeam(targ, attacker))
 	{
-		if (OnSameTeam(targ, attacker))
-		{
-			if ((targ->client && attacker->client && ((int)(dmflags->value) & DF_NO_FRIENDLY_FIRE)) || (!targ->client && !attacker->client && invasion->value))
-				damage = 0;
-			else
-				mod.damage_means |= MD_FRIENDLY_FIRE;
-		}
+		if (!dmflags.friendly_fire)
+			damage = 0;
+		else
+			mod.damage_means |= MD_FRIENDLY_FIRE;
 	}
 
+#ifdef ENABLE_COOP
 	// easy mode takes half damage
-	if (skill->value == 0 && deathmatch->value == 0 && targ->client)
+	if (skill->integer == 0 && deathmatch->value == 0 && targ->client)
 	{
 		damage *= 0.5f;
 
 		if (!damage)
 			damage = 1;
 	}
+#endif
 
 	client = targ->client;
 
@@ -657,6 +664,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 	if (dflags & DAMAGE_PARTICLES_ONLY)
 		return;
 
+#ifdef ENABLE_COOP
 	if (targ->svflags & SVF_MONSTER)
 	{
 		if (take)
@@ -679,7 +687,9 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 			}
 		}
 	}
-	else if (client)
+	else
+#endif
+	if (client)
 	{
 		if (!(targ->flags & FL_GODMODE) && (take))
 			targ->pain(targ, attacker, knockback, take);
@@ -744,10 +754,11 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 				VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
 
 				// shambler takes half damage
-				if (ent->entitytype == ET_Q1_MONSTER_SHAMBLER)
-					T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)(points * 0.5f), (int)(points * 0.5f), dflags | DAMAGE_RADIUS, mod);
-				else
-					T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
+#ifdef ENABLE_COOP
+				points *= 0.5f;
+#endif
+
+				T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
 			}
 		}
 	}

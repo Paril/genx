@@ -5,6 +5,8 @@ DOG
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 #include "m_local.h"
 
@@ -317,3 +319,5 @@ void q1_monster_dog(edict_t *self)
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }
+
+#endif

@@ -18,6 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "g_local.h"
 
+#ifdef ENABLE_COOP
+
 //#define _DEBUG
 typedef struct
 {
@@ -81,7 +83,6 @@ static const save_field_t levelfields[] =
 {
 #define OFS LLOFS
 	L(changemap),
-	E(sight_client),
 	E(sight_entity),
 	E(sound_entity),
 	E(sound2_entity),
@@ -579,3 +580,22 @@ void ReadLevel(const char *filename)
 	}
 }
 
+#else
+
+void ReadGame(const char *filename)
+{
+}
+
+void WriteGame(const char *filename, bool autosave)
+{
+}
+
+void WriteLevel(const char *filename)
+{
+}
+
+void ReadLevel(const char *filename)
+{
+}
+
+#endif

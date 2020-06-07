@@ -22,6 +22,7 @@ Makron -- Final Boss
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_boss32.h"
@@ -313,7 +314,7 @@ static void makron_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	tempent = G_Spawn();
 	VectorCopy(self->s.origin, tempent->s.origin);
 	VectorCopy(self->s.angles, tempent->s.angles);
@@ -486,6 +487,8 @@ void SP_monster_makron(edict_t *self)
 	walkmonster_start(self);
 }
 
+bool FindTarget(edict_t *self);
+
 /*
 =================
 MakronSpawn
@@ -494,16 +497,13 @@ MakronSpawn
 */
 void MakronSpawn(edict_t *self)
 {
-	vec3_t      vec;
-	edict_t     *player;
 	SP_monster_makron(self);
-	// jump at player
-	player = level.sight_client;
 
-	if (!player)
+	if (!FindTarget(self))
 		return;
-
-	VectorSubtract(player->s.origin, self->s.origin, vec);
+	
+	vec3_t vec;
+	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
 	self->s.angles[YAW] = vectoyaw(vec);
 	VectorNormalize(vec);
 	VectorScale(vec, 400, self->velocity);
@@ -527,3 +527,5 @@ void MakronToss(edict_t *self)
 	ent->target = self->target;
 	VectorCopy(self->s.origin, ent->s.origin);
 }
+
+#endif

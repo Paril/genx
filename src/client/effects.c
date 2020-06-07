@@ -728,7 +728,6 @@ void CL_MuzzleFlash(void)
 	}
 }
 
-
 /*
 ==============
 CL_MuzzleFlash2
@@ -736,6 +735,8 @@ CL_MuzzleFlash2
 */
 void CL_MuzzleFlash2(void)
 {
+	
+#if ENABLE_COOP
 	centity_t   *ent;
 	vec3_t      origin;
 	const vec_t *ofs;
@@ -1087,6 +1088,7 @@ void CL_MuzzleFlash2(void)
 			DL_DIE(200);
 			break;
 	}
+#endif
 }
 
 /*

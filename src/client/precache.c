@@ -423,6 +423,7 @@ void CL_PrepRefresh(void)
 	CL_SetSky();
 
 	// set game mode
+#ifdef ENABLE_COOP
 	if (!Q_strcasecmp(cl.configstrings[CS_GAMEMODE], "deathmatch"))
 		cl.gamemode = GAMEMODE_DEATHMATCH;
 	else if (!Q_strcasecmp(cl.configstrings[CS_GAMEMODE], "coop"))
@@ -431,6 +432,7 @@ void CL_PrepRefresh(void)
 		cl.gamemode = GAMEMODE_INVASION;
 	else
 		cl.gamemode = GAMEMODE_SINGLEPLAYER;
+#endif
 
 	// the renderer can now free unneeded stuff
 	R_EndRegistration();

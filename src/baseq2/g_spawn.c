@@ -87,7 +87,6 @@ void SP_target_character(edict_t *ent);
 void SP_target_string(edict_t *ent);
 
 void SP_worldspawn(edict_t *ent);
-void SP_viewthing(edict_t *ent);
 
 void SP_light(edict_t *self);
 void SP_light_mine1(edict_t *ent);
@@ -103,7 +102,6 @@ void SP_misc_satellite_dish(edict_t *self);
 void SP_misc_gib_arm(edict_t *self);
 void SP_misc_gib_leg(edict_t *self);
 void SP_misc_gib_head(edict_t *self);
-void SP_misc_insane(edict_t *self);
 void SP_misc_deadsoldier(edict_t *self);
 void SP_misc_viper(edict_t *self);
 void SP_misc_viper_bomb(edict_t *self);
@@ -115,6 +113,9 @@ void SP_misc_blackhole(edict_t *self);
 void SP_misc_eastertank(edict_t *self);
 void SP_misc_easterchick(edict_t *self);
 void SP_misc_easterchick2(edict_t *self);
+
+#ifdef ENABLE_COOP
+void SP_misc_insane(edict_t *self);
 
 void SP_monster_berserk(edict_t *self);
 void SP_monster_gladiator(edict_t *self);
@@ -172,6 +173,7 @@ void doom_monster_skel(edict_t *self);
 void doom_monster_boss(edict_t *self);
 void doom_monster_spid(edict_t *self);
 void doom_monster_cybr(edict_t *self);
+#endif
 
 typedef struct
 {
@@ -252,7 +254,6 @@ static classname_to_entitytype_t classname_to_entitytype[] =
 	{ "misc_gib_arm",				ET_MISC_GIB_ARM },
 	{ "misc_gib_leg",				ET_MISC_GIB_LEG },
 	{ "misc_gib_head",				ET_MISC_GIB_HEAD },
-	{ "misc_insane",				ET_MISC_INSANE },
 	{ "misc_deadsoldier",			ET_MISC_DEADSOLDIER },
 	{ "misc_viper",					ET_MISC_VIPER },
 	{ "misc_viper_bomb",			ET_MISC_VIPER_BOMB },
@@ -264,6 +265,9 @@ static classname_to_entitytype_t classname_to_entitytype[] =
 	{ "misc_eastertank",			ET_MISC_EASTERTANK },
 	{ "misc_easterchick",			ET_MISC_EASTERCHICK },
 	{ "misc_easterchick2",			ET_MISC_EASTERCHICK2 },
+	
+#ifdef ENABLE_COOP
+	{ "misc_insane",				ET_MISC_INSANE },
 
 	{ "monster_berserk",			ET_MONSTER_BERSERK },
 	{ "monster_gladiator",			ET_MONSTER_GLADIATOR },
@@ -327,6 +331,7 @@ static classname_to_entitytype_t classname_to_entitytype[] =
 	{ "monster_bos2",				ET_DOOM_MONSTER_BOS2 },
 	{ "monster_spid",				ET_DOOM_MONSTER_SPID },
 	{ "monster_cybr",				ET_DOOM_MONSTER_CYBR }
+#endif
 };
 
 /*
@@ -511,7 +516,6 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 	{ ET_MISC_GIB_ARM, SP_misc_gib_arm },
 	{ ET_MISC_GIB_LEG, SP_misc_gib_leg },
 	{ ET_MISC_GIB_HEAD, SP_misc_gib_head },
-	{ ET_MISC_INSANE, SP_misc_insane },
 	{ ET_MISC_DEADSOLDIER, SP_misc_deadsoldier },
 	{ ET_MISC_VIPER, SP_misc_viper },
 	{ ET_MISC_VIPER_BOMB, SP_misc_viper_bomb },
@@ -523,6 +527,9 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 	{ ET_MISC_EASTERTANK, SP_misc_eastertank },
 	{ ET_MISC_EASTERCHICK, SP_misc_easterchick },
 	{ ET_MISC_EASTERCHICK2, SP_misc_easterchick2 },
+	
+#ifdef ENABLE_COOP
+	{ ET_MISC_INSANE, SP_misc_insane },
 
 	{ ET_MONSTER_BERSERK, SP_monster_berserk },
 	{ ET_MONSTER_GLADIATOR, SP_monster_gladiator },
@@ -553,8 +560,10 @@ static const entitytype_func_t q2_entitytype_funcs[] =
 	{ ET_TURRET_BREACH, SP_turret_breach },
 	{ ET_TURRET_BASE, SP_turret_base },
 	{ ET_TURRET_DRIVER, SP_turret_driver }
+#endif
 };
 
+#ifdef ENABLE_COOP
 static const entitytype_func_t q1_entitytype_funcs[] =
 {
 	{ ET_Q1_MONSTER_ARMY, q1_monster_army },
@@ -591,6 +600,7 @@ static const entitytype_func_t doom_entitytype_funcs[] =
 	{ ET_DOOM_MONSTER_SPID, doom_monster_spid },
 	{ ET_DOOM_MONSTER_CYBR, doom_monster_cybr }
 };
+#endif
 
 typedef struct
 {
@@ -610,8 +620,10 @@ static void init_game_spawn_func_list(const entitytype_func_t *funcs, const size
 static void init_game_spawn_func_lists()
 {
 	init_game_spawn_func_list(q2_entitytype_funcs, q_countof(q2_entitytype_funcs), &game_spawn_func_list[GAME_Q2]);
+#ifdef ENABLE_COOP
 	init_game_spawn_func_list(q1_entitytype_funcs, q_countof(q1_entitytype_funcs), &game_spawn_func_list[GAME_Q1]);
 	init_game_spawn_func_list(doom_entitytype_funcs, q_countof(doom_entitytype_funcs), &game_spawn_func_list[GAME_DOOM]);
+#endif
 }
 
 static spawnfunc_t get_func_from_entitytype(entitytype_e id, gametype_t *game_ptr)
@@ -706,7 +718,8 @@ Finds the spawn function for the entity and calls it
 ===============
 */
 
-bool randomize_enemies = false;
+#ifdef ENABLE_COOP
+static bool randomize_enemies = false;
 
 typedef struct
 {
@@ -714,7 +727,7 @@ typedef struct
 	entitytype_e	replacements[8];
 } enemyrandomize_t;
 
-enemyrandomize_t enemy_randomizations[] =
+static enemyrandomize_t enemy_randomizations[] =
 {
 	{
 		ET_MONSTER_SOLDIER_LIGHT,
@@ -813,7 +826,7 @@ enemyrandomize_t enemy_randomizations[] =
 	}
 };
 
-entitytype_e randomize_monster(entitytype_e monster)
+static entitytype_e randomize_monster(entitytype_e monster)
 {
 	size_t i;
 
@@ -833,6 +846,7 @@ entitytype_e randomize_monster(entitytype_e monster)
 
 	return monster;
 }
+#endif
 
 bool ED_CallSpawnByType(edict_t *ent, entitytype_e type)
 {
@@ -872,8 +886,10 @@ void ED_CallSpawn(edict_t *ent)
 
 	if (type != ET_NULL)
 	{
+#ifdef ENABLE_COOP
 		if (randomize_enemies && type >= ET_MONSTER_BERSERK && type <= ET_MONSTER_JORG)
 			type = randomize_monster(type);
+#endif
 
 		if (ED_CallSpawnByType(ent, type))
 			return;
@@ -1130,15 +1146,16 @@ parsing textual entity definitions out of an ent file.
 void SpawnEntities(const char *mapname, const char *entities, const char *spawnpoint)
 {
 	Q_srand(game.random_seed);
-	randomize_enemies = true;
 	init_classname_to_entitytype_hashes();
 	init_game_spawn_func_lists();
 	edict_t     *ent;
 	int         inhibit;
 	char        *com_token;
 	int         i;
-	float       skill_level;
-	skill_level = floorf(skill->value);
+
+#ifdef ENABLE_COOP
+	randomize_enemies = true;
+	float       skill_level = floorf(skill->value);
 
 	if (skill_level < 0)
 		skill_level = 0;
@@ -1148,13 +1165,16 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
 	if (skill->value != skill_level)
 		Cvar_Set("skill", va("%f", skill_level));
+#endif
 
 	SaveClientData();
 	Z_FreeTags(TAG_LEVEL);
 	memset(&level, 0, sizeof(level));
 	memset(g_edicts, 0, game.maxentities * sizeof(g_edicts[0]));
 	Q_strlcpy(level.mapname, mapname, sizeof(level.mapname));
+#ifdef ENABLE_COOP
 	Q_strlcpy(game.spawnpoint, spawnpoint, sizeof(game.spawnpoint));
+#endif
 
 	// set client fields on player ents
 	for (i = 0 ; i < game.maxclients ; i++)
@@ -1192,7 +1212,9 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 		// remove things (except the world) from different skill levels or deathmatch
 		if (ent != g_edicts)
 		{
+#ifdef ENABLE_COOP
 			if (deathmatch->value)
+#endif
 			{
 				if (ent->spawnflags & SPAWNFLAG_NOT_DEATHMATCH)
 				{
@@ -1201,6 +1223,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 					continue;
 				}
 			}
+#ifdef ENABLE_COOP
 			else
 			{
 				if ( /* ((coop->value) && (ent->spawnflags & SPAWNFLAG_NOT_COOP)) || */
@@ -1214,14 +1237,17 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 					continue;
 				}
 			}
+#endif
 
 			ent->spawnflags &= ~(SPAWNFLAG_NOT_EASY | SPAWNFLAG_NOT_MEDIUM | SPAWNFLAG_NOT_HARD | SPAWNFLAG_NOT_COOP | SPAWNFLAG_NOT_DEATHMATCH);
 		}
 
 		ED_CallSpawn(ent);
 	}
-
+	
+#ifdef ENABLE_COOP
 	randomize_enemies = false;
+#endif
 	Com_Printf("%i entities inhibited\n", inhibit);
 #ifdef DEBUG
 	i = 1;
@@ -1244,7 +1270,6 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
 //===================================================================
 
-void Wave_Precache();
 void Weapons_Init();
 
 /*
@@ -1305,11 +1330,11 @@ void SP_worldspawn(edict_t *ent)
 		gi.configstring(CS_SKY, "unit1_");
 
 	gi.configstring(CS_SKYROTATE, va("%f", spawnTemp.skyrotate));
-	gi.configstring(CS_SKYAXIS, va("%f %f %f",
-			spawnTemp.skyaxis[0], spawnTemp.skyaxis[1], spawnTemp.skyaxis[2]));
+	gi.configstring(CS_SKYAXIS, va("%f %f %f", spawnTemp.skyaxis[0], spawnTemp.skyaxis[1], spawnTemp.skyaxis[2]));
 	gi.configstring(CS_CDTRACK, va("%i", ent->sounds));
 	gi.configstring(CS_MAXCLIENTS, va("%i", (int)(maxclients->value)));
-
+	
+#ifdef ENABLE_COOP
 	// status bar program
 	if (deathmatch->value)
 		gi.configstring(CS_GAMEMODE, "deathmatch");
@@ -1319,12 +1344,15 @@ void SP_worldspawn(edict_t *ent)
 		gi.configstring(CS_GAMEMODE, "invasion");
 	else
 		gi.configstring(CS_GAMEMODE, "singleplayer");
+#endif
 
 	//---------------
 	// help icon for statusbar
+#ifdef ENABLE_COOP
 	gi.imageindex("i_help");
-	level.pic_health = gi.imageindex("i_health");
 	gi.imageindex("help");
+#endif
+	level.pic_health = gi.imageindex("i_health");
 	gi.imageindex("field_3");
 
 	if (!spawnTemp.gravity)
@@ -1381,7 +1409,9 @@ void SP_worldspawn(edict_t *ent)
 	gi.soundindex("items/protect.wav");
 	gi.soundindex("items/protect4.wav");
 	gi.soundindex("weapons/noammo.wav");
+#ifdef ENABLE_COOP
 	gi.soundindex("infantry/inflies1.wav");
+#endif
 	sm_meat_index = gi.modelindex("models/objects/gibs/sm_meat/tris.md2");
 	gi.modelindex("models/objects/gibs/arm/tris.md2");
 	gi.modelindex("models/objects/gibs/bone/tris.md2");
@@ -1423,7 +1453,10 @@ void SP_worldspawn(edict_t *ent)
 	for (item = ITI_WEAPONS_START; item <= ITI_WEAPONS_END; item++)
 		PrecacheItem(GetItemByIndex(item));
 
+#if ENABLE_COOP
 	Wave_Precache();
+#endif
+
 	Weapons_Init();
 }
 

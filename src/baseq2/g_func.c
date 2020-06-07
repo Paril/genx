@@ -701,7 +701,7 @@ void button_return(edict_t *self)
 	self->s.frame = 0;
 
 	if (self->health)
-		self->takedamage = DAMAGE_YES;
+		self->takedamage = true;
 }
 
 void button_wait(edict_t *self)
@@ -754,7 +754,7 @@ void button_killed(edict_t *self, edict_t *inflictor, edict_t *attacker, int dam
 {
 	self->activator = attacker;
 	self->health = self->max_health;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	button_fire(self);
 }
 
@@ -798,7 +798,7 @@ void SP_func_button(edict_t *ent)
 	{
 		ent->max_health = ent->health;
 		ent->die = button_killed;
-		ent->takedamage = DAMAGE_YES;
+		ent->takedamage = true;
 	}
 	else if (! ent->targetname)
 		ent->touch = button_touch;
@@ -910,7 +910,7 @@ void door_go_down(edict_t *self)
 
 	if (self->max_health)
 	{
-		self->takedamage = DAMAGE_YES;
+		self->takedamage = true;
 		self->health = self->max_health;
 	}
 
@@ -1132,7 +1132,7 @@ void door_killed(edict_t *self, edict_t *inflictor, edict_t *attacker, int damag
 	for (ent = self->teammaster ; ent ; ent = ent->teamchain)
 	{
 		ent->health = ent->max_health;
-		ent->takedamage = DAMAGE_NO;
+		ent->takedamage = false;
 	}
 
 	door_use(self->teammaster, attacker, attacker);
@@ -1172,7 +1172,9 @@ void SP_func_door(edict_t *ent)
 	if (!ent->speed)
 		ent->speed = 100;
 
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
+#endif
 		ent->speed *= 2;
 
 	if (!ent->accel)
@@ -1210,7 +1212,7 @@ void SP_func_door(edict_t *ent)
 
 	if (ent->health)
 	{
-		ent->takedamage = DAMAGE_YES;
+		ent->takedamage = true;
 		ent->die = door_killed;
 		ent->max_health = ent->health;
 	}
@@ -1343,7 +1345,7 @@ void SP_func_door_rotating(edict_t *ent)
 
 	if (ent->health)
 	{
-		ent->takedamage = DAMAGE_YES;
+		ent->takedamage = true;
 		ent->die = door_killed;
 		ent->max_health = ent->health;
 	}
@@ -1956,7 +1958,7 @@ void door_secret_done(edict_t *self)
 	if (!(self->targetname) || (self->spawnflags & SECRET_ALWAYS_SHOOT))
 	{
 		self->health = 0;
-		self->takedamage = DAMAGE_YES;
+		self->takedamage = true;
 	}
 
 	door_use_areaportals(self, false);
@@ -1985,7 +1987,7 @@ void door_secret_blocked(edict_t *self, edict_t *other)
 
 void door_secret_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	door_secret_use(self, attacker, attacker);
 }
 
@@ -2007,7 +2009,7 @@ void SP_func_door_secret(edict_t *ent)
 	if (!(ent->targetname) || (ent->spawnflags & SECRET_ALWAYS_SHOOT))
 	{
 		ent->health = 0;
-		ent->takedamage = DAMAGE_YES;
+		ent->takedamage = true;
 		ent->die = door_secret_die;
 	}
 
@@ -2041,7 +2043,7 @@ void SP_func_door_secret(edict_t *ent)
 
 	if (ent->health)
 	{
-		ent->takedamage = DAMAGE_YES;
+		ent->takedamage = true;
 		ent->die = door_killed;
 		ent->max_health = ent->health;
 	}

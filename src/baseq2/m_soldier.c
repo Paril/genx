@@ -22,6 +22,7 @@ SOLDIER
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_soldier.h"
@@ -294,7 +295,7 @@ static void soldier_duck_down(edict_t *self)
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
 	self->maxs[2] -= 32;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 100;
 	gi.linkentity(self);
 }
@@ -303,7 +304,7 @@ static void soldier_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
 	self->maxs[2] += 32;
-	self->takedamage = DAMAGE_AIM;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -476,7 +477,7 @@ static void soldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 
 	// regular death
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->s.skinnum |= 1;
 
 	if (self->s.skinnum == 1)
@@ -632,3 +633,5 @@ void SP_monster_soldier_ss(edict_t *self)
 	self->gib_health = -30;
 	SP_monster_soldier_x(self);
 }
+
+#endif

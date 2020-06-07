@@ -22,6 +22,7 @@ chick
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_chick.h"
@@ -154,7 +155,7 @@ static void chick_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 
 	// regular death
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	n = Q_rand() % 2;
 
 	if (n == 0)
@@ -176,7 +177,7 @@ static void chick_duck_down(edict_t *self)
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
 	self->maxs[2] -= 32;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
 }
@@ -193,7 +194,7 @@ static void chick_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
 	self->maxs[2] += 32;
-	self->takedamage = DAMAGE_AIM;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -371,3 +372,5 @@ void SP_monster_chick(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

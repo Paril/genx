@@ -5,7 +5,7 @@ WIZARD
 
 ==============================================================================
 */
-
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_local.h"
 
@@ -436,3 +436,5 @@ void q1_monster_wizard(edict_t *self)
 	flymonster_start(self);
 	self->viewheight = 25;
 }
+
+#endif

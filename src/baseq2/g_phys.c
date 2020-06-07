@@ -808,6 +808,7 @@ void SV_Physics_Toss(edict_t *ent)
 	}
 }
 
+#if ENABLE_COOP
 /*
 ===============================================================================
 
@@ -1007,6 +1008,7 @@ void SV_Physics_Step(edict_t *ent)
 	// regular thinking
 	SV_RunThink(ent);
 }
+#endif
 
 //============================================================================
 /*
@@ -1040,10 +1042,12 @@ void G_RunEntity(edict_t *ent)
 		case MOVETYPE_NOCLIP:
 			SV_Physics_Noclip(ent);
 			break;
-
+			
+#if ENABLE_COOP
 		case MOVETYPE_STEP:
 			SV_Physics_Step(ent);
 			break;
+#endif
 
 		case MOVETYPE_TOSS:
 		case MOVETYPE_BOUNCE:

@@ -18,6 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 
 
+#ifdef ENABLE_COOP
 /*
 =================
 check_dodge
@@ -33,6 +34,9 @@ void check_dodge(edict_t *self, vec3_t start, vec3_t dir, int speed)
 	vec3_t  v;
 	trace_t tr;
 	float   eta;
+
+	if (!self->client)
+		return;
 
 	// easy mode only ducks one quarter the time
 	if (skill->value == 0)
@@ -51,6 +55,7 @@ void check_dodge(edict_t *self, vec3_t start, vec3_t dir, int speed)
 		tr.ent->monsterinfo.dodge(tr.ent, self, eta);
 	}
 }
+#endif
 
 
 /*
@@ -234,8 +239,9 @@ static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 					MSG_WriteDir(tr.plane.normal);
 					gi.multicast(tr.endpos, MULTICAST_PVS);
 
-					if (self->client)
-						PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+#ifdef ENABLE_COOP
+					PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+#endif
 				}
 			}
 		}
@@ -316,8 +322,9 @@ void blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *s
 		return;
 	}
 
-	if (self->owner->client)
-		PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+#ifdef ENABLE_COOP
+	PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+#endif
 
 	if (other->takedamage)
 		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, self->meansOfDeath);
@@ -374,8 +381,9 @@ void fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 
 	gi.linkentity(bolt);
 
-	if (self->client)
-		check_dodge(self, bolt->s.origin, dir, speed);
+#if ENABLE_COOP
+	check_dodge(self, bolt->s.origin, dir, speed);
+#endif
 
 	if (self->client)
 		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), bolt, DT_DIRECT);
@@ -400,9 +408,10 @@ fire_grenade
 void Grenade_Explode(edict_t *ent)
 {
 	vec3_t      origin;
-
-	if (ent->owner->client)
-		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	
+#ifdef ENABLE_COOP
+	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+#endif
 
 	//FIXME: if we are onground then raise our Z just a bit since we are a point?
 	if (ent->enemy)
@@ -585,9 +594,10 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
 		G_FreeEdict(ent);
 		return;
 	}
-
-	if (ent->owner->client)
-		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	
+#ifdef ENABLE_COOP
+	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+#endif
 
 	// calculate position for the explosion entity
 	VectorMA(ent->s.origin, -0.02f, ent->velocity, origin);
@@ -653,8 +663,9 @@ void fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
 	else
 		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_ROCKET_LAUNCHER, rocket, DT_DIRECT);
 
-	if (self->client)
-		check_dodge(self, rocket->s.origin, dir, speed);
+#if ENABLE_COOP
+	check_dodge(self, rocket->s.origin, dir, speed);
+#endif
 
 	gi.linkentity(rocket);
 }
@@ -730,9 +741,10 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 		MSG_WritePos(tr.endpos);
 		gi.multicast(tr.endpos, MULTICAST_PHS);
 	}
-
-	if (self->client)
-		PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+	
+#ifdef ENABLE_COOP
+	PlayerNoise(self, tr.endpos, PNOISE_IMPACT);
+#endif
 }
 
 
@@ -802,9 +814,10 @@ void bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 		G_FreeEdict(self);
 		return;
 	}
-
-	if (self->owner->client)
-		PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+	
+#ifdef ENABLE_COOP
+	PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+#endif
 
 	self->meansOfDeath.damage_type = DT_DIRECT;
 
@@ -840,13 +853,13 @@ void bfg_think(edict_t *self)
 	vec3_t  dir;
 	vec3_t  start;
 	vec3_t  end;
-	int     dmg;
+	int     dmg = 5;
 	trace_t tr;
 
-	if (deathmatch->value)
-		dmg = 5;
-	else
+#ifdef ENABLE_COOP
+	if (!deathmatch->value)
 		dmg = 10;
+#endif
 
 	ent = NULL;
 
@@ -941,8 +954,9 @@ void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, fl
 	else
 		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_BFG10K, bfg, DT_LASER);
 
-	if (self->client)
-		check_dodge(self, bfg->s.origin, dir, speed);
+#if ENABLE_COOP
+	check_dodge(self, bfg->s.origin, dir, speed);
+#endif
 
 	gi.linkentity(bfg);
 }

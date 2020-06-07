@@ -1,3 +1,4 @@
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 static q_soundhandle sound_alert1;
@@ -183,7 +184,7 @@ void cpos_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		self->monsterinfo.currentmove = &cpos_die1;
 	}
 
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
@@ -215,10 +216,8 @@ void fire_doom_bullet(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 
 void cpos_fire_gun(edict_t *self)
 {
-	MSG_WriteByte(svc_muzzleflash);
-	MSG_WriteShort(self - g_edicts);
-	MSG_WriteByte(MZ_SHOTGUN);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	G_SendMuzzleFlash(self, MZ_SHOTGUN);
+
 	vec3_t start, forward, right, offset;
 	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);
 	VectorNormalize(forward);
@@ -312,3 +311,5 @@ void doom_monster_cpos(edict_t *self)
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }
+
+#endif

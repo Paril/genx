@@ -1,3 +1,5 @@
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 #include "m_local.h"
 
@@ -143,3 +145,4 @@ void q1_monster_fish(edict_t *self)
 	gi.linkentity(self);
 }
 
+#endif

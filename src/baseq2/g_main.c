@@ -33,10 +33,12 @@ q_soundhandle snd_fry;
 
 edict_t     *g_edicts;
 
+#ifdef ENABLE_COOP
 cvar_t  *deathmatch;
 cvar_t  *coop;
-cvar_t  *dmflags;
 cvar_t  *skill;
+#endif
+cvar_t  *dmflags_cvar;
 cvar_t  *fraglimit;
 cvar_t  *timelimit;
 cvar_t  *password;
@@ -74,7 +76,11 @@ cvar_t  *flood_waitdelay;
 cvar_t  *sv_maplist;
 
 // Generations
+#ifdef ENABLE_COOP
 cvar_t	*invasion;
+#endif
+
+dmflags_t dmflags;
 
 
 cvar_t				*bot_showpath;
@@ -90,7 +96,6 @@ void ClientUserinfoChanged(edict_t *ent, char *userinfo);
 void ClientDisconnect(edict_t *ent);
 void ClientBegin(edict_t *ent);
 void ClientCommand(edict_t *ent);
-void RunEntity(edict_t *ent);
 void WriteGame(const char *filename, bool autosave);
 void ReadGame(const char *filename);
 void WriteLevel(const char *filename);
@@ -108,8 +113,6 @@ void ShutdownGame(void)
 	Z_FreeTags(TAG_LEVEL);
 	Z_FreeTags(TAG_GAME);
 }
-
-void Wave_Init();
 
 /*
 ============
@@ -139,13 +142,14 @@ void InitGame(void)
 	Cvar_Get("gamedate", __DATE__, CVAR_SERVERINFO | CVAR_LATCH);
 	maxclients = Cvar_Get("maxclients", "4", CVAR_SERVERINFO | CVAR_LATCH);
 	maxspectators = Cvar_Get("maxspectators", "4", CVAR_SERVERINFO);
-	deathmatch = Cvar_Get("deathmatch", "0", CVAR_LATCH);
+#ifdef ENABLE_COOP
 	coop = Cvar_Get("coop", "0", CVAR_LATCH);
 	invasion = Cvar_Get("invasion", "0", CVAR_LATCH);
 	skill = Cvar_Get("skill", "1", CVAR_LATCH);
+#endif
 	maxentities = Cvar_Get("maxentities", "1024", CVAR_LATCH);
 	// change anytime vars
-	dmflags = Cvar_Get("dmflags", "0", CVAR_SERVERINFO);
+	dmflags_cvar = Cvar_Get("dmflags", "0", CVAR_SERVERINFO);
 	fraglimit = Cvar_Get("fraglimit", "0", CVAR_SERVERINFO);
 	timelimit = Cvar_Get("timelimit", "0", CVAR_SERVERINFO);
 	password = Cvar_Get("password", "", CVAR_USERINFO);
@@ -166,8 +170,16 @@ void InitGame(void)
 	sv_maplist = Cvar_Get("sv_maplist", "", 0);
 	// items
 	InitItems();
+
+#ifdef ENABLE_COOP
+	deathmatch = Cvar_Get("deathmatch", "0", CVAR_LATCH);
+
 	game.helpmessage1[0] = 0;
 	game.helpmessage2[0] = 0;
+#else
+	Cvar_Get("deathmatch", "1", CVAR_LATCH | CVAR_NOSET);
+#endif
+
 	// initialize all entities for this game
 	game.maxentities = maxentities->value;
 	g_edicts = Z_TagMallocz(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
@@ -184,8 +196,12 @@ void InitGame(void)
 	game.frameseconds = BASE_FRAMETIME_1000;
 	game.random_seed = time(NULL);
 
+	dmflags.flags = dmflags_cvar->integer;
+	
+#ifdef ENABLE_COOP
 	if (invasion->integer)
 		Wave_Init();
+#endif
 }
 
 
@@ -278,7 +294,7 @@ void EndDMLevel(void)
 	static const char *seps = " ,\n\r";
 
 	// stay on same level flag
-	if ((int)dmflags->value & DF_SAME_LEVEL)
+	if (dmflags.same_level)
 	{
 		BeginIntermission(CreateTargetChangeLevel(level.mapname));
 		return;
@@ -379,8 +395,10 @@ void CheckDMRules(void)
 	if (level.intermissiontime)
 		return;
 
+#ifdef ENABLE_COOP
 	if (!deathmatch->value)
 		return;
+#endif
 
 	if (timelimit->value)
 	{
@@ -453,16 +471,15 @@ Advances the world by game.frameseconds seconds
 ================
 */
 
-void Wave_Frame();
-
 void G_RunFrame(void)
 {
 	int     i;
 	edict_t *ent;
+	
 	level.framenum++;
 	level.time += game.frametime;
-	// choose a client for monsters to target this frame
-	AI_SetSightClient();
+	
+	dmflags.flags = dmflags_cvar->integer;
 
 	// exit intermissions
 
@@ -493,8 +510,10 @@ void G_RunFrame(void)
 		{
 			ent->groundentity = NULL;
 
+#if ENABLE_COOP
 			if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->svflags & SVF_MONSTER))
 				M_CheckGround(ent);
+#endif
 		}
 
 		if (i > 0 && i <= maxclients->value)
@@ -522,8 +541,10 @@ void G_RunFrame(void)
 	//JABot[start]
 	AITools_Frame();	//give think time to AI debug tools
 	//[end]
-
+	
+#ifdef ENABLE_COOP
 	if (invasion->integer)
 		Wave_Frame();
+#endif
 }
 

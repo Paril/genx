@@ -143,7 +143,6 @@ typedef enum
 	ET_MISC_GIB_ARM,
 	ET_MISC_GIB_LEG,
 	ET_MISC_GIB_HEAD,
-	ET_MISC_INSANE,
 	ET_MISC_DEADSOLDIER,
 	ET_MISC_VIPER,
 	ET_MISC_VIPER_BOMB,
@@ -155,6 +154,9 @@ typedef enum
 	ET_MISC_EASTERTANK,
 	ET_MISC_EASTERCHICK,
 	ET_MISC_EASTERCHICK2,
+	
+#ifdef ENABLE_COOP
+	ET_MISC_INSANE,
 
 	ET_MARKER_Q2_MONSTERS_START,
 	ET_MONSTER_BERSERK = ET_MARKER_Q2_MONSTERS_START,
@@ -222,6 +224,7 @@ typedef enum
 	ET_DOOM_MONSTER_SPID,
 	ET_DOOM_MONSTER_CYBR,
 	ET_MARKER_DOOM_MONSTERS_END = ET_DOOM_MONSTER_SPID,
+#endif
 
 	ET_LAST_SPAWNABLE,
 
@@ -235,14 +238,18 @@ typedef enum
 	ET_PLAYER_NOISE,
 	ET_WEAPON,
 	ET_AMMO,
-
+		
+#ifdef ENABLE_COOP
 	ET_Q1_VORE_BALL,
 	ET_Q1_ZOMBIE_GIB,
+#endif
 	ET_Q1_SPIKE,
 
 	ET_DOOM_PLASMA,
-
+		
+#ifdef ENABLE_COOP
 	ET_MONSTER_MAKRON,
+#endif
 
 	ET_LAST,
 	ET_FIRST = ET_NULL + 1,
@@ -285,13 +292,6 @@ typedef enum
 
 typedef enum
 {
-	DAMAGE_NO,
-	DAMAGE_YES,         // will take damage if hit
-	DAMAGE_AIM          // auto targeting recognizes this
-} damage_t;
-
-typedef enum
-{
 	WEAPON_READY,
 	WEAPON_ACTIVATING,
 	WEAPON_DROPPING,
@@ -321,6 +321,7 @@ typedef enum
 	GIB_DUKE_LG
 } gibtype_e;
 
+#ifdef ENABLE_COOP
 //monster ai flags
 #define AI_STAND_GROUND         0x00000001
 #define AI_TEMP_STAND_GROUND    0x00000002
@@ -341,6 +342,7 @@ typedef enum
 #define AI_JUST_HIT				0x00008000
 #define AI_NODE_PATH			0x00010000
 #define AI_JUST_ATTACKED		0x00020000
+#endif
 
 //monster attack state
 typedef enum
@@ -365,6 +367,7 @@ typedef enum
 #define CENTER_HANDED           2
 
 // game.serverflags values
+#ifdef ENABLE_COOP
 #define SFL_CROSS_TRIGGER_1     0x00000001
 #define SFL_CROSS_TRIGGER_2     0x00000002
 #define SFL_CROSS_TRIGGER_3     0x00000004
@@ -379,6 +382,7 @@ typedef enum
 #define PNOISE_SELF             0
 #define PNOISE_WEAPON           1
 #define PNOISE_IMPACT           2
+#endif
 
 // edict->movetype values
 typedef enum
@@ -387,9 +391,11 @@ typedef enum
 	MOVETYPE_NOCLIP,        // origin and angles change with no interaction
 	MOVETYPE_PUSH,          // no clip to world, push on box contact
 	MOVETYPE_STOP,          // no clip to world, stops on box contact
-
+	
 	MOVETYPE_WALK,          // gravity
+#if ENABLE_COOP
 	MOVETYPE_STEP,          // gravity, special edge handling
+#endif
 	MOVETYPE_FLY,
 	MOVETYPE_TOSS,          // gravity
 	MOVETYPE_FLYMISSILE,    // extra size to monsters
@@ -415,6 +421,20 @@ typedef struct
 #define IT_KEY          16
 #define IT_POWERUP      32
 #define IT_HEALTH		64		// Generations
+
+typedef union {
+	uint32_t	flags;
+
+	struct {
+		bool is_weapon : 1;
+		bool is_ammo : 1;
+		bool is_armor : 1;
+		bool stay_coop : 1;
+		bool is_key : 1;
+		bool is_powerup : 1;
+		bool is_health : 1;
+	};
+} gitem_flags_t;
 
 // total default ammo
 #define DEFAULT_MAX_AMMO				100.0f
@@ -457,7 +477,7 @@ typedef struct gitem_s
 	const char        *icon;
 	const char        *pickup_name;   // for printing on pickup
 
-	int			      flags;          // IT_* flags
+	gitem_flags_t	  flags;          // IT_* flags
 
 	const char	      *weapmodel;      // weapon model index (for weapons)
 
@@ -495,12 +515,14 @@ typedef struct
 	gitem_armor_t armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR + 1];
 
 	float		ammo_usages[ITI_TOTAL], default_ammo_usages[ITI_TOTAL];
+
+	itemid_e	weapon_groups[WEAPON_GROUP_ALL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1];
 } game_iteminfo_t;
 
 extern game_iteminfo_t game_iteminfos[GAME_TOTAL];
 
-#define GameTypeGame(e)	(&game_iteminfos[e])
-#define EntityGame(e)	GameTypeGame(e->s.game)
+#define GameTypeGame(e)	(&game_iteminfos[(e)])
+#define EntityGame(e)	GameTypeGame((e)->s.game)
 
 typedef struct
 {
@@ -532,28 +554,31 @@ void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots);
 //
 typedef struct
 {
-	int         helpchanged;    // flash F1 icon if non 0, play sound
-	// and increment only if 1, 2, or 3
-
-	char        helpmessage1[512];
-	char        helpmessage2[512];
 	gclient_t   *clients;       // [maxclients]
-
-	// can't store spawnpoint in level, because
-	// it would get overwritten by the savegame restore
-	char        spawnpoint[512];    // needed for coop respawns
 
 	// store latched cvars here that we want to get at often
 	int         maxclients;
 	int         maxentities;
 
-	// cross level triggers
-	int         serverflags;
-
 	// items
 	int         num_items;
 
+#ifdef ENABLE_COOP
+	int         helpchanged;    // flash F1 icon if non 0, play sound
+	// and increment only if 1, 2, or 3
+
+	char        helpmessage1[512];
+	char        helpmessage2[512];
+
+	// can't store spawnpoint in level, because
+	// it would get overwritten by the savegame restore
+	char        spawnpoint[512];    // needed for coop respawns
+
+	// cross level triggers
+	int         serverflags;
+
 	bool	    autosaved;
+#endif
 
 	int         framerate;
 	int         frametime;
@@ -583,17 +608,18 @@ typedef struct
 	vec3_t      intermission_origin;
 	vec3_t      intermission_angle;
 
-	edict_t     *sight_client;  // changed once each frame for coop games
-
+	q_imagehandle pic_health;
+	
+#ifdef ENABLE_COOP
 	edict_t     *sight_entity;
 	gtime_t     sight_entity_time;
 	edict_t     *sound_entity;
 	gtime_t     sound_entity_time;
 	edict_t     *sound2_entity;
 	gtime_t     sound2_entity_time;
-
-	q_imagehandle pic_health;
-
+#endif
+	
+#ifdef ENABLE_COOP
 	int         total_secrets;
 	int         found_secrets;
 
@@ -603,10 +629,12 @@ typedef struct
 	int         total_monsters;
 	int         killed_monsters;
 
+	int         power_cubes;        // ugly necessity for coop
+#endif
+
 	edict_t     *current_entity;    // entity running from G_RunFrame
 	int         body_que;           // dead bodies
 
-	int         power_cubes;        // ugly necessity for coop
 	time_t		spawn_rand;
 	int			weapon_spawn_id;
 	int			ammo_spawn_id;
@@ -676,9 +704,10 @@ typedef struct
 	float       next_speed;
 	float       remaining_distance;
 	float       decel_distance;
-	void	(*endfunc)(edict_t *);
+	void		(*endfunc)(edict_t *);
 } moveinfo_t;
 
+#ifdef ENABLE_COOP
 typedef void (*mai_func_t) (edict_t *self, float dist);
 
 typedef struct
@@ -742,6 +771,7 @@ typedef struct
 
 	list_t		wave_entry;
 } monsterinfo_t;
+#endif
 
 extern  q_modelhandle sm_meat_index;
 extern  q_soundhandle snd_fry;
@@ -820,10 +850,11 @@ extern  edict_t         *g_edicts;
 #define crandom()   crand()
 
 extern  cvar_t  *maxentities;
+#ifdef ENABLE_COOP
 extern  cvar_t  *deathmatch;
 extern  cvar_t  *coop;
-extern  cvar_t  *dmflags;
 extern  cvar_t  *skill;
+#endif
 extern  cvar_t  *fraglimit;
 extern  cvar_t  *timelimit;
 extern  cvar_t  *password;
@@ -858,7 +889,33 @@ extern  cvar_t  *flood_waitdelay;
 extern  cvar_t  *sv_maplist;
 
 // Generations
+#ifdef ENABLE_COOP
 extern	cvar_t	*invasion;
+#endif
+
+// dmflags->value flags
+typedef union {
+	uint32_t flags;
+
+	struct {
+		bool no_health : 1;
+		bool no_items : 1;
+		bool weapons_stay : 1;
+		bool no_falling_damage : 1;
+		bool store_items : 1;
+		bool same_level : 1;
+		bool game_teams : 1;
+		bool friendly_fire : 1;
+		bool spawn_farthest : 1;
+		bool force_respawn : 1;
+		bool no_armor : 1;
+		bool allow_exit : 1;
+		bool infinite_ammo : 1;
+		bool quad_drop : 1;
+	};
+} dmflags_t;
+
+extern	dmflags_t dmflags;
 
 #define world   (&g_edicts[0])
 
@@ -901,7 +958,11 @@ extern  gitem_t itemlist[];
 //
 // g_cmds.c
 //
+#ifdef ENABLE_COOP
 void Cmd_Help_f(edict_t *ent);
+#else
+#define Cmd_Help_f Cmd_Score_f
+#endif
 void Cmd_Score_f(edict_t *ent);
 
 //
@@ -914,8 +975,7 @@ gitem_t *FindItemByClassname(const char *classname);
 #define ITEM_INDEX(x) GetIndexByItem(x)
 itemid_e GetIndexByItem(gitem_t *item);
 edict_t *Drop_Item(edict_t *ent, gitem_t *item);
-void SetRespawn(edict_t *ent, float delay);
-void ChangeWeapon(edict_t *ent, gunindex_e gun);
+bool SetRespawn(edict_t *ent, float delay);
 gitem_t *GetBestWeapon(edict_t *ent, gitem_t *new_item, bool is_new);
 void SpawnItem(edict_t *ent, gitem_t *item);
 void Think_Weapon(edict_t *ent);
@@ -954,11 +1014,27 @@ float vectoyaw(vec3_t vec);
 void vectoangles(vec3_t vec, vec3_t angles);
 void vectoangles2(const vec3_t value1, vec3_t angles);
 
+bool infront(edict_t *self, edict_t *other);
+bool visible(edict_t *self, edict_t *other);
+
 //
 // g_combat.c
 //
 bool OnSameTeam(edict_t *ent1, edict_t *ent2);
 bool CanDamage(edict_t *targ, edict_t *inflictor);
+
+#ifdef ENABLE_COOP
+//
+// g_wave.c
+//
+bool Wave_GameReady();
+bool Wave_Commands(edict_t *ent);
+void Wave_MonsterFreed(edict_t *self);
+void Wave_Precache();
+void Wave_MonsterDead(edict_t *self);
+void Wave_Frame();
+void Wave_Init();
+#endif
 
 // damage flags
 enum
@@ -989,6 +1065,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 #define DEFAULT_SHOTGUN_COUNT   12
 #define DEFAULT_SSHOTGUN_COUNT  20
 
+#ifdef ENABLE_COOP
 //
 // g_monster.c
 //
@@ -1012,6 +1089,7 @@ bool M_Q1_CheckAttack(edict_t *self);
 bool M_Doom_CheckAttack(edict_t *self);
 void M_FlyCheck(edict_t *self);
 void M_CheckGround(edict_t *ent);
+#endif
 
 //
 // g_misc.c
@@ -1023,11 +1101,10 @@ void BecomeExplosion1(edict_t *self);
 
 #define CLOCK_MESSAGE_SIZE  16
 
+#ifdef ENABLE_COOP
 //
 // g_ai.c
 //
-void AI_SetSightClient(void);
-
 void ai_stand(edict_t *self, float dist);
 void ai_move(edict_t *self, float dist);
 void ai_walk(edict_t *self, float dist);
@@ -1037,9 +1114,8 @@ void ai_charge(edict_t *self, float dist);
 int range(edict_t *self, edict_t *other);
 
 void FoundTarget(edict_t *self);
-bool infront(edict_t *self, edict_t *other);
-bool visible(edict_t *self, edict_t *other);
 bool FacingIdeal(edict_t *self);
+#endif
 
 //
 // g_weapon.c
@@ -1122,23 +1198,44 @@ void GetChaseTarget(edict_t *ent);
 //
 // p_weapon.c
 //
-void NoAmmoWeaponChange(edict_t *ent, gunindex_e gun);
-void check_dodge(edict_t *, vec3_t, vec3_t, int);
+typedef struct
+{
+	weaponstate_t   weaponstate;
+	vec3_t			kick_angles;    // weapon kicks
+	vec3_t			kick_origin;
+	gtime_t			kick_time;
+	gtime_t			weapon_time;
+	gitem_t			*newweapon;
+	int				machinegun_shots;   // for weapon raising
+} gun_state_t;
+
+typedef void (*G_WeaponRunFunc)(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state);
+
+void ChangeWeapon(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state);
+void NoAmmoWeaponChange(edict_t *ent, gun_state_t *gun_state);
 void P_ProjectSource(gclient_t *client, vec3_t point, vec3_t distance, vec3_t forward, vec3_t right, vec3_t result);
 void Weapon_QuadDamage(edict_t *ent);
+#ifdef ENABLE_COOP
 void PlayerNoise(edict_t *who, vec3_t where, int type);
+void check_dodge(edict_t *, vec3_t, vec3_t, int);
+#endif
+void G_SendMuzzleFlash(edict_t *ent, int muzzleflash);
 void AttemptBetterWeaponSwap(edict_t *ent);
 
 // p_q1_weapons.c
 void ApplyMultiDamage(edict_t *self, vec3_t aimdir, int dflags, meansOfDeath_t multi_mod);
 void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod, int dflags, bool absorb_all, vec3_t point, vec3_t normal);
-void Weapon_Q1_Run(edict_t *ent, gunindex_e gun);
+void Weapon_Q1_Run(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state);
 
 // p_doom_weapons.c
-void Weapon_Doom_Run(edict_t *ent, gunindex_e gun);
+typedef void (*G_DoomLikeWeaponFire) (edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first);
+void Weapon_Doom(edict_t *ent, int num_frames, G_DoomLikeWeaponFire fire, player_gun_t *gun, gun_state_t *gun_state);
+
+void Weapon_Doom_Run(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state);
+
 
 // p_duke_weapons.c
-void Weapon_Duke_Run(edict_t *ent, gunindex_e gun);
+void Weapon_Duke_Run(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state);
 
 
 //============================================================================
@@ -1173,7 +1270,6 @@ typedef struct
 	// values saved and restored from edicts when changing levels
 	int         health;
 	int         max_health;
-	int			savedFlags;
 
 	itemid_e    selected_item;
 	int         inventory[ITI_TOTAL];
@@ -1181,11 +1277,15 @@ typedef struct
 	gitem_t     *weapon;
 	gitem_t     *lastweapon;
 
+#ifdef ENABLE_COOP
+	int			savedFlags;
+
 	int         power_cubes;    // used for tracking the cubes in coop games
 	int         score;          // for calculating total unit score in coop games
 
 	int         game_helpchanged;
 	int         helpchanged;
+#endif
 
 	bool        spectator;          // client is a spectator
 	gametype_t	game;
@@ -1199,7 +1299,9 @@ typedef struct
 // client data that stays across deathmatch respawns
 typedef struct
 {
+#ifdef ENABLE_COOP
 	client_persistant_t coop_respawn;   // what to set client->pers to on a respawn
+#endif
 	gtime_t     entertime;         // level.time the client entered the game
 	int         score;              // frags, etc
 	vec3_t      cmd_angles;         // angles sent over in the last command
@@ -1207,7 +1309,6 @@ typedef struct
 	bool	    spectator;          // client is a spectator
 	gametype_t	game;
 } client_respawn_t;
-
 
 // this structure is cleared on each PutClientInServer(),
 // except for 'client->pers'
@@ -1225,8 +1326,10 @@ struct gclient_s
 
 	bool        showscores;         // set layout stat
 	bool        showinventory;      // set layout stat
+#ifdef ENABLE_COOP
 	bool        showhelp;
 	bool        showhelpicon;
+#endif
 
 	int         ammo_index;
 
@@ -1246,16 +1349,7 @@ struct gclient_s
 
 	float       killer_yaw;         // when dead, look at killer
 
-	struct gun_state_s
-	{
-		weaponstate_t   weaponstate;
-		vec3_t			kick_angles;    // weapon kicks
-		vec3_t			kick_origin;
-		gtime_t			kick_time;
-		gtime_t			weapon_time;
-		gitem_t			*newweapon;
-		int				machinegun_shots;   // for weapon raising
-	}			gunstates[MAX_PLAYER_GUNS];
+	gun_state_t	gunstates[MAX_PLAYER_GUNS];
 
 	float       v_dmg_roll, v_dmg_pitch;
 	gtime_t		v_dmg_time;    // damage kicks
@@ -1313,6 +1407,8 @@ struct gclient_s
 	int			lastattackdown;
 	int			lastcalc;
 	int			priority;
+	gtime_t		doom_bfg_delay;
+	bool		duke_scream;
 };
 
 
@@ -1324,7 +1420,7 @@ struct edict_s
 	// of gclient_s to be a player_state_t
 	// but the rest of it is opaque
 
-	bool    inuse;
+	bool		inuse;
 	int         linkcount;
 
 	// FIXME: move these fields to a server private sv_entity_t
@@ -1388,7 +1484,9 @@ struct edict_s
 	edict_t     *goalentity;
 	edict_t     *movetarget;
 	float       yaw_speed;
+#ifdef ENABLE_COOP
 	float       ideal_yaw, ideal_pitch;
+#endif
 
 	gtime_t     nextthink;
 	void(*prethink)(edict_t *ent);
@@ -1427,7 +1525,7 @@ struct edict_s
 	int			pack_weapons;
 
 	int         viewheight;     // height above origin where eyesight is determined
-	damage_t    takedamage;
+	bool		takedamage;
 
 	float       dmg_radius;
 	int         sounds;         // make this a spawntemp var?
@@ -1444,11 +1542,13 @@ struct edict_s
 
 	union
 	{
+#ifdef ENABLE_COOP
 		struct
 		{
 			edict_t     *mynoise;       // can go in client only
 			edict_t     *mynoise2;
 		};
+#endif
 
 		struct
 		{
@@ -1482,7 +1582,9 @@ struct edict_s
 
 	// common data blocks
 	moveinfo_t      moveinfo;
+#ifdef ENABLE_COOP
 	monsterinfo_t   monsterinfo;
+#endif
 
 	meansOfDeath_t	meansOfDeath;
 	gtime_t dmgtime;

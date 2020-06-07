@@ -156,11 +156,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
 	Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, MAX_QPATH);
 	Q_strlcpy(sv.name, cmd->server, sizeof(sv.name));
 	Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
-
-	if (Cvar_VariableInteger("deathmatch"))
-		sprintf(sv.configstrings[CS_AIRACCEL], "%d", sv_airaccelerate->integer);
-	else
-		strcpy(sv.configstrings[CS_AIRACCEL], "0");
+	sprintf(sv.configstrings[CS_AIRACCEL], "%d", sv_airaccelerate->integer);
 
 	resolve_masters();
 
@@ -342,6 +338,7 @@ void SV_InitGame(void)
 	Cvar_Reset(sv_recycle);
 #endif
 
+#ifdef ENABLE_COOP
 	if (Cvar_VariableInteger("coop") &&
 		Cvar_VariableInteger("deathmatch"))
 	{
@@ -365,10 +362,12 @@ void SV_InitGame(void)
 	// init clients
 	if (Cvar_VariableInteger("deathmatch") || Cvar_VariableInteger("invasion"))
 	{
+#endif
 		if (sv_maxclients->integer <= 1)
 			Cvar_SetInteger(sv_maxclients, 8, FROM_CODE);
 		else if (sv_maxclients->integer > CLIENTNUM_RESERVED)
 			Cvar_SetInteger(sv_maxclients, CLIENTNUM_RESERVED, FROM_CODE);
+#ifdef ENABLE_COOP
 	}
 	else if (Cvar_VariableInteger("coop"))
 	{
@@ -377,6 +376,7 @@ void SV_InitGame(void)
 	}
 	else        // non-deathmatch, non-coop is one player
 		Cvar_FullSet("maxclients", "1", CVAR_SERVERINFO | CVAR_LATCH, FROM_CODE);
+#endif
 
 	// enable networking
 	if (sv_maxclients->integer > 1)

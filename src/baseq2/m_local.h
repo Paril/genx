@@ -2,27 +2,6 @@
 
 #include "g_local.h"
 
-/*
-A frames list consists of any number of single animation frames, followed by a \n or \0
-
-A single animation frame consists a full frame, a ditto or an index lookup.
-
-A full frame starts with a string deducing the type, followed by any number of arguments prefixed with a hyphen.
-Animation type may be one of stand, move, walk, turn, run, charge
-	<type> [-key value...]
-
-A ditto uses the last frame defined, consists of a ^, and is followed by any number of changed arguments prefixed with a hyphen.
-
-An index lookup uses a specific frame already defined, consists of a @ followed by the zero-index in the frames list which must be one that has already been seen, followed by any number of changed arguments prefixed with a hyphen.
-
-Allowed arguments:
-	Inherited arguments:
-		speed (float) = movement speed this frame
-		event ("none" or index into event list) = event to play this frame
-	Per-frame arguments:
-		repeat (int > 0) = how many frames this frame entry will fill
-*/
-
 typedef struct
 {
 	const char			*name;

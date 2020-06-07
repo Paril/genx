@@ -22,7 +22,7 @@ flyer
 
 ==============================================================================
 */
-
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_flyer.h"
 #include "m_local.h"
@@ -248,3 +248,5 @@ void SP_monster_flyer(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	flymonster_start(self);
 }
+
+#endif

@@ -23,6 +23,8 @@ FLIPPER
 ==============================================================================
 */
 
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 #include "m_flipper.h"
 #include "m_local.h"
@@ -151,7 +153,7 @@ static void flipper_die(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
 
@@ -211,3 +213,5 @@ void SP_monster_flipper(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	swimmonster_start(self);
 }
+
+#endif

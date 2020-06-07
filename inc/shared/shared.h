@@ -73,6 +73,18 @@ typedef enum
 
 extern const char *gameNames[];
 
+typedef enum
+{
+	WEAPON_GROUP_RAPID,
+	WEAPON_GROUP_SPREAD,
+	WEAPON_GROUP_EXPLOSIVE,
+	WEAPON_GROUP_EXOTIC,
+	WEAPON_GROUP_SUPER,
+	WEAPON_GROUP_ANY,
+
+	WEAPON_GROUP_ALL
+} weapon_group_e;
+
 // Item enums
 typedef enum
 {
@@ -119,6 +131,7 @@ typedef enum
 	ITI_BANDOLIER,
 	ITI_AMMO_PACK,
 
+#ifdef ENABLE_COOP
 	ITI_DATA_CD,
 	ITI_POWER_CUBE,
 	ITI_PYRAMID_KEY,
@@ -128,6 +141,7 @@ typedef enum
 	ITI_RED_KEY,
 	ITI_COMMANDERS_HEAD,
 	ITI_AIRSTRIKE_MARKER,
+#endif
 
 	ITI_TOTAL,
 	ITI_LAST = ITI_TOTAL - 1,
@@ -1091,14 +1105,12 @@ typedef struct
 	// changed by spawns, rotating objects, and teleporters
 } pmove_state_t;
 
-
 //
 // button bits
 //
 #define BUTTON_ATTACK       1
 #define BUTTON_USE          2
 #define BUTTON_ANY          128         // any key whatsoever
-
 
 // usercmd_t is sent to the server each client frame
 typedef struct usercmd_s
@@ -1109,7 +1121,6 @@ typedef struct usercmd_s
 	short   forwardmove, sidemove, upmove;
 	byte    impulse;        // remove?
 } usercmd_t;
-
 
 #define MAXTOUCH    32
 typedef struct
@@ -1139,7 +1150,6 @@ typedef struct
 	trace_t (* q_gameabi trace)(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t end);
 	int (*pointcontents)(vec3_t point);
 } pmove_t;
-
 
 // entity_state_t->effects
 // Effects are things handled on the client side (lights, particles, frame animations)
@@ -1183,9 +1193,11 @@ typedef struct
 //ROGUE
 
 // Generations
+#ifdef ENABLE_COOP
 #define EF_Q1_WIZ			EF_BLUEHYPERBLASTER
 #define EF_Q1_VORE			EF_IONRIPPER
 #define EF_Q1_HKNIGHT		EF_GREENGIB
+#endif
 
 // entity_state_t->renderfx flags
 #define RF_MINLIGHT         1       // allways have some light (viewmodel)
@@ -1269,6 +1281,7 @@ typedef struct
 #define MZ_NUKE8            39
 //ROGUE
 
+#ifdef ENABLE_COOP
 //
 // monster muzzle flashes
 //
@@ -1503,6 +1516,7 @@ typedef struct
 // ROGUE
 
 extern  const vec3_t monster_flash_offset [];
+#endif
 
 
 // temp entity events
@@ -1711,68 +1725,6 @@ enum
 #define ST_GODFACE			ST_NUMPAINFACES*ST_FACESTRIDE
 #define ST_DEADFACE			ST_GODFACE+1
 
-// dmflags->value flags
-#define DF_NO_HEALTH        0x00000001  // 1
-#define DF_NO_ITEMS         0x00000002  // 2
-#define DF_WEAPONS_STAY     0x00000004  // 4
-#define DF_NO_FALLING       0x00000008  // 8
-#define DF_INSTANT_ITEMS    0x00000010  // 16
-#define DF_SAME_LEVEL       0x00000020  // 32
-#define DF_SKINTEAMS        0x00000040  // 64
-#define DF_MODELTEAMS       0x00000080  // 128
-#define DF_NO_FRIENDLY_FIRE 0x00000100  // 256
-#define DF_SPAWN_FARTHEST   0x00000200  // 512
-#define DF_FORCE_RESPAWN    0x00000400  // 1024
-#define DF_NO_ARMOR         0x00000800  // 2048
-#define DF_ALLOW_EXIT       0x00001000  // 4096
-#define DF_INFINITE_AMMO    0x00002000  // 8192
-#define DF_QUAD_DROP        0x00004000  // 16384
-#define DF_FIXED_FOV        0x00008000  // 32768
-
-// RAFAEL
-#define DF_QUADFIRE_DROP    0x00010000  // 65536
-
-//ROGUE
-#define DF_NO_MINES         0x00020000
-#define DF_NO_STACK_DOUBLE  0x00040000
-#define DF_NO_NUKES         0x00080000
-#define DF_NO_SPHERES       0x00100000
-//ROGUE
-
-/*
-ROGUE - VERSIONS
-1234    08/13/1998      Activision
-1235    08/14/1998      Id Software
-1236    08/15/1998      Steve Tietze
-1237    08/15/1998      Phil Dobranski
-1238    08/15/1998      John Sheley
-1239    08/17/1998      Barrett Alexander
-1230    08/17/1998      Brandon Fish
-1245    08/17/1998      Don MacAskill
-1246    08/17/1998      David "Zoid" Kirsch
-1247    08/17/1998      Manu Smith
-1248    08/17/1998      Geoff Scully
-1249    08/17/1998      Andy Van Fossen
-1240    08/20/1998      Activision Build 2
-1256    08/20/1998      Ranger Clan
-1257    08/20/1998      Ensemble Studios
-1258    08/21/1998      Robert Duffy
-1259    08/21/1998      Stephen Seachord
-1250    08/21/1998      Stephen Heaslip
-1267    08/21/1998      Samir Sandesara
-1268    08/21/1998      Oliver Wyman
-1269    08/21/1998      Steven Marchegiano
-1260    08/21/1998      Build #2 for Nihilistic
-1278    08/21/1998      Build #2 for Ensemble
-
-9999    08/20/1998      Internal Use
-*/
-#define ROGUE_VERSION_ID        1278
-
-#define ROGUE_VERSION_STRING    "08/21/1998 Beta 2 for Ensemble"
-
-// ROGUE
-
 /*
 ==========================================================
 
@@ -1829,6 +1781,7 @@ static inline float SHORT2ANGLE(const short x)
 	((cs) >= CS_STATUSBAR && (cs) < CS_AIRACCEL ? \
 		MAX_QPATH * (CS_AIRACCEL - (cs)) : MAX_QPATH)
 
+#if ENABLE_COOP
 typedef enum
 {
 	GAMEMODE_SINGLEPLAYER,
@@ -1836,6 +1789,7 @@ typedef enum
 	GAMEMODE_INVASION,
 	GAMEMODE_DEATHMATCH
 } gamemode_t;
+#endif
 
 //==============================================
 

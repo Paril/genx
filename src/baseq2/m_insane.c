@@ -22,6 +22,7 @@ insane
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_insane.h"
@@ -223,7 +224,7 @@ static void insane_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 
 	gi.sound(self, CHAN_VOICE, gi.soundindex(va("player/male/death%i.wav", (Q_rand() % 4) + 1)), 1, ATTN_IDLE, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 
 	if (self->spawnflags & 8)
 		insane_dead(self);
@@ -322,3 +323,5 @@ void SP_misc_insane(edict_t *self)
 		self->s.skinnum = Q_rand() % 3;
 	}
 }
+
+#endif

@@ -5,6 +5,8 @@ ZOMBIE
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 #include "m_local.h"
 
@@ -258,7 +260,7 @@ static void zombie_paine1_fall(edict_t *self)
 {
 	gi.sound(self, CHAN_BODY, sound_z_fall, 1, ATTN_NORM, 0);
 	self->solid = SOLID_NOT;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	gi.linkentity(self);
 }
 
@@ -288,7 +290,7 @@ static void zombie_paine1_check(edict_t *self)
 	}
 
 	self->solid = SOLID_BBOX;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	gi.linkentity(self);
 }
 
@@ -481,3 +483,5 @@ void q1_monster_zombie(edict_t *self)
 
 	gi.linkentity(self);
 }
+
+#endif

@@ -17,6 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // m_flash.c
 
+#ifdef ENABLE_COOP
+
 #include "shared/shared.h"
 
 // this file is included in both the game dll and quake2 },
@@ -484,3 +486,5 @@ const vec3_t monster_flash_offset[256] =
 	// end of table
 	{ 0.0, 0.0, 0.0 }
 };
+
+#endif

@@ -29,7 +29,9 @@ INTERMISSION
 
 void MoveClientToIntermission(edict_t *ent)
 {
+#if ENABLE_COOP
 	if (deathmatch->value || coop->value)
+#endif
 		ent->client->showscores = true;
 
 	VectorCopy(level.intermission_origin, ent->s.origin);
@@ -59,8 +61,10 @@ void MoveClientToIntermission(edict_t *ent)
 	ent->solid = SOLID_NOT;
 
 	// add the layout
-
+	
+#if ENABLE_COOP
 	if (deathmatch->value || coop->value)
+#endif
 	{
 		DeathmatchScoreboardMessage(ent, NULL);
 		gi.unicast(ent, true);
@@ -69,13 +73,15 @@ void MoveClientToIntermission(edict_t *ent)
 
 void BeginIntermission(edict_t *targ)
 {
-	int     i, n;
+	int     i;
 	edict_t *ent, *client;
 
 	if (level.intermissiontime)
 		return;     // already activated
-
+	
+#if ENABLE_COOP
 	game.autosaved = false;
+#endif
 
 	// respawn any dead clients
 	for (i = 0 ; i < maxclients->value ; i++)
@@ -91,7 +97,8 @@ void BeginIntermission(edict_t *targ)
 
 	level.intermissiontime = level.time;
 	level.changemap = targ->map;
-
+	
+#if ENABLE_COOP
 	if (strstr(level.changemap, "*"))
 	{
 		if (coop->value)
@@ -104,7 +111,7 @@ void BeginIntermission(edict_t *targ)
 					continue;
 
 				// strip players of all keys between units
-				for (n = 0; n < ITI_TOTAL; n++)
+				for (int n = 0; n < ITI_TOTAL; n++)
 				{
 					if (itemlist[n].flags & IT_KEY)
 						client->client->pers.inventory[n] = 0;
@@ -120,6 +127,7 @@ void BeginIntermission(edict_t *targ)
 			return;
 		}
 	}
+#endif
 
 	level.exitintermission = 0;
 	// find an intermission spot
@@ -290,10 +298,12 @@ Display the scoreboard
 void Cmd_Score_f(edict_t *ent)
 {
 	ent->client->showinventory = false;
+#if ENABLE_COOP
 	ent->client->showhelp = false;
 
 	if (!deathmatch->value && !coop->value)
 		return;
+#endif
 
 	if (ent->client->showscores)
 	{
@@ -303,9 +313,10 @@ void Cmd_Score_f(edict_t *ent)
 
 	ent->client->showscores = true;
 	DeathmatchScoreboard(ent);
+#
 }
 
-
+#if ENABLE_COOP
 /*
 ==================
 HelpComputer
@@ -378,6 +389,7 @@ void Cmd_Help_f(edict_t *ent)
 	ent->client->pers.helpchanged = 0;
 	HelpComputer(ent);
 }
+#endif
 
 
 //=======================================================================
@@ -427,7 +439,7 @@ void ST_updateFaceWidget(edict_t *plyr)
 		if (time_diff(plyr->client->pickup_msg_time, level.time) >= (gtime_t)(3000 - game.frametime))
 		{
 			// picking up bonus
-			if ((plyr->client->pickup_item->flags & IT_WEAPON) && plyr->client->pickup_item_first)
+			if (plyr->client->pickup_item->flags.is_weapon && plyr->client->pickup_item_first)
 			{
 				// evil grin if just picked up weapon
 				plyr->client->priority = 8;
@@ -673,8 +685,10 @@ void G_SetStats(edict_t *ent)
 	// layouts
 	//
 	ent->client->ps.stats.layouts = 0;
-
+	
+#if ENABLE_COOP
 	if (deathmatch->value)
+#endif
 	{
 		if (ent->client->pers.health <= 0 || level.intermissiontime
 			|| ent->client->showscores)
@@ -683,6 +697,7 @@ void G_SetStats(edict_t *ent)
 		if (ent->client->showinventory && ent->client->pers.health > 0)
 			ent->client->ps.stats.layouts |= 2;
 	}
+#if ENABLE_COOP
 	else
 	{
 		if (ent->client->showscores || ent->client->showhelp)
@@ -691,6 +706,7 @@ void G_SetStats(edict_t *ent)
 		if (ent->client->showinventory && ent->client->pers.health > 0)
 			ent->client->ps.stats.layouts |= 2;
 	}
+#endif
 
 	//
 	// frags
@@ -702,9 +718,12 @@ void G_SetStats(edict_t *ent)
 	//
 	if (ent->s.game == GAME_Q2)
 	{
+#if ENABLE_COOP
 		if (ent->client->pers.helpchanged && (level.framenum & (8 * game.framediv)))
 			ent->client->ps.stats.q2.help_icon = gi.imageindex("i_help");
-		else if ((ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
+		else
+#endif
+		if ((ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
 			&& ent->client->pers.weapon)
 			ent->client->ps.stats.q2.help_icon = gi.imageindex(ent->client->pers.weapon->icon);
 		else

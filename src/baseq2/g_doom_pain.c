@@ -1,3 +1,4 @@
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 static q_soundhandle sound_alert;
@@ -126,7 +127,7 @@ void pain_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	self->deadflag = DEAD_DEAD;
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &pain_die1;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
@@ -301,3 +302,5 @@ void doom_monster_pain(edict_t *self)
 	self->monsterinfo.scale = 1;
 	flymonster_start(self);
 }
+
+#endif

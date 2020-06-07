@@ -1,3 +1,4 @@
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 static q_soundhandle sound_alert1;
@@ -179,7 +180,7 @@ void troo_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 		self->monsterinfo.currentmove = &troo_die1;
 	}
 
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
@@ -386,3 +387,5 @@ void doom_monster_troo(edict_t *self)
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }
+
+#endif

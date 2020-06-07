@@ -25,7 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 // game.h -- game dll information visible to server
 //
 
-#define GAME_API_VERSION    4 // Generations
+#define GAME_API_VERSION    1997 // Generations
 
 // edict->svflags
 
@@ -46,7 +46,6 @@ typedef enum
 //===============================================================
 
 #define MAX_ENT_CLUSTERS    16
-
 
 typedef struct edict_s edict_t;
 typedef struct gclient_s gclient_t;
@@ -69,7 +68,7 @@ struct edict_s
 	entity_state_t  s;
 	struct gclient_s    *client;
 	bool       inuse;
-	int         linkcount;
+	int        linkcount;
 
 	// FIXME: move these fields to a server private sv_entity_t
 	list_t      area;               // linked to a division node or leaf

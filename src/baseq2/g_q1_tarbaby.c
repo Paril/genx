@@ -5,6 +5,8 @@ BLOB
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 #include "m_local.h"
 
@@ -132,7 +134,7 @@ static void tbaby_explode(edict_t *self)
 
 static void tbaby_nohurt(edict_t *self)
 {
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 }
 
 static void tbaby_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
@@ -197,3 +199,5 @@ void q1_monster_tarbaby(edict_t *self)
 	self->monsterinfo.scale = 1;
 	gi.linkentity(self);
 }
+
+#endif

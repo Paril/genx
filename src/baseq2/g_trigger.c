@@ -231,7 +231,8 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
 	}
 
 	gi.sound(activator, CHAN_AUTO, gi.soundindex("misc/keyuse.wav"), 1, ATTN_NORM, 0);
-
+	
+#ifdef ENABLE_COOP
 	if (coop->value)
 	{
 		int     player;
@@ -279,6 +280,7 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
 		}
 	}
 	else
+#endif
 		activator->client->pers.inventory[index]--;
 
 	G_UseTargets(self, activator);

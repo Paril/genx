@@ -23,6 +23,7 @@ boss2
 ==============================================================================
 */
 
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_boss2.h"
 #include "m_local.h"
@@ -221,7 +222,7 @@ static void boss2_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 {
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NONE, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->count = 0;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 #if 0
@@ -248,7 +249,7 @@ static void boss2_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 		return;
 
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.currentmove = &boss2_move_death;
 #endif
 }
@@ -395,3 +396,5 @@ void SP_monster_boss2(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	flymonster_start(self);
 }
+
+#endif

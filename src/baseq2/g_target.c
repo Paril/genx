@@ -117,6 +117,7 @@ void SP_target_speaker(edict_t *ent)
 
 //==========================================================
 
+#ifdef ENABLE_COOP
 void Use_Target_Help(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	if (ent->spawnflags & 1)
@@ -126,19 +127,21 @@ void Use_Target_Help(edict_t *ent, edict_t *other, edict_t *activator)
 
 	game.helpchanged++;
 }
+#endif
 
 /*QUAKED target_help (1 0 1) (-16 -16 -24) (16 16 24) help1
 When fired, the "message" key becomes the current personal computer string, and the message light will be set on all clients status bars.
 */
 void SP_target_help(edict_t *ent)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		// auto-remove for deathmatch
 		G_FreeEdict(ent);
 		return;
 	}
-
+	
 	if (!ent->message)
 	{
 		Com_Printf("%s with no message at %s\n", spawnTemp.classname, vtos(ent->s.origin));
@@ -147,6 +150,9 @@ void SP_target_help(edict_t *ent)
 	}
 
 	ent->use = Use_Target_Help;
+#else
+	G_FreeEdict(ent);
+#endif
 }
 
 //==========================================================
@@ -155,6 +161,7 @@ void SP_target_help(edict_t *ent)
 Counts a secret found.
 These are single use targets.
 */
+#ifdef ENABLE_COOP
 void use_target_secret(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	gi.sound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
@@ -162,16 +169,18 @@ void use_target_secret(edict_t *ent, edict_t *other, edict_t *activator)
 	G_UseTargets(ent, activator);
 	G_FreeEdict(ent);
 }
+#endif
 
 void SP_target_secret(edict_t *ent)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		// auto-remove for deathmatch
 		G_FreeEdict(ent);
 		return;
 	}
-
+	
 	ent->use = use_target_secret;
 
 	if (!spawnTemp.noise)
@@ -184,6 +193,9 @@ void SP_target_secret(edict_t *ent)
 	// map bug hack
 	if (!Q_stricmp(level.mapname, "mine3") && ent->s.origin[0] == 280 && ent->s.origin[1] == -2048 && ent->s.origin[2] == -624)
 		ent->message = "You have found a secret area.";
+#else
+	G_FreeEdict(ent);
+#endif
 }
 
 //==========================================================
@@ -192,6 +204,7 @@ void SP_target_secret(edict_t *ent)
 Counts a goal completed.
 These are single use targets.
 */
+#ifdef ENABLE_COOP
 void use_target_goal(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	gi.sound(ent, CHAN_VOICE, ent->noise_index, 1, ATTN_NORM, 0);
@@ -203,16 +216,18 @@ void use_target_goal(edict_t *ent, edict_t *other, edict_t *activator)
 	G_UseTargets(ent, activator);
 	G_FreeEdict(ent);
 }
+#endif
 
 void SP_target_goal(edict_t *ent)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		// auto-remove for deathmatch
 		G_FreeEdict(ent);
 		return;
 	}
-
+	
 	ent->use = use_target_goal;
 
 	if (!spawnTemp.noise)
@@ -221,6 +236,9 @@ void SP_target_goal(edict_t *ent)
 	ent->noise_index = gi.soundindex(spawnTemp.noise);
 	ent->svflags = SVF_NOCLIENT;
 	level.total_goals++;
+#else
+	G_FreeEdict(ent);
+#endif
 }
 
 //==========================================================
@@ -276,30 +294,40 @@ void use_target_changelevel(edict_t *self, edict_t *other, edict_t *activator)
 {
 	if (level.intermissiontime)
 		return;     // already activated
-
+	
+#ifdef ENABLE_COOP
 	if (!deathmatch->value && !coop->value)
 	{
 		if (g_edicts[1].health <= 0)
 			return;
 	}
+#endif
 
 	// if noexit, do a ton of damage to other
-	if (deathmatch->value && !((int)dmflags->value & DF_ALLOW_EXIT) && other != world)
+	if (
+#ifdef ENABLE_COOP
+		deathmatch->value && 
+#endif
+		!dmflags.allow_exit && other != world)
 	{
 		T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 10 * other->max_health, 1000, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
 		return;
 	}
-
+	
+#ifdef ENABLE_COOP
 	// if multiplayer, let everyone know who hit the exit
 	if (deathmatch->value)
+#endif
 	{
 		if (activator && activator->client)
 			gi.bprintf(PRINT_HIGH, "%s exited the level.\n", activator->client->pers.netname);
 	}
-
+	
+#ifdef ENABLE_COOP
 	// if going to a new unit, clear cross triggers
 	if (strstr(self->map, "*"))
 		game.serverflags &= ~(SFL_CROSS_TRIGGER_MASK);
+#endif
 
 	BeginIntermission(self);
 }
@@ -457,16 +485,22 @@ void SP_target_blaster(edict_t *self)
 /*QUAKED target_crosslevel_trigger (.5 .5 .5) (-8 -8 -8) (8 8 8) trigger1 trigger2 trigger3 trigger4 trigger5 trigger6 trigger7 trigger8
 Once this trigger is touched/used, any trigger_crosslevel_target with the same trigger number is automatically used when a level is started within the same unit.  It is OK to check multiple triggers.  Message, delay, target, and killtarget also work.
 */
+#ifdef ENABLE_COOP
 void trigger_crosslevel_trigger_use(edict_t *self, edict_t *other, edict_t *activator)
 {
 	game.serverflags |= self->spawnflags;
 	G_FreeEdict(self);
 }
+#endif
 
 void SP_target_crosslevel_trigger(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	self->svflags = SVF_NOCLIENT;
 	self->use = trigger_crosslevel_trigger_use;
+#else
+	G_FreeEdict(self);
+#endif
 }
 
 /*QUAKED target_crosslevel_target (.5 .5 .5) (-8 -8 -8) (8 8 8) trigger1 trigger2 trigger3 trigger4 trigger5 trigger6 trigger7 trigger8
@@ -475,6 +509,7 @@ killtarget also work.
 
 "delay"     delay before using targets if the trigger has been activated (default 1)
 */
+#ifdef ENABLE_COOP
 void target_crosslevel_target_think(edict_t *self)
 {
 	if (self->spawnflags == (game.serverflags & SFL_CROSS_TRIGGER_MASK & self->spawnflags))
@@ -483,15 +518,20 @@ void target_crosslevel_target_think(edict_t *self)
 		G_FreeEdict(self);
 	}
 }
+#endif
 
 void SP_target_crosslevel_target(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	if (! self->delay)
 		self->delay = 1;
 
 	self->svflags = SVF_NOCLIENT;
 	self->think = target_crosslevel_target_think;
 	self->nextthink = level.time + (self->delay * 1000);
+#else
+	G_FreeEdict(self);
+#endif
 }
 
 //==========================================================
@@ -666,7 +706,7 @@ void SP_target_laser(edict_t *self)
 speed       How many seconds the ramping will take
 message     two letters; starting lightlevel and ending lightlevel
 */
-
+#ifdef ENABLE_COOP
 void target_lightramp_think(edict_t *self)
 {
 	char    style[2];
@@ -721,9 +761,11 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
 	self->timestamp = level.time / 1000.0f;
 	target_lightramp_think(self);
 }
+#endif
 
 void SP_target_lightramp(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	if (!self->message || strlen(self->message) != 2 || self->message[0] < 'a' || self->message[0] > 'z' || self->message[1] < 'a' || self->message[1] > 'z' || self->message[0] == self->message[1])
 	{
 		Com_Printf("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->s.origin));
@@ -750,6 +792,9 @@ void SP_target_lightramp(edict_t *self)
 	self->movedir[0] = self->message[0] - 'a';
 	self->movedir[1] = self->message[1] - 'a';
 	self->movedir[2] = (self->movedir[1] - self->movedir[0]) / (self->speed / game.frameseconds);
+#else
+	G_FreeEdict(self);
+#endif
 }
 
 //==========================================================

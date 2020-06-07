@@ -22,6 +22,7 @@ BERSERK
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_berserk.h"
@@ -147,7 +148,7 @@ static void berserk_die(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 
 	gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 
 	if (damage >= 50)
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
@@ -225,3 +226,5 @@ void SP_monster_berserk(edict_t *self)
 	gi.linkentity(self);
 	walkmonster_start(self);
 }
+
+#endif

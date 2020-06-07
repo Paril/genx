@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // m_move.c -- monster movement
 
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 #define STEPSIZE    18
@@ -778,3 +779,5 @@ bool M_walkmove(edict_t *ent, float yaw, float dist)
 	move[2] = 0;
 	return SV_movestep(ent, move, true);
 }
+
+#endif

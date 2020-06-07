@@ -17,6 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // g_turret.c
 
+#ifdef ENABLE_COOP
 #include "g_local.h"
 
 
@@ -407,3 +408,5 @@ void SP_turret_driver(edict_t *self)
 	self->s.frame = 0;
 	gi.linkentity(self);
 }
+
+#endif

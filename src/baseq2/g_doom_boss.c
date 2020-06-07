@@ -1,3 +1,5 @@
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 
 static q_soundhandle sound_alert;
@@ -129,7 +131,7 @@ void dboss_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage,
 	// check for gib
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &boss_die1;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->solid = SOLID_NOT;
 	gi.linkentity(self);
 }
@@ -174,8 +176,7 @@ void doom_boss_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurfac
 		return;
 	}
 
-	if (ent->owner->client)
-		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
 
 	if (other->takedamage)
 		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
@@ -316,3 +317,5 @@ void doom_monster_boss(edict_t *self)
 	self->monsterinfo.scale = 1;
 	walkmonster_start(self);
 }
+
+#endif

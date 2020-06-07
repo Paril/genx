@@ -23,6 +23,7 @@ parasite
 ==============================================================================
 */
 
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_parasite.h"
 #include "m_local.h"
@@ -261,7 +262,7 @@ static void parasite_die(edict_t *self, edict_t *inflictor, edict_t *attacker, i
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_die, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
 
@@ -333,3 +334,5 @@ void SP_monster_parasite(edict_t *self)
 	self->monsterinfo.scale = MODEL_SCALE;
 	walkmonster_start(self);
 }
+
+#endif

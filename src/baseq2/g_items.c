@@ -21,18 +21,6 @@ bool        Pickup_Weapon(edict_t *ent, edict_t *other);
 void        Use_Weapon(edict_t *ent, gitem_t *inv);
 void        Drop_Weapon(edict_t *ent, gitem_t *inv);
 
-void Weapon_Blaster(edict_t *ent, gunindex_e gun);
-void Weapon_Shotgun(edict_t *ent, gunindex_e gun);
-void Weapon_SuperShotgun(edict_t *ent, gunindex_e gun);
-void Weapon_Machinegun(edict_t *ent, gunindex_e gun);
-void Weapon_Chaingun(edict_t *ent, gunindex_e gun);
-void Weapon_HyperBlaster(edict_t *ent, gunindex_e gun);
-void Weapon_RocketLauncher(edict_t *ent, gunindex_e gun);
-void Weapon_Grenade(edict_t *ent, gunindex_e gun);
-void Weapon_GrenadeLauncher(edict_t *ent, gunindex_e gun);
-void Weapon_Railgun(edict_t *ent, gunindex_e gun);
-void Weapon_BFG(edict_t *ent, gunindex_e gun);
-
 typedef enum
 {
 	HEALTH_NONE			= 0,
@@ -51,7 +39,8 @@ static gtime_t  quad_drop_timeout_hack;
 #define GameInfoHealthPickup GameInfoAmmoPickup
 #define GameInfoArmorStats(item, base_count, max_count, normal_protection, energy_protection) \
 	info->armors[item - ITI_JACKET_ARMOR] = (gitem_armor_t) { base_count, max_count, normal_protection, energy_protection }
-#define GameInfoWeaponAmmo(item, shots) info->ammo_usages[item] = info->default_ammo_usages[item] = COUNT_FOR_SHOTS(shots)
+#define GameInfoWeaponAmmo(item, shots) info->ammo_usages[item] = info->default_ammo_usages[item] = shots ? COUNT_FOR_SHOTS(shots) : shots
+#define GameInfoWeaponGroup(group, ...) memcpy(info->weapon_groups[group], (itemid_e[]) { __VA_ARGS__ }, sizeof((itemid_e[]) { __VA_ARGS__ }))
 
 static void InitGameInfoBase(game_iteminfo_t *info)
 {
@@ -94,6 +83,12 @@ static void InitQ2GameInfo(game_iteminfo_t *info)
 	GameInfoWeaponAmmo(ITI_Q2_RAILGUN, 15);
 	GameInfoWeaponAmmo(ITI_Q2_BFG10K, 4);
 	GameInfoWeaponAmmo(ITI_Q2_GRENADES, 25);
+	GameInfoWeaponGroup(WEAPON_GROUP_RAPID, ITI_Q2_MACHINEGUN, ITI_Q2_CHAINGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_SPREAD, ITI_Q2_SHOTGUN, ITI_Q2_SUPER_SHOTGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXPLOSIVE, ITI_Q2_GRENADE_LAUNCHER, ITI_Q2_ROCKET_LAUNCHER);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXOTIC, ITI_Q2_HYPERBLASTER, ITI_Q2_RAILGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_SUPER, ITI_Q2_BFG10K);
+	GameInfoWeaponGroup(WEAPON_GROUP_ANY, ITI_Q2_SHOTGUN, ITI_Q2_SUPER_SHOTGUN, ITI_Q2_MACHINEGUN, ITI_Q2_CHAINGUN, ITI_Q2_GRENADE_LAUNCHER, ITI_Q2_ROCKET_LAUNCHER, ITI_Q2_HYPERBLASTER, ITI_Q2_RAILGUN, ITI_Q2_BFG10K);
 }
 
 static void InitQ1GameInfo(game_iteminfo_t *info)
@@ -132,6 +127,12 @@ static void InitQ1GameInfo(game_iteminfo_t *info)
 	GameInfoWeaponAmmo(ITI_Q1_GRENADE_LAUNCHER, 25);
 	GameInfoWeaponAmmo(ITI_Q1_ROCKET_LAUNCHER, 25);
 	GameInfoWeaponAmmo(ITI_Q1_THUNDERBOLT, 60);
+	GameInfoWeaponGroup(WEAPON_GROUP_RAPID, ITI_Q1_NAILGUN, ITI_Q1_SUPER_NAILGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_SPREAD, ITI_Q1_SUPER_SHOTGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXPLOSIVE, ITI_Q1_GRENADE_LAUNCHER, ITI_Q1_ROCKET_LAUNCHER);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXOTIC, ITI_Q1_THUNDERBOLT);
+	GameInfoWeaponGroup(WEAPON_GROUP_SUPER, ITI_Q1_THUNDERBOLT);
+	GameInfoWeaponGroup(WEAPON_GROUP_ANY, ITI_Q1_SUPER_SHOTGUN, ITI_Q1_NAILGUN, ITI_Q1_SUPER_NAILGUN, ITI_Q1_GRENADE_LAUNCHER, ITI_Q1_ROCKET_LAUNCHER, ITI_Q1_THUNDERBOLT);
 }
 
 static void InitDoomGameInfo(game_iteminfo_t *info)
@@ -163,6 +164,8 @@ static void InitDoomGameInfo(game_iteminfo_t *info)
 	GameInfoHealthPickup(ITI_MEGA_HEALTH, 100);
 	GameInfoArmorStats(ITI_JACKET_ARMOR, 100,  100, .33f, .33f);
 	GameInfoArmorStats(ITI_BODY_ARMOR, 200, 200, .50f, .50f);
+	GameInfoWeaponAmmo(ITI_DOOM_FIST, 0);
+	GameInfoWeaponAmmo(ITI_DOOM_CHAINSAW, 0);
 	GameInfoWeaponAmmo(ITI_DOOM_SHOTGUN, 40);
 	GameInfoWeaponAmmo(ITI_DOOM_SUPER_SHOTGUN, 20);
 	GameInfoWeaponAmmo(ITI_DOOM_CHAINGUN, 150);
@@ -170,6 +173,12 @@ static void InitDoomGameInfo(game_iteminfo_t *info)
 	GameInfoWeaponAmmo(ITI_DOOM_ROCKET_LAUNCHER, 25);
 	GameInfoWeaponAmmo(ITI_DOOM_PLASMA_GUN, 60);
 	GameInfoWeaponAmmo(ITI_DOOM_BFG, 4);
+	GameInfoWeaponGroup(WEAPON_GROUP_RAPID, ITI_DOOM_CHAINGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_SPREAD, ITI_DOOM_SHOTGUN, ITI_DOOM_SUPER_SHOTGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXPLOSIVE, ITI_DOOM_ROCKET_LAUNCHER);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXOTIC, ITI_DOOM_PLASMA_GUN, ITI_DOOM_CHAINSAW);
+	GameInfoWeaponGroup(WEAPON_GROUP_SUPER, ITI_DOOM_BFG);
+	GameInfoWeaponGroup(WEAPON_GROUP_ANY, ITI_DOOM_CHAINSAW, ITI_DOOM_SHOTGUN, ITI_DOOM_SUPER_SHOTGUN, ITI_DOOM_CHAINGUN, ITI_DOOM_ROCKET_LAUNCHER, ITI_DOOM_PLASMA_GUN, ITI_DOOM_BFG);
 }
 
 static void InitDukeGameInfo(game_iteminfo_t *info)
@@ -205,6 +214,61 @@ static void InitDukeGameInfo(game_iteminfo_t *info)
 	GameInfoWeaponAmmo(ITI_DUKE_PIPEBOMBS, 15);
 	GameInfoWeaponAmmo(ITI_DUKE_TRIPWIRES, 15);
 	GameInfoWeaponAmmo(ITI_DUKE_FREEZER, 75);
+	GameInfoWeaponGroup(WEAPON_GROUP_RAPID, ITI_DUKE_PISTOL, ITI_DUKE_CANNON);
+	GameInfoWeaponGroup(WEAPON_GROUP_SPREAD, ITI_DUKE_SHOTGUN);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXPLOSIVE, ITI_DUKE_RPG, ITI_DUKE_DEVASTATOR);
+	GameInfoWeaponGroup(WEAPON_GROUP_EXOTIC, ITI_DUKE_FREEZER);
+	//GameInfoWeaponGroup(WEAPON_GROUP_SUPER, ITI_DOOM_SHRINKER);
+	GameInfoWeaponGroup(WEAPON_GROUP_ANY, ITI_DUKE_PISTOL, ITI_DUKE_CANNON, ITI_DUKE_SHOTGUN, ITI_DUKE_RPG, ITI_DUKE_DEVASTATOR, ITI_DUKE_FREEZER);
+}
+
+uint32_t weapon_group_seeds[WEAPON_GROUP_ALL];
+
+static uint32_t GroupLength(itemid_e *group)
+{
+	uint32_t count = 0;
+
+	while (*group && count < ITI_WEAPONS_END - ITI_WEAPONS_START + 1)
+	{
+		count++;
+		group++;
+	}
+
+	return count;
+}
+
+static bool ValidSeed(uint32_t *seeds, uint32_t highest, uint32_t multiplicand, uint32_t *out)
+{
+	*out = highest * multiplicand;
+
+	for (gametype_t game = GAME_Q2; game < GAME_TOTAL; game++)
+	{
+		if (seeds[game] && *out % seeds[game] != 0)
+			return false;
+	}
+
+	return true;
+}
+
+static void CalculateWeaponGroupSeeds()
+{
+	memset(weapon_group_seeds, 0, sizeof(weapon_group_seeds));
+
+	for (weapon_group_e group = 0; group < WEAPON_GROUP_ALL; group++)
+	{
+		uint32_t seeds[GAME_TOTAL];
+		uint32_t highest_seed = 0;
+
+		for (gametype_t game = GAME_Q2; game < GAME_TOTAL; game++)
+		{
+			seeds[game] = GroupLength(game_iteminfos[game].weapon_groups[group]);
+			highest_seed = max(highest_seed, seeds[game]);
+		}
+
+		uint32_t multiplicand = 1;
+	
+		while (!ValidSeed(seeds, highest_seed, multiplicand++, &weapon_group_seeds[group])) ;
+	}
 }
 
 game_weaponmap_t game_weaponmap[GAME_TOTAL];
@@ -214,13 +278,8 @@ game_weaponmap_t game_weaponmap[GAME_TOTAL];
 #define MapGameWeapon(game_from, game_to, item_id, new_item_id) \
 	GetMappedGameWeapon(game_from, game_to, item_id) = new_item_id
 
-static void _MapWeapons(gametype_t gametype, const itemid_e *weapons)
-{
-	memcpy(game_weaponmap[GAME_Q2].to[gametype].weapons, weapons, sizeof(game_weaponmap[GAME_Q2].to[gametype].weapons));
-}
-
-#define MapWeapons(game_id, ...) \
-	_MapWeapons(game_id, (const itemid_e []) { __VA_ARGS__ })
+#define MapWeapons(gametype, ...) \
+	memcpy(game_weaponmap[GAME_Q2].to[gametype].weapons, (itemid_e[]) { __VA_ARGS__ }, sizeof((itemid_e[]) { __VA_ARGS__ }))
 
 static void InitWeaponMap()
 {
@@ -290,6 +349,7 @@ static void InitGameInfos()
 	InitDoomGameInfo(&game_iteminfos[GAME_DOOM]);
 	InitDukeGameInfo(&game_iteminfos[GAME_DUKE]);
 	InitWeaponMap();
+	CalculateWeaponGroupSeeds();
 }
 
 game_iteminfo_t game_iteminfos[GAME_TOTAL];
@@ -388,6 +448,9 @@ bool HasEnoughAmmoToFireShots(edict_t *ent, gitem_t *weapon, int shots)
 
 void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots)
 {
+	if (dmflags.infinite_ammo)
+		return;
+
 	ent->client->pers.ammo -= GetWeaponUsageCount(ent, weapon) * shots;
 
 	if (ent->client->pers.ammo < 0)
@@ -501,14 +564,23 @@ void DoRespawn(edict_t *ent)
 	ent->s.event = EV_ITEM_RESPAWN;
 }
 
-void SetRespawn(edict_t *ent, float delay)
+bool SetRespawn(edict_t *ent, float delay)
 {
+	if ((ent->spawnflags & DROPPED_ITEM)
+#ifdef ENABLE_COOP
+		|| !deathmatch->integer
+#endif
+		)
+		return false;
+
 	ent->flags |= FL_RESPAWN;
 	ent->svflags |= SVF_NOCLIENT;
 	ent->solid = SOLID_NOT;
 	ent->nextthink = level.time + delay * 1000;
 	ent->think = DoRespawn;
 	gi.linkentity(ent);
+
+	return true;
 }
 
 
@@ -523,14 +595,16 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 	switch (other->s.game)
 	{
 		case GAME_Q2:
+#if ENABLE_COOP
 			if ((skill->value == 1 && quantity >= 2) || (skill->value >= 2 && quantity >= 1))
 				return false;
 
-			if ((coop->value) && (ent->item->flags & IT_STAY_COOP) && (quantity > 0))
+			if ((coop->value) && ent->item->flags.stay_coop && (quantity > 0))
 				return false;
+#endif
 
 			other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
-			instant = ((int)dmflags->value & DF_INSTANT_ITEMS) || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM));
+			instant = !dmflags.store_items || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM));
 			break;
 
 		case GAME_DUKE:
@@ -543,8 +617,7 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 			break;
 	}
 
-	if (deathmatch->value && !(ent->spawnflags & DROPPED_ITEM))
-		SetRespawn(ent, ent->item->respawn_time);
+	SetRespawn(ent, ent->item->respawn_time);
 
 	if (instant)
 	{
@@ -572,9 +645,10 @@ bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
 	switch (other->s.game)
 	{
 		case GAME_Q2:
-			if (!deathmatch->value)
+#ifdef ENABLE_COOP
+			if (!deathmatch->integer)
 				other->max_health += 1;
-
+#endif
 			if (other->health < other->max_health)
 				other->health = other->max_health;
 
@@ -589,8 +663,7 @@ bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
 			break;
 	}
 
-	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-		SetRespawn(ent, ent->item->respawn_time);
+	SetRespawn(ent, ent->item->respawn_time);
 
 	return true;
 }
@@ -599,8 +672,7 @@ bool Pickup_AncientHead(edict_t *ent, edict_t *other)
 {
 	other->max_health += 2;
 
-	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-		SetRespawn(ent, ent->item->respawn_time);
+	SetRespawn(ent, ent->item->respawn_time);
 
 	return true;
 }
@@ -609,8 +681,7 @@ bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 {
 	other->client->pers.ammo = min(GetMaxAmmo(other, true, CHECK_INVENTORY), other->client->pers.ammo + (DEFAULT_MAX_AMMO / 4));
 
-	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-		SetRespawn(ent, ent->item->respawn_time);
+	SetRespawn(ent, ent->item->respawn_time);
 
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
@@ -620,8 +691,7 @@ bool Pickup_Pack(edict_t *ent, edict_t *other)
 {
 	other->client->pers.ammo = min(GetMaxAmmo(other, CHECK_INVENTORY, true), other->client->pers.ammo + (DEFAULT_MAX_AMMO / 2));
 
-	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-		SetRespawn(ent, ent->item->respawn_time);
+	SetRespawn(ent, ent->item->respawn_time);
 
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
@@ -718,6 +788,7 @@ void    Use_Silencer(edict_t *ent, gitem_t *item)
 
 //======================================================================
 
+#if ENABLE_COOP
 bool Pickup_Key(edict_t *ent, edict_t *other)
 {
 	if (coop->value)
@@ -744,6 +815,7 @@ bool Pickup_Key(edict_t *ent, edict_t *other)
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
 }
+#endif
 
 //======================================================================
 
@@ -766,7 +838,7 @@ bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup)
 		gitem_t		*item = GetItemByIndex(index);
 
 		// only affects Q2 and Duke realistically
-		if ((item->flags & IT_WEAPON) && ShouldSwapToPotentiallyBetterWeapon(ent, item, true))
+		if (item->flags.is_weapon && ShouldSwapToPotentiallyBetterWeapon(ent, item, true))
 			ent->client->gunstates[GUN_MAIN].newweapon = item;
 	}
 
@@ -778,11 +850,9 @@ bool do_propagate = true;
 bool Pickup_Ammo(edict_t *ent, edict_t *other)
 {
 	float       count;
-	bool        weapon;
 	gitem_t		*item = ent->item;
-	weapon = (item->flags & IT_WEAPON);
 
-	if ((weapon) && ((int)dmflags->value & DF_INFINITE_AMMO))
+	if (item->flags.is_weapon && dmflags.infinite_ammo)
 		count = DEFAULT_MAX_AMMO * 100;
 	else if (ent->count)
 		count = ent->count;
@@ -800,11 +870,16 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 		}
 	}
 
-	if (!Add_Ammo(other, count, GetIndexByItem(item), true) && !invasion->value)
+	if (!Add_Ammo(other, count, GetIndexByItem(item), true)
+#if ENABLE_COOP
+		&& !invasion->value
+#endif
+		)
 		return false;
 
 	if (!(ent->spawnflags & DROPPED_PLAYER_ITEM))
 	{
+#if ENABLE_COOP
 		if (invasion->value)
 		{
 			if (do_propagate)
@@ -826,7 +901,8 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 				do_propagate = true;
 			}
 		}
-		else if (!(ent->spawnflags & DROPPED_ITEM) && deathmatch->value)
+		else
+#endif
 			SetRespawn(ent, 30);
 	}
 
@@ -870,9 +946,7 @@ void MegaHealth_think(edict_t *self)
 		return;
 	}
 
-	if (!(self->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-		SetRespawn(self, 20);
-	else
+	if (!SetRespawn(self, 20))
 		G_FreeEdict(self);
 }
 
@@ -935,10 +1009,7 @@ bool Pickup_Health(edict_t *ent, edict_t *other)
 		ent->solid = SOLID_NOT;
 	}
 	else
-	{
-		if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-			SetRespawn(ent, 30);
-	}
+		SetRespawn(ent, 30);
 
 	return true;
 }
@@ -1183,8 +1254,7 @@ bool Pickup_Armor(edict_t *ent, edict_t *other)
 			other->client->pers.inventory[armor.old_armor_index] = armor.new_armor_count;
 	}
 
-	if (!(ent->spawnflags & DROPPED_ITEM) && (deathmatch->value))
-		SetRespawn(ent, 20);
+	SetRespawn(ent, 20);
 
 	return true;
 }
@@ -1234,10 +1304,11 @@ bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
 	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
 
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
+#endif
 	{
-		if (!(ent->spawnflags & DROPPED_ITEM))
-			SetRespawn(ent, ent->item->respawn_time);
+		SetRespawn(ent, ent->item->respawn_time);
 
 		// auto-use for DM only if we didn't already have one
 		if (!quantity)
@@ -1310,7 +1381,11 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 	if (!taken)
 		return;
 
-	if (invasion->value || !((coop->value) && (item->flags & IT_STAY_COOP)) || (ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM)))
+	if (
+#if ENABLE_COOP
+		invasion->value || !(coop->value && item->flags.stay_coop) ||
+#endif
+		(ent->spawnflags & (DROPPED_ITEM | DROPPED_PLAYER_ITEM)))
 	{
 		if (ent->flags & FL_RESPAWN)
 			ent->flags &= ~FL_RESPAWN;
@@ -1333,7 +1408,9 @@ void drop_make_touchable(edict_t *ent)
 {
 	ent->touch = Touch_Item;
 
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
+#endif
 	{
 		ent->nextthink = level.time + 29000;
 		ent->think = G_FreeEdict;
@@ -1541,7 +1618,7 @@ void PrecacheItem(gitem_t *it)
 
 		len = s - start;
 
-		if (len >= MAX_QPATH || len < 5)
+		if (len > MAX_QPATH || len < 5)
 			Com_Error(ERR_FATAL, "PrecacheItem: %s has bad precache string", it->classname);
 
 		memcpy(data, start, len);
@@ -1578,6 +1655,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 	ent->entitytype = ET_ITEM;
 	PrecacheItem(item);
 
+#if ENABLE_COOP
 	if (ent->spawnflags)
 	{
 		if (GetIndexByItem(item) != ITI_POWER_CUBE)
@@ -1586,47 +1664,39 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 			Com_Printf("%s at %s has invalid spawnflags set\n", item->classname, vtos(ent->s.origin));
 		}
 	}
+#endif
 
 	// some items will be prevented in deathmatch
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
+#endif
 	{
-		if ((int)dmflags->value & DF_NO_ARMOR)
+		if (dmflags.no_armor && item->flags.is_armor)
 		{
-			if (item->flags & IT_ARMOR)
-			{
-				G_FreeEdict(ent);
-				return;
-			}
+			G_FreeEdict(ent);
+			return;
 		}
 
-		if ((int)dmflags->value & DF_NO_ITEMS)
+		if (dmflags.no_items && item->flags.is_powerup)
 		{
-			if (item->flags & IT_POWERUP)
-			{
-				G_FreeEdict(ent);
-				return;
-			}
+			G_FreeEdict(ent);
+			return;
 		}
 
-		if ((int)dmflags->value & DF_NO_HEALTH)
+		if (dmflags.no_health && item->flags.is_health)
 		{
-			if (item->flags & IT_HEALTH)
-			{
-				G_FreeEdict(ent);
-				return;
-			}
+			G_FreeEdict(ent);
+			return;
 		}
 
-		if ((int)dmflags->value & DF_INFINITE_AMMO)
+		if (dmflags.infinite_ammo && item->flags.is_ammo)
 		{
-			if (item->flags == IT_AMMO)
-			{
-				G_FreeEdict(ent);
-				return;
-			}
+			G_FreeEdict(ent);
+			return;
 		}
 	}
-
+	
+#if ENABLE_COOP
 	if (coop->value && GetIndexByItem(item) == ITI_POWER_CUBE)
 	{
 		ent->spawnflags |= (1 << (8 + level.power_cubes));
@@ -1636,6 +1706,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 	// don't let them drop items that stay in a coop game
 	if ((coop->value) && (item->flags & IT_STAY_COOP))
 		item->drop = NULL;
+#endif
 
 	ent->item = item;
 	ent->nextthink = level.time + game.frametime * 2;    // items start after other solids
@@ -1699,10 +1770,12 @@ static inline void InitHealth(itemid_e id, const char *classname, const char *pi
 	InitItem(id, classname, Pickup_Health, NULL, NULL, pickup_sound, world_model, 0, NULL, "i_health", "Health", IT_HEALTH, NULL, NULL, 0, NULL, NULL);
 }
 
+#if ENABLE_COOP
 static inline void InitKey(itemid_e id, const char *classname, const char *world_model, const char *icon, const char *pickup_name)
 {
 	InitItem(id, classname, Pickup_Key, NULL, Drop_General, "items/pkup.wav", world_model, EF_ROTATE, NULL, icon, pickup_name, IT_STAY_COOP | IT_KEY, NULL, NULL, 0, NULL, NULL);
 }
+#endif
 
 #define InitWeaponQuick(index, weapmodel, precaches) \
 	InitWeapon(ITI_WEAPON_ ## index, "weapon_" #index, "%wg_weapon_" #index, "%wv_weapon_" #index, "%w_weapon_" #index, "Weapon " #index, weapmodel, precaches, "%wa_weapon_" #index, "%wa_weapon_" #index)
@@ -1722,7 +1795,7 @@ static void InitItemList()
 	InitWeaponQuick(2, "#w_shotgun.md2", "");
 	InitWeaponQuick(3, "#w_sshotgun.md2", "");
 	InitWeaponQuick(4, "#w_machinegun.md2", "");
-	InitWeaponQuick(5, "#w_machinegun.md2", "weapons/chngnu1a.wav weapons/chngnd1a.wav weapons/chngnl1a.wav");
+	InitWeaponQuick(5, "#w_chaingun.md2", "weapons/chngnu1a.wav weapons/chngnd1a.wav weapons/chngnl1a.wav");
 	InitWeaponQuick(6, "#w_glauncher.md2", "models/objects/grenade/tris.md2 weapons/grenlb1b.wav");
 	InitWeaponQuick(7, "#w_rlauncher.md2", "%e_rocket weapons/rockfly.wav");
 	InitWeaponQuick(8, "#w_hyperblaster.md2", "weapons/hyprbl1a.wav weapons/hyprbd1a.wav");
@@ -1743,6 +1816,7 @@ static void InitItemList()
 	InitPowerup(ITI_ADRENALINE, "item_adrenaline", Pickup_Adrenaline, NULL, NULL, "%s_powerup", "%i_adrenaline", "p_adrenaline", "Adrenaline", IT_NONE, NULL, 60);
 	InitPowerup(ITI_BANDOLIER, "item_bandolier", Pickup_Bandolier, NULL, NULL, "%s_powerup", "%i_bandolier", "p_bandolier", "Bandolier", IT_NONE, NULL, 60);
 	InitPowerup(ITI_AMMO_PACK, "item_pack", Pickup_Bandolier, NULL, NULL, "%s_powerup", "%i_backpack", "i_pack", "Ammo Pack", IT_NONE, NULL, 180);
+#if ENABLE_COOP
 	InitKey(ITI_DATA_CD, "key_data_cd", "models/items/keys/data_cd/tris.md2", "k_datacd", "Data CD");
 	InitKey(ITI_POWER_CUBE, "key_power_cube", "models/items/keys/power/tris.md2", "k_powercube", "Power Cube");
 	InitKey(ITI_PYRAMID_KEY, "key_pyramid", "models/items/keys/pyramid/tris.md2", "k_pyramid", "Pyramid Key");
@@ -1752,6 +1826,7 @@ static void InitItemList()
 	InitKey(ITI_RED_KEY, "key_red_key", "models/items/keys/red_key/tris.md2", "k_redkey", "Red Key");
 	InitKey(ITI_COMMANDERS_HEAD, "key_commander_head", "models/monsters/commandr/head/tris.md2", "k_comhead", "Commander's Head");
 	InitKey(ITI_AIRSTRIKE_MARKER, "key_airstrike_target", "models/items/keys/target/tris.md2", "i_airstrike", "Airstrike Marker");
+#endif
 }
 
 void Weapons_Init();

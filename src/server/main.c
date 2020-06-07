@@ -2042,12 +2042,14 @@ void SV_Init(void)
 	SV_InitOperatorCommands();
 	SV_RegisterSavegames();
 	Cvar_Get("protocol", STRINGIFY(PROTOCOL_VERSION_DEFAULT), CVAR_SERVERINFO | CVAR_ROM);
+#ifdef ENABLE_COOP
 	Cvar_Get("skill", "1", CVAR_LATCH);
 	Cvar_Get("deathmatch", "1", CVAR_SERVERINFO | CVAR_LATCH);
 	Cvar_Get("coop", "0", /*CVAR_SERVERINFO|*/CVAR_LATCH);
 	Cvar_Get("invasion", "0", CVAR_LATCH);
+#endif
 	Cvar_Get("cheats", "0", CVAR_SERVERINFO | CVAR_LATCH);
-	Cvar_Get("dmflags", va("%i", DF_INSTANT_ITEMS), CVAR_SERVERINFO);
+	Cvar_Get("dmflags", "0", CVAR_SERVERINFO);
 	Cvar_Get("fraglimit", "0", CVAR_SERVERINFO);
 	Cvar_Get("timelimit", "0", CVAR_SERVERINFO);
 	sv_maxclients = Cvar_Get("maxclients", "8", CVAR_SERVERINFO | CVAR_LATCH);

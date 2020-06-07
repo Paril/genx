@@ -5,6 +5,7 @@ OGRE
 
 ==============================================================================
 */
+#ifdef ENABLE_COOP
 
 #include "g_local.h"
 #include "m_local.h"
@@ -77,7 +78,7 @@ static void OgreGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csu
 	if (other == self->owner)
 		return;		// don't explode on owner
 
-	if (other->takedamage == DAMAGE_AIM)
+	if (other->takedamage)
 	{
 		OgreGrenadeExplode(self);
 		return;
@@ -472,3 +473,4 @@ void q1_monster_ogre(edict_t *self)
 	walkmonster_start(self);
 }
 
+#endif

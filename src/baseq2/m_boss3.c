@@ -22,7 +22,7 @@ boss3
 
 ==============================================================================
 */
-
+#ifdef ENABLE_COOP
 #include "g_local.h"
 #include "m_boss32.h"
 
@@ -70,3 +70,4 @@ void SP_monster_boss3_stand(edict_t *self)
 	self->nextthink = level.time + game.frametime;
 	gi.linkentity(self);
 }
+#endif

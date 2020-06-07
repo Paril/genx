@@ -265,7 +265,7 @@ void ThrowHead(edict_t *self, char *gibname, int damage, gibtype_e type)
 	self->s.sound = 0;
 	self->flags |= FL_NO_KNOCKBACK;
 	self->svflags &= ~SVF_MONSTER;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->die = gib_die;
 
 	if (type == GIB_ORGANIC)
@@ -304,7 +304,7 @@ void ThrowClientHead(edict_t *self, int damage)
 {
 	vec3_t  vd;
 	char    *gibname;
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 
 	if (self->s.game == GAME_Q2)
 	{
@@ -394,7 +394,7 @@ void ThrowDebris(edict_t *self, char *modelname, float speed, vec3_t origin)
 	chunk->nextthink = level.time + 5000 + (Q_rand() % 5000);
 	chunk->s.frame = 0;
 	chunk->flags = 0;
-	chunk->takedamage = DAMAGE_YES;
+	chunk->takedamage = true;
 	chunk->die = debris_die;
 	gi.linkentity(chunk);
 }
@@ -464,7 +464,8 @@ void path_corner_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	}
 
 	other->goalentity = other->movetarget = next;
-
+	
+#ifdef ENABLE_COOP
 	if (other->entitytype == ET_Q1_MONSTER_OGRE)
 		ogre_drag_sound(other);// play chainsaw drag sound
 
@@ -485,6 +486,7 @@ void path_corner_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 		VectorSubtract(other->goalentity->s.origin, other->s.origin, v);
 		other->ideal_yaw = vectoyaw(v);
 	}
+#endif
 }
 
 void SP_path_corner(edict_t *self)
@@ -504,7 +506,7 @@ void SP_path_corner(edict_t *self)
 	gi.linkentity(self);
 }
 
-
+#ifdef ENABLE_COOP
 /*QUAKED point_combat (0.5 0.3 0) (-8 -8 -8) (8 8 8) Hold
 Makes this the target of a monster and it will head here
 when first activated before going after the activator.  If
@@ -564,9 +566,11 @@ void point_combat_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 		self->target = savetarget;
 	}
 }
+#endif
 
 void SP_point_combat(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		G_FreeEdict(self);
@@ -579,33 +583,10 @@ void SP_point_combat(edict_t *self)
 	VectorSet(self->maxs, 8, 8, 16);
 	self->svflags = SVF_NOCLIENT;
 	gi.linkentity(self);
+#else
+	G_FreeEdict(self);
+#endif
 }
-
-
-/*QUAKED viewthing (0 .5 .8) (-8 -8 -8) (8 8 8)
-Just for the debugging level.  Don't use
-*/
-void TH_viewthing(edict_t *ent)
-{
-	ent->s.frame = (ent->s.frame + 1) % 7;
-	ent->nextthink = level.time + game.frameseconds;
-}
-
-void SP_viewthing(edict_t *ent)
-{
-	Com_Printf("viewthing spawned\n");
-	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_BBOX;
-	ent->s.renderfx = RF_FRAMELERP;
-	VectorSet(ent->mins, -16, -16, -24);
-	VectorSet(ent->maxs, 16, 16, 32);
-	ent->s.modelindex = gi.modelindex("models/objects/banner/tris.md2");
-	gi.linkentity(ent);
-	ent->nextthink = level.time + 0.5f;
-	ent->think = TH_viewthing;
-	return;
-}
-
 
 /*QUAKED info_null (0 0.5 0) (-4 -4 -4) (4 4 4)
 Used as a positional target for spotlights, etc.
@@ -634,6 +615,7 @@ If targeted, will toggle between on and off.
 Default _cone value is 10 (used to set size of light for spotlights)
 */
 
+#ifdef ENABLE_COOP
 #define START_OFF   1
 
 void light_use(edict_t *self, edict_t *other, edict_t *activator)
@@ -649,9 +631,11 @@ void light_use(edict_t *self, edict_t *other, edict_t *activator)
 		self->spawnflags |= START_OFF;
 	}
 }
+#endif
 
 void SP_light(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	// no targeted lights in deathmatch, because they cause global messages
 	if (!self->targetname || deathmatch->value)
 	{
@@ -668,6 +652,9 @@ void SP_light(edict_t *self)
 		else
 			gi.configstring(CS_LIGHTS + self->style, "m");
 	}
+#else
+	G_FreeEdict(self);
+#endif
 }
 
 
@@ -768,7 +755,7 @@ void func_object_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_
 	if (plane->normal[2] < 1.0f)
 		return;
 
-	if (other->takedamage == DAMAGE_NO)
+	if (other->takedamage == false)
 		return;
 
 	T_Damage(other, self, self, vec3_origin, self->s.origin, vec3_origin, self->dmg, 1, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
@@ -841,6 +828,7 @@ mass defaults to 75.  This determines how much debris is emitted when
 it explodes.  You get one large chunk per 100 of mass (up to 8) and
 one small chunk per 25 of mass (up to 16).  So 800 gives the most.
 */
+#ifdef ENABLE_COOP
 void func_explosive_explode(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	vec3_t  origin;
@@ -852,7 +840,7 @@ void func_explosive_explode(edict_t *self, edict_t *inflictor, edict_t *attacker
 	VectorScale(self->size, 0.5f, size);
 	VectorAdd(self->absmin, size, origin);
 	VectorCopy(origin, self->s.origin);
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 
 	if (self->dmg)
 		T_RadiusDamage(self, attacker, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
@@ -919,9 +907,11 @@ void func_explosive_spawn(edict_t *self, edict_t *other, edict_t *activator)
 	KillBox(self);
 	gi.linkentity(self);
 }
+#endif
 
 void SP_func_explosive(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		// auto-remove for deathmatch
@@ -960,10 +950,13 @@ void SP_func_explosive(edict_t *self)
 			self->health = 100;
 
 		self->die = func_explosive_explode;
-		self->takedamage = DAMAGE_YES;
+		self->takedamage = true;
 	}
 
 	gi.linkentity(self);
+#else
+	G_FreeEdict(self);
+#endif
 }
 
 
@@ -971,7 +964,7 @@ void SP_func_explosive(edict_t *self)
 Large exploding box.  You can override its mass (100),
 health (80), and dmg (150).
 */
-
+#ifdef ENABLE_COOP
 void barrel_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 
 {
@@ -1062,14 +1055,16 @@ void barrel_explode(edict_t *self)
 
 void barrel_delay(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-	self->takedamage = DAMAGE_NO;
+	self->takedamage = false;
 	self->nextthink = level.time + (2 * game.frametime);
 	self->think = barrel_explode;
 	self->activator = attacker;
 }
+#endif
 
 void SP_misc_explobox(edict_t *self)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		// auto-remove for deathmatch
@@ -1097,12 +1092,15 @@ void SP_misc_explobox(edict_t *self)
 		self->dmg = 150;
 
 	self->die = barrel_delay;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->monsterinfo.aiflags = AI_NOSTEP;
 	self->touch = barrel_touch;
 	self->think = M_droptofloor;
 	self->nextthink = level.time + (2 * game.frametime);
 	gi.linkentity(self);
+#else
+	G_FreeEdict(self);
+#endif
 }
 
 
@@ -1271,7 +1269,7 @@ void SP_monster_commander_body(edict_t *self)
 	VectorSet(self->mins, -32, -32, 0);
 	VectorSet(self->maxs, 32, 32, 48);
 	self->use = commander_body_use;
-	self->takedamage = DAMAGE_YES;
+	self->takedamage = true;
 	self->flags = FL_GODMODE;
 	self->s.renderfx |= RF_FRAMELERP;
 	gi.linkentity(self);
@@ -1306,6 +1304,7 @@ void SP_misc_banner(edict_t *ent)
 /*QUAKED misc_deadsoldier (1 .5 0) (-16 -16 0) (16 16 16) ON_BACK ON_STOMACH BACK_DECAP FETAL_POS SIT_DECAP IMPALED
 This is the dead player model. Comes in 6 exciting different poses!
 */
+#ifdef ENABLE_COOP
 void misc_deadsoldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int     n;
@@ -1320,9 +1319,11 @@ void misc_deadsoldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, 
 
 	ThrowHead(self, "models/objects/gibs/head2/tris.md2", damage, GIB_ORGANIC);
 }
+#endif
 
 void SP_misc_deadsoldier(edict_t *ent)
 {
+#ifdef ENABLE_COOP
 	if (deathmatch->value)
 	{
 		// auto-remove for deathmatch
@@ -1351,12 +1352,15 @@ void SP_misc_deadsoldier(edict_t *ent)
 	VectorSet(ent->mins, -16, -16, 0);
 	VectorSet(ent->maxs, 16, 16, 16);
 	ent->deadflag = DEAD_DEAD;
-	ent->takedamage = DAMAGE_YES;
+	ent->takedamage = true;
 	ent->svflags |= SVF_MONSTER | SVF_DEADMONSTER;
 	ent->s.clip_contents = CONTENTS_DEADMONSTER;
 	ent->die = misc_deadsoldier_die;
 	ent->monsterinfo.aiflags |= AI_GOOD_GUY;
 	gi.linkentity(ent);
+#else
+	G_FreeEdict(ent);
+#endif
 }
 
 /*QUAKED misc_viper (1 .5 0) (-16 -16 0) (16 16 32)
@@ -1582,7 +1586,7 @@ void SP_misc_gib_arm(edict_t *ent)
 	gi.setmodel(ent, "models/objects/gibs/arm/tris.md2");
 	ent->solid = SOLID_NOT;
 	ent->s.effects |= EF_GIB;
-	ent->takedamage = DAMAGE_YES;
+	ent->takedamage = true;
 	ent->die = gib_die;
 	ent->movetype = MOVETYPE_TOSS;
 	ent->svflags |= SVF_MONSTER;
@@ -1603,7 +1607,7 @@ void SP_misc_gib_leg(edict_t *ent)
 	gi.setmodel(ent, "models/objects/gibs/leg/tris.md2");
 	ent->solid = SOLID_NOT;
 	ent->s.effects |= EF_GIB;
-	ent->takedamage = DAMAGE_YES;
+	ent->takedamage = true;
 	ent->die = gib_die;
 	ent->movetype = MOVETYPE_TOSS;
 	ent->svflags |= SVF_MONSTER;
@@ -1624,7 +1628,7 @@ void SP_misc_gib_head(edict_t *ent)
 	gi.setmodel(ent, "models/objects/gibs/head/tris.md2");
 	ent->solid = SOLID_NOT;
 	ent->s.effects |= EF_GIB;
-	ent->takedamage = DAMAGE_YES;
+	ent->takedamage = true;
 	ent->die = gib_die;
 	ent->movetype = MOVETYPE_TOSS;
 	ent->svflags |= SVF_MONSTER;

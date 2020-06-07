@@ -17,6 +17,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 // g_ai.c
 
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 
 bool FindTarget(edict_t *self);
@@ -34,56 +36,6 @@ static float       enemy_yaw, enemy_pitch;
 void M_NavigatorNodeReached(edict_t *self);
 bool M_NavigatorPathToSpot(edict_t *self, vec3_t spot);
 void M_StopBotheringWithPaths(edict_t *self);
-
-/*
-=================
-AI_SetSightClient
-
-Called once each frame to set level.sight_client to the
-player to be checked for in findtarget.
-
-If all clients are either dead or in notarget, sight_client
-will be null.
-
-In coop games, sight_client will cycle between the clients.
-=================
-*/
-void AI_SetSightClient(void)
-{
-	edict_t *ent;
-	int     start, check;
-
-	if (level.sight_client == NULL)
-		start = 1;
-	else
-		start = level.sight_client - g_edicts;
-
-	check = start;
-
-	while (1)
-	{
-		check++;
-
-		if (check > game.maxclients)
-			check = 1;
-
-		ent = &g_edicts[check];
-
-		if (ent->inuse
-			&& ent->health > 0
-			&& !(ent->flags & FL_NOTARGET))
-		{
-			level.sight_client = ent;
-			return;     // got one
-		}
-
-		if (check == start)
-		{
-			level.sight_client = NULL;
-			return;     // nobody to see
-		}
-	}
-}
 
 //============================================================================
 
@@ -316,57 +268,6 @@ int range(edict_t *self, edict_t *other)
 	return RANGE_FAR;
 }
 
-/*
-=============
-visible
-
-returns 1 if the entity is visible to self, even if not infront ()
-=============
-*/
-bool visible(edict_t *self, edict_t *other)
-{
-	if (other->flags & FL_NOTARGET)
-		return false;
-
-	vec3_t  spot1;
-	vec3_t  spot2;
-	trace_t trace;
-	VectorCopy(self->s.origin, spot1);
-	spot1[2] += self->viewheight;
-	VectorCopy(other->s.origin, spot2);
-	spot2[2] += other->viewheight;
-	trace = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_OPAQUE);
-
-	if (trace.fraction == 1.0f)
-		return true;
-
-	return false;
-}
-
-
-/*
-=============
-infront
-
-returns 1 if the entity is in front (in sight) of self
-=============
-*/
-bool infront(edict_t *self, edict_t *other)
-{
-	vec3_t  vec;
-	float   dot;
-	vec3_t  forward;
-	AngleVectors(self->s.angles, forward, NULL, NULL);
-	VectorSubtract(other->s.origin, self->s.origin, vec);
-	VectorNormalize(vec);
-	dot = DotProduct(vec, forward);
-
-	if (dot > 0.3f)
-		return true;
-
-	return false;
-}
-
 
 //============================================================================
 
@@ -434,74 +335,14 @@ void FoundTarget(edict_t *self)
 	self->monsterinfo.run(self);
 }
 
-
-/*
-===========
-FindTarget
-
-Self is currently not attacking anything, so try to find a target
-
-Returns TRUE if an enemy was sighted
-
-When a player fires a missile, the point of impact becomes a fakeplayer so
-that monsters that see the impact will respond as if they had seen the
-player.
-
-To avoid spending too much time, only a single client (or fakeclient) is
-checked each frame.  This means multi player games will have slightly
-slower noticing monsters.
-============
-*/
-bool FindTarget(edict_t *self)
+static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 {
-	edict_t     *client;
-	bool        heardit;
-	int         r;
-
-	if (self->monsterinfo.aiflags & AI_GOOD_GUY)
-	{
-		//FIXME look for monsters?
-		return false;
-	}
-
-	// if we're going to a combat point, just proceed
-	if (self->monsterinfo.aiflags & AI_COMBAT_POINT)
-		return false;
-
-	// if the first spawnflag bit is set, the monster will only wake up on
-	// really seeing the player, not another monster getting angry or hearing
-	// something
-	// revised behavior so they will wake up if they "see" a player make a noise
-	// but not weapon impact/explosion noises
-	heardit = false;
-
-	if ((level.sight_entity_time > level.time) && !(self->spawnflags & 1))
-	{
-		client = level.sight_entity;
-
-		if (client->enemy == self->enemy)
-			return false;
-	}
-	else if (level.sound_entity_time > level.time)
-	{
-		client = level.sound_entity;
-		heardit = true;
-	}
-	else if (!(self->enemy) && (level.sound2_entity_time > level.time) && !(self->spawnflags & 1))
-	{
-		client = level.sound2_entity;
-		heardit = true;
-	}
-	else
-	{
-		client = level.sight_client;
-
-		if (!client)
-			return false;   // no clients to get mad at
-	}
-
 	// if the entity went away, forget it
 	if (!client->inuse)
+		return false;
+
+	// dead
+	if (client->health <= 0)
 		return false;
 
 	if (client == self->enemy)
@@ -530,7 +371,7 @@ bool FindTarget(edict_t *self)
 
 	if (!heardit)
 	{
-		r = range(self, client);
+		int r = range(self, client);
 
 		if (r == RANGE_FAR)
 			return false;
@@ -614,6 +455,66 @@ bool FindTarget(edict_t *self)
 	return true;
 }
 
+/*
+===========
+FindTarget
+
+Self is currently not attacking anything, so try to find a target
+
+Returns TRUE if an enemy was sighted
+
+When a player fires a missile, the point of impact becomes a fakeplayer so
+that monsters that see the impact will respond as if they had seen the
+player.
+============
+*/
+bool FindTarget(edict_t *self)
+{
+	// if we're going to a combat point, just proceed
+	if (self->monsterinfo.aiflags & (AI_COMBAT_POINT | AI_GOOD_GUY))
+		return false;
+
+	// if the first spawnflag bit is set, the monster will only wake up on
+	// really seeing the player, not another monster getting angry or hearing
+	// something
+	// revised behavior so they will wake up if they "see" a player make a noise
+	// but not weapon impact/explosion noises
+	bool heardit = false;
+	edict_t *client = NULL;
+
+	if ((level.sight_entity_time > level.time) && !(self->spawnflags & 1))
+	{
+		client = level.sight_entity;
+
+		if (client->enemy == self->enemy)
+			return false;
+	}
+	else if (level.sound_entity_time > level.time)
+	{
+		client = level.sound_entity;
+		heardit = true;
+	}
+	else if (!(self->enemy) && (level.sound2_entity_time > level.time) && !(self->spawnflags & 1))
+	{
+		client = level.sound2_entity;
+		heardit = true;
+	}
+
+	if (client && IsTargetFound(self, client, heardit))
+		return true;
+
+	for (edict_t *ent = &g_edicts[1]; ent <= g_edicts + maxclients->integer; ent++)
+	{
+		if (ent == client)
+			continue;
+
+		if (IsTargetFound(ent, client, false))
+			return true;
+	}
+
+	return false;
+}
+
 
 //=============================================================================
 
@@ -625,8 +526,7 @@ FacingIdeal
 */
 bool FacingIdeal(edict_t *self)
 {
-	float   delta;
-	delta = anglemod(self->s.angles[YAW] - self->ideal_yaw);
+	float   delta = anglemod(self->s.angles[YAW] - self->ideal_yaw);
 
 	if (delta > 45 && delta < 315)
 		return false;
@@ -1310,3 +1210,5 @@ void ai_run(edict_t *self, float dist)
 
 	M_MoveToGoal(self, dist);
 }
+
+#endif

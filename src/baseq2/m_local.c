@@ -1,3 +1,5 @@
+#ifdef ENABLE_COOP
+
 #include "m_local.h"
 #include "format/mdl.h"
 #include "format/md2.h"
@@ -554,3 +556,5 @@ void M_ConvertFramesToMonsterScript(const char *script_filename, const char *mod
 		FS_FCloseFile(f);
 	}
 }*/
+
+#endif

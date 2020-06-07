@@ -19,8 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "g_local.h"
 #include "m_player.h"
 
-
-
 static  edict_t     *current_player;
 static  gclient_t   *current_client;
 
@@ -826,10 +824,10 @@ void P_FallingDamage(edict_t *ent, byte msec)
 				{
 					ent->client->fall_time += (msec >> 3);
 
-					if (ent->client->fall_time >= DUKE_TIME_OFFSET(38) && !ent->client->showhelpicon)
+					if (ent->client->fall_time >= DUKE_TIME_OFFSET(38) && !ent->client->duke_scream)
 					{
 						gi.sound(ent, CHAN_VOICE, gi.soundindex("duke/DSCREM04.wav"), 1, ATTN_NORM, 0);
-						ent->client->showhelpicon = true;
+						ent->client->duke_scream = true;
 					}
 				}
 			}
@@ -855,7 +853,7 @@ void P_FallingDamage(edict_t *ent, byte msec)
 			{
 nofall:
 				ent->client->fall_time = 0;
-				ent->client->showhelpicon = false;
+				ent->client->duke_scream = false;
 			}
 
 			return;
@@ -905,7 +903,7 @@ nofall:
 
 		VectorSet(dir, 0, 0, 1);
 
-		if (!deathmatch->value || !((int)dmflags->value & DF_NO_FALLING))
+		if (!dmflags.no_falling_damage)
 			T_Damage(ent, world, world, dir, ent->s.origin, vec3_origin, damage, 0, DAMAGE_NONE, MakeGenericMeansOfDeath(world, MD_FALLING, DT_DIRECT));
 	}
 	else
@@ -945,7 +943,9 @@ void P_WorldEffects(void)
 	//
 	if (!old_waterlevel && waterlevel)
 	{
+#ifdef ENABLE_COOP
 		PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
+#endif
 
 		switch (current_player->s.game)
 		{
@@ -980,7 +980,9 @@ void P_WorldEffects(void)
 	//
 	if (old_waterlevel && ! waterlevel)
 	{
+#ifdef ENABLE_COOP
 		PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
+#endif
 
 		switch (current_player->s.game)
 		{
@@ -1017,7 +1019,9 @@ void P_WorldEffects(void)
 				{
 					// gasp for air
 					gi.sound(current_player, CHAN_VOICE, gi.soundindex("player/gasp1.wav"), 1, ATTN_NORM, 0);
+#ifdef ENABLE_COOP
 					PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
+#endif
 				}
 				else  if (current_player->air_finished < level.time + 11000)
 				{
@@ -1055,7 +1059,9 @@ void P_WorldEffects(void)
 					gi.sound(current_player, CHAN_AUTO, gi.soundindex("player/u_breath2.wav"), 1, ATTN_NORM, 0);
 
 				current_client->breather_sound ^= 1;
+#ifdef ENABLE_COOP
 				PlayerNoise(current_player, current_player->s.origin, PNOISE_SELF);
+#endif
 				//FIXME: release a bubble?
 			}
 		}
@@ -1288,6 +1294,7 @@ G_SetClientSound
 */
 void G_SetClientSound(edict_t *ent)
 {
+#ifdef ENABLE_COOP
 	if (ent->client->pers.game_helpchanged != game.helpchanged)
 	{
 		ent->client->pers.game_helpchanged = game.helpchanged;
@@ -1300,6 +1307,7 @@ void G_SetClientSound(edict_t *ent)
 		ent->client->pers.helpchanged++;
 		gi.sound(ent, CHAN_VOICE, gi.soundindex("misc/pc_up.wav"), 1, ATTN_STATIC, 0);
 	}
+#endif
 
 	if (ent->waterlevel && (ent->watertype & (CONTENTS_LAVA | CONTENTS_SLIME)))
 		ent->s.sound = snd_fry;

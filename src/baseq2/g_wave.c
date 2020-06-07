@@ -1,3 +1,5 @@
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 
 typedef enum
@@ -267,17 +269,36 @@ void Wave_MonsterFreed(edict_t *self)
 	List_Remove(&self->monsterinfo.wave_entry);
 }
 
+static edict_t *last_enemy = NULL;
+
 void Wave_SpawnMonster()
 {
 	edict_t *point = SelectMonsterSpawnPoint();
-	edict_t *client_to_fetch = level.sight_client;
 	edict_t *s = G_Spawn();
 	VectorCopy(point->s.origin, s->s.origin);
 	s->s.origin[2] += 16;
 	VectorCopy(point->s.angles, s->s.angles);
 	ED_CallSpawnByType(s, Wave_PickSpawnableMonster());
 	gi.linkentity(s);
-	s->enemy = client_to_fetch;
+
+	if (!last_enemy)
+		last_enemy = &g_edicts[0];
+
+	edict_t *first_enemy = last_enemy;
+
+	do
+	{
+		last_enemy++;
+
+		if (last_enemy > g_edicts + maxclients->integer)
+			last_enemy = &g_edicts[1];
+
+		if (last_enemy->inuse && last_enemy->health > 0 && !(last_enemy->flags & FL_NOTARGET))
+		{
+			s->enemy = last_enemy;
+			break;
+		}
+	} while (last_enemy != first_enemy);
 
 	if (s->enemy)
 		FoundTarget(s);
@@ -384,3 +405,5 @@ bool Wave_Commands(edict_t *ent)
 
 	return false;
 }
+
+#endif

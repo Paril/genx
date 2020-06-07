@@ -15,6 +15,9 @@ You should have received a copy of the GNU General Public License along
 with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
+
+#ifdef ENABLE_COOP
+
 #include "g_local.h"
 
 
@@ -545,7 +548,6 @@ When a monster dies, it fires all of its targets with the current
 enemy as activator.
 ================
 */
-void Wave_MonsterDead(edict_t *self);
 
 void monster_death_use(edict_t *self)
 {
@@ -599,7 +601,7 @@ bool monster_start(edict_t *self)
 	self->nextthink = level.time + 100;
 	self->svflags |= SVF_MONSTER;
 	self->s.renderfx |= RF_FRAMELERP;
-	self->takedamage = DAMAGE_AIM;
+	self->takedamage = true;
 	self->air_finished = level.time + 12;
 	self->use = monster_use;
 	self->max_health = self->health;
@@ -933,3 +935,5 @@ void swimmonster_start(edict_t *self)
 	self->think = swimmonster_start_go;
 	monster_start(self);
 }
+
+#endif
