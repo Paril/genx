@@ -83,7 +83,7 @@ static void gunner_run(edict_t *self)
 static void gunner_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -108,11 +108,11 @@ static void gunner_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void gunner_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -154,17 +154,17 @@ static void GunnerGrenade(edict_t *self)
 	vec3_t  aim;
 	int     flash_number;
 
-	if (self->s.frame == FRAME_attak105)
+	if (self->server.state.frame == FRAME_attak105)
 		flash_number = MZ2_GUNNER_GRENADE_1;
-	else if (self->s.frame == FRAME_attak108)
+	else if (self->server.state.frame == FRAME_attak108)
 		flash_number = MZ2_GUNNER_GRENADE_2;
-	else if (self->s.frame == FRAME_attak111)
+	else if (self->server.state.frame == FRAME_attak111)
 		flash_number = MZ2_GUNNER_GRENADE_3;
-	else // (self->s.frame == FRAME_attak114)
+	else // (self->server.state.frame == FRAME_attak114)
 		flash_number = MZ2_GUNNER_GRENADE_4;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 	//FIXME : do a spread -225 -75 75 225 degrees around forward
 	VectorCopy(forward, aim);
 	monster_fire_grenade(self, start, aim, 50, 600, flash_number);
@@ -183,7 +183,7 @@ static void gunner_duck_down(edict_t *self)
 			GunnerGrenade(self);
 	}
 
-	self->maxs[2] -= 32;
+	self->server.maxs[2] -= 32;
 	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
@@ -200,7 +200,7 @@ static void gunner_duck_hold(edict_t *self)
 static void gunner_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
+	self->server.maxs[2] += 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -228,11 +228,11 @@ static void GunnerFire(edict_t *self)
 	vec3_t  target;
 	vec3_t  aim;
 	int     flash_number;
-	flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->s.frame - FRAME_attak216);
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	flash_number = MZ2_GUNNER_MACHINEGUN_1 + (self->server.state.frame - FRAME_attak216);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 	// project enemy back a bit and target there
-	VectorCopy(self->enemy->s.origin, target);
+	VectorCopy(self->enemy->server.state.origin, target);
 	VectorMA(target, -0.2f, self->enemy->velocity, target);
 	target[2] += self->enemy->viewheight;
 	VectorSubtract(target, start, aim);
@@ -311,10 +311,10 @@ void SP_monster_gunner(edict_t *self)
 	gi.soundindex("gunner/gunatck2.wav");
 	gi.soundindex("gunner/gunatck3.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->health = 175;
 	self->gib_health = -70;
 	self->mass = 200;

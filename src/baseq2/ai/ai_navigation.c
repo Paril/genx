@@ -102,7 +102,7 @@ void AI_SetGoal(edict_t *self, int goal_node)
 {
 	int			node;
 	self->ai->goal_node = goal_node;
-	node = AI_FindClosestReachableNode(self->s.origin, self, NODE_DENSITY * 3, NODE_ALL);
+	node = AI_FindClosestReachableNode(self->server.state.origin, self, NODE_DENSITY * 3, NODE_ALL);
 
 	if (node == -1)
 	{
@@ -156,7 +156,7 @@ bool AI_FollowPath(edict_t *self)
 	}
 
 	// Are we there yet?
-	VectorSubtract(self->s.origin, nodes[self->ai->next_node].origin, v);
+	VectorSubtract(self->server.state.origin, nodes[self->ai->next_node].origin, v);
 	dist = VectorLength(v);
 
 	//special lower plat reached check
@@ -214,6 +214,6 @@ bool AI_FollowPath(edict_t *self)
 		return false;
 
 	// Set bot's movement vector
-	VectorSubtract(nodes[self->ai->next_node].origin, self->s.origin, self->ai->move_vector);
+	VectorSubtract(nodes[self->ai->next_node].origin, self->server.state.origin, self->ai->move_vector);
 	return true;
 }

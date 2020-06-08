@@ -32,33 +32,33 @@ void MoveClientToIntermission(edict_t *ent)
 #if ENABLE_COOP
 	if (deathmatch->value || coop->value)
 #endif
-		ent->client->showscores = true;
+		ent->server.client->showscores = true;
 
-	VectorCopy(level.intermission_origin, ent->s.origin);
-	ent->client->ps.pmove.origin[0] = level.intermission_origin[0] * 8;
-	ent->client->ps.pmove.origin[1] = level.intermission_origin[1] * 8;
-	ent->client->ps.pmove.origin[2] = level.intermission_origin[2] * 8;
-	VectorCopy(level.intermission_angle, ent->client->ps.viewangles);
-	ent->client->ps.pmove.pm_type = PM_FREEZE;
-	memset(ent->client->ps.guns, 0, sizeof(ent->client->ps.guns));
-	ent->client->ps.blend[3] = 0;
-	ent->client->ps.rdflags &= ~RDF_UNDERWATER;
+	VectorCopy(level.intermission_origin, ent->server.state.origin);
+	ent->server.client->server.ps.pmove.origin[0] = level.intermission_origin[0] * 8;
+	ent->server.client->server.ps.pmove.origin[1] = level.intermission_origin[1] * 8;
+	ent->server.client->server.ps.pmove.origin[2] = level.intermission_origin[2] * 8;
+	VectorCopy(level.intermission_angle, ent->server.client->server.ps.viewangles);
+	ent->server.client->server.ps.pmove.pm_type = PM_FREEZE;
+	memset(ent->server.client->server.ps.guns, 0, sizeof(ent->server.client->server.ps.guns));
+	ent->server.client->server.ps.blend[3] = 0;
+	ent->server.client->server.ps.rdflags &= ~RDF_UNDERWATER;
 	// clean up powerup info
-	ent->client->quad_time = 0;
-	ent->client->invincible_time = 0;
-	ent->client->breather_time = 0;
-	ent->client->enviro_time = 0;
-	ent->client->grenade_blew_up = false;
-	ent->client->grenade_time = 0;
+	ent->server.client->quad_time = 0;
+	ent->server.client->invincible_time = 0;
+	ent->server.client->breather_time = 0;
+	ent->server.client->enviro_time = 0;
+	ent->server.client->grenade_blew_up = false;
+	ent->server.client->grenade_time = 0;
 	ent->freeze_time = 0;
 	ent->viewheight = 0;
-	ent->s.modelindex = 0;
-	ent->s.modelindex2 = 0;
-	ent->s.modelindex3 = 0;
-	ent->s.modelindex = 0;
-	ent->s.effects = 0;
-	ent->s.sound = 0;
-	ent->solid = SOLID_NOT;
+	ent->server.state.modelindex = 0;
+	ent->server.state.modelindex2 = 0;
+	ent->server.state.modelindex3 = 0;
+	ent->server.state.modelindex = 0;
+	ent->server.state.effects = 0;
+	ent->server.state.sound = 0;
+	ent->server.solid = SOLID_NOT;
 
 	// add the layout
 	
@@ -88,7 +88,7 @@ void BeginIntermission(edict_t *targ)
 	{
 		client = g_edicts + 1 + i;
 
-		if (!client->inuse)
+		if (!client->server.inuse)
 			continue;
 
 		if (client->health <= 0)
@@ -107,14 +107,14 @@ void BeginIntermission(edict_t *targ)
 			{
 				client = g_edicts + 1 + i;
 
-				if (!client->inuse)
+				if (!client->server.inuse)
 					continue;
 
 				// strip players of all keys between units
 				for (int n = 0; n < ITI_TOTAL; n++)
 				{
 					if (itemlist[n].flags & IT_KEY)
-						client->client->pers.inventory[n] = 0;
+						client->server.client->pers.inventory[n] = 0;
 				}
 			}
 		}
@@ -155,15 +155,15 @@ void BeginIntermission(edict_t *targ)
 		}
 	}
 
-	VectorCopy(ent->s.origin, level.intermission_origin);
-	VectorCopy(ent->s.angles, level.intermission_angle);
+	VectorCopy(ent->server.state.origin, level.intermission_origin);
+	VectorCopy(ent->server.state.angles, level.intermission_angle);
 
 	// move all clients to the intermission point
 	for (i = 0 ; i < maxclients->value ; i++)
 	{
 		client = g_edicts + 1 + i;
 
-		if (!client->inuse)
+		if (!client->server.inuse)
 			continue;
 
 		MoveClientToIntermission(client);
@@ -197,7 +197,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
 	{
 		cl_ent = g_edicts + 1 + i;
 
-		if (!cl_ent->inuse || game.clients[i].resp.spectator)
+		if (!cl_ent->server.inuse || game.clients[i].resp.spectator)
 			continue;
 
 		score = game.clients[i].resp.score;
@@ -258,7 +258,7 @@ void DeathmatchScoreboardMessage(edict_t *ent, edict_t *killer)
 		// send the layout
 		Q_snprintf(entry, sizeof(entry),
 			"client %i %i %i %i %i %i ",
-			x, y, sorted[i], cl->resp.score, cl->ping, (int)((level.time - cl->resp.entertime) / 6000));
+			x, y, sorted[i], cl->resp.score, cl->server.ping, (int)((level.time - cl->resp.entertime) / 6000));
 		j = strlen(entry);
 
 		if (stringlength + j > 1024)
@@ -297,21 +297,21 @@ Display the scoreboard
 */
 void Cmd_Score_f(edict_t *ent)
 {
-	ent->client->showinventory = false;
+	ent->server.client->showinventory = false;
 #if ENABLE_COOP
-	ent->client->showhelp = false;
+	ent->server.client->showhelp = false;
 
 	if (!deathmatch->value && !coop->value)
 		return;
 #endif
 
-	if (ent->client->showscores)
+	if (ent->server.client->showscores)
 	{
-		ent->client->showscores = false;
+		ent->server.client->showscores = false;
 		return;
 	}
 
-	ent->client->showscores = true;
+	ent->server.client->showscores = true;
 	DeathmatchScoreboard(ent);
 #
 }
@@ -376,17 +376,17 @@ void Cmd_Help_f(edict_t *ent)
 		return;
 	}
 
-	ent->client->showinventory = false;
-	ent->client->showscores = false;
+	ent->server.client->showinventory = false;
+	ent->server.client->showscores = false;
 
-	if (ent->client->showhelp && (ent->client->pers.game_helpchanged == game.helpchanged))
+	if (ent->server.client->showhelp && (ent->server.client->pers.game_helpchanged == game.helpchanged))
 	{
-		ent->client->showhelp = false;
+		ent->server.client->showhelp = false;
 		return;
 	}
 
-	ent->client->showhelp = true;
-	ent->client->pers.helpchanged = 0;
+	ent->server.client->showhelp = true;
+	ent->server.client->pers.helpchanged = 0;
 	HelpComputer(ent);
 }
 #endif
@@ -406,13 +406,13 @@ int ST_calcPainOffset(edict_t *plyr)
 {
 	int health = max(0, min(100, plyr->health));
 
-	if (health != plyr->client->old_health)
+	if (health != plyr->server.client->old_health)
 	{
-		plyr->client->lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
-		plyr->client->old_health = health;
+		plyr->server.client->lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
+		plyr->server.client->old_health = health;
 	}
 
-	return plyr->client->lastcalc;
+	return plyr->server.client->lastcalc;
 }
 
 //
@@ -423,132 +423,132 @@ int ST_calcPainOffset(edict_t *plyr)
 //
 void ST_updateFaceWidget(edict_t *plyr)
 {
-	if (plyr->client->priority < 10)
+	if (plyr->server.client->priority < 10)
 	{
 		// dead
 		if (plyr->health <= 0)
 		{
-			plyr->client->priority = 9;
-			plyr->client->st_faceindex = ST_DEADFACE;
-			plyr->client->st_facecount = 1;
+			plyr->server.client->priority = 9;
+			plyr->server.client->st_faceindex = ST_DEADFACE;
+			plyr->server.client->st_facecount = 1;
 		}
 	}
 
-	if (plyr->client->priority < 9)
+	if (plyr->server.client->priority < 9)
 	{
-		if (time_diff(plyr->client->pickup_msg_time, level.time) >= (gtime_t)(3000 - game.frametime))
+		if (time_diff(plyr->server.client->pickup_msg_time, level.time) >= (gtime_t)(3000 - game.frametime))
 		{
 			// picking up bonus
-			if (plyr->client->pickup_item->flags.is_weapon && plyr->client->pickup_item_first)
+			if (plyr->server.client->pickup_item->flags.is_weapon && plyr->server.client->pickup_item_first)
 			{
 				// evil grin if just picked up weapon
-				plyr->client->priority = 8;
-				plyr->client->st_facecount = ST_EVILGRINCOUNT;
-				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_EVILGRINOFFSET;
+				plyr->server.client->priority = 8;
+				plyr->server.client->st_facecount = ST_EVILGRINCOUNT;
+				plyr->server.client->st_faceindex = ST_calcPainOffset(plyr) + ST_EVILGRINOFFSET;
 			}
 		}
 	}
 
-	if (plyr->client->priority < 8)
+	if (plyr->server.client->priority < 8)
 	{
 		if (((plyr->meansOfDeath.time + game.frametime) >= level.time)
 			&& plyr->meansOfDeath.attacker
 			&& plyr->meansOfDeath.attacker != plyr)
 		{
 			// being attacked
-			plyr->client->priority = 7;
+			plyr->server.client->priority = 7;
 
-			if (plyr->health - plyr->client->old_health > ST_MUCHPAIN)
+			if (plyr->health - plyr->server.client->old_health > ST_MUCHPAIN)
 			{
-				plyr->client->st_facecount = ST_TURNCOUNT;
-				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_OUCHOFFSET;
+				plyr->server.client->st_facecount = ST_TURNCOUNT;
+				plyr->server.client->st_faceindex = ST_calcPainOffset(plyr) + ST_OUCHOFFSET;
 			}
 			else
 			{
-				plyr->client->st_facecount = ST_TURNCOUNT;
-				plyr->client->st_faceindex = ST_calcPainOffset(plyr);
-				float yaw_sub = anglemod((plyr->client->v_angle[1] - plyr->client->damage_dir) + 180);
+				plyr->server.client->st_facecount = ST_TURNCOUNT;
+				plyr->server.client->st_faceindex = ST_calcPainOffset(plyr);
+				float yaw_sub = anglemod((plyr->server.client->v_angle[1] - plyr->server.client->damage_dir) + 180);
 
 				if (yaw_sub <= 45 || yaw_sub >= (360 - 45))
 				{
 					// head-on
-					plyr->client->st_faceindex += ST_RAMPAGEOFFSET;
+					plyr->server.client->st_faceindex += ST_RAMPAGEOFFSET;
 				}
 				else if (yaw_sub > 180)
 				{
 					// turn face right
-					plyr->client->st_faceindex += ST_TURNOFFSET;
+					plyr->server.client->st_faceindex += ST_TURNOFFSET;
 				}
 				else
 				{
 					// turn face left
-					plyr->client->st_faceindex += ST_TURNOFFSET + 1;
+					plyr->server.client->st_faceindex += ST_TURNOFFSET + 1;
 				}
 			}
 		}
 	}
 
-	if (plyr->client->priority < 7)
+	if (plyr->server.client->priority < 7)
 	{
 		// getting hurt because of your own damn stupidity
 		if (((plyr->meansOfDeath.time + game.frametime) >= level.time) &&
 			plyr->meansOfDeath.attacker == plyr)
 		{
-			if (plyr->health - plyr->client->old_health > ST_MUCHPAIN)
+			if (plyr->health - plyr->server.client->old_health > ST_MUCHPAIN)
 			{
-				plyr->client->priority = 7;
-				plyr->client->st_facecount = ST_TURNCOUNT;
-				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_OUCHOFFSET;
+				plyr->server.client->priority = 7;
+				plyr->server.client->st_facecount = ST_TURNCOUNT;
+				plyr->server.client->st_faceindex = ST_calcPainOffset(plyr) + ST_OUCHOFFSET;
 			}
 			else
 			{
-				plyr->client->priority = 6;
-				plyr->client->st_facecount = ST_TURNCOUNT;
-				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_RAMPAGEOFFSET;
+				plyr->server.client->priority = 6;
+				plyr->server.client->st_facecount = ST_TURNCOUNT;
+				plyr->server.client->st_faceindex = ST_calcPainOffset(plyr) + ST_RAMPAGEOFFSET;
 			}
 		}
 	}
 
-	if (plyr->client->priority < 6)
+	if (plyr->server.client->priority < 6)
 	{
 		// rapid firing
-		if (plyr->client->buttons & BUTTON_ATTACK)
+		if (plyr->server.client->buttons & BUTTON_ATTACK)
 		{
-			if (plyr->client->lastattackdown == -1)
-				plyr->client->lastattackdown = ST_RAMPAGEDELAY;
-			else if (!--plyr->client->lastattackdown)
+			if (plyr->server.client->lastattackdown == -1)
+				plyr->server.client->lastattackdown = ST_RAMPAGEDELAY;
+			else if (!--plyr->server.client->lastattackdown)
 			{
-				plyr->client->priority = 5;
-				plyr->client->st_faceindex = ST_calcPainOffset(plyr) + ST_RAMPAGEOFFSET;
-				plyr->client->st_facecount = 1;
-				plyr->client->lastattackdown = 1;
+				plyr->server.client->priority = 5;
+				plyr->server.client->st_faceindex = ST_calcPainOffset(plyr) + ST_RAMPAGEOFFSET;
+				plyr->server.client->st_facecount = 1;
+				plyr->server.client->lastattackdown = 1;
 			}
 		}
 		else
-			plyr->client->lastattackdown = -1;
+			plyr->server.client->lastattackdown = -1;
 	}
 
-	if (plyr->client->priority < 5)
+	if (plyr->server.client->priority < 5)
 	{
 		// invulnerability
-		if ((plyr->flags & FL_GODMODE) || plyr->client->invincible_time > level.time)
+		if ((plyr->flags & FL_GODMODE) || plyr->server.client->invincible_time > level.time)
 		{
-			plyr->client->priority = 4;
-			plyr->client->st_faceindex = ST_GODFACE;
-			plyr->client->st_facecount = 1;
+			plyr->server.client->priority = 4;
+			plyr->server.client->st_faceindex = ST_GODFACE;
+			plyr->server.client->st_facecount = 1;
 		}
 	}
 
 	// look left or look right if the facecount has timed out
-	if (!plyr->client->st_facecount)
+	if (!plyr->server.client->st_facecount)
 	{
-		plyr->client->st_faceindex = ST_calcPainOffset(plyr) + (Q_rand() % 3);
-		plyr->client->st_facecount = ST_STRAIGHTFACECOUNT;
-		plyr->client->priority = 0;
+		plyr->server.client->st_faceindex = ST_calcPainOffset(plyr) + (Q_rand() % 3);
+		plyr->server.client->st_facecount = ST_STRAIGHTFACECOUNT;
+		plyr->server.client->priority = 0;
 	}
 
-	plyr->client->st_facecount--;
-	plyr->client->ps.stats.doom.face = plyr->client->st_faceindex;
+	plyr->server.client->st_facecount--;
+	plyr->server.client->server.ps.stats.doom.face = plyr->server.client->st_faceindex;
 }
 
 
@@ -566,37 +566,37 @@ void G_SetStats(edict_t *ent)
 	//
 	// health
 	//
-	if (ent->s.game == GAME_Q2)
-		ent->client->ps.stats.q2.health_icon = level.pic_health;
+	if (ent->server.state.game == GAME_Q2)
+		ent->server.client->server.ps.stats.q2.health_icon = level.pic_health;
 
-	ent->client->ps.stats.health = ent->health;
+	ent->server.client->server.ps.stats.health = ent->health;
 
 	//
 	// ammo
 	//
-	if (game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(ent->client->pers.weapon)] <= 0)
+	if (game_iteminfos[ent->server.state.game].ammo_usages[ITEM_INDEX(ent->server.client->pers.weapon)] <= 0)
 	{
-		ent->client->ps.stats.ammo_icon = 0;
-		ent->client->ps.stats.ammo = 0;
+		ent->server.client->server.ps.stats.ammo_icon = 0;
+		ent->server.client->server.ps.stats.ammo = 0;
 	}
 	else
 	{
-		//item = &itemlist[ent->client->gunstates[GUN_MAIN].ammo_index];
-		//ent->client->ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
-		ent->client->ps.stats.ammo_icon = gi.imageindex(ent->client->pers.weapon->ammo_icon);
-		ent->client->ps.stats.ammo = (int) floorf(PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon));
+		//item = &itemlist[ent->server.client->gunstates[GUN_MAIN].ammo_index];
+		//ent->server.client->server.ps.stats[STAT_AMMO_ICON] = gi.imageindex(item->icon);
+		ent->server.client->server.ps.stats.ammo_icon = gi.imageindex(ent->server.client->pers.weapon->ammo_icon);
+		ent->server.client->server.ps.stats.ammo = (int) floorf(PLAYER_SHOTS_FOR_WEAPON(ent, ent->server.client->pers.weapon));
 	}
 
 	//
 	// armor
 	//
-	if (ent->s.game == GAME_Q2)
+	if (ent->server.state.game == GAME_Q2)
 	{
 		power_armor_type = PowerArmorType(ent);
 
 		if (power_armor_type)
 		{
-			if (ent->client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB)
+			if (ent->server.client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB)
 			{
 				// ran out of cells for power armor
 				ent->flags &= ~FL_POWER_ARMOR;
@@ -611,217 +611,217 @@ void G_SetStats(edict_t *ent)
 	if (power_armor_type && (!index || (level.framenum & (8 * game.framediv))))
 	{
 		// flash between power armor and other armor icon
-		ent->client->ps.stats.armor_icon = gi.imageindex("i_powershield");
-		ent->client->ps.stats.armor = (int)(ent->client->pers.ammo * AMMO_PER_POWER_ARMOR_ABSORB);
+		ent->server.client->server.ps.stats.armor_icon = gi.imageindex("i_powershield");
+		ent->server.client->server.ps.stats.armor = (int)(ent->server.client->pers.ammo * AMMO_PER_POWER_ARMOR_ABSORB);
 	}
 	else if (index)
 	{
 		item = GetItemByIndex(index);
-		ent->client->ps.stats.armor_icon = gi.imageindex(item->icon);
-		ent->client->ps.stats.armor = ent->client->pers.inventory[index];
+		ent->server.client->server.ps.stats.armor_icon = gi.imageindex(item->icon);
+		ent->server.client->server.ps.stats.armor = ent->server.client->pers.inventory[index];
 	}
 	else
 	{
-		ent->client->ps.stats.armor_icon = 0;
-		ent->client->ps.stats.armor = 0;
+		ent->server.client->server.ps.stats.armor_icon = 0;
+		ent->server.client->server.ps.stats.armor = 0;
 	}
 
 	//
 	// pickup message
 	//
-	if (ent->s.game == GAME_Q2)
+	if (ent->server.state.game == GAME_Q2)
 	{
-		if (level.time > ent->client->pickup_msg_time)
+		if (level.time > ent->server.client->pickup_msg_time)
 		{
-			ent->client->ps.stats.q2.pickup_icon = 0;
-			ent->client->ps.stats.q2.pickup_string = 0;
+			ent->server.client->server.ps.stats.q2.pickup_icon = 0;
+			ent->server.client->server.ps.stats.q2.pickup_string = 0;
 		}
 		else
 		{
-			ent->client->ps.stats.q2.pickup_icon = gi.imageindex(ent->client->pickup_item->icon);
-			ent->client->ps.stats.q2.pickup_string = CS_ITEMS + ITEM_INDEX(ent->client->pickup_item);
+			ent->server.client->server.ps.stats.q2.pickup_icon = gi.imageindex(ent->server.client->pickup_item->icon);
+			ent->server.client->server.ps.stats.q2.pickup_string = CS_ITEMS + ITEM_INDEX(ent->server.client->pickup_item);
 		}
 
 		//
 		// timers
 		//
-		if (ent->client->quad_time > level.time)
+		if (ent->server.client->quad_time > level.time)
 		{
-			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_quad");
-			ent->client->ps.stats.q2.timer = (ent->client->quad_time - level.time) / 1000;
+			ent->server.client->server.ps.stats.q2.timer_icon = gi.imageindex("p_quad");
+			ent->server.client->server.ps.stats.q2.timer = (ent->server.client->quad_time - level.time) / 1000;
 		}
-		else if (ent->client->invincible_time > level.time)
+		else if (ent->server.client->invincible_time > level.time)
 		{
-			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_invulnerability");
-			ent->client->ps.stats.q2.timer = (ent->client->invincible_time - level.time) / 1000;
+			ent->server.client->server.ps.stats.q2.timer_icon = gi.imageindex("p_invulnerability");
+			ent->server.client->server.ps.stats.q2.timer = (ent->server.client->invincible_time - level.time) / 1000;
 		}
-		else if (ent->client->enviro_time > level.time)
+		else if (ent->server.client->enviro_time > level.time)
 		{
-			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_envirosuit");
-			ent->client->ps.stats.q2.timer = (ent->client->enviro_time - level.time) / 1000;
+			ent->server.client->server.ps.stats.q2.timer_icon = gi.imageindex("p_envirosuit");
+			ent->server.client->server.ps.stats.q2.timer = (ent->server.client->enviro_time - level.time) / 1000;
 		}
-		else if (ent->client->breather_time > level.time)
+		else if (ent->server.client->breather_time > level.time)
 		{
-			ent->client->ps.stats.q2.timer_icon = gi.imageindex("p_rebreather");
-			ent->client->ps.stats.q2.timer = (ent->client->breather_time - level.time) / 1000;
+			ent->server.client->server.ps.stats.q2.timer_icon = gi.imageindex("p_rebreather");
+			ent->server.client->server.ps.stats.q2.timer = (ent->server.client->breather_time - level.time) / 1000;
 		}
 		else
 		{
-			ent->client->ps.stats.q2.timer_icon = 0;
-			ent->client->ps.stats.q2.timer = 0;
+			ent->server.client->server.ps.stats.q2.timer_icon = 0;
+			ent->server.client->server.ps.stats.q2.timer = 0;
 		}
 
 		//
 		// selected item
 		//
-		if (ent->client->pers.selected_item == ITI_NULL)
-			ent->client->ps.stats.q2.selected_icon = 0;
+		if (ent->server.client->pers.selected_item == ITI_NULL)
+			ent->server.client->server.ps.stats.q2.selected_icon = 0;
 		else
-			ent->client->ps.stats.q2.selected_icon = gi.imageindex(itemlist[ent->client->pers.selected_item].icon);
+			ent->server.client->server.ps.stats.q2.selected_icon = gi.imageindex(itemlist[ent->server.client->pers.selected_item].icon);
 	}
 
-	ent->client->ps.stats.selected_item = ent->client->pers.selected_item;
+	ent->server.client->server.ps.stats.selected_item = ent->server.client->pers.selected_item;
 	//
 	// layouts
 	//
-	ent->client->ps.stats.layouts = 0;
+	ent->server.client->server.ps.stats.layouts = 0;
 	
 #if ENABLE_COOP
 	if (deathmatch->value)
 #endif
 	{
-		if (ent->client->pers.health <= 0 || level.intermissiontime
-			|| ent->client->showscores)
-			ent->client->ps.stats.layouts |= 1;
+		if (ent->server.client->pers.health <= 0 || level.intermissiontime
+			|| ent->server.client->showscores)
+			ent->server.client->server.ps.stats.layouts |= 1;
 
-		if (ent->client->showinventory && ent->client->pers.health > 0)
-			ent->client->ps.stats.layouts |= 2;
+		if (ent->server.client->showinventory && ent->server.client->pers.health > 0)
+			ent->server.client->server.ps.stats.layouts |= 2;
 	}
 #if ENABLE_COOP
 	else
 	{
-		if (ent->client->showscores || ent->client->showhelp)
-			ent->client->ps.stats.layouts |= 1;
+		if (ent->server.client->showscores || ent->server.client->showhelp)
+			ent->server.client->server.ps.stats.layouts |= 1;
 
-		if (ent->client->showinventory && ent->client->pers.health > 0)
-			ent->client->ps.stats.layouts |= 2;
+		if (ent->server.client->showinventory && ent->server.client->pers.health > 0)
+			ent->server.client->server.ps.stats.layouts |= 2;
 	}
 #endif
 
 	//
 	// frags
 	//
-	ent->client->ps.stats.frags = ent->client->resp.score;
+	ent->server.client->server.ps.stats.frags = ent->server.client->resp.score;
 
 	//
 	// help icon / current weapon if not shown
 	//
-	if (ent->s.game == GAME_Q2)
+	if (ent->server.state.game == GAME_Q2)
 	{
 #if ENABLE_COOP
-		if (ent->client->pers.helpchanged && (level.framenum & (8 * game.framediv)))
-			ent->client->ps.stats.q2.help_icon = gi.imageindex("i_help");
+		if (ent->server.client->pers.helpchanged && (level.framenum & (8 * game.framediv)))
+			ent->server.client->server.ps.stats.q2.help_icon = gi.imageindex("i_help");
 		else
 #endif
-		if ((ent->client->pers.hand == CENTER_HANDED || ent->client->ps.fov > 91)
-			&& ent->client->pers.weapon)
-			ent->client->ps.stats.q2.help_icon = gi.imageindex(ent->client->pers.weapon->icon);
+		if ((ent->server.client->pers.hand == CENTER_HANDED || ent->server.client->server.ps.fov > 91)
+			&& ent->server.client->pers.weapon)
+			ent->server.client->server.ps.stats.q2.help_icon = gi.imageindex(ent->server.client->pers.weapon->icon);
 		else
-			ent->client->ps.stats.q2.help_icon = 0;
+			ent->server.client->server.ps.stats.q2.help_icon = 0;
 	}
 
-	ent->client->ps.stats.spectator = 0;
+	ent->server.client->server.ps.stats.spectator = 0;
 
 	// Q1 stuff
-	if (ent->s.game == GAME_Q1)
+	if (ent->server.state.game == GAME_Q1)
 	{
-		ent->client->ps.stats.q1.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_SHOTGUN));
-		ent->client->ps.stats.q1.ammo_nails = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_NAILGUN));
-		ent->client->ps.stats.q1.ammo_rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_ROCKET_LAUNCHER));
-		ent->client->ps.stats.q1.ammo_cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_THUNDERBOLT));
-		ent->client->ps.stats.q1.items = 0;
+		ent->server.client->server.ps.stats.q1.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_SHOTGUN));
+		ent->server.client->server.ps.stats.q1.ammo_nails = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_NAILGUN));
+		ent->server.client->server.ps.stats.q1.ammo_rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_ROCKET_LAUNCHER));
+		ent->server.client->server.ps.stats.q1.ammo_cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_Q1_THUNDERBOLT));
+		ent->server.client->server.ps.stats.q1.items = 0;
 
-		if (ent->client->pers.inventory[ITI_Q1_SHOTGUN])
-			ent->client->ps.stats.q1.items |= IT_Q1_SHOTGUN;
+		if (ent->server.client->pers.inventory[ITI_Q1_SHOTGUN])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_SHOTGUN;
 
-		if (ent->client->pers.inventory[ITI_Q1_SUPER_SHOTGUN])
-			ent->client->ps.stats.q1.items |= IT_Q1_SSHOTGUN;
+		if (ent->server.client->pers.inventory[ITI_Q1_SUPER_SHOTGUN])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_SSHOTGUN;
 
-		if (ent->client->pers.inventory[ITI_Q1_NAILGUN])
-			ent->client->ps.stats.q1.items |= IT_Q1_NAILGUN;
+		if (ent->server.client->pers.inventory[ITI_Q1_NAILGUN])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_NAILGUN;
 
-		if (ent->client->pers.inventory[ITI_Q1_SUPER_NAILGUN])
-			ent->client->ps.stats.q1.items |= IT_Q1_SNAILGUN;
+		if (ent->server.client->pers.inventory[ITI_Q1_SUPER_NAILGUN])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_SNAILGUN;
 
-		if (ent->client->pers.inventory[ITI_Q1_GRENADE_LAUNCHER])
-			ent->client->ps.stats.q1.items |= IT_Q1_GLAUNCHER;
+		if (ent->server.client->pers.inventory[ITI_Q1_GRENADE_LAUNCHER])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_GLAUNCHER;
 
-		if (ent->client->pers.inventory[ITI_Q1_ROCKET_LAUNCHER])
-			ent->client->ps.stats.q1.items |= IT_Q1_RLAUNCHER;
+		if (ent->server.client->pers.inventory[ITI_Q1_ROCKET_LAUNCHER])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_RLAUNCHER;
 
-		if (ent->client->pers.inventory[ITI_Q1_THUNDERBOLT])
-			ent->client->ps.stats.q1.items |= IT_Q1_LIGHTNING;
+		if (ent->server.client->pers.inventory[ITI_Q1_THUNDERBOLT])
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_LIGHTNING;
 
-		if (ent->client->quad_time > level.time)
-			ent->client->ps.stats.q1.items |= IT_Q1_QUAD;
+		if (ent->server.client->quad_time > level.time)
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_QUAD;
 
-		if (ent->client->invincible_time > level.time)
-			ent->client->ps.stats.q1.items |= IT_Q1_INVUL;
+		if (ent->server.client->invincible_time > level.time)
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_INVUL;
 
-		if (ent->client->enviro_time > level.time)
-			ent->client->ps.stats.q1.items |= IT_Q1_SUIT;
+		if (ent->server.client->enviro_time > level.time)
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_SUIT;
 
-		if (ent->client->breather_time > level.time)
-			ent->client->ps.stats.q1.items |= IT_Q1_INVIS;
+		if (ent->server.client->breather_time > level.time)
+			ent->server.client->server.ps.stats.q1.items |= IT_Q1_INVIS;
 
 		if (ent->health <= 0)
-			ent->client->ps.stats.q1.face_anim = 0;
-		else if (ent->client->ps.stats.q1.face_anim)
-			--ent->client->ps.stats.q1.face_anim;
+			ent->server.client->server.ps.stats.q1.face_anim = 0;
+		else if (ent->server.client->server.ps.stats.q1.face_anim)
+			--ent->server.client->server.ps.stats.q1.face_anim;
 
-		if (ent->client->pers.weapon)
-			ent->client->ps.stats.q1.cur_weap = ITEM_INDEX(ent->client->pers.weapon) - ITI_WEAPON_1;
+		if (ent->server.client->pers.weapon)
+			ent->server.client->server.ps.stats.q1.cur_weap = ITEM_INDEX(ent->server.client->pers.weapon) - ITI_WEAPON_1;
 		else
-			ent->client->ps.stats.q1.cur_weap = 0;
+			ent->server.client->server.ps.stats.q1.cur_weap = 0;
 	}
 	// Doom stuff
-	else if (ent->s.game == GAME_DOOM)
+	else if (ent->server.state.game == GAME_DOOM)
 	{
-		ent->client->ps.stats.doom.ammo_bullets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PISTOL));
-		ent->client->ps.stats.doom.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_SHOTGUN));
-		ent->client->ps.stats.doom.ammo_rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER));
-		ent->client->ps.stats.doom.ammo_cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PLASMA_GUN));
-		ent->client->ps.stats.doom.max_ammo_bullets = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PISTOL));
-		ent->client->ps.stats.doom.max_ammo_shells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_SHOTGUN));
-		ent->client->ps.stats.doom.max_ammo_rockets = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER));
-		ent->client->ps.stats.doom.max_ammo_cells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PLASMA_GUN));
-		ent->client->ps.stats.doom.weapons = 0;
+		ent->server.client->server.ps.stats.doom.ammo_bullets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PISTOL));
+		ent->server.client->server.ps.stats.doom.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_SHOTGUN));
+		ent->server.client->server.ps.stats.doom.ammo_rockets = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER));
+		ent->server.client->server.ps.stats.doom.ammo_cells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PLASMA_GUN));
+		ent->server.client->server.ps.stats.doom.max_ammo_bullets = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PISTOL));
+		ent->server.client->server.ps.stats.doom.max_ammo_shells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_SHOTGUN));
+		ent->server.client->server.ps.stats.doom.max_ammo_rockets = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_ROCKET_LAUNCHER));
+		ent->server.client->server.ps.stats.doom.max_ammo_cells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DOOM_PLASMA_GUN));
+		ent->server.client->server.ps.stats.doom.weapons = 0;
 
-		if (ent->client->pers.inventory[ITI_DOOM_PISTOL])
-			ent->client->ps.stats.doom.weapons |= IT_DOOM_PISTOL;
+		if (ent->server.client->pers.inventory[ITI_DOOM_PISTOL])
+			ent->server.client->server.ps.stats.doom.weapons |= IT_DOOM_PISTOL;
 
-		if (ent->client->pers.inventory[ITI_DOOM_SHOTGUN] || ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN])
-			ent->client->ps.stats.doom.weapons |= IT_DOOM_SHOTGUNS;
+		if (ent->server.client->pers.inventory[ITI_DOOM_SHOTGUN] || ent->server.client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN])
+			ent->server.client->server.ps.stats.doom.weapons |= IT_DOOM_SHOTGUNS;
 
-		if (ent->client->pers.inventory[ITI_DOOM_CHAINGUN])
-			ent->client->ps.stats.doom.weapons |= IT_DOOM_CHAINGUN;
+		if (ent->server.client->pers.inventory[ITI_DOOM_CHAINGUN])
+			ent->server.client->server.ps.stats.doom.weapons |= IT_DOOM_CHAINGUN;
 
-		if (ent->client->pers.inventory[ITI_DOOM_ROCKET_LAUNCHER])
-			ent->client->ps.stats.doom.weapons |= IT_DOOM_ROCKET;
+		if (ent->server.client->pers.inventory[ITI_DOOM_ROCKET_LAUNCHER])
+			ent->server.client->server.ps.stats.doom.weapons |= IT_DOOM_ROCKET;
 
-		if (ent->client->pers.inventory[ITI_DOOM_PLASMA_GUN])
-			ent->client->ps.stats.doom.weapons |= IT_DOOM_PLASMA;
+		if (ent->server.client->pers.inventory[ITI_DOOM_PLASMA_GUN])
+			ent->server.client->server.ps.stats.doom.weapons |= IT_DOOM_PLASMA;
 
-		if (ent->client->pers.inventory[ITI_DOOM_BFG])
-			ent->client->ps.stats.doom.weapons |= IT_DOOM_BFG;
+		if (ent->server.client->pers.inventory[ITI_DOOM_BFG])
+			ent->server.client->server.ps.stats.doom.weapons |= IT_DOOM_BFG;
 
 		ST_updateFaceWidget(ent);
 	}
 	// Duke stuff
-	else if (ent->s.game == GAME_DUKE)
+	else if (ent->server.state.game == GAME_DUKE)
 	{
 		size_t i;
-		ent->client->ps.stats.duke.weapons = ent->client->ps.stats.duke.selected_weapon = 0;
+		ent->server.client->server.ps.stats.duke.weapons = ent->server.client->server.ps.stats.duke.selected_weapon = 0;
 		struct
 		{
 			itemid_e	item;
@@ -842,31 +842,31 @@ void G_SetStats(edict_t *ent)
 
 		for (i = 0; i < q_countof(weapon_hud_mapping); i++)
 		{
-			if (ent->client->pers.inventory[weapon_hud_mapping[i].item])
-				ent->client->ps.stats.duke.weapons |= weapon_hud_mapping[i].flag;
+			if (ent->server.client->pers.inventory[weapon_hud_mapping[i].item])
+				ent->server.client->server.ps.stats.duke.weapons |= weapon_hud_mapping[i].flag;
 
-			if (GetIndexByItem(ent->client->pers.weapon) == weapon_hud_mapping[i].item)
-				ent->client->ps.stats.duke.selected_weapon = weapon_hud_mapping[i].index;
+			if (GetIndexByItem(ent->server.client->pers.weapon) == weapon_hud_mapping[i].item)
+				ent->server.client->server.ps.stats.duke.selected_weapon = weapon_hud_mapping[i].index;
 		}
 
-		ent->client->ps.stats.duke.ammo_clip = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
-		ent->client->ps.stats.duke.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHOTGUN));
-		ent->client->ps.stats.duke.ammo_cannon = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_CANNON));
-		ent->client->ps.stats.duke.ammo_rpg = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_RPG));
-		ent->client->ps.stats.duke.ammo_pipebombs = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
-		//ent->client->ps.stats.duke.ammo_shrinker = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
-		ent->client->ps.stats.duke.ammo_devastator = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
-		ent->client->ps.stats.duke.ammo_tripwire = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRES));
-		ent->client->ps.stats.duke.ammo_freezer = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
-		ent->client->ps.stats.duke.max_ammo_clip = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
-		ent->client->ps.stats.duke.max_ammo_shells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHOTGUN));
-		ent->client->ps.stats.duke.max_ammo_cannon = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_CANNON));
-		ent->client->ps.stats.duke.max_ammo_rpg = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_RPG));
-		ent->client->ps.stats.duke.max_ammo_pipebombs = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
-		//ent->client->ps.stats.duke.max_ammo_shrinker = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
-		ent->client->ps.stats.duke.max_ammo_devastator = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
-		ent->client->ps.stats.duke.max_ammo_tripwire = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRES));
-		ent->client->ps.stats.duke.max_ammo_freezer = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
+		ent->server.client->server.ps.stats.duke.ammo_clip = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
+		ent->server.client->server.ps.stats.duke.ammo_shells = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHOTGUN));
+		ent->server.client->server.ps.stats.duke.ammo_cannon = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_CANNON));
+		ent->server.client->server.ps.stats.duke.ammo_rpg = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_RPG));
+		ent->server.client->server.ps.stats.duke.ammo_pipebombs = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
+		//ent->server.client->server.ps.stats.duke.ammo_shrinker = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
+		ent->server.client->server.ps.stats.duke.ammo_devastator = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
+		ent->server.client->server.ps.stats.duke.ammo_tripwire = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRES));
+		ent->server.client->server.ps.stats.duke.ammo_freezer = PLAYER_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
+		ent->server.client->server.ps.stats.duke.max_ammo_clip = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PISTOL));
+		ent->server.client->server.ps.stats.duke.max_ammo_shells = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHOTGUN));
+		ent->server.client->server.ps.stats.duke.max_ammo_cannon = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_CANNON));
+		ent->server.client->server.ps.stats.duke.max_ammo_rpg = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_RPG));
+		ent->server.client->server.ps.stats.duke.max_ammo_pipebombs = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_PIPEBOMBS));
+		//ent->server.client->server.ps.stats.duke.max_ammo_shrinker = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_SHRINKER));
+		ent->server.client->server.ps.stats.duke.max_ammo_devastator = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_DEVASTATOR));
+		ent->server.client->server.ps.stats.duke.max_ammo_tripwire = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_TRIPWIRES));
+		ent->server.client->server.ps.stats.duke.max_ammo_freezer = PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, GetItemByIndex(ITI_DUKE_FREEZER));
 	}
 }
 
@@ -882,12 +882,12 @@ void G_CheckChaseStats(edict_t *ent)
 
 	for (i = 1; i <= maxclients->value; i++)
 	{
-		cl = g_edicts[i].client;
+		cl = g_edicts[i].server.client;
 
-		if (!g_edicts[i].inuse || cl->chase_target != ent)
+		if (!g_edicts[i].server.inuse || cl->chase_target != ent)
 			continue;
 
-		memcpy(&cl->ps.stats, &ent->client->ps.stats, sizeof(cl->ps.stats));
+		memcpy(&cl->server.ps.stats, &ent->server.client->server.ps.stats, sizeof(cl->server.ps.stats));
 		G_SetSpectatorStats(g_edicts + i);
 	}
 }
@@ -899,25 +899,25 @@ G_SetSpectatorStats
 */
 void G_SetSpectatorStats(edict_t *ent)
 {
-	gclient_t *cl = ent->client;
+	gclient_t *cl = ent->server.client;
 
 	if (!cl->chase_target)
 		G_SetStats(ent);
 
-	cl->ps.stats.spectator = 1;
+	cl->server.ps.stats.spectator = 1;
 	// layouts are independant in spectator
-	cl->ps.stats.layouts = 0;
+	cl->server.ps.stats.layouts = 0;
 
 	if (cl->pers.health <= 0 || level.intermissiontime || cl->showscores)
-		cl->ps.stats.layouts |= 1;
+		cl->server.ps.stats.layouts |= 1;
 
 	if (cl->showinventory && cl->pers.health > 0)
-		cl->ps.stats.layouts |= 2;
+		cl->server.ps.stats.layouts |= 2;
 
-	if (cl->chase_target && cl->chase_target->inuse)
-		cl->ps.stats.chase = CS_PLAYERSKINS +
+	if (cl->chase_target && cl->chase_target->server.inuse)
+		cl->server.ps.stats.chase = CS_PLAYERSKINS +
 			(cl->chase_target - g_edicts) - 1;
 	else
-		cl->ps.stats.chase = 0;
+		cl->server.ps.stats.chase = 0;
 }
 

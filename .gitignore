@@ -53,3 +53,11 @@ obj
 /bin/genx/wsc_designer.pdb
 /proj/transpiler_core/bin/Debug/netcoreapp2.1
 /proj/wsc_designer/bin/Debug
+/bin/genx/gamex86_64.dll
+/bin/genx/gamex86_64.exp
+/bin/genx/gamex86_64.ilk
+/bin/genx/gamex86_64.lib
+/bin/genx/gamex86_64.pdb
+/bin/genx_64.exe
+/bin/genx_64.ilk
+/bin/genx_64.pdb

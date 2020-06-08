@@ -47,9 +47,9 @@ edict_t *G_FindByType(edict_t *from, entitytype_e type)
 	else
 		from++;
 
-	for (; from < &g_edicts[globals.num_edicts]; from++)
+	for (; from < &g_edicts[globals.pool.num_edicts]; from++)
 	{
-		if (!from->inuse)
+		if (!from->server.inuse)
 			continue;
 
 		if (from->entitytype == type)
@@ -68,9 +68,9 @@ edict_t *G_Find(edict_t *from, int fieldofs, char *match)
 	else
 		from++;
 
-	for (; from < &g_edicts[globals.num_edicts] ; from++)
+	for (; from < &g_edicts[globals.pool.num_edicts] ; from++)
 	{
-		if (!from->inuse)
+		if (!from->server.inuse)
 			continue;
 
 		s = *(char **)((byte *)from + fieldofs);
@@ -105,16 +105,16 @@ edict_t *findradius(edict_t *from, vec3_t org, float rad)
 	else
 		from++;
 
-	for (; from < &g_edicts[globals.num_edicts]; from++)
+	for (; from < &g_edicts[globals.pool.num_edicts]; from++)
 	{
-		if (!from->inuse)
+		if (!from->server.inuse)
 			continue;
 
-		//if (from->solid == SOLID_NOT)
+		//if (from->server.solid == SOLID_NOT)
 		//	continue;
 
 		for (j = 0 ; j < 3 ; j++)
-			eorg[j] = org[j] - (from->s.origin[j] + (from->mins[j] + from->maxs[j]) * 0.5f);
+			eorg[j] = org[j] - (from->server.state.origin[j] + (from->server.mins[j] + from->server.maxs[j]) * 0.5f);
 
 		if (VectorLength(eorg) > rad)
 			continue;
@@ -225,7 +225,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 	//
 	// print the message
 	//
-	if ((ent->message) && !(activator->svflags & SVF_MONSTER))
+	if (ent->message && !activator->server.flags.monster)
 	{
 		gi.centerprintf(activator, "%s", ent->message);
 
@@ -246,7 +246,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 		{
 			G_FreeEdict(t);
 
-			if (!ent->inuse)
+			if (!ent->server.inuse)
 			{
 				Com_Printf("entity was removed while using killtargets\n");
 				return;
@@ -276,7 +276,7 @@ void G_UseTargets(edict_t *ent, edict_t *activator)
 					t->use(t, ent, activator);
 			}
 
-			if (!ent->inuse)
+			if (!ent->server.inuse)
 			{
 				Com_Printf("entity was removed while using targets\n");
 				return;
@@ -465,14 +465,14 @@ char *G_CopyString(char *in)
 
 void G_InitEdict(edict_t *e)
 {
-	e->inuse = true;
+	e->server.inuse = true;
 	e->entitytype = ET_NULL;
 	e->gravity = 1.0f;
-	e->s.number = e - g_edicts;
-	e->s.clip_contents = CONTENTS_MONSTER;
+	e->server.state.number = e - g_edicts;
+	e->server.state.clip_contents = CONTENTS_MONSTER;
 
-	if (e->s.number >= 1 && e->s.number <= maxclients->integer)
-		e->client = &game.clients[e->s.number - 1];
+	if (e->server.state.number >= 1 && e->server.state.number <= maxclients->integer)
+		e->server.client = &game.clients[e->server.state.number - 1];
 }
 
 /*
@@ -492,11 +492,11 @@ edict_t *G_Spawn(void)
 	edict_t     *e;
 	e = &g_edicts[game.maxclients + 1];
 
-	for (i = game.maxclients + 1 ; i < globals.num_edicts ; i++, e++)
+	for (i = game.maxclients + 1 ; i < globals.pool.num_edicts ; i++, e++)
 	{
 		// the first couple seconds of server time can involve a lot of
 		// freeing and allocating, so relax the replacement policy
-		if (!e->inuse && (e->freetime < 2000 || level.time - e->freetime > 500))
+		if (!e->server.inuse && (e->freetime < 2000 || level.time - e->freetime > 500))
 		{
 			G_InitEdict(e);
 			return e;
@@ -506,7 +506,7 @@ edict_t *G_Spawn(void)
 	if (i == game.maxentities)
 		Com_Error(ERR_FATAL, "ED_Alloc: no free edicts");
 
-	globals.num_edicts++;
+	globals.pool.num_edicts++;
 	G_InitEdict(e);
 	return e;
 }
@@ -538,7 +538,7 @@ void G_FreeEdict(edict_t *ed)
 	G_FreeAI(ed); //jabot092(2)
 	memset(ed, 0, sizeof(*ed));
 	ed->freetime = level.time;
-	ed->inuse = false;
+	ed->server.inuse = false;
 }
 
 
@@ -554,10 +554,10 @@ void    G_TouchTriggers(edict_t *ent)
 	edict_t     *touch[MAX_EDICTS], *hit;
 
 	// dead things don't activate triggers!
-	if ((ent->client || (ent->svflags & SVF_MONSTER)) && (ent->health <= 0))
+	if ((ent->server.client || ent->server.flags.monster) && (ent->health <= 0))
 		return;
 
-	num = gi.BoxEdicts(ent->absmin, ent->absmax, touch
+	num = gi.BoxEdicts(ent->server.absmin, ent->server.absmax, touch
 			, MAX_EDICTS, AREA_TRIGGERS);
 
 	// be careful, it is possible to have an entity in this
@@ -566,7 +566,7 @@ void    G_TouchTriggers(edict_t *ent)
 	{
 		hit = touch[i];
 
-		if (!hit->inuse)
+		if (!hit->server.inuse)
 			continue;
 
 		if (!hit->touch)
@@ -588,7 +588,7 @@ void    G_TouchSolids(edict_t *ent)
 {
 	int         i, num;
 	edict_t     *touch[MAX_EDICTS], *hit;
-	num = gi.BoxEdicts(ent->absmin, ent->absmax, touch
+	num = gi.BoxEdicts(ent->server.absmin, ent->server.absmax, touch
 			, MAX_EDICTS, AREA_SOLID);
 
 	// be careful, it is possible to have an entity in this
@@ -597,13 +597,13 @@ void    G_TouchSolids(edict_t *ent)
 	{
 		hit = touch[i];
 
-		if (!hit->inuse)
+		if (!hit->server.inuse)
 			continue;
 
 		if (ent->touch)
 			ent->touch(hit, ent, NULL, NULL);
 
-		if (!ent->inuse)
+		if (!ent->server.inuse)
 			break;
 	}
 }
@@ -643,7 +643,7 @@ bool G_KillBox(edict_t *ent, vec3_t origin, vec3_t mins, vec3_t maxs)
 		T_Damage(tr.ent, ent, ent, vec3_origin, origin, vec3_origin, 100000, 0, DAMAGE_NO_PROTECTION, MakeAttackerMeansOfDeath(world, ent, MD_TELEFRAG, DT_DIRECT));
 
 		// if we didn't kill it, fail
-		if (tr.ent->solid)
+		if (tr.ent->server.solid)
 			return false;
 	}
 
@@ -652,7 +652,7 @@ bool G_KillBox(edict_t *ent, vec3_t origin, vec3_t mins, vec3_t maxs)
 
 bool KillBox(edict_t *ent)
 {
-	return G_KillBox(ent, ent->s.origin, ent->mins, ent->maxs);
+	return G_KillBox(ent, ent->server.state.origin, ent->server.mins, ent->server.maxs);
 }
 
 /*
@@ -670,9 +670,9 @@ bool visible(edict_t *self, edict_t *other)
 	vec3_t  spot1;
 	vec3_t  spot2;
 	trace_t trace;
-	VectorCopy(self->s.origin, spot1);
+	VectorCopy(self->server.state.origin, spot1);
 	spot1[2] += self->viewheight;
-	VectorCopy(other->s.origin, spot2);
+	VectorCopy(other->server.state.origin, spot2);
 	spot2[2] += other->viewheight;
 	trace = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_OPAQUE);
 
@@ -695,8 +695,8 @@ bool infront(edict_t *self, edict_t *other)
 	vec3_t  vec;
 	float   dot;
 	vec3_t  forward;
-	AngleVectors(self->s.angles, forward, NULL, NULL);
-	VectorSubtract(other->s.origin, self->s.origin, vec);
+	AngleVectors(self->server.state.angles, forward, NULL, NULL);
+	VectorSubtract(other->server.state.origin, self->server.state.origin, vec);
 	VectorNormalize(vec);
 	dot = DotProduct(vec, forward);
 

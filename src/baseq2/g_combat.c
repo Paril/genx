@@ -37,9 +37,9 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 	// bmodels need special checking because their origin is 0,0,0
 	if (targ->movetype == MOVETYPE_PUSH)
 	{
-		VectorAdd(targ->absmin, targ->absmax, dest);
+		VectorAdd(targ->server.absmin, targ->server.absmax, dest);
 		VectorScale(dest, 0.5f, dest);
-		trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+		trace = gi.trace(inflictor->server.state.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
 		if (trace.fraction == 1.0f)
 			return true;
@@ -50,39 +50,39 @@ bool CanDamage(edict_t *targ, edict_t *inflictor)
 		return false;
 	}
 
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, targ->s.origin, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->server.state.origin, vec3_origin, vec3_origin, targ->server.state.origin, inflictor, MASK_SOLID);
 
 	if (trace.fraction == 1.0f)
 		return true;
 
-	VectorCopy(targ->s.origin, dest);
+	VectorCopy(targ->server.state.origin, dest);
 	dest[0] += 15.0f;
 	dest[1] += 15.0f;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->server.state.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
 	if (trace.fraction == 1.0f)
 		return true;
 
-	VectorCopy(targ->s.origin, dest);
+	VectorCopy(targ->server.state.origin, dest);
 	dest[0] += 15.0f;
 	dest[1] -= 15.0f;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->server.state.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
 	if (trace.fraction == 1.0f)
 		return true;
 
-	VectorCopy(targ->s.origin, dest);
+	VectorCopy(targ->server.state.origin, dest);
 	dest[0] -= 15.0f;
 	dest[1] += 15.0f;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->server.state.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
 	if (trace.fraction == 1.0f)
 		return true;
 
-	VectorCopy(targ->s.origin, dest);
+	VectorCopy(targ->server.state.origin, dest);
 	dest[0] -= 15.0f;
 	dest[1] -= 15.0f;
-	trace = gi.trace(inflictor->s.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
+	trace = gi.trace(inflictor->server.state.origin, vec3_origin, vec3_origin, dest, inflictor, MASK_SOLID);
 
 	if (trace.fraction == 1.0f)
 		return true;
@@ -114,16 +114,15 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 	if (targ->deadflag == DEAD_NO)
 	{
 #ifdef ENABLE_COOP
-		if (targ->svflags & SVF_MONSTER)
+		if (targ->server.flags.monster)
 		{
-			//      targ->svflags |= SVF_DEADMONSTER;   // now treat as a different content type
 			if (!(targ->monsterinfo.aiflags & AI_GOOD_GUY))
 			{
 				level.killed_monsters++;
 
 				// medics won't heal monsters that they kill themselves
 				if (attacker->entitytype == ET_MONSTER_MEDIC)
-					targ->owner = attacker;
+					targ->server.owner = attacker;
 			}
 
 			targ->touch = NULL;
@@ -135,29 +134,29 @@ static void Killed(edict_t *targ, edict_t *inflictor, edict_t *attacker, int dam
 
 		// scoring.
 		// gain 1 point if we kill a monster
-		if (attacker->client && (targ->svflags & SVF_MONSTER))
-			attacker->client->resp.score++;
+		if (attacker->server.client && targ->server.flags.monster)
+			attacker->server.client->resp.score++;
 		// lose 1 point if killed by monster
-		else if ((attacker->svflags & SVF_MONSTER) && targ->client)
-			targ->client->resp.score--;
-		else if (targ->client && attacker->client)
+		else if (attacker->server.flags.monster && targ->server.client)
+			targ->server.client->resp.score--;
+		else if (targ->server.client && attacker->server.client)
 		{
 			// lose 1 point if we friendly fire kill
 			if (targ->meansOfDeath.damage_means & MD_FRIENDLY_FIRE)
-				attacker->client->resp.score--;
+				attacker->server.client->resp.score--;
 			// gain 1 point if we kill somebody we're
 			// not on the same team with
 			else
-				attacker->client->resp.score++;
+				attacker->server.client->resp.score++;
 		}
 	}
 
-	if ((targ->svflags & SVF_MONSTER) && targ->freeze_time > level.time)
+	if (targ->server.flags.monster && targ->freeze_time > level.time)
 	{
 		MSG_WriteByte(svc_temp_entity);
 		MSG_WriteByte(TE_DUKE_GLASS);
-		MSG_WritePos(targ->s.origin);
-		gi.multicast(targ->s.origin, MULTICAST_PVS);
+		MSG_WritePos(targ->server.state.origin);
+		gi.multicast(targ->server.state.origin, MULTICAST_PVS);
 		G_FreeEdict(targ);
 	}
 	else
@@ -221,7 +220,7 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 	if (!damage)
 		return 0;
 
-	client = ent->client;
+	client = ent->server.client;
 
 	if (dflags & DAMAGE_NO_ARMOR)
 		return 0;
@@ -234,7 +233,7 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 			power = floorf(AMMO_PER_POWER_ARMOR_ABSORB * client->pers.ammo);
 	}
 #ifdef ENABLE_COOP
-	else if (ent->svflags & SVF_MONSTER)
+	else if (ent->server.flags.monster)
 	{
 		power_armor_type = ent->monsterinfo.power_armor_type;
 		power = ent->monsterinfo.power_armor_power;
@@ -255,8 +254,8 @@ static int CheckPowerArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage
 		float       dot;
 		vec3_t      forward;
 		// only works if damage point is in front
-		AngleVectors(ent->s.angles, forward, NULL, NULL);
-		VectorSubtract(point, ent->s.origin, vec);
+		AngleVectors(ent->server.state.angles, forward, NULL, NULL);
+		VectorSubtract(point, ent->server.state.origin, vec);
 		VectorNormalize(vec);
 		dot = DotProduct(vec, forward);
 
@@ -305,7 +304,7 @@ static int CheckArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int
 	if (!damage)
 		return 0;
 
-	client = ent->client;
+	client = ent->server.client;
 
 	if (!client)
 		return 0;
@@ -319,7 +318,7 @@ static int CheckArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int
 		return 0;
 
 	armor = GetItemByIndex(index);
-	gitem_armor_t *armorinfo = &game_iteminfos[ent->s.game].armors[index - ITI_JACKET_ARMOR];
+	gitem_armor_t *armorinfo = &game_iteminfos[ent->server.state.game].armors[index - ITI_JACKET_ARMOR];
 
 	if (dflags & DAMAGE_ENERGY)
 		save = ceilf(armorinfo->energy_protection * damage);
@@ -340,7 +339,7 @@ static int CheckArmor(edict_t *ent, vec3_t point, vec3_t normal, int damage, int
 #ifdef ENABLE_COOP
 static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 {
-	if (!(attacker->client) && !(attacker->svflags & SVF_MONSTER))
+	if (!(attacker->server.client) && !attacker->server.flags.monster)
 		return;
 
 	if (attacker == targ || attacker == targ->enemy)
@@ -350,20 +349,20 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 	// or another good guy, do not get mad at them
 	if (targ->monsterinfo.aiflags & AI_GOOD_GUY)
 	{
-		if (attacker->client || (attacker->monsterinfo.aiflags & AI_GOOD_GUY))
+		if (attacker->server.client || (attacker->monsterinfo.aiflags & AI_GOOD_GUY))
 			return;
 	}
 
 	// we now know that we are not both good guys
 
 	// if attacker is a client, get mad at them because he's good and we're not
-	if (attacker->client)
+	if (attacker->server.client)
 	{
 		targ->monsterinfo.aiflags &= ~AI_SOUND_TARGET;
 
 		// this can only happen in coop (both new and old enemies are clients)
 		// only switch if can't see the current enemy
-		if (targ->enemy && targ->enemy->client)
+		if (targ->enemy && targ->enemy->server.client)
 		{
 			if (visible(targ, targ->enemy))
 			{
@@ -392,7 +391,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 		attacker->entitytype != ET_MONSTER_MAKRON &&
 		attacker->entitytype != ET_MONSTER_JORG)
 	{
-		if (targ->enemy && targ->enemy->client)
+		if (targ->enemy && targ->enemy->server.client)
 			targ->oldenemy = targ->enemy;
 
 		targ->enemy = attacker;
@@ -403,7 +402,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 	// if they *meant* to shoot us, then shoot back
 	else if (attacker->enemy == targ)
 	{
-		if (targ->enemy && targ->enemy->client)
+		if (targ->enemy && targ->enemy->server.client)
 			targ->oldenemy = targ->enemy;
 
 		targ->enemy = attacker;
@@ -414,7 +413,7 @@ static void M_ReactToDamage(edict_t *targ, edict_t *attacker)
 	// otherwise get mad at whoever they are mad at (help our buddy) unless it is us!
 	else if (attacker->enemy && attacker->enemy != targ)
 	{
-		if (targ->enemy && targ->enemy->client)
+		if (targ->enemy && targ->enemy->server.client)
 			targ->oldenemy = targ->enemy;
 
 		targ->enemy = attacker->enemy;
@@ -443,15 +442,15 @@ void Q1_SpawnBlood(vec3_t org, vec3_t vel, int damage)
 static void ApplyMeansOfDeath(edict_t *target, meansOfDeath_t *mod)
 {
 	// if it's not a monster or client, means of death will do nothing
-	if (!target->client && !(target->svflags & SVF_MONSTER))
+	if (!target->server.client && !target->server.flags.monster)
 		return;
 
 	// if the attacker is a client or monster, copy us over right away
-	if (mod->attacker->client || (mod->attacker->svflags & SVF_MONSTER))
+	if (mod->attacker->server.client || mod->attacker->server.flags.monster)
 	{
 		target->meansOfDeath.attacker = mod->attacker;
 		target->meansOfDeath.attacker_type = mod->attacker->entitytype;
-		target->meansOfDeath.attacker_game = mod->attacker->s.game;
+		target->meansOfDeath.attacker_game = mod->attacker->server.state.game;
 		target->meansOfDeath.attacker_time = level.time + 10000;
 	}
 
@@ -490,7 +489,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 
 #ifdef ENABLE_COOP
 	// easy mode takes half damage
-	if (skill->integer == 0 && deathmatch->value == 0 && targ->client)
+	if (skill->integer == 0 && deathmatch->value == 0 && targ->server.client)
 	{
 		damage *= 0.5f;
 
@@ -499,7 +498,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 	}
 #endif
 
-	client = targ->client;
+	client = targ->server.client;
 
 	if (dflags & DAMAGE_BULLET)
 		te_sparks = TE_BULLET_SPARKS;
@@ -510,7 +509,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 	VectorNormalize2(dir_in, dir);
 
 	// bonus damage for suprising a monster
-	if (!(dflags & DAMAGE_RADIUS) && (targ->svflags & SVF_MONSTER) && (attacker->client) && (!targ->enemy) && (targ->health > 0) && (targ->s.game == GAME_Q2))
+	if (!(dflags & DAMAGE_RADIUS) && targ->server.flags.monster && (attacker->server.client) && (!targ->enemy) && (targ->health > 0) && (targ->server.state.game == GAME_Q2))
 		damage *= 2;
 
 	if (targ->flags & FL_NO_KNOCKBACK)
@@ -519,26 +518,26 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 	// figure momentum add
 	if (!(dflags & DAMAGE_NO_KNOCKBACK))
 	{
-		if ((targ->svflags & SVF_MONSTER) && targ->s.game == GAME_DOOM)
+		if (targ->server.flags.monster && targ->server.state.game == GAME_DOOM)
 		{
 			// Some close combat weapons should not
 			// inflict thrust and push the victim out of reach,
 			// thus kick away unless using the chainsaw.
 			if (inflictor && (!attacker
-					|| !attacker->client
-					|| attacker->client->pers.weapon != GetItemByIndex(ITI_DOOM_CHAINSAW)))
+					|| !attacker->server.client
+					|| attacker->server.client->pers.weapon != GetItemByIndex(ITI_DOOM_CHAINSAW)))
 			{
 				vec3_t ang;
-				VectorAdd(inflictor->absmin, inflictor->absmax, ang);
+				VectorAdd(inflictor->server.absmin, inflictor->server.absmax, ang);
 				VectorScale(ang, 0.5f, ang);
-				VectorSubtract(targ->s.origin, ang, ang);
+				VectorSubtract(targ->server.state.origin, ang, ang);
 				VectorNormalize(ang);
 				float thrust = damage/* *(FRACUNIT >> 3) */ * 100 / targ->mass;
 
 				// make fall forwards sometimes
 				if (damage < 40
 					&& damage > targ->health
-					&& targ->s.origin[2] - inflictor->s.origin[2] > 64
+					&& targ->server.state.origin[2] - inflictor->server.state.origin[2] > 64
 					&& (Q_rand() & 1))
 				{
 					vectoangles(ang, ang);
@@ -555,9 +554,9 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 			if (dflags & DAMAGE_Q1)
 			{
 				vec3_t td;
-				VectorAdd(inflictor->absmin, inflictor->absmax, td);
+				VectorAdd(inflictor->server.absmin, inflictor->server.absmax, td);
 				VectorScale(td, 0.5f, td);
-				VectorSubtract(targ->s.origin, td, td);
+				VectorSubtract(targ->server.state.origin, td, td);
 				VectorNormalize(td);
 				VectorMA(targ->velocity, damage * 8, dir, targ->velocity);
 			}
@@ -571,7 +570,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 				else
 					mass = targ->mass;
 
-				if (targ->client && attacker == targ/* && targ->s.game == GAME_Q2*/)
+				if (targ->server.client && attacker == targ/* && targ->server.state.game == GAME_Q2*/)
 					VectorScale(dir, 1600.0f * (float)knockback / mass, kvel);   // the rocket jump hack...
 				else
 					VectorScale(dir, 500.0f * (float)knockback / mass, kvel);
@@ -627,7 +626,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 				Q1_SpawnBlood(point, normal, take);
 			else
 			{
-				if ((targ->svflags & SVF_MONSTER) || (client))
+				if (targ->server.flags.monster || (client))
 					SpawnDamage(TE_BLOOD, point, normal, take);
 				else
 					SpawnDamage(te_sparks, point, normal, take);
@@ -639,22 +638,17 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 			ApplyMeansOfDeath(targ, &mod);
 			targ->health = targ->health - take;
 
-			if (targ->client)
+			// Doom uses this for faces
+			if (targ->server.client)
 			{
-				vec3_t diff = { targ->s.origin[0] - attacker->s.origin[0], targ->s.origin[1] - attacker->s.origin[1], 0 };
+				vec3_t diff = { targ->server.state.origin[0] - attacker->server.state.origin[0], targ->server.state.origin[1] - attacker->server.state.origin[1], 0 };
 				VectorNormalize(diff);
 				vectoangles2(diff, diff);
-				/*MSG_WriteByte(svc_temp_entity);
-				MSG_WriteByte(TE_DAMAGE_DIRECTION);
-				MSG_WriteAngle(diff[1]);
-				gi.unicast(targ, qtrue);*/
-				targ->client->damage_dir = diff[1];
+				targ->server.client->damage_dir = diff[1];
 			}
 
 			if (targ->health <= 0)
 			{
-				//if ((targ->svflags & SVF_MONSTER) || (client))
-				//    targ->flags |= FL_NO_KNOCKBACK;
 				Killed(targ, inflictor, attacker, take, point);
 				return;
 			}
@@ -665,7 +659,7 @@ void T_Damage(edict_t *targ, edict_t *inflictor, edict_t *attacker, vec3_t dir_i
 		return;
 
 #ifdef ENABLE_COOP
-	if (targ->svflags & SVF_MONSTER)
+	if (targ->server.flags.monster)
 	{
 		if (take)
 		{
@@ -731,7 +725,7 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 
 	mod.damage_type = DT_INDIRECT;
 
-	while ((ent = findradius(ent, inflictor->s.origin, radius)) != NULL)
+	while ((ent = findradius(ent, inflictor->server.state.origin, radius)) != NULL)
 	{
 		if (ent == ignore)
 			continue;
@@ -739,9 +733,9 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 		if (!ent->takedamage)
 			continue;
 
-		VectorAdd(ent->mins, ent->maxs, v);
-		VectorMA(ent->s.origin, 0.5f, v, v);
-		VectorSubtract(inflictor->s.origin, v, v);
+		VectorAdd(ent->server.mins, ent->server.maxs, v);
+		VectorMA(ent->server.state.origin, 0.5f, v, v);
+		VectorSubtract(inflictor->server.state.origin, v, v);
 		points = damage - 0.5f * VectorLength(v);
 
 		if (ent == attacker)
@@ -751,14 +745,14 @@ void T_RadiusDamage(edict_t *inflictor, edict_t *attacker, float damage, edict_t
 		{
 			if (CanDamage(ent, inflictor))
 			{
-				VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
+				VectorSubtract(ent->server.state.origin, inflictor->server.state.origin, dir);
 
 				// shambler takes half damage
 #ifdef ENABLE_COOP
 				points *= 0.5f;
 #endif
 
-				T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
+				T_Damage(ent, inflictor, attacker, dir, inflictor->server.state.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
 			}
 		}
 	}

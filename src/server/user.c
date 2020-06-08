@@ -65,17 +65,17 @@ static void SV_CreateBaselines(void)
 		if (!ent->inuse)
 			continue;
 
-		if (!ES_INUSE(&ent->s))
+		if (!ES_INUSE(&ent->state))
 			continue;
 
-		ent->s.number = i;
+		ent->state.number = i;
 		chunk = &sv_client->baselines[i >> SV_BASELINES_SHIFT];
 
 		if (*chunk == NULL)
 			*chunk = SV_Mallocz(sizeof(*base) * SV_BASELINES_PER_CHUNK);
 
 		base = *chunk + (i & SV_BASELINES_MASK);
-		MSG_PackEntity(base, &ent->s, Q2PRO_SHORTANGLES(sv_client, i));
+		MSG_PackEntity(base, &ent->state, Q2PRO_SHORTANGLES(sv_client, i));
 
 		if (sv_client->esFlags & MSG_ES_LONGSOLID)
 			base->solid = sv.entities[i].solid32;
@@ -99,15 +99,15 @@ static void write_configstrings(void)
 	// write a packet full of data
 	string = sv_client->configstrings;
 
-	for (i = 0; i < MAX_CONFIGSTRINGS; i++, string += MAX_QPATH)
+	for (i = 0; i < MAX_CONFIGSTRINGS; i++, string += CS_SIZE)
 	{
 		if (!string[0])
 			continue;
 
 		length = strlen(string);
 
-		if (length > MAX_QPATH)
-			length = MAX_QPATH;
+		if (length > CS_SIZE)
+			length = CS_SIZE;
 
 		// check if this configstring will overflow
 		if (need_flush_msg(length + 4))
@@ -179,15 +179,15 @@ static void write_gamestate(void)
 	// write configstrings
 	string = sv_client->configstrings;
 
-	for (i = 0; i < MAX_CONFIGSTRINGS; i++, string += MAX_QPATH)
+	for (i = 0; i < MAX_CONFIGSTRINGS; i++, string += CS_SIZE)
 	{
 		if (!string[0])
 			continue;
 
 		length = strlen(string);
 
-		if (length > MAX_QPATH)
-			length = MAX_QPATH;
+		if (length > CS_SIZE)
+			length = CS_SIZE;
 
 		MSG_WriteShort(i);
 		MSG_WriteData(string, length);
@@ -341,7 +341,7 @@ void SV_New_f(void)
 	else
 		MSG_WriteShort(sv_client->slot);
 
-	MSG_WriteString(&sv_client->configstrings[CS_NAME * MAX_QPATH]);
+	MSG_WriteString(&sv_client->configstrings[CS_NAME * CS_SIZE]);
 
 	// send protocol specific stuff
 	MSG_WriteByte(sv.state);

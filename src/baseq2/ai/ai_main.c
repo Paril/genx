@@ -163,7 +163,7 @@ static bool AI_BotRoamForLRGoal(edict_t *self, int current_node)
 			continue;
 
 		//limit cost finding by distance
-		dist = AI_Distance(self->s.origin, nodes[nav.broams[i].node].origin);
+		dist = AI_Distance(self->server.state.origin, nodes[nav.broams[i].node].origin);
 
 		if (dist > 10000)
 			continue;
@@ -217,7 +217,7 @@ void AI_PickLongRangeGoal(edict_t *self)
 	float	cost;
 	float dist;
 	// look for a target
-	current_node = AI_FindClosestReachableNode(self->s.origin, self, ((1 + self->ai->nearest_node_tries) * NODE_DENSITY), NODE_ALL);
+	current_node = AI_FindClosestReachableNode(self->server.state.origin, self, ((1 + self->ai->nearest_node_tries) * NODE_DENSITY), NODE_ALL);
 	self->ai->current_node = current_node;
 
 	if (current_node == -1)	//failed. Go wandering :(
@@ -238,7 +238,7 @@ void AI_PickLongRangeGoal(edict_t *self)
 	for (i = 0; i < nav.num_items; i++)
 	{
 		// Ignore items that are not there (solid)
-		if (!nav.items[i].ent || nav.items[i].ent->solid == SOLID_NOT)
+		if (!nav.items[i].ent || nav.items[i].ent->server.solid == SOLID_NOT)
 			continue;
 
 		//ignore items wich can't be weighted (must have a valid item flag)
@@ -255,7 +255,7 @@ void AI_PickLongRangeGoal(edict_t *self)
 			continue;
 
 		//limit cost finding distance
-		dist = AI_Distance(self->s.origin, nav.items[i].ent->s.origin);
+		dist = AI_Distance(self->server.state.origin, nav.items[i].ent->server.state.origin);
 
 		//different distance limits for different types
 		if (nav.items[i].ent->item->flags.flags & (IT_AMMO
@@ -295,14 +295,14 @@ void AI_PickLongRangeGoal(edict_t *self)
 	for (i = 0; i < num_AIEnemies; i++)
 	{
 		//ignore self & spectators
-		if (AIEnemies[i] == self || AIEnemies[i]->svflags & SVF_NOCLIENT)
+		if (AIEnemies[i] == self || AIEnemies[i]->server.flags.noclient)
 			continue;
 
 		//ignore zero weighted players
 		if (self->ai->status.playersWeights[i] == 0.0f)
 			continue;
 
-		node = AI_FindClosestReachableNode(AIEnemies[i]->s.origin, AIEnemies[i], NODE_DENSITY, NODE_ALL);
+		node = AI_FindClosestReachableNode(AIEnemies[i]->server.state.origin, AIEnemies[i], NODE_DENSITY, NODE_ALL);
 		cost = AI_FindCost(current_node, node, self->ai->pers.moveTypesMask);
 
 		if (cost == INVALID || cost < 4) // ignore invalid and very short hops
@@ -358,11 +358,11 @@ static void AI_PickShortRangeGoal(edict_t *self)
 	float	weight, best_weight = 0.0;
 	edict_t *best = NULL;
 
-	if (!self->client)
+	if (!self->server.client)
 		return;
 
 	// look for a target (should make more efficent later)
-	target = findradius(NULL, self->s.origin, AI_GOAL_SR_RADIUS);
+	target = findradius(NULL, self->server.state.origin, AI_GOAL_SR_RADIUS);
 
 	while (target)
 	{
@@ -373,16 +373,16 @@ static void AI_PickShortRangeGoal(edict_t *self)
 		if (target->entitytype == ET_ROCKET || target->entitytype == ET_GRENADE || target->entitytype == ET_HAND_GRENADE)
 		{
 			//if player who shoot is a potential enemy
-			if (self->ai->status.playersWeights[target->owner->s.number - 1])
+			if (self->ai->status.playersWeights[target->server.owner->server.state.number - 1])
 			{
 				//				if(AIDevel.debugChased && bot_showcombat->value)
 				//					G_PrintMsg (AIDevel.chaseguy, PRINT_HIGH, "%s: ROCKET ALERT!\n", self->ai->pers.netname);
-				self->enemy = target->owner;	// set who fired the rocket as enemy
+				self->enemy = target->server.owner;	// set who fired the rocket as enemy
 				return;
 			}
 		}
 
-		if (AI_ItemIsReachable(self, target->s.origin))
+		if (AI_ItemIsReachable(self, target->server.state.origin))
 		{
 			if (infront(self, target))
 			{
@@ -397,7 +397,7 @@ static void AI_PickShortRangeGoal(edict_t *self)
 		}
 
 		// next target
-		target = findradius(target, self->s.origin, AI_GOAL_SR_RADIUS);
+		target = findradius(target, self->server.state.origin, AI_GOAL_SR_RADIUS);
 	}
 
 	//jalfixme (what's goalentity doing here?)
@@ -420,7 +420,7 @@ static void AI_CategorizePosition(edict_t *ent)
 	bool stepping = AI_IsStep(ent);
 	ent->was_swim = ent->is_swim;
 	ent->was_step = ent->is_step;
-	ent->is_ladder = AI_IsLadder(ent->s.origin, ent->s.angles, ent->mins, ent->maxs, ent);
+	ent->is_ladder = AI_IsLadder(ent->server.state.origin, ent->server.state.angles, ent->server.mins, ent->server.maxs, ent);
 
 	// FIXME
 #if ENABLE_COOP

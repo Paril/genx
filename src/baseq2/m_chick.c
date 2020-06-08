@@ -93,7 +93,7 @@ static void chick_pain(edict_t *self, edict_t *other, float kick, int damage)
 	float   r;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -121,11 +121,11 @@ static void chick_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void chick_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, 0);
-	VectorSet(self->maxs, 16, 16, 16);
+	VectorSet(self->server.mins, -16, -16, 0);
+	VectorSet(self->server.maxs, 16, 16, 16);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -176,7 +176,7 @@ static void chick_duck_down(edict_t *self)
 		return;
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
-	self->maxs[2] -= 32;
+	self->server.maxs[2] -= 32;
 	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
@@ -193,7 +193,7 @@ static void chick_duck_hold(edict_t *self)
 static void chick_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
+	self->server.maxs[2] += 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -212,7 +212,7 @@ static void chick_dodge(edict_t *self, edict_t *attacker, float eta)
 static void ChickSlash(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->mins[0], 10);
+	VectorSet(aim, MELEE_DISTANCE, self->server.mins[0], 10);
 	gi.sound(self, CHAN_WEAPON, sound_melee_swing, 1, ATTN_NORM, 0);
 	fire_hit(self, aim, (10 + (Q_rand() % 6)), 100);
 }
@@ -223,9 +223,9 @@ static void ChickRocket(edict_t *self)
 	vec3_t  start;
 	vec3_t  dir;
 	vec3_t  vec;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_CHICK_ROCKET_1], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_CHICK_ROCKET_1], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
@@ -351,10 +351,10 @@ void SP_monster_chick(edict_t *self)
 	sound_sight             = gi.soundindex("chick/chksght1.wav");
 	sound_search            = gi.soundindex("chick/chksrch1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, 0);
-	VectorSet(self->maxs, 16, 16, 56);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, 0);
+	VectorSet(self->server.maxs, 16, 16, 56);
 	self->health = 175;
 	self->gib_health = -70;
 	self->mass = 200;

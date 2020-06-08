@@ -70,14 +70,14 @@ static void hover_fire_blaster(edict_t *self)
 	vec3_t  dir;
 	int     effect;
 
-	if (self->s.frame == FRAME_attak104)
+	if (self->server.state.frame == FRAME_attak104)
 		effect = EF_HYPERBLASTER;
 	else
 		effect = 0;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_HOVER_BLASTER_1], forward, right, start);
-	VectorCopy(self->enemy->s.origin, end);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_HOVER_BLASTER_1], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, end);
 	end[2] += self->enemy->viewheight;
 	VectorSubtract(end, start, dir);
 	monster_fire_blaster(self, start, dir, 1, 1000, MZ2_HOVER_BLASTER_1, effect);
@@ -114,7 +114,7 @@ static void hover_attack(edict_t *self)
 static void hover_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -157,8 +157,8 @@ static void hover_deadthink(edict_t *self)
 
 static void hover_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
 	self->think = hover_deadthink;
 	self->nextthink = level.time + game.frametime;
@@ -236,12 +236,12 @@ void SP_monster_hover(edict_t *self)
 	sound_search1 = gi.soundindex("hover/hovsrch1.wav");
 	sound_search2 = gi.soundindex("hover/hovsrch2.wav");
 	gi.soundindex("hover/hovatck1.wav");
-	self->s.sound = gi.soundindex("hover/hovidle1.wav");
+	self->server.state.sound = gi.soundindex("hover/hovidle1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -24, -24, -24);
-	VectorSet(self->maxs, 24, 24, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -24, -24, -24);
+	VectorSet(self->server.maxs, 24, 24, 32);
 	self->health = 240;
 	self->gib_health = -100;
 	self->mass = 150;

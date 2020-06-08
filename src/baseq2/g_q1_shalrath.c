@@ -72,7 +72,7 @@ ShalMissile
 void ShalHome(edict_t *self)
 {
 	vec3_t dir, vtemp;
-	VectorCopy(self->enemy->s.origin, vtemp);
+	VectorCopy(self->enemy->server.state.origin, vtemp);
 	vtemp[2] += 10;
 
 	if (self->enemy->health < 1)
@@ -81,7 +81,7 @@ void ShalHome(edict_t *self)
 		return;
 	}
 
-	VectorSubtract(vtemp, self->s.origin, dir);
+	VectorSubtract(vtemp, self->server.state.origin, dir);
 	VectorNormalize(dir);
 
 	if (skill->integer == 3)
@@ -95,17 +95,17 @@ void ShalHome(edict_t *self)
 
 void ShalMissileTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;		// don't explode on owner
 
 	if (other->entitytype == ET_Q1_MONSTER_ZOMBIE)
 		T_Damage(other, self, self, vec3_origin, vec3_origin, vec3_origin, 110, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, self->meansOfDeath);
 
-	T_RadiusDamage(self, self->owner, 40, world, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, 40, self->meansOfDeath);
+	T_RadiusDamage(self, self->server.owner, 40, world, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, 40, self->meansOfDeath);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_Q1_EXPLODE);
-	MSG_WritePos(self->s.origin);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	MSG_WritePos(self->server.state.origin);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	G_FreeEdict(self);
 }
 
@@ -114,11 +114,11 @@ void ShalMissile(edict_t *self)
 	edict_t *missile;
 	vec3_t dir;
 	float dist, flytime;
-	VectorCopy(self->enemy->s.origin, dir);
+	VectorCopy(self->enemy->server.state.origin, dir);
 	dir[2] += 10;
-	VectorSubtract(dir, self->s.origin, dir);
+	VectorSubtract(dir, self->server.state.origin, dir);
 	VectorNormalize(dir);
-	dist = Distance(self->enemy->s.origin, self->s.origin);
+	dist = Distance(self->enemy->server.state.origin, self->server.state.origin);
 	flytime = dist * 0.002f;
 
 	if (flytime < 0.1f)
@@ -127,23 +127,23 @@ void ShalMissile(edict_t *self)
 	//self.effects = self.effects | EF_MUZZLEFLASH;
 	gi.sound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM, 0);
 	missile = G_Spawn();
-	missile->owner = self;
-	missile->solid = SOLID_BBOX;
+	missile->server.owner = self;
+	missile->server.solid = SOLID_BBOX;
 	missile->movetype = MOVETYPE_FLYMISSILE;
 	gi.setmodel(missile, "models/q1/v_spike.mdl");
-	VectorClear(missile->mins);
-	VectorClear(missile->maxs);
-	VectorCopy(self->s.origin, missile->s.origin);
-	missile->s.origin[2] += 10l;
+	VectorClear(missile->server.mins);
+	VectorClear(missile->server.maxs);
+	VectorCopy(self->server.state.origin, missile->server.state.origin);
+	missile->server.state.origin[2] += 10l;
 	VectorScale(dir, 400, missile->velocity);
 	VectorSet(missile->avelocity, 300, 300, 300);
 	missile->nextthink = level.time + flytime * 1000;
 	missile->think = ShalHome;
 	missile->enemy = self->enemy;
 	missile->touch = ShalMissileTouch;
-	missile->clipmask = MASK_SHOT;
-	missile->s.game = GAME_Q1;
-	missile->s.effects |= EF_Q1_VORE;
+	missile->server.clipmask = MASK_SHOT;
+	missile->server.state.game = GAME_Q1;
+	missile->server.state.effects |= EF_Q1_VORE;
 	missile->entitytype = ET_Q1_VORE_BALL;
 	missile->meansOfDeath = MakeAttackerMeansOfDeath(self, missile, MD_NONE, DT_DIRECT);
 	gi.linkentity(missile);
@@ -167,7 +167,7 @@ static void shal_pain(edict_t *self, edict_t *other, float kick, int damage)
 static void shal_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -191,7 +191,7 @@ static void shalrath_die(edict_t *self, edict_t *inflictor, edict_t *attacker, i
 	self->deadflag = DEAD_DEAD;
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 	// insert death sounds here
 }
@@ -237,11 +237,11 @@ void q1_monster_shalrath(edict_t *self)
 	sound_pain = gi.soundindex("q1/shalrath/pain.wav");
 	sound_sight = gi.soundindex("q1/shalrath/sight.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 64);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 64);
 	self->health = 400;
 	self->monsterinfo.stand = shal_stand;
 	self->monsterinfo.walk = shal_walk;

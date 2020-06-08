@@ -135,7 +135,7 @@ static void mutant_run(edict_t *self)
 static void mutant_hit_left(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->mins[0], 8);
+	VectorSet(aim, MELEE_DISTANCE, self->server.mins[0], 8);
 
 	if (fire_hit(self, aim, (10 + (Q_rand() % 5)), 100))
 		gi.sound(self, CHAN_WEAPON, sound_hit, 1, ATTN_NORM, 0);
@@ -146,7 +146,7 @@ static void mutant_hit_left(edict_t *self)
 static void mutant_hit_right(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->maxs[0], 8);
+	VectorSet(aim, MELEE_DISTANCE, self->server.maxs[0], 8);
 
 	if (fire_hit(self, aim, (10 + (Q_rand() % 5)), 100))
 		gi.sound(self, CHAN_WEAPON, sound_hit2, 1, ATTN_NORM, 0);
@@ -156,7 +156,7 @@ static void mutant_hit_right(edict_t *self)
 
 static void mutant_check_refire(edict_t *self)
 {
-	if (!self->enemy || !self->enemy->inuse || self->enemy->health <= 0)
+	if (!self->enemy || !self->enemy->server.inuse || self->enemy->health <= 0)
 		return;
 
 	if (((skill->value == 3) && (random() < 0.5f)) || (range(self, self->enemy) == RANGE_MELEE))
@@ -189,7 +189,7 @@ static void mutant_jump_touch(edict_t *self, edict_t *other, cplane_t *plane, cs
 			int     damage;
 			VectorCopy(self->velocity, normal);
 			VectorNormalize(normal);
-			VectorMA(self->s.origin, self->maxs[0], normal, point);
+			VectorMA(self->server.state.origin, self->server.maxs[0], normal, point);
 			damage = 40 + 10 * random();
 			T_Damage(other, self, self, self->velocity, point, normal, damage, damage, DAMAGE_NONE, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
 		}
@@ -213,8 +213,8 @@ static void mutant_jump_takeoff(edict_t *self)
 {
 	vec3_t  forward;
 	gi.sound(self, CHAN_VOICE, sound_sight, 1, ATTN_NORM, 0);
-	AngleVectors(self->s.angles, forward, NULL, NULL);
-	self->s.origin[2] += 1;
+	AngleVectors(self->server.state.angles, forward, NULL, NULL);
+	self->server.state.origin[2] += 1;
 	VectorScale(forward, 600, self->velocity);
 	self->velocity[2] = 250;
 	self->groundentity = NULL;
@@ -261,14 +261,14 @@ static bool mutant_check_jump(edict_t *self)
 	vec3_t  v;
 	float   distance;
 
-	if (self->absmin[2] > (self->enemy->absmin[2] + 0.75f * self->enemy->size[2]))
+	if (self->server.absmin[2] > (self->enemy->server.absmin[2] + 0.75f * self->enemy->size[2]))
 		return false;
 
-	if (self->absmax[2] < (self->enemy->absmin[2] + 0.25f * self->enemy->size[2]))
+	if (self->server.absmax[2] < (self->enemy->server.absmin[2] + 0.25f * self->enemy->size[2]))
 		return false;
 
-	v[0] = self->s.origin[0] - self->enemy->s.origin[0];
-	v[1] = self->s.origin[1] - self->enemy->s.origin[1];
+	v[0] = self->server.state.origin[0] - self->enemy->server.state.origin[0];
+	v[1] = self->server.state.origin[1] - self->enemy->server.state.origin[1];
 	v[2] = 0;
 	distance = VectorLength(v);
 
@@ -314,7 +314,7 @@ static void mutant_pain(edict_t *self, edict_t *other, float kick, int damage)
 	float   r;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -349,11 +349,11 @@ static void mutant_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void mutant_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	gi.linkentity(self);
 	M_FlyCheck(self);
 }
@@ -383,7 +383,7 @@ static void mutant_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
 	self->takedamage = true;
-	self->s.skinnum = 1;
+	self->server.state.skinnum = 1;
 
 	if (random() < 0.5f)
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death1");
@@ -443,10 +443,10 @@ void SP_monster_mutant(edict_t *self)
 	sound_step3 = gi.soundindex("mutant/step3.wav");
 	sound_thud = gi.soundindex("mutant/thud1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 48);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 48);
 	self->health = 300;
 	self->gib_health = -120;
 	self->mass = 300;

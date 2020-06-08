@@ -117,7 +117,7 @@ void troo_walk(edict_t *self)
 void troo_dead(edict_t *self)
 {
 	self->nextthink = 0;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 }
 
 mframe_t troo_frames_gib1[FRAME_COUNT(gib)] =
@@ -181,7 +181,7 @@ void troo_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	}
 
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
@@ -218,7 +218,7 @@ bool P_CheckMeleeRange(edict_t *self)
 		return false;
 
 	edict_t *pl = self->enemy;
-	float dist = Distance(pl->s.origin, self->s.origin);
+	float dist = Distance(pl->server.state.origin, self->server.state.origin);
 
 	if (dist >= 64 - 20 + sqrtf(DotProduct(pl->size, pl->size)))
 		return false;
@@ -234,7 +234,7 @@ void doom_imp_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface
 {
 	vec3_t      origin;
 
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -243,18 +243,18 @@ void doom_imp_ball_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface
 		return;
 	}
 
-	if (ent->owner->client)
-		PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	if (ent->server.owner->server.client)
+		PlayerNoise(ent->server.owner, ent->server.state.origin, PNOISE_IMPACT);
 
 	if (other->takedamage)
-		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
+		T_Damage(other, ent, ent->server.owner, ent->velocity, ent->server.state.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
 
 	VectorNormalize(ent->velocity);
-	VectorMA(ent->s.origin, -8, ent->velocity, origin);
+	VectorMA(ent->server.state.origin, -8, ent->velocity, origin);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_DOOM_IMP_BOOM);
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
 
@@ -262,20 +262,20 @@ void fire_doom_imp_ball(edict_t *self, vec3_t start, vec3_t dir, int damage, int
 {
 	edict_t *rocket;
 	rocket = G_Spawn();
-	VectorCopy(start, rocket->s.origin);
+	VectorCopy(start, rocket->server.state.origin);
 	VectorCopy(dir, rocket->movedir);
-	vectoangles(dir, rocket->s.angles);
+	vectoangles(dir, rocket->server.state.angles);
 	VectorScale(dir, speed, rocket->velocity);
 	rocket->movetype = MOVETYPE_FLYMISSILE;
-	rocket->clipmask = MASK_SHOT;
-	rocket->solid = SOLID_BBOX;
-	rocket->s.effects |= EF_ANIM01;
-	rocket->s.renderfx |= RF_FULLBRIGHT;
-	rocket->s.game = GAME_DOOM;
-	VectorClear(rocket->mins);
-	VectorClear(rocket->maxs);
-	rocket->s.modelindex = gi.modelindex("sprites/doom/BAL1.d2s");
-	rocket->owner = self;
+	rocket->server.clipmask = MASK_SHOT;
+	rocket->server.solid = SOLID_BBOX;
+	rocket->server.state.effects |= EF_ANIM01;
+	rocket->server.state.renderfx |= RF_FULLBRIGHT;
+	rocket->server.state.game = GAME_DOOM;
+	VectorClear(rocket->server.mins);
+	VectorClear(rocket->server.maxs);
+	rocket->server.state.modelindex = gi.modelindex("sprites/doom/BAL1.d2s");
+	rocket->server.owner = self;
 	rocket->touch = doom_imp_ball_touch;
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
@@ -297,15 +297,15 @@ void troo_fire_gun(edict_t *self)
 
 	gi.sound(self, CHAN_WEAPON, sound_shoot, 1, ATTN_NORM, 0);
 	vec3_t org, v_forward, v_right;
-	AngleVectors(self->s.angles, v_forward, v_right, NULL);
+	AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
 
 	for (int i = 0; i < 3; ++i)
-		org[i] = self->s.origin[i] + v_forward[i] * 0 + v_right[i] * 0;
+		org[i] = self->server.state.origin[i] + v_forward[i] * 0 + v_right[i] * 0;
 
 	org[2] += 16;
 	vec3_t dir;
 	vec3_t enemy_org;
-	VectorCopy(self->enemy->s.origin, enemy_org);
+	VectorCopy(self->enemy->server.state.origin, enemy_org);
 	enemy_org[2] += self->enemy->viewheight;
 	VectorSubtract(enemy_org, org, dir);
 	VectorNormalize(dir);
@@ -355,7 +355,7 @@ void doom_monster_troo(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_gib = gi.soundindex("doom/SLOP.wav");
 	sound_alert1 = gi.soundindex("doom/BGSIT1.wav");
@@ -366,9 +366,9 @@ void doom_monster_troo(edict_t *self)
 	sound_death2 = gi.soundindex("doom/BGDTH2.wav");
 	sound_shoot = gi.soundindex("doom/FIRSHT.wav");
 	sound_claw = gi.soundindex("doom/CLAW.wav");
-	VectorSet(self->mins, -20, -20, -4);
-	VectorSet(self->maxs, 20, 20, 52);
-	self->s.modelindex = gi.modelindex("sprites/doom/TROO.d2s");
+	VectorSet(self->server.mins, -20, -20, -4);
+	VectorSet(self->server.maxs, 20, 20, 52);
+	self->server.state.modelindex = gi.modelindex("sprites/doom/TROO.d2s");
 	self->health = 60;
 	self->dmg = 0;
 	self->gib_health = -self->health;
@@ -381,7 +381,7 @@ void doom_monster_troo(edict_t *self)
 	self->monsterinfo.attack = troo_attack;
 	self->monsterinfo.melee = troo_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &troo_stand1;
 	self->monsterinfo.scale = 1;

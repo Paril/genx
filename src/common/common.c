@@ -1075,9 +1075,7 @@ void Qcommon_Frame(void)
 	static float frac;
 
 	if (setjmp(com_abortframe))
-	{
 		return;            // an ERR_DROP was thrown
-	}
 
 #if USE_CLIENT
 	time_before = time_event = time_between = time_after = 0;

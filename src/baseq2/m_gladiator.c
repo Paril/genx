@@ -82,7 +82,7 @@ static void gladiator_run(edict_t *self)
 static void GaldiatorMelee(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
+	VectorSet(aim, MELEE_DISTANCE, self->server.mins[0], -4);
 
 	if (fire_hit(self, aim, (20 + (Q_rand() % 5)), 300))
 		gi.sound(self, CHAN_AUTO, sound_cleaver_hit, 1, ATTN_NORM, 0);
@@ -100,8 +100,8 @@ static void GladiatorGun(edict_t *self)
 	vec3_t  start;
 	vec3_t  dir;
 	vec3_t  forward, right;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1], forward, right, start);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_GLADIATOR_RAILGUN_1], forward, right, start);
 	// calc direction to where we targted
 	VectorSubtract(self->pos1, start, dir);
 	VectorNormalize(dir);
@@ -113,7 +113,7 @@ static void gladiator_attack(edict_t *self)
 	float   range;
 	vec3_t  v;
 	// a small safe zone
-	VectorSubtract(self->s.origin, self->enemy->s.origin, v);
+	VectorSubtract(self->server.state.origin, self->enemy->server.state.origin, v);
 	range = VectorLength(v);
 
 	if (range <= (MELEE_DISTANCE + 32))
@@ -121,7 +121,7 @@ static void gladiator_attack(edict_t *self)
 
 	// charge up the railgun
 	gi.sound(self, CHAN_WEAPON, sound_gun, 1, ATTN_NORM, 0);
-	VectorCopy(self->enemy->s.origin, self->pos1);  //save for aiming the shot
+	VectorCopy(self->enemy->server.state.origin, self->pos1);  //save for aiming the shot
 	self->pos1[2] += self->enemy->viewheight;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack_gun");
 }
@@ -129,7 +129,7 @@ static void gladiator_attack(edict_t *self)
 static void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 	{
@@ -157,11 +157,11 @@ static void gladiator_pain(edict_t *self, edict_t *other, float kick, int damage
 
 static void gladiator_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -235,10 +235,10 @@ void SP_monster_gladiator(edict_t *self)
 	sound_search = gi.soundindex("gladiator/gldsrch1.wav");
 	sound_sight = gi.soundindex("gladiator/sight.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 64);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 64);
 	self->health = 400;
 	self->gib_health = -175;
 	self->mass = 400;

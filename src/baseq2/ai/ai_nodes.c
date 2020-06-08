@@ -45,7 +45,7 @@ in NO WAY supported by Steve Yeager.
 bool AI_DropNodeOriginToFloor(vec3_t origin, edict_t *passent)
 {
 	trace_t	trace;
-	//trap_Trace ( &trace, origin, tv(-15, -15, 0), tv(15, 15, 0), tv(origin[0], origin[1], world->mins[2]), NULL, MASK_NODESOLID );
+	//trap_Trace ( &trace, origin, tv(-15, -15, 0), tv(15, 15, 0), tv(origin[0], origin[1], world->server.mins[2]), NULL, MASK_NODESOLID );
 	trace = gi.trace(origin, tv(-15, -15, 0), tv(15, 15, 0), tv(origin[0], origin[1], origin[2] - 2048), passent, MASK_NODESOLID);
 
 	if (trace.startsolid)
@@ -96,16 +96,16 @@ void AI_JumpadGuess_ShowPoint(vec3_t origin, char *modelname)
 {
 	edict_t	*ent;
 	ent = G_Spawn();
-	VectorCopy(origin, ent->s.origin);
+	VectorCopy(origin, ent->server.state.origin);
 	VectorClear(ent->movedir);
 	ent->movetype = MOVETYPE_NONE;
-	ent->clipmask = MASK_WATER;
-	ent->solid = SOLID_NOT;
-	//	ent->s.type = ET_GENERIC;
-	//	ent->s.renderfx |= RF_NOSHADOW;
-	VectorClear(ent->mins);
-	VectorClear(ent->maxs);
-	ent->s.modelindex = gi.modelindex(modelname);
+	ent->server.clipmask = MASK_WATER;
+	ent->server.solid = SOLID_NOT;
+	//	ent->server.state.type = ET_GENERIC;
+	//	ent->server.state.renderfx |= RF_NOSHADOW;
+	VectorClear(ent->server.mins);
+	VectorClear(ent->server.maxs);
+	ent->server.state.modelindex = gi.modelindex(modelname);
 	ent->nextthink = level.time + 20000;
 	ent->think = G_FreeEdict;
 	ent->classname = "checkent";
@@ -139,19 +139,19 @@ static bool AI_PredictJumpadDestity(edict_t *ent, vec3_t out)
 		return false;
 
 	// find pad origin
-	VectorCopy(ent->maxs, v1);
-	VectorCopy(ent->mins, v2);
+	VectorCopy(ent->server.maxs, v1);
+	VectorCopy(ent->server.mins, v2);
 	pad_origin[0] = (v1[0] - v2[0]) / 2 + v2[0];
 	pad_origin[1] = (v1[1] - v2[1]) / 2 + v2[1];
-	pad_origin[2] = ent->maxs[2];
+	pad_origin[2] = ent->server.maxs[2];
 	//make a projection 'on floor' of target origin
-	VectorCopy(target->s.origin, target_origin);
-	VectorCopy(target->s.origin, floor_target_origin);
+	VectorCopy(target->server.state.origin, target_origin);
+	VectorCopy(target->server.state.origin, floor_target_origin);
 	floor_target_origin[2] = pad_origin[2];	//put at pad's height
 	//make a guess on how player movement will affect the trajectory
 	tmpfloat = AI_Distance(pad_origin, floor_target_origin);
 	htime = sqrtf((tmpfloat));
-	vtime = sqrtf((target->s.origin[2] - pad_origin[2]));
+	vtime = sqrtf((target->server.state.origin[2] - pad_origin[2]));
 
 	if (!vtime)
 		return false;
@@ -180,7 +180,7 @@ static bool AI_PredictJumpadDestity(edict_t *ent, vec3_t out)
 #ifdef SHOW_JUMPAD_GUESS
 	// this is our top of the curve point, and the original target
 	AI_JumpadGuess_ShowPoint(target_origin, "models/objects/grenade2/tris.md2");
-	AI_JumpadGuess_ShowPoint(target->s.origin, "models/powerups/health/large_cross.md3");
+	AI_JumpadGuess_ShowPoint(target->server.state.origin, "models/powerups/health/large_cross.md3");
 #endif
 	//trace from target origin to endPoint.
 	//	trap_Trace ( &trace, target_origin, tv(-15, -15, -8), tv(15, 15, 8), floor_target_origin, NULL, MASK_NODESOLID);
@@ -237,11 +237,11 @@ static int AI_AddNode_JumpPad(edict_t *ent)
 	// jumpad node
 	nodes[nav.num_nodes].flags = (NODEFLAGS_JUMPPAD | NODEFLAGS_SERVERLINK | NODEFLAGS_REACHATTOUCH);
 	// find the origin
-	VectorCopy(ent->maxs, v1);
-	VectorCopy(ent->mins, v2);
+	VectorCopy(ent->server.maxs, v1);
+	VectorCopy(ent->server.mins, v2);
 	nodes[nav.num_nodes].origin[0] = (v1[0] - v2[0]) / 2 + v2[0];
 	nodes[nav.num_nodes].origin[1] = (v1[1] - v2[1]) / 2 + v2[1];
-	nodes[nav.num_nodes].origin[2] = ent->maxs[2] + 16;	//raise it up a bit
+	nodes[nav.num_nodes].origin[2] = ent->server.maxs[2] + 16;	//raise it up a bit
 	nodes[nav.num_nodes].flags |= AI_FlagsForNode(nodes[nav.num_nodes].origin, NULL);
 	nav.num_nodes++;
 	// Destiny node
@@ -277,13 +277,13 @@ static int AI_AddNode_Door(edict_t *ent)
 		return INVALID;		//only team master will drop the nodes
 
 	//make box formed by all team members boxes
-	VectorCopy(ent->absmin, mins);
-	VectorCopy(ent->absmax, maxs);
+	VectorCopy(ent->server.absmin, mins);
+	VectorCopy(ent->server.absmax, maxs);
 
 	for (other = ent->teamchain ; other ; other = other->teamchain)
 	{
-		AddPointToBounds(other->absmin, mins, maxs);
-		AddPointToBounds(other->absmax, mins, maxs);
+		AddPointToBounds(other->server.absmin, mins, maxs);
+		AddPointToBounds(other->server.absmax, mins, maxs);
 	}
 
 	door_origin[0] = (maxs[0] - mins[0]) / 2 + mins[0];
@@ -295,7 +295,7 @@ static int AI_AddNode_Door(edict_t *ent)
 	if (VectorCompare(MOVEDIR_UP, ent->movedir) || VectorCompare(MOVEDIR_DOWN, ent->movedir))
 	{
 		//now find the crossing angle
-		AngleVectors(ent->s.angles, crossdir, NULL, NULL);
+		AngleVectors(ent->server.state.angles, crossdir, NULL, NULL);
 		VectorNormalize(crossdir);
 		//add node
 		nodes[nav.num_nodes].flags = 0;
@@ -328,7 +328,7 @@ static int AI_AddNode_Door(edict_t *ent)
 	}
 
 	//find the crossing angle
-	AngleVectors(ent->s.angles, NULL, crossdir, NULL);   //jabot092(2)
+	AngleVectors(ent->server.state.angles, NULL, crossdir, NULL);   //jabot092(2)
 	VectorNormalize(crossdir);
 	//add node
 	nodes[nav.num_nodes].flags = 0;
@@ -381,11 +381,11 @@ static int AI_AddNode_Platform(edict_t *ent)
 	plat_dist = ent->pos1[2] - ent->pos2[2]; //jabot092(2)
 	// Upper node
 	nodes[nav.num_nodes].flags = (NODEFLAGS_PLATFORM | NODEFLAGS_SERVERLINK | NODEFLAGS_FLOAT);
-	VectorCopy(ent->maxs, v1);
-	VectorCopy(ent->mins, v2);
+	VectorCopy(ent->server.maxs, v1);
+	VectorCopy(ent->server.mins, v2);
 	nodes[nav.num_nodes].origin[0] = (v1[0] - v2[0]) / 2 + v2[0];
 	nodes[nav.num_nodes].origin[1] = (v1[1] - v2[1]) / 2 + v2[1];
-	nodes[nav.num_nodes].origin[2] = ent->mins[2] + plat_dist + 16;//jabot092(2)
+	nodes[nav.num_nodes].origin[2] = ent->server.mins[2] + plat_dist + 16;//jabot092(2)
 #ifdef SHOW_JUMPAD_GUESS
 	AI_JumpadGuess_ShowPoint(nodes[nav.num_nodes].origin, "models/objects/grenade2/tris.md2");
 #endif
@@ -399,7 +399,7 @@ static int AI_AddNode_Platform(edict_t *ent)
 	nodes[nav.num_nodes].flags = (NODEFLAGS_PLATFORM | NODEFLAGS_SERVERLINK | NODEFLAGS_FLOAT);
 	nodes[nav.num_nodes].origin[0] = nodes[nav.num_nodes - 1].origin[0];
 	nodes[nav.num_nodes].origin[1] = nodes[nav.num_nodes - 1].origin[1];
-	nodes[nav.num_nodes].origin[2] = ent->mins[2] + (AI_JUMPABLE_HEIGHT - 1); //jabot092(2)
+	nodes[nav.num_nodes].origin[2] = ent->server.mins[2] + (AI_JUMPABLE_HEIGHT - 1); //jabot092(2)
 #ifdef SHOW_JUMPAD_GUESS
 	AI_JumpadGuess_ShowPoint(nodes[nav.num_nodes].origin, "models/objects/grenade2/tris.md2");
 #endif
@@ -436,16 +436,16 @@ static int AI_AddNode_Teleporter(edict_t *ent)
 
 	//NODE_TELEPORTER_IN
 	nodes[nav.num_nodes].flags = (NODEFLAGS_TELEPORTER_IN | NODEFLAGS_SERVERLINK);
-	VectorCopy(ent->maxs, v1);
-	VectorCopy(ent->mins, v2);
+	VectorCopy(ent->server.maxs, v1);
+	VectorCopy(ent->server.mins, v2);
 	nodes[nav.num_nodes].origin[0] = (v1[0] - v2[0]) / 2 + v2[0];
 	nodes[nav.num_nodes].origin[1] = (v1[1] - v2[1]) / 2 + v2[1];
-	nodes[nav.num_nodes].origin[2] = ent->mins[2] + 32;
+	nodes[nav.num_nodes].origin[2] = ent->server.mins[2] + 32;
 	nodes[nav.num_nodes].flags |= AI_FlagsForNode(nodes[nav.num_nodes].origin, ent);
 	nav.num_nodes++;
 	//NODE_TELEPORTER_OUT
 	nodes[nav.num_nodes].flags = (NODEFLAGS_TELEPORTER_OUT | NODEFLAGS_SERVERLINK);
-	VectorCopy(dest->s.origin, nodes[nav.num_nodes].origin);
+	VectorCopy(dest->server.state.origin, nodes[nav.num_nodes].origin);
 
 	if (ent->spawnflags & 1)   // droptofloor
 		nodes[nav.num_nodes].flags |= NODEFLAGS_FLOAT;
@@ -471,7 +471,7 @@ static int AI_AddNode_BotRoam(edict_t *ent)
 
 	nodes[nav.num_nodes].flags = (NODEFLAGS_BOTROAM);//bot roams are not NODEFLAGS_NOWORLD
 	// Set location
-	VectorCopy(ent->s.origin, nodes[nav.num_nodes].origin);
+	VectorCopy(ent->server.state.origin, nodes[nav.num_nodes].origin);
 
 	if (ent->spawnflags & 1)   // floating items
 		nodes[nav.num_nodes].flags |= NODEFLAGS_FLOAT;
@@ -502,7 +502,7 @@ static int AI_AddNode_ItemNode(edict_t *ent)
 	if (nav.num_nodes + 1 > MAX_NODES)
 		return INVALID;
 
-	VectorCopy(ent->s.origin, nodes[nav.num_nodes].origin);
+	VectorCopy(ent->server.state.origin, nodes[nav.num_nodes].origin);
 
 	if (ent->spawnflags & 1)   // floating items
 		nodes[nav.num_nodes].flags |= NODEFLAGS_FLOAT;
@@ -574,14 +574,14 @@ static void AI_CreateNodesForEntities(void)
 		if (ent->entitytype == ET_BOTROAM)
 		{
 			//if we have a available node close enough to the item, use it instead of dropping a new node
-			node = AI_FindClosestReachableNode(ent->s.origin, NULL, 48, NODE_ALL);
+			node = AI_FindClosestReachableNode(ent->server.state.origin, NULL, 48, NODE_ALL);
 
 			if (node != -1 &&
 				!(nodes[node].flags & NODEFLAGS_SERVERLINK) &&
 				!(nodes[node].flags & NODEFLAGS_LADDER))
 			{
 				float heightdiff = 0;
-				heightdiff = ent->s.origin[2] - nodes[node].origin[2];
+				heightdiff = ent->server.state.origin[2] - nodes[node].origin[2];
 
 				if (heightdiff < 0)
 					heightdiff = -heightdiff;
@@ -626,7 +626,7 @@ static void AI_CreateNodesForEntities(void)
 			continue;
 
 		//if we have a available node close enough to the item, use it
-		node = AI_FindClosestReachableNode(ent->s.origin, NULL, 48, NODE_ALL);
+		node = AI_FindClosestReachableNode(ent->server.state.origin, NULL, 48, NODE_ALL);
 
 		if (node != INVALID)
 		{
@@ -636,7 +636,7 @@ static void AI_CreateNodesForEntities(void)
 			else
 			{
 				float heightdiff = 0;
-				heightdiff = ent->s.origin[2] - nodes[node].origin[2];
+				heightdiff = ent->server.state.origin[2] - nodes[node].origin[2];
 
 				if (heightdiff < 0)
 					heightdiff = -heightdiff;

@@ -647,38 +647,38 @@ static spawnfunc_t get_func_from_entitytype(entitytype_e id, gametype_t *game_pt
 
 static const spawn_field_t spawn_fields[] =
 {
-	{"model", FOFS(model), F_LSTRING},
-	{"spawnflags", FOFS(spawnflags), F_INT},
-	{"speed", FOFS(speed), F_FLOAT},
-	{"accel", FOFS(accel), F_FLOAT},
-	{"decel", FOFS(decel), F_FLOAT},
-	{"target", FOFS(target), F_LSTRING},
-	{"targetname", FOFS(targetname), F_LSTRING},
-	{"pathtarget", FOFS(pathtarget), F_LSTRING},
-	{"deathtarget", FOFS(deathtarget), F_LSTRING},
-	{"killtarget", FOFS(killtarget), F_LSTRING},
-	{"combattarget", FOFS(combattarget), F_LSTRING},
-	{"message", FOFS(message), F_LSTRING},
-	{"team", FOFS(team), F_LSTRING},
-	{"wait", FOFS(wait), F_FLOAT},
-	{"delay", FOFS(delay), F_FLOAT},
-	{"random", FOFS(random), F_FLOAT},
-	{"move_origin", FOFS(move_origin), F_VECTOR},
-	{"move_angles", FOFS(move_angles), F_VECTOR},
-	{"style", FOFS(style), F_INT},
-	{"count", FOFS(count), F_INT},
-	{"health", FOFS(health), F_INT},
-	{"sounds", FOFS(sounds), F_INT},
-	{"light", 0, F_IGNORE},
-	{"dmg", FOFS(dmg), F_INT},
-	{"mass", FOFS(mass), F_INT},
-	{"volume", FOFS(volume), F_FLOAT},
-	{"attenuation", FOFS(attenuation), F_FLOAT},
-	{"map", FOFS(map), F_LSTRING},
-	{"origin", FOFS(s.origin), F_VECTOR},
-	{"angles", FOFS(s.angles), F_VECTOR},
-	{ "angle", FOFS(s.angles), F_ANGLEHACK },
-	{ "mangle", FOFS(s.angles), F_VECTOR },
+	{ "model", FOFS(model), F_LSTRING },
+	{ "spawnflags", FOFS(spawnflags), F_INT },
+	{ "speed", FOFS(speed), F_FLOAT },
+	{ "accel", FOFS(accel), F_FLOAT },
+	{ "decel", FOFS(decel), F_FLOAT },
+	{ "target", FOFS(target), F_LSTRING },
+	{ "targetname", FOFS(targetname), F_LSTRING },
+	{ "pathtarget", FOFS(pathtarget), F_LSTRING },
+	{ "deathtarget", FOFS(deathtarget), F_LSTRING },
+	{ "killtarget", FOFS(killtarget), F_LSTRING },
+	{ "combattarget", FOFS(combattarget), F_LSTRING },
+	{ "message", FOFS(message), F_LSTRING },
+	{ "team", FOFS(team), F_LSTRING },
+	{ "wait", FOFS(wait), F_FLOAT },
+	{ "delay", FOFS(delay), F_FLOAT },
+	{ "random", FOFS(random), F_FLOAT },
+	{ "move_origin", FOFS(move_origin), F_VECTOR },
+	{ "move_angles", FOFS(move_angles), F_VECTOR },
+	{ "style", FOFS(style), F_INT },
+	{ "count", FOFS(count), F_INT },
+	{ "health", FOFS(health), F_INT },
+	{ "sounds", FOFS(sounds), F_INT },
+	{ "light", 0, F_IGNORE },
+	{ "dmg", FOFS(dmg), F_INT },
+	{ "mass", FOFS(mass), F_INT },
+	{ "volume", FOFS(volume), F_FLOAT },
+	{ "attenuation", FOFS(attenuation), F_FLOAT },
+	{ "map", FOFS(map), F_LSTRING },
+	{ "origin", FOFS(server.state.origin), F_VECTOR },
+	{ "angles", FOFS(server.state.angles), F_VECTOR },
+	{ "angle", FOFS(server.state.angles), F_ANGLEHACK },
+	{ "mangle", FOFS(server.state.angles), F_VECTOR },
 
 	{NULL}
 };
@@ -850,7 +850,7 @@ static entitytype_e randomize_monster(entitytype_e monster)
 
 bool ED_CallSpawnByType(edict_t *ent, entitytype_e type)
 {
-	spawnfunc_t func = get_func_from_entitytype(type, &ent->s.game);
+	spawnfunc_t func = get_func_from_entitytype(type, &ent->server.state.game);
 
 	if (func != NULL)
 	{
@@ -862,8 +862,8 @@ bool ED_CallSpawnByType(edict_t *ent, entitytype_e type)
 	return false;
 }
 
-void SP_weapon(edict_t *ent);
-void SP_ammo(edict_t *ent);
+void SP_weapon(edict_t *ent, const char *classname);
+void SP_ammo(edict_t *ent, const char *classname);
 
 void ED_CallSpawn(edict_t *ent)
 {
@@ -897,12 +897,12 @@ void ED_CallSpawn(edict_t *ent)
 
 	if (!Q_strncasecmp(spawnTemp.classname, "weapon_", 7))
 	{
-		SP_weapon(ent);
+		SP_weapon(ent, spawnTemp.classname);
 		return;
 	}
 	else if (!Q_strncasecmp(spawnTemp.classname, "ammo_", 5))
 	{
-		SP_ammo(ent);
+		SP_ammo(ent, spawnTemp.classname);
 		return;
 	}
 
@@ -1092,9 +1092,9 @@ void G_FindTeams(void)
 	c = 0;
 	c2 = 0;
 
-	for (i = 1, e = g_edicts + i ; i < globals.num_edicts ; i++, e++)
+	for (i = 1, e = g_edicts + i ; i < globals.pool.num_edicts ; i++, e++)
 	{
-		if (!e->inuse)
+		if (!e->server.inuse)
 			continue;
 
 		if (!e->team)
@@ -1108,9 +1108,9 @@ void G_FindTeams(void)
 		c++;
 		c2++;
 
-		for (j = i + 1, e2 = e + 1 ; j < globals.num_edicts ; j++, e2++)
+		for (j = i + 1, e2 = e + 1 ; j < globals.pool.num_edicts ; j++, e2++)
 		{
-			if (!e2->inuse)
+			if (!e2->server.inuse)
 				continue;
 
 			if (!e2->team)
@@ -1178,7 +1178,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
 	// set client fields on player ents
 	for (i = 0 ; i < game.maxclients ; i++)
-		g_edicts[i + 1].client = game.clients + i;
+		g_edicts[i + 1].server.client = game.clients + i;
 
 	ent = NULL;
 	inhibit = 0;
@@ -1255,7 +1255,7 @@ void SpawnEntities(const char *mapname, const char *entities, const char *spawnp
 
 	while (i < globals.num_edicts)
 	{
-		if (ent->inuse != 0 || ent->inuse != 1)
+		if (ent->server.inuse != 0 || ent->server.inuse != 1)
 			Com_DPrintf("Invalid entity %d\n", i);
 
 		i++, ent++;
@@ -1303,8 +1303,8 @@ Only used for the world.
 void SP_worldspawn(edict_t *ent)
 {
 	ent->movetype = MOVETYPE_PUSH;
-	ent->solid = SOLID_BSP;
-	ent->inuse = true;          // since the world doesn't use G_Spawn()
+	ent->server.solid = SOLID_BSP;
+	ent->server.inuse = true;          // since the world doesn't use G_Spawn()
 	gi.setmodel(ent, "*1"); // world model is always index 1
 	//---------------
 	// reserve some spots for dead player bodies for coop / deathmatch
@@ -1452,6 +1452,8 @@ void SP_worldspawn(edict_t *ent)
 
 	for (item = ITI_WEAPONS_START; item <= ITI_WEAPONS_END; item++)
 		PrecacheItem(GetItemByIndex(item));
+
+	InitWeaponSeeds();
 
 #if ENABLE_COOP
 	Wave_Precache();

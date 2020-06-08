@@ -71,7 +71,7 @@ static void infantry_pain(edict_t *self, edict_t *other, float kick, int damage)
 	int     n;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -118,28 +118,28 @@ static void InfantryMachineGun(edict_t *self)
 	vec3_t  vec;
 	int     flash_number;
 
-	if (self->s.frame == FRAME_attak111)
+	if (self->server.state.frame == FRAME_attak111)
 	{
 		flash_number = MZ2_INFANTRY_MACHINEGUN_1;
-		AngleVectors(self->s.angles, forward, right, NULL);
-		G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+		AngleVectors(self->server.state.angles, forward, right, NULL);
+		G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 
 		if (self->enemy)
 		{
-			VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
+			VectorMA(self->enemy->server.state.origin, -0.2f, self->enemy->velocity, target);
 			target[2] += self->enemy->viewheight;
 			VectorSubtract(target, start, forward);
 			VectorNormalize(forward);
 		}
 		else
-			AngleVectors(self->s.angles, forward, right, NULL);
+			AngleVectors(self->server.state.angles, forward, right, NULL);
 	}
 	else
 	{
-		flash_number = MZ2_INFANTRY_MACHINEGUN_2 + (self->s.frame - FRAME_death211);
-		AngleVectors(self->s.angles, forward, right, NULL);
-		G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
-		VectorSubtract(self->s.angles, aimangles[flash_number - MZ2_INFANTRY_MACHINEGUN_2], vec);
+		flash_number = MZ2_INFANTRY_MACHINEGUN_2 + (self->server.state.frame - FRAME_death211);
+		AngleVectors(self->server.state.angles, forward, right, NULL);
+		G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
+		VectorSubtract(self->server.state.angles, aimangles[flash_number - MZ2_INFANTRY_MACHINEGUN_2], vec);
 		AngleVectors(vec, forward, NULL, NULL);
 	}
 
@@ -153,11 +153,11 @@ static void infantry_sight(edict_t *self, edict_t *other)
 
 static void infantry_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	gi.linkentity(self);
 	M_FlyCheck(self);
 }
@@ -213,7 +213,7 @@ static void infantry_duck_down(edict_t *self)
 		return;
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
-	self->maxs[2] -= 32;
+	self->server.maxs[2] -= 32;
 	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
@@ -230,7 +230,7 @@ static void infantry_duck_hold(edict_t *self)
 static void infantry_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
+	self->server.maxs[2] += 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -332,10 +332,10 @@ void SP_monster_infantry(edict_t *self)
 	sound_search = gi.soundindex("infantry/infsrch1.wav");
 	sound_idle = gi.soundindex("infantry/infidle1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->health = 100;
 	self->gib_health = -40;
 	self->mass = 200;

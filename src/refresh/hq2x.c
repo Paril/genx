@@ -200,6 +200,7 @@ static q_noinline uint32_t hq2x_blend(int rule, uint32_t E, uint32_t A, uint32_t
 
 		default:
 			Com_Error(ERR_FATAL, "%s: bad rule %d", __func__, rule);
+			return -1;
 	}
 }
 

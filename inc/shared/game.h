@@ -27,14 +27,19 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #define GAME_API_VERSION    1997 // Generations
 
-// edict->svflags
+// edict->server.flags
+typedef union
+{
+	uint8_t	 bits;
 
-#define SVF_NOCLIENT            0x00000001  // don't send entity to clients, even if it has effects
-#define SVF_DEADMONSTER         0x00000002  // treat as CONTENTS_DEADMONSTER for collision
-#define SVF_MONSTER             0x00000004  // treat as CONTENTS_MONSTER for collision
+	struct {
+		bool noclient : 1;		// don't send entity to clients, even if it has effects
+		bool deadmonster : 2;	// treat as CONTENTS_DEADMONSTER for collision
+		bool monster : 4;		// treat as CONTENTS_MONSTER for collision
+	};
+} sv_flags_t;
 
-// edict->solid values
-
+// edict->server.solid values
 typedef enum
 {
 	SOLID_NOT,          // no interaction with other objects
@@ -47,51 +52,29 @@ typedef enum
 
 #define MAX_ENT_CLUSTERS    16
 
-typedef struct edict_s edict_t;
-typedef struct gclient_s gclient_t;
-
-#ifndef GAME_INCLUDE
-
-struct gclient_s
+typedef struct gclient_server_s
 {
 	player_state_t  ps;     // communicated by server to clients
 	int             ping;
 	int             clientNum;
+} gclient_server_t;
 
-	// the game dll can add anything it wants after
-	// this point in the structure
-};
-
-
-struct edict_s
+typedef struct edict_server_s
 {
-	entity_state_t  s;
-	struct gclient_s    *client;
-	bool       inuse;
-	int        linkcount;
-
-	// FIXME: move these fields to a server private sv_entity_t
-	list_t      area;               // linked to a division node or leaf
-
-	int         num_clusters;       // if -1, use headnode instead
-	int         clusternums[MAX_ENT_CLUSTERS];
-	int         headnode;           // unused if num_clusters != -1
-	int         areanum, areanum2;
+	entity_state_t	state;
+	gclient_t		*client;
+	bool			inuse;
+	int				linkcount;
 
 	//================================
 
-	int         svflags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
-	vec3_t      mins, maxs;
-	vec3_t      absmin, absmax, size;
-	solid_t     solid;
-	int         clipmask;
-	edict_t     *owner;
-
-	// the game dll can add anything it wants after
-	// this point in the structure
-};
-
-#endif      // GAME_INCLUDE
+	sv_flags_t		flags;            // SVF_NOCLIENT, SVF_DEADMONSTER, SVF_MONSTER, etc
+	vec3_t			mins, maxs;
+	vec3_t			absmin, absmax, size;
+	solid_t			solid;
+	int				clipmask;
+	edict_t			*owner;
+} edict_server_t;
 
 //===============================================================
 
@@ -202,6 +185,14 @@ typedef struct
 	int     (*FS_FCloseFile)(qhandle_t f);
 } game_import_t;
 
+typedef struct
+{
+	edict_t		*edicts;
+	size_t      edict_size;
+	size_t		num_edicts;     // current number, <= max_edicts
+	size_t		max_edicts;
+} edict_pool_t;
+
 //
 // functions exported by the game subsystem
 //
@@ -253,10 +244,7 @@ typedef struct
 	// can vary in size from one game to another.
 	//
 	// The size will be fixed when ge->Init() is called
-	struct edict_s	*edicts;
-	int				edict_size;
-	int				num_edicts;     // current number, <= max_edicts
-	int				max_edicts;
+	edict_pool_t	pool;
 } game_export_t;
 
 #endif // GAME_H

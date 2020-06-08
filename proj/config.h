@@ -12,9 +12,14 @@
 #define _ST(x) _S(x)
 
 #define REVISION 1
-#define VERSION "r" _ST(REVISION_STR)
-
+#define VERSION "r" _ST(REVISION)
+	
+#ifdef _WIN64
+#define CPUSTRING "x86_64"
+#else
 #define CPUSTRING "x86"
+#endif
+
 
 #if _DEBUG
 	#define BUILDSTRING "Debug"

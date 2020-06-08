@@ -361,8 +361,6 @@ static int read_server_file(void)
 	if (!SV_ParseMapCmd(&cmd))
 		return -1;
 
-	// save pending CM to be freed later if ERR_DROP is thrown
-	Com_AbortFunc(abort_func, &cmd.cm);
 	// any error will drop from this point
 	SV_Shutdown("Server restarted\n", ERR_RECONNECT);
 	// the rest can't underflow
@@ -399,8 +397,6 @@ static int read_server_file(void)
 		Com_Error(ERR_DROP, "Savegame path too long");
 
 	ge->ReadGame(name);
-	// clear pending CM
-	Com_AbortFunc(NULL, NULL);
 	// go to the map
 	SV_SpawnServer(&cmd);
 	return 0;
@@ -440,7 +436,7 @@ static int read_level_file(void)
 		if (index < 0 || index > MAX_CONFIGSTRINGS)
 			Com_Error(ERR_DROP, "Bad savegame configstring index");
 
-		maxlen = CS_SIZE(index);
+		maxlen = CS_SIZE;
 		len = MSG_ReadString(sv.configstrings[index], maxlen);
 
 		if (len >= maxlen)

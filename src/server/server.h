@@ -89,9 +89,16 @@ typedef struct
 
 typedef struct
 {
-	int         solid32;
+	int				solid32;
 	// Generations
-	int			clip_contents;
+	int				clip_contents;
+
+	list_t			area;               // linked to a division node or leaf
+
+	int				num_clusters;       // if -1, use headnode instead
+	int				clusternums[MAX_ENT_CLUSTERS];
+	int				headnode;           // unused if num_clusters != -1
+	int				areanum, areanum2;
 } server_entity_t;
 
 // variable server FPS
@@ -115,7 +122,7 @@ typedef struct
 	cm_t        cm;
 	char        *entitystring;
 
-	char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
+	char        configstrings[MAX_CONFIGSTRINGS][CS_SIZE];
 	// Generations
 	byte		precache_bitset[MAX_PRECACHE_BITSET];
 
@@ -124,10 +131,10 @@ typedef struct
 	unsigned    tracecount;
 } server_t;
 
-#define EDICT_POOL(c, n)		((edict_t *)((byte *)(c)->pool->edicts + (c)->pool->edict_size*(n)))
-
-#define EDICT_NUM(n) ((edict_t *)((byte *)ge->edicts + ge->edict_size*(n)))
-#define NUM_FOR_EDICT(e) ((int)(((byte *)(e) - (byte *)ge->edicts) / ge->edict_size))
+#define POOL_EDICT(pool, index)	((edict_t *)((byte *)(pool)->edicts + (pool)->edict_size*(index)))
+#define EDICT_POOL(c, n)		POOL_EDICT((c)->pool, n)
+#define EDICT_NUM(n)			POOL_EDICT(&ge->pool, n)
+#define NUM_FOR_EDICT(e)		((int)(((byte *)(e) - (byte *)ge->pool.edicts) / ge->pool.edict_size))
 
 #define MAX_TOTAL_ENT_LEAFS        128
 
@@ -202,14 +209,6 @@ typedef struct
 	unsigned    credit_cap;
 	unsigned    cost;
 } ratelimit_t;
-
-typedef struct
-{
-	struct edict_s  *edicts;
-	int         edict_size;
-	int         num_edicts;     // current number, <= max_edicts
-	int         max_edicts;
-} edict_pool_t;
 
 typedef struct client_s
 {

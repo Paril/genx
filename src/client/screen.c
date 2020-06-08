@@ -2011,6 +2011,7 @@ uint8_t SCR_ParseLayoutStatOffset(const char *token)
 	}
 
 	Com_Error(ERR_DROP, "%s: invalid stat offset %s", __func__, token);
+	return -1;
 }
 
 layout_string_t *SCR_ParseLayoutString(const char *filename)

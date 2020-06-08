@@ -110,7 +110,7 @@ void ai_melee(edict_t *self)
 	if (!self->enemy)
 		return;		// removed before stroke
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 60)
 		return;
@@ -160,14 +160,14 @@ static void knight_pain(edict_t *self, edict_t *attacker, float kick, int damage
 
 static void knight_unsolid(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
 static void knight_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -213,13 +213,13 @@ static void ai_charge_side(edict_t *self, float dist)
 	vec3_t dtemp;
 	float heading;
 	// aim to the left of the enemy for a flyby
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dtemp);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dtemp);
 	self->ideal_yaw = vectoyaw(dtemp);
 	M_ChangeYaw(self);
 	vec3_t v_right;
-	AngleVectors(self->s.angles, NULL, v_right, NULL);
-	VectorMA(self->enemy->s.origin, -30, v_right, dtemp);
-	VectorSubtract(dtemp, self->s.origin, dtemp);
+	AngleVectors(self->server.state.angles, NULL, v_right, NULL);
+	VectorMA(self->enemy->server.state.origin, -30, v_right, dtemp);
+	VectorSubtract(dtemp, self->server.state.origin, dtemp);
 	heading = vectoyaw(dtemp);
 	M_walkmove(self, heading, 20);
 }
@@ -233,7 +233,7 @@ static void ai_melee_side(edict_t *self, float dist)
 		return;		// removed before stroke
 
 	ai_charge_side(self, dist);
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 60)
 		return;
@@ -290,11 +290,11 @@ void q1_monster_knight(edict_t *self)
 	sound_sword2 = gi.soundindex("q1/knight/sword2.wav");
 	sound_idle = gi.soundindex("q1/knight/idle.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 40);
 	self->health = 75;
 	self->monsterinfo.stand = knight_stand;
 	self->monsterinfo.walk = knight_walk;

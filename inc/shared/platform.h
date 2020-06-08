@@ -50,7 +50,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 	#define PATH_SEP_STRING     "/"
 #endif
 
-#if (defined _WIN32)
+#if defined(_LP64_) || defined(__x86_64__) || defined(_WIN64)
+#define CVARAL "al_driver64"
+#else
+#define CVARAL "al_driver"
+#endif
+
+#if (defined _WIN64)
+	#define LIBGL   "opengl32"
+	#define LIBAL   "openal32_64"
+#elif (defined _WIN32)
 	#define LIBGL   "opengl32"
 	#define LIBAL   "openal32"
 #elif (defined __OpenBSD__)

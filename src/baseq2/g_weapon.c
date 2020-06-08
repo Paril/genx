@@ -35,7 +35,7 @@ void check_dodge(edict_t *self, vec3_t start, vec3_t dir, int speed)
 	trace_t tr;
 	float   eta;
 
-	if (!self->client)
+	if (!self->server.client)
 		return;
 
 	// easy mode only ducks one quarter the time
@@ -48,10 +48,10 @@ void check_dodge(edict_t *self, vec3_t start, vec3_t dir, int speed)
 	VectorMA(start, 8192, dir, end);
 	tr = gi.trace(start, NULL, NULL, end, self, MASK_SHOT);
 
-	if ((tr.ent) && (tr.ent->svflags & SVF_MONSTER) && (tr.ent->health > 0) && (tr.ent->monsterinfo.dodge) && infront(tr.ent, self))
+	if (tr.ent && tr.ent->server.flags.monster && (tr.ent->health > 0) && (tr.ent->monsterinfo.dodge) && infront(tr.ent, self))
 	{
 		VectorSubtract(tr.endpos, start, v);
-		eta = (VectorLength(v) - tr.ent->maxs[0]) / speed;
+		eta = (VectorLength(v) - tr.ent->server.maxs[0]) / speed;
 		tr.ent->monsterinfo.dodge(tr.ent, self, eta);
 	}
 }
@@ -74,28 +74,28 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 	float       range;
 	vec3_t      dir;
 	//see if enemy is in range
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dir);
 	range = VectorLength(dir);
 
 	if (range > aim[0])
 		return false;
 
-	if (aim[1] > self->mins[0] && aim[1] < self->maxs[0])
+	if (aim[1] > self->server.mins[0] && aim[1] < self->server.maxs[0])
 	{
 		// the hit is straight on so back the range up to the edge of their bbox
-		range -= self->enemy->maxs[0];
+		range -= self->enemy->server.maxs[0];
 	}
 	else
 	{
 		// this is a side hit so adjust the "right" value out to the edge of their bbox
 		if (aim[1] < 0)
-			aim[1] = self->enemy->mins[0];
+			aim[1] = self->enemy->server.mins[0];
 		else
-			aim[1] = self->enemy->maxs[0];
+			aim[1] = self->enemy->server.maxs[0];
 	}
 
-	VectorMA(self->s.origin, range, dir, point);
-	tr = gi.trace(self->s.origin, NULL, NULL, point, self, MASK_SHOT);
+	VectorMA(self->server.state.origin, range, dir, point);
+	tr = gi.trace(self->server.state.origin, NULL, NULL, point, self, MASK_SHOT);
 
 	if (tr.fraction < 1)
 	{
@@ -103,23 +103,23 @@ bool fire_hit(edict_t *self, vec3_t aim, int damage, int kick)
 			return false;
 
 		// if it will hit any client/monster then hit the one we wanted to hit
-		if ((tr.ent->svflags & SVF_MONSTER) || (tr.ent->client))
+		if (tr.ent->server.flags.monster || tr.ent->server.client)
 			tr.ent = self->enemy;
 	}
 
-	AngleVectors(self->s.angles, forward, right, up);
-	VectorMA(self->s.origin, range, forward, point);
+	AngleVectors(self->server.state.angles, forward, right, up);
+	VectorMA(self->server.state.origin, range, forward, point);
 	VectorMA(point, aim[1], right, point);
 	VectorMA(point, aim[2], up, point);
-	VectorSubtract(point, self->enemy->s.origin, dir);
+	VectorSubtract(point, self->enemy->server.state.origin, dir);
 	// do the damage
 	T_Damage(tr.ent, self, self, dir, point, vec3_origin, damage, kick / 2, DAMAGE_NO_KNOCKBACK, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 
-	if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
+	if (!tr.ent->server.flags.monster && !tr.ent->server.client)
 		return false;
 
 	// do our special form of knockback here
-	VectorMA(self->enemy->absmin, 0.5f, self->enemy->size, v);
+	VectorMA(self->enemy->server.absmin, 0.5f, self->enemy->server.size, v);
 	VectorSubtract(v, point, v);
 	VectorNormalize(v);
 	VectorMA(self->enemy->velocity, kick, v, self->enemy->velocity);
@@ -148,7 +148,7 @@ static void fire_lead(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 	vec3_t      water_start;
 	bool	    water = false;
 	int         content_mask = MASK_BULLET | MASK_WATER;
-	tr = gi.trace(self->s.origin, NULL, NULL, start, self, MASK_BULLET);
+	tr = gi.trace(self->server.state.origin, NULL, NULL, start, self, MASK_BULLET);
 
 	if (!(tr.fraction < 1.0f))
 	{
@@ -313,7 +313,7 @@ Fires a single blaster bolt.  Used by the blaster and hyper blaster.
 */
 void blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -323,23 +323,23 @@ void blaster_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *s
 	}
 
 #ifdef ENABLE_COOP
-	PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+	PlayerNoise(self->server.owner, self->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	if (other->takedamage)
-		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, self->meansOfDeath);
+		T_Damage(other, self, self->server.owner, self->velocity, self->server.state.origin, plane->normal, self->dmg, 1, DAMAGE_ENERGY, self->meansOfDeath);
 	else
 	{
 		MSG_WriteByte(svc_temp_entity);
 		MSG_WriteByte(TE_BLASTER);
-		MSG_WritePos(self->s.origin);
+		MSG_WritePos(self->server.state.origin);
 
 		if (!plane)
 			MSG_WriteDir(vec3_origin);
 		else
 			MSG_WriteDir(plane->normal);
 
-		gi.multicast(self->s.origin, MULTICAST_PVS);
+		gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	}
 
 	G_FreeEdict(self);
@@ -351,26 +351,26 @@ void fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	trace_t tr;
 	VectorNormalize(dir);
 	bolt = G_Spawn();
-	bolt->svflags = SVF_DEADMONSTER;
-	bolt->s.clip_contents = CONTENTS_DEADMONSTER;
+	bolt->server.flags.deadmonster = true;
+	bolt->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	// yes, I know it looks weird that projectiles are deadmonsters
 	// what this means is that when prediction is used against the object
 	// (blaster/hyperblaster shots), the player won't be solid clipped against
 	// the object.  Right now trying to run into a firing hyperblaster
 	// is very jerky since you are predicted 'against' the shots.
-	VectorCopy(start, bolt->s.origin);
-	VectorCopy(start, bolt->s.old_origin);
-	vectoangles(dir, bolt->s.angles);
+	VectorCopy(start, bolt->server.state.origin);
+	VectorCopy(start, bolt->server.state.old_origin);
+	vectoangles(dir, bolt->server.state.angles);
 	VectorScale(dir, speed, bolt->velocity);
 	bolt->movetype = MOVETYPE_FLYMISSILE;
-	bolt->clipmask = MASK_SHOT;
-	bolt->solid = SOLID_BBOX;
-	bolt->s.effects |= effect;
-	VectorClear(bolt->mins);
-	VectorClear(bolt->maxs);
-	bolt->s.modelindex = gi.modelindex("models/objects/laser/tris.md2");
-	bolt->s.sound = gi.soundindex("misc/lasfly.wav");
-	bolt->owner = self;
+	bolt->server.clipmask = MASK_SHOT;
+	bolt->server.solid = SOLID_BBOX;
+	bolt->server.state.effects |= effect;
+	VectorClear(bolt->server.mins);
+	VectorClear(bolt->server.maxs);
+	bolt->server.state.modelindex = gi.modelindex("models/objects/laser/tris.md2");
+	bolt->server.state.sound = gi.soundindex("misc/lasfly.wav");
+	bolt->server.owner = self;
 	bolt->touch = blaster_touch;
 	bolt->nextthink = level.time + 2000;
 	bolt->think = G_FreeEdict;
@@ -382,19 +382,19 @@ void fire_blaster(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed
 	gi.linkentity(bolt);
 
 #if ENABLE_COOP
-	check_dodge(self, bolt->s.origin, dir, speed);
+	check_dodge(self, bolt->server.state.origin, dir, speed);
 #endif
 
-	if (self->client)
-		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), bolt, DT_DIRECT);
+	if (self->server.client)
+		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), bolt, DT_DIRECT);
 	else
 		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, (hyper) ? ITI_Q2_HYPERBLASTER : ITI_Q2_BLASTER, bolt, DT_DIRECT);
 
-	tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
+	tr = gi.trace(self->server.state.origin, NULL, NULL, bolt->server.state.origin, bolt, MASK_SHOT);
 
 	if (tr.fraction < 1.0f)
 	{
-		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
+		VectorMA(bolt->server.state.origin, -10, dir, bolt->server.state.origin);
 		bolt->touch(bolt, tr.ent, NULL, NULL);
 	}
 }
@@ -410,7 +410,7 @@ void Grenade_Explode(edict_t *ent)
 	vec3_t      origin;
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->server.owner, ent->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	//FIXME: if we are onground then raise our Z just a bit since we are a point?
@@ -419,16 +419,16 @@ void Grenade_Explode(edict_t *ent)
 		float   points;
 		vec3_t  v;
 		vec3_t  dir;
-		VectorAdd(ent->enemy->mins, ent->enemy->maxs, v);
-		VectorMA(ent->enemy->s.origin, 0.5f, v, v);
-		VectorSubtract(ent->s.origin, v, v);
+		VectorAdd(ent->enemy->server.mins, ent->enemy->server.maxs, v);
+		VectorMA(ent->enemy->server.state.origin, 0.5f, v, v);
+		VectorSubtract(ent->server.state.origin, v, v);
 		points = ent->dmg - 0.5f * VectorLength(v);
-		VectorSubtract(ent->enemy->s.origin, ent->s.origin, dir);
-		T_Damage(ent->enemy, ent, ent->owner, dir, ent->s.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, ent->meansOfDeath);
+		VectorSubtract(ent->enemy->server.state.origin, ent->server.state.origin, dir);
+		T_Damage(ent->enemy, ent, ent->server.owner, dir, ent->server.state.origin, vec3_origin, (int)points, (int)points, DAMAGE_RADIUS, ent->meansOfDeath);
 	}
 
-	T_RadiusDamage(ent, ent->owner, ent->dmg, ent->enemy, DAMAGE_NONE, ent->dmg_radius, ent->meansOfDeath);
-	VectorMA(ent->s.origin, -0.02f, ent->velocity, origin);
+	T_RadiusDamage(ent, ent->server.owner, ent->dmg, ent->enemy, DAMAGE_NONE, ent->dmg_radius, ent->meansOfDeath);
+	VectorMA(ent->server.state.origin, -0.02f, ent->velocity, origin);
 	MSG_WriteByte(svc_temp_entity);
 
 	if (ent->waterlevel)
@@ -447,13 +447,13 @@ void Grenade_Explode(edict_t *ent)
 	}
 
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
 
 void Grenade_Touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -490,7 +490,7 @@ void fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int sp
 	vectoangles(aimdir, dir);
 	AngleVectors(dir, forward, right, up);
 	grenade = G_Spawn();
-	VectorCopy(start, grenade->s.origin);
+	VectorCopy(start, grenade->server.state.origin);
 	VectorScale(aimdir, speed, grenade->velocity);
 	scale = 200 + crandom() * 10.0f;
 	VectorMA(grenade->velocity, scale, up, grenade->velocity);
@@ -498,13 +498,13 @@ void fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int sp
 	VectorMA(grenade->velocity, scale, right, grenade->velocity);
 	VectorSet(grenade->avelocity, 300, 300, 300);
 	grenade->movetype = MOVETYPE_BOUNCE;
-	grenade->clipmask = MASK_SHOT;
-	grenade->solid = SOLID_BBOX;
-	grenade->s.effects |= EF_GRENADE;
-	VectorClear(grenade->mins);
-	VectorClear(grenade->maxs);
-	grenade->s.modelindex = gi.modelindex("models/objects/grenade/tris.md2");
-	grenade->owner = self;
+	grenade->server.clipmask = MASK_SHOT;
+	grenade->server.solid = SOLID_BBOX;
+	grenade->server.state.effects |= EF_GRENADE;
+	VectorClear(grenade->server.mins);
+	VectorClear(grenade->server.maxs);
+	grenade->server.state.modelindex = gi.modelindex("models/objects/grenade/tris.md2");
+	grenade->server.owner = self;
 	grenade->touch = Grenade_Touch;
 	grenade->nextthink = level.time + timer * 1000.0f;
 	grenade->think = Grenade_Explode;
@@ -512,8 +512,8 @@ void fire_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int sp
 	grenade->dmg_radius = damage_radius;
 	grenade->entitytype = ET_GRENADE;
 
-	if (self->client)
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
+	if (self->server.client)
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), grenade, DT_DIRECT);
 	else
 		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_GRENADE_LAUNCHER, grenade, DT_DIRECT);
 
@@ -529,7 +529,7 @@ void fire_grenade2(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int s
 	vectoangles(aimdir, dir);
 	AngleVectors(dir, forward, right, up);
 	grenade = G_Spawn();
-	VectorCopy(start, grenade->s.origin);
+	VectorCopy(start, grenade->server.state.origin);
 	VectorScale(aimdir, speed, grenade->velocity);
 	scale = 200 + crandom() * 10.0f;
 	VectorMA(grenade->velocity, scale, up, grenade->velocity);
@@ -537,13 +537,13 @@ void fire_grenade2(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int s
 	VectorMA(grenade->velocity, scale, right, grenade->velocity);
 	VectorSet(grenade->avelocity, 300, 300, 300);
 	grenade->movetype = MOVETYPE_BOUNCE;
-	grenade->clipmask = MASK_SHOT;
-	grenade->solid = SOLID_BBOX;
-	grenade->s.effects |= EF_GRENADE;
-	VectorClear(grenade->mins);
-	VectorClear(grenade->maxs);
-	grenade->s.modelindex = gi.modelindex("models/objects/grenade2/tris.md2");
-	grenade->owner = self;
+	grenade->server.clipmask = MASK_SHOT;
+	grenade->server.solid = SOLID_BBOX;
+	grenade->server.state.effects |= EF_GRENADE;
+	VectorClear(grenade->server.mins);
+	VectorClear(grenade->server.maxs);
+	grenade->server.state.modelindex = gi.modelindex("models/objects/grenade2/tris.md2");
+	grenade->server.owner = self;
 	grenade->touch = Grenade_Touch;
 	grenade->nextthink = level.time + timer;
 	grenade->think = Grenade_Explode;
@@ -556,10 +556,10 @@ void fire_grenade2(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int s
 	else
 		grenade->spawnflags = 1;
 
-	grenade->s.sound = gi.soundindex("weapons/hgrenc1b.wav");
+	grenade->server.state.sound = gi.soundindex("weapons/hgrenc1b.wav");
 
-	if (self->client)
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
+	if (self->server.client)
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), grenade, DT_DIRECT);
 	else
 		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_GRENADES, grenade, DT_DIRECT);
 
@@ -586,7 +586,7 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
 	vec3_t      origin;
 	int         n;
 
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -596,14 +596,14 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
 	}
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->server.owner, ent->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	// calculate position for the explosion entity
-	VectorMA(ent->s.origin, -0.02f, ent->velocity, origin);
+	VectorMA(ent->server.state.origin, -0.02f, ent->velocity, origin);
 
 	if (other->takedamage)
-		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NONE, ent->meansOfDeath);
+		T_Damage(other, ent, ent->server.owner, ent->velocity, ent->server.state.origin, plane->normal, ent->dmg, 0, DAMAGE_NONE, ent->meansOfDeath);
 	else
 	{
 		// don't throw any debris in net games
@@ -614,12 +614,12 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
 				n = Q_rand() % 5;
 
 				while (n--)
-					ThrowDebris(ent, "models/objects/debris2/tris.md2", 2, ent->s.origin);
+					ThrowDebris(ent, "models/objects/debris2/tris.md2", 2, ent->server.state.origin);
 			}
 		}
 	}
 
-	T_RadiusDamage(ent, ent->owner, ent->radius_dmg, other, DAMAGE_NONE, ent->dmg_radius, ent->meansOfDeath);
+	T_RadiusDamage(ent, ent->server.owner, ent->radius_dmg, other, DAMAGE_NONE, ent->dmg_radius, ent->meansOfDeath);
 	MSG_WriteByte(svc_temp_entity);
 
 	if (ent->waterlevel)
@@ -628,7 +628,7 @@ void rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *sur
 		MSG_WriteByte(TE_ROCKET_EXPLOSION);
 
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
 
@@ -636,35 +636,35 @@ void fire_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed,
 {
 	edict_t *rocket;
 	rocket = G_Spawn();
-	VectorCopy(start, rocket->s.origin);
+	VectorCopy(start, rocket->server.state.origin);
 	VectorCopy(dir, rocket->movedir);
-	vectoangles(dir, rocket->s.angles);
+	vectoangles(dir, rocket->server.state.angles);
 	VectorScale(dir, speed, rocket->velocity);
 	rocket->movetype = MOVETYPE_FLYMISSILE;
-	rocket->clipmask = MASK_SHOT;
-	rocket->solid = SOLID_BBOX;
-	rocket->s.effects |= EF_ROCKET;
-	VectorClear(rocket->mins);
-	VectorClear(rocket->maxs);
-	rocket->s.game = GAME_Q2;
-	rocket->s.modelindex = gi.modelindex("%e_rocket");
-	rocket->owner = self;
+	rocket->server.clipmask = MASK_SHOT;
+	rocket->server.solid = SOLID_BBOX;
+	rocket->server.state.effects |= EF_ROCKET;
+	VectorClear(rocket->server.mins);
+	VectorClear(rocket->server.maxs);
+	rocket->server.state.game = GAME_Q2;
+	rocket->server.state.modelindex = gi.modelindex("%e_rocket");
+	rocket->server.owner = self;
 	rocket->touch = rocket_touch;
 	rocket->nextthink = level.time + (8000000.0f / speed);
 	rocket->think = G_FreeEdict;
 	rocket->dmg = damage;
 	rocket->radius_dmg = radius_damage;
 	rocket->dmg_radius = damage_radius;
-	rocket->s.sound = gi.soundindex("weapons/rockfly.wav");
+	rocket->server.state.sound = gi.soundindex("weapons/rockfly.wav");
 	rocket->entitytype = ET_ROCKET;
 
-	if (self->client)
-		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), rocket, DT_DIRECT);
+	if (self->server.client)
+		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), rocket, DT_DIRECT);
 	else
 		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_ROCKET_LAUNCHER, rocket, DT_DIRECT);
 
 #if ENABLE_COOP
-	check_dodge(self, rocket->s.origin, dir, speed);
+	check_dodge(self, rocket->server.state.origin, dir, speed);
 #endif
 
 	gi.linkentity(rocket);
@@ -686,8 +686,8 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 	bool        water;
 	meansOfDeath_t meansOfDeath;
 
-	if (self->client)
-		meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), self, DT_DIRECT);
+	if (self->server.client)
+		meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), self, DT_DIRECT);
 	else
 		meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_RAILGUN, self, DT_DIRECT);
 
@@ -709,8 +709,7 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 		else
 		{
 			//ZOID--added so rail goes through SOLID_BBOX entities (gibs, etc)
-			if ((tr.ent->svflags & SVF_MONSTER) || (tr.ent->client) ||
-				(tr.ent->solid == SOLID_BBOX))
+			if (tr.ent->server.flags.monster || tr.ent->server.client || tr.ent->server.solid == SOLID_BBOX)
 				ignore = tr.ent;
 			else
 				ignore = NULL;
@@ -730,7 +729,7 @@ void fire_rail(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int kick)
 	MSG_WriteByte(TE_RAILTRAIL);
 	MSG_WritePos(start);
 	MSG_WritePos(tr.endpos);
-	gi.multicast(self->s.origin, MULTICAST_PHS);
+	gi.multicast(self->server.state.origin, MULTICAST_PHS);
 
 	//  gi.multicast (start, MULTICAST_PHS);
 	if (water)
@@ -760,53 +759,53 @@ void bfg_explode(edict_t *self)
 	vec3_t  v;
 	float   dist;
 
-	if (self->s.frame == 0)
+	if (self->server.state.frame == 0)
 	{
 		// the BFG effect
 		ent = NULL;
 		self->meansOfDeath.damage_type = DT_EFFECT;
 
-		while ((ent = findradius(ent, self->s.origin, self->dmg_radius)) != NULL)
+		while ((ent = findradius(ent, self->server.state.origin, self->dmg_radius)) != NULL)
 		{
 			if (!ent->takedamage)
 				continue;
 
-			if (ent == self->owner)
+			if (ent == self->server.owner)
 				continue;
 
 			if (!CanDamage(ent, self))
 				continue;
 
-			if (!CanDamage(ent, self->owner))
+			if (!CanDamage(ent, self->server.owner))
 				continue;
 
-			VectorAdd(ent->mins, ent->maxs, v);
-			VectorMA(ent->s.origin, 0.5f, v, v);
-			VectorSubtract(self->s.origin, v, v);
+			VectorAdd(ent->server.mins, ent->server.maxs, v);
+			VectorMA(ent->server.state.origin, 0.5f, v, v);
+			VectorSubtract(self->server.state.origin, v, v);
 			dist = VectorLength(v);
 			points = self->radius_dmg * (1.0f - sqrtf(dist / self->dmg_radius));
 
-			if (ent == self->owner)
+			if (ent == self->server.owner)
 				points = points * 0.5f;
 
 			MSG_WriteByte(svc_temp_entity);
 			MSG_WriteByte(TE_BFG_EXPLOSION);
-			MSG_WritePos(ent->s.origin);
-			gi.multicast(ent->s.origin, MULTICAST_PHS);
-			T_Damage(ent, self, self->owner, self->velocity, ent->s.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, self->meansOfDeath);
+			MSG_WritePos(ent->server.state.origin);
+			gi.multicast(ent->server.state.origin, MULTICAST_PHS);
+			T_Damage(ent, self, self->server.owner, self->velocity, ent->server.state.origin, vec3_origin, (int)points, 0, DAMAGE_ENERGY, self->meansOfDeath);
 		}
 	}
 
 	self->nextthink = level.time + game.frametime;
-	self->s.frame++;
+	self->server.state.frame++;
 
-	if (self->s.frame == 5)
+	if (self->server.state.frame == 5)
 		self->think = G_FreeEdict;
 }
 
 void bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -816,7 +815,7 @@ void bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 	}
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+	PlayerNoise(self->server.owner, self->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	self->meansOfDeath.damage_type = DT_DIRECT;
@@ -824,25 +823,25 @@ void bfg_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 	// core explosion - prevents firing it into the wall/floor
 
 	if (other->takedamage)
-		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, 200, 0, DAMAGE_NONE, self->meansOfDeath);
+		T_Damage(other, self, self->server.owner, self->velocity, self->server.state.origin, plane->normal, 200, 0, DAMAGE_NONE, self->meansOfDeath);
 
-	T_RadiusDamage(self, self->owner, 200, other, DAMAGE_NONE, 100, self->meansOfDeath);
+	T_RadiusDamage(self, self->server.owner, 200, other, DAMAGE_NONE, 100, self->meansOfDeath);
 	gi.sound(self, CHAN_VOICE, gi.soundindex("weapons/bfg__x1b.wav"), 1, ATTN_NORM, 0);
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	self->touch = NULL;
-	VectorMA(self->s.origin, -1 * game.frameseconds, self->velocity, self->s.origin);
+	VectorMA(self->server.state.origin, -1 * game.frameseconds, self->velocity, self->server.state.origin);
 	VectorClear(self->velocity);
-	self->s.modelindex = gi.modelindex("sprites/s_bfg3.sp2");
-	self->s.frame = 0;
-	self->s.sound = 0;
-	self->s.effects &= ~EF_ANIM_ALLFAST;
+	self->server.state.modelindex = gi.modelindex("sprites/s_bfg3.sp2");
+	self->server.state.frame = 0;
+	self->server.state.sound = 0;
+	self->server.state.effects &= ~EF_ANIM_ALLFAST;
 	self->think = bfg_explode;
 	self->nextthink = level.time + game.frametime;
 	self->enemy = other;
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_BFG_BIGEXPLOSION);
-	MSG_WritePos(self->s.origin);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	MSG_WritePos(self->server.state.origin);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 }
 
 void bfg_think(edict_t *self)
@@ -863,25 +862,25 @@ void bfg_think(edict_t *self)
 
 	ent = NULL;
 
-	while ((ent = findradius(ent, self->s.origin, 256)) != NULL)
+	while ((ent = findradius(ent, self->server.state.origin, 256)) != NULL)
 	{
 		if (ent == self)
 			continue;
 
-		if (ent == self->owner)
+		if (ent == self->server.owner)
 			continue;
 
 		if (!ent->takedamage)
 			continue;
 
-		if (!(ent->svflags & SVF_MONSTER) && (!ent->client) && ent->entitytype != ET_MISC_EXPLOBOX)
+		if (!ent->server.flags.monster && !ent->server.client && ent->entitytype != ET_MISC_EXPLOBOX)
 			continue;
 
-		VectorMA(ent->absmin, 0.5f, ent->size, point);
-		VectorSubtract(point, self->s.origin, dir);
+		VectorMA(ent->server.absmin, 0.5f, ent->server.size, point);
+		VectorSubtract(point, self->server.state.origin, dir);
 		VectorNormalize(dir);
 		ignore = self;
-		VectorCopy(self->s.origin, start);
+		VectorCopy(self->server.state.origin, start);
 		VectorMA(start, 2048, dir, end);
 
 		while (1)
@@ -892,18 +891,18 @@ void bfg_think(edict_t *self)
 				break;
 
 			// hurt it if we can
-			if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->owner))
-				T_Damage(tr.ent, self, self->owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, self->meansOfDeath);
+			if ((tr.ent->takedamage) && !(tr.ent->flags & FL_IMMUNE_LASER) && (tr.ent != self->server.owner))
+				T_Damage(tr.ent, self, self->server.owner, dir, tr.endpos, vec3_origin, dmg, 1, DAMAGE_ENERGY, self->meansOfDeath);
 
 			// if we hit something that's not a monster or player we're done
-			if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
+			if (!tr.ent->server.flags.monster && !tr.ent->server.client)
 			{
 				MSG_WriteByte(svc_temp_entity);
 				MSG_WriteByte(TE_LASER_SPARKS);
 				MSG_WriteByte(4);
 				MSG_WritePos(tr.endpos);
 				MSG_WriteDir(tr.plane.normal);
-				MSG_WriteByte(self->s.skinnum);
+				MSG_WriteByte(self->server.state.skinnum);
 				gi.multicast(tr.endpos, MULTICAST_PVS);
 				break;
 			}
@@ -914,9 +913,9 @@ void bfg_think(edict_t *self)
 
 		MSG_WriteByte(svc_temp_entity);
 		MSG_WriteByte(TE_BFG_LASER);
-		MSG_WritePos(self->s.origin);
+		MSG_WritePos(self->server.state.origin);
 		MSG_WritePos(tr.endpos);
-		gi.multicast(self->s.origin, MULTICAST_PHS);
+		gi.multicast(self->server.state.origin, MULTICAST_PHS);
 	}
 
 	self->nextthink = level.time + 100;
@@ -926,36 +925,36 @@ void fire_bfg(edict_t *self, vec3_t start, vec3_t dir, int damage, int speed, fl
 {
 	edict_t *bfg;
 	bfg = G_Spawn();
-	VectorCopy(start, bfg->s.origin);
+	VectorCopy(start, bfg->server.state.origin);
 	VectorCopy(dir, bfg->movedir);
-	vectoangles(dir, bfg->s.angles);
+	vectoangles(dir, bfg->server.state.angles);
 	VectorScale(dir, speed, bfg->velocity);
 	bfg->movetype = MOVETYPE_FLYMISSILE;
-	bfg->clipmask = MASK_SHOT;
-	bfg->solid = SOLID_BBOX;
-	bfg->s.effects |= EF_BFG | EF_ANIM_ALLFAST;
-	VectorClear(bfg->mins);
-	VectorClear(bfg->maxs);
-	bfg->s.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
-	bfg->owner = self;
+	bfg->server.clipmask = MASK_SHOT;
+	bfg->server.solid = SOLID_BBOX;
+	bfg->server.state.effects |= EF_BFG | EF_ANIM_ALLFAST;
+	VectorClear(bfg->server.mins);
+	VectorClear(bfg->server.maxs);
+	bfg->server.state.modelindex = gi.modelindex("sprites/s_bfg1.sp2");
+	bfg->server.owner = self;
 	bfg->touch = bfg_touch;
 	bfg->nextthink = level.time + (8000000.0f / speed);
 	bfg->think = G_FreeEdict;
 	bfg->radius_dmg = damage;
 	bfg->dmg_radius = damage_radius;
-	bfg->s.sound = gi.soundindex("weapons/bfg__l1a.wav");
+	bfg->server.state.sound = gi.soundindex("weapons/bfg__l1a.wav");
 	bfg->think = bfg_think;
 	bfg->nextthink = level.time + 1;
 	bfg->teammaster = bfg;
 	bfg->teamchain = NULL;
 
-	if (self->client)
-		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), bfg, DT_LASER);
+	if (self->server.client)
+		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), bfg, DT_LASER);
 	else
 		bfg->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_BFG10K, bfg, DT_LASER);
 
 #if ENABLE_COOP
-	check_dodge(self, bfg->s.origin, dir, speed);
+	check_dodge(self, bfg->server.state.origin, dir, speed);
 #endif
 
 	gi.linkentity(bfg);

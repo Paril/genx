@@ -9,7 +9,19 @@
     <LocalDebuggerCommandArguments>+set cheats 1 +set game genx +set cl_autopause 0 +map xdm10c</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>+set cheats 1 +set game genx +set cl_autopause 0 +map xdm10c</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>+set cheats 1 +set game genx +set cl_autopause 0 +map xdm10c</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerCommand>E:\EvenMoreStore\SteamLibrary\Common\Quake 2\genx.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerCommandArguments>+set cheats 1 +set game genx +set cl_autopause 0 +map xdm10c</LocalDebuggerCommandArguments>

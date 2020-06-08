@@ -114,7 +114,7 @@ void skul_reset(edict_t *self)
 	self->think = monster_think;
 	self->nextthink = level.time + 100;
 	self->touch = NULL;
-	self->owner = NULL;
+	self->server.owner = NULL;
 }
 
 void skul_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
@@ -126,8 +126,8 @@ void skul_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &skul_die1;
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.solid = SOLID_NOT;
+	self->server.flags.deadmonster = true;
 	skul_reset(self);
 	gi.linkentity(self);
 }
@@ -161,11 +161,11 @@ bool skul_would_hit(edict_t *self)
 {
 	vec3_t end, vel;
 	vec3_t dir;
-	VectorSubtract(self->dest1, self->s.origin, dir);
+	VectorSubtract(self->dest1, self->server.state.origin, dir);
 	VectorNormalize(dir);
 	VectorScale(dir, 275 * 2.5f, vel);
-	VectorMA(self->s.origin, game.frameseconds, vel, end);
-	trace_t tr = gi.trace(self->s.origin, self->mins, self->maxs, end, self, MASK_SHOT);
+	VectorMA(self->server.state.origin, game.frameseconds, vel, end);
+	trace_t tr = gi.trace(self->server.state.origin, self->server.mins, self->server.maxs, end, self, MASK_SHOT);
 
 	if (tr.ent && tr.ent == self->enemy)
 		return false;
@@ -175,16 +175,16 @@ bool skul_would_hit(edict_t *self)
 
 void skul_fly(edict_t *self)
 {
-	if (self->s.frame == frames_attack1)
-		self->s.frame = frames_attack2;
+	if (self->server.state.frame == frames_attack1)
+		self->server.state.frame = frames_attack2;
 	else
-		self->s.frame = frames_attack1;
+		self->server.state.frame = frames_attack1;
 
 	if (!self->accel || VectorEmpty(self->velocity))
 	{
 		vec3_t dir;
 		vec3_t me;
-		VectorCopy(self->s.origin, me);
+		VectorCopy(self->server.state.origin, me);
 		me[2] += self->viewheight;
 		VectorSubtract(self->dest1, me, dir);
 		VectorNormalize(dir);
@@ -214,7 +214,7 @@ void skul_wait(edict_t *self)
 	if (!(self->monsterinfo.aiflags & AI_HOLD_FRAME))
 	{
 		// lose enemy
-		VectorCopy(self->enemy->s.origin, self->dest1);
+		VectorCopy(self->enemy->server.state.origin, self->dest1);
 		self->dest1[2] += self->enemy->viewheight;
 		//self->enemy = NULL;
 		//self->movetarget = self->goalentity = NULL;
@@ -264,19 +264,19 @@ void doom_monster_skul(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/FIRXPL.wav");
 	sound_shoot = gi.soundindex("doom/SKLATK.wav");
-	VectorSet(self->mins, -16, -16, -4);
-	VectorSet(self->maxs, 16, 16, 52);
-	self->s.modelindex = gi.modelindex("sprites/doom/skul.d2s");
+	VectorSet(self->server.mins, -16, -16, -4);
+	VectorSet(self->server.maxs, 16, 16, 52);
+	self->server.state.modelindex = gi.modelindex("sprites/doom/skul.d2s");
 	self->health = 100;
 	self->dmg = 0;
 	self->mass = 50;
-	self->s.renderfx |= RF_FULLBRIGHT;
+	self->server.state.renderfx |= RF_FULLBRIGHT;
 	self->monsterinfo.stand = skul_stand;
 	self->monsterinfo.walk = skul_walk;
 	self->monsterinfo.run = skul_run;
@@ -284,7 +284,7 @@ void doom_monster_skul(edict_t *self)
 	self->die = skul_die;
 	self->monsterinfo.attack = skul_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &skul_stand1;
 	self->monsterinfo.scale = 1;

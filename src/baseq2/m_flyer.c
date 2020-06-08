@@ -78,14 +78,14 @@ static void flyer_fire(edict_t *self, int flash_number)
 	vec3_t  dir;
 	int     effect;
 
-	if ((self->s.frame == FRAME_attak204) || (self->s.frame == FRAME_attak207) || (self->s.frame == FRAME_attak210))
+	if ((self->server.state.frame == FRAME_attak204) || (self->server.state.frame == FRAME_attak207) || (self->server.state.frame == FRAME_attak210))
 		effect = EF_HYPERBLASTER;
 	else
 		effect = 0;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
-	VectorCopy(self->enemy->s.origin, end);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, end);
 	end[2] += self->enemy->viewheight;
 	VectorSubtract(end, start, dir);
 	monster_fire_blaster(self, start, dir, 1, 1000, flash_number, effect);
@@ -104,7 +104,7 @@ static void flyer_fireright(edict_t *self)
 static void flyer_slash_left(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->mins[0], 0);
+	VectorSet(aim, MELEE_DISTANCE, self->server.mins[0], 0);
 	fire_hit(self, aim, 5, 0);
 	gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
 }
@@ -112,7 +112,7 @@ static void flyer_slash_left(edict_t *self)
 static void flyer_slash_right(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->maxs[0], 0);
+	VectorSet(aim, MELEE_DISTANCE, self->server.maxs[0], 0);
 	fire_hit(self, aim, 5, 0);
 	gi.sound(self, CHAN_WEAPON, sound_slash, 1, ATTN_NORM, 0);
 }
@@ -145,7 +145,7 @@ static void flyer_pain(edict_t *self, edict_t *other, float kick, int damage)
 	int     n;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -204,7 +204,7 @@ void SP_monster_flyer(edict_t *self)
 	}
 
 	// fix a map bug in jail5.bsp
-	if (!Q_stricmp(level.mapname, "jail5") && (self->s.origin[2] == -104))
+	if (!Q_stricmp(level.mapname, "jail5") && (self->server.state.origin[2] == -104))
 	{
 		self->targetname = self->target;
 		self->target = NULL;
@@ -226,12 +226,12 @@ void SP_monster_flyer(edict_t *self)
 	sound_sproing = gi.soundindex("flyer/flyatck1.wav");
 	sound_die = gi.soundindex("flyer/flydeth1.wav");
 	gi.soundindex("flyer/flyatck3.wav");
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.sound = gi.soundindex("flyer/flyidle1.wav");
+	self->server.solid = SOLID_BBOX;
+	self->server.state.sound = gi.soundindex("flyer/flyidle1.wav");
 	self->health = 50;
 	self->mass = 50;
 	self->pain = flyer_pain;

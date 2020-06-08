@@ -548,6 +548,7 @@ static int AI_RunGravityBox(int n1, int n2)
 	}
 
 	Com_Error(ERR_FATAL, "ETERNAL COUNT\n");  //should never get here
+	return -1;
 }
 
 //==========================================

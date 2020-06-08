@@ -55,17 +55,17 @@ void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 
 static void enforcer_fire(edict_t *self)
 {
-	gi.positioned_sound(self->s.origin, self, CHAN_VOICE, sound_enfire, 1, ATTN_NORM, 0);
+	gi.positioned_sound(self->server.state.origin, self, CHAN_VOICE, sound_enfire, 1, ATTN_NORM, 0);
 	//self.effects = self.effects | EF_MUZZLEFLASH;
 	vec3_t org, v_forward, v_right;
-	AngleVectors(self->s.angles, v_forward, v_right, NULL);
+	AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
 
 	for (int i = 0; i < 3; ++i)
-		org[i] = self->s.origin[i] + v_forward[i] * 30 + v_right[i] * 8.5f;
+		org[i] = self->server.state.origin[i] + v_forward[i] * 30 + v_right[i] * 8.5f;
 
 	org[2] += 16;
 	vec3_t dir;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dir);
 	VectorNormalize(dir);
 	fire_q1_laser(self, org, dir, 15, 500);
 }
@@ -157,7 +157,7 @@ edict_t *Drop_Backpack(edict_t *self);
 
 static void enf_drop(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	//edict_t *backpack = Drop_Backpack(self);
 	//backpack->pack_cells = 5;
 	gi.linkentity(self);
@@ -166,7 +166,7 @@ static void enf_drop(edict_t *self)
 static void enf_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -254,11 +254,11 @@ void q1_monster_enforcer(edict_t *self)
 	sound_sight3 = gi.soundindex("q1/enforcer/sight3.wav");
 	sound_sight4 = gi.soundindex("q1/enforcer/sight4.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 40);
 	self->health = 80;
 	self->monsterinfo.stand = enf_stand;
 	self->monsterinfo.walk = enf_walk;

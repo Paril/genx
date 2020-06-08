@@ -20,13 +20,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 void InitTrigger(edict_t *self)
 {
-	if (!VectorEmpty(self->s.angles))
-		G_SetMovedir(self->s.angles, self->movedir);
+	if (!VectorEmpty(self->server.state.angles))
+		G_SetMovedir(self->server.state.angles, self->movedir);
 
-	self->solid = SOLID_TRIGGER;
+	self->server.solid = SOLID_TRIGGER;
 	self->movetype = MOVETYPE_NONE;
 	gi.setmodel(self, self->model);
-	self->svflags = SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 }
 
 
@@ -70,12 +70,12 @@ void Use_Multi(edict_t *ent, edict_t *other, edict_t *activator)
 
 void Touch_Multi(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other->client)
+	if (other->server.client)
 	{
 		if (self->spawnflags & 2)
 			return;
 	}
-	else if (other->svflags & SVF_MONSTER)
+	else if (other->server.flags.monster)
 	{
 		if (!(self->spawnflags & 1))
 			return;
@@ -86,7 +86,7 @@ void Touch_Multi(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 	if (!VectorEmpty(self->movedir))
 	{
 		vec3_t  forward;
-		AngleVectors(other->s.angles, forward, NULL, NULL);
+		AngleVectors(other->server.state.angles, forward, NULL, NULL);
 
 		if (DotProduct(forward, self->movedir) < 0)
 			return;
@@ -109,7 +109,7 @@ set "message" to text string
 */
 void trigger_enable(edict_t *self, edict_t *other, edict_t *activator)
 {
-	self->solid = SOLID_TRIGGER;
+	self->server.solid = SOLID_TRIGGER;
 	self->use = Use_Multi;
 	gi.linkentity(self);
 }
@@ -128,21 +128,21 @@ void SP_trigger_multiple(edict_t *ent)
 
 	ent->touch = Touch_Multi;
 	ent->movetype = MOVETYPE_NONE;
-	ent->svflags |= SVF_NOCLIENT;
+	ent->server.flags.noclient = true;
 
 	if (ent->spawnflags & 4)
 	{
-		ent->solid = SOLID_NOT;
+		ent->server.solid = SOLID_NOT;
 		ent->use = trigger_enable;
 	}
 	else
 	{
-		ent->solid = SOLID_TRIGGER;
+		ent->server.solid = SOLID_TRIGGER;
 		ent->use = Use_Multi;
 	}
 
-	if (!VectorEmpty(ent->s.angles))
-		G_SetMovedir(ent->s.angles, ent->movedir);
+	if (!VectorEmpty(ent->server.state.angles))
+		G_SetMovedir(ent->server.state.angles, ent->movedir);
 
 	gi.setmodel(ent, ent->model);
 	gi.linkentity(ent);
@@ -171,7 +171,7 @@ void SP_trigger_once(edict_t *ent)
 	if (ent->spawnflags & 1)
 	{
 		vec3_t  v;
-		VectorMA(ent->mins, 0.5f, ent->size, v);
+		VectorMA(ent->server.mins, 0.5f, ent->server.size, v);
 		ent->spawnflags &= ~1;
 		ent->spawnflags |= 4;
 		Com_Printf("fixed TRIGGERED flag on %s at %s\n", spawnTemp.classname, vtos(v));
@@ -214,12 +214,12 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
 	if (!self->item)
 		return;
 
-	if (!activator->client)
+	if (!activator->server.client)
 		return;
 
 	index = ITEM_INDEX(self->item);
 
-	if (!activator->client->pers.inventory[index])
+	if (!activator->server.client->pers.inventory[index])
 	{
 		if (level.time < self->touch_debounce_time)
 			return;
@@ -243,23 +243,23 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
 			int cube;
 
 			for (cube = 0; cube < 8; cube++)
-				if (activator->client->pers.power_cubes & (1 << cube))
+				if (activator->server.client->pers.power_cubes & (1 << cube))
 					break;
 
 			for (player = 1; player <= game.maxclients; player++)
 			{
 				ent = &g_edicts[player];
 
-				if (!ent->inuse)
+				if (!ent->server.inuse)
 					continue;
 
-				if (!ent->client)
+				if (!ent->server.client)
 					continue;
 
-				if (ent->client->pers.power_cubes & (1 << cube))
+				if (ent->server.client->pers.power_cubes & (1 << cube))
 				{
-					ent->client->pers.inventory[index]--;
-					ent->client->pers.power_cubes &= ~(1 << cube);
+					ent->server.client->pers.inventory[index]--;
+					ent->server.client->pers.power_cubes &= ~(1 << cube);
 				}
 			}
 		}
@@ -269,19 +269,19 @@ void trigger_key_use(edict_t *self, edict_t *other, edict_t *activator)
 			{
 				ent = &g_edicts[player];
 
-				if (!ent->inuse)
+				if (!ent->server.inuse)
 					continue;
 
-				if (!ent->client)
+				if (!ent->server.client)
 					continue;
 
-				ent->client->pers.inventory[index] = 0;
+				ent->server.client->pers.inventory[index] = 0;
 			}
 		}
 	}
 	else
 #endif
-		activator->client->pers.inventory[index]--;
+		activator->server.client->pers.inventory[index]--;
 
 	G_UseTargets(self, activator);
 	self->use = NULL;
@@ -291,7 +291,7 @@ void SP_trigger_key(edict_t *self)
 {
 	if (!spawnTemp.item)
 	{
-		Com_Printf("no key item for trigger_key at %s\n", vtos(self->s.origin));
+		Com_Printf("no key item for trigger_key at %s\n", vtos(self->server.state.origin));
 		return;
 	}
 
@@ -299,13 +299,13 @@ void SP_trigger_key(edict_t *self)
 
 	if (!self->item)
 	{
-		Com_Printf("item %s not found for trigger_key at %s\n", spawnTemp.item, vtos(self->s.origin));
+		Com_Printf("item %s not found for trigger_key at %s\n", spawnTemp.item, vtos(self->server.state.origin));
 		return;
 	}
 
 	if (!self->target)
 	{
-		Com_Printf("%s at %s has no target\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("%s at %s has no target\n", spawnTemp.classname, vtos(self->server.state.origin));
 		return;
 	}
 
@@ -411,10 +411,10 @@ void trigger_push_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface
 	{
 		VectorScale(self->movedir, self->speed * 10, other->velocity);
 
-		if (other->client)
+		if (other->server.client)
 		{
 			// don't take falling damage immediately from this
-			VectorCopy(other->velocity, other->client->oldvelocity);
+			VectorCopy(other->velocity, other->server.client->oldvelocity);
 
 			if (other->fly_sound_debounce_time < level.time)
 			{
@@ -468,10 +468,10 @@ NO_PROTECTION   *nothing* stops the damage
 */
 void hurt_use(edict_t *self, edict_t *other, edict_t *activator)
 {
-	if (self->solid == SOLID_NOT)
-		self->solid = SOLID_TRIGGER;
+	if (self->server.solid == SOLID_NOT)
+		self->server.solid = SOLID_TRIGGER;
 	else
-		self->solid = SOLID_NOT;
+		self->server.solid = SOLID_NOT;
 
 	gi.linkentity(self);
 
@@ -506,7 +506,7 @@ void hurt_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf
 	else
 		dflags = 0;
 
-	T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, self->dmg, self->dmg, dflags, MakeBlankMeansOfDeath(self));
+	T_Damage(other, self, self, vec3_origin, other->server.state.origin, vec3_origin, self->dmg, self->dmg, dflags, MakeBlankMeansOfDeath(self));
 }
 
 void SP_trigger_hurt(edict_t *self)
@@ -519,9 +519,9 @@ void SP_trigger_hurt(edict_t *self)
 		self->dmg = 5;
 
 	if (self->spawnflags & 1)
-		self->solid = SOLID_NOT;
+		self->server.solid = SOLID_NOT;
 	else
-		self->solid = SOLID_TRIGGER;
+		self->server.solid = SOLID_TRIGGER;
 
 	if (self->spawnflags & 2)
 		self->use = hurt_use;
@@ -553,7 +553,7 @@ void SP_trigger_gravity(edict_t *self)
 {
 	if (spawnTemp.gravity == NULL)
 	{
-		Com_Printf("trigger_gravity without gravity set at %s\n", vtos(self->s.origin));
+		Com_Printf("trigger_gravity without gravity set at %s\n", vtos(self->server.state.origin));
 		G_FreeEdict(self);
 		return;
 	}
@@ -583,10 +583,10 @@ void trigger_monsterjump_touch(edict_t *self, edict_t *other, cplane_t *plane, c
 	if (other->flags & (FL_FLY | FL_SWIM))
 		return;
 
-	if (other->svflags & SVF_DEADMONSTER)
+	if (other->server.flags.deadmonster)
 		return;
 
-	if (!(other->svflags & SVF_MONSTER))
+	if (!other->server.flags.monster)
 		return;
 
 	// set XY even if not on ground, so the jump will clear lips
@@ -608,8 +608,8 @@ void SP_trigger_monsterjump(edict_t *self)
 	if (!spawnTemp.height)
 		spawnTemp.height = 200;
 
-	if (self->s.angles[YAW] == 0)
-		self->s.angles[YAW] = 360;
+	if (self->server.state.angles[YAW] == 0)
+		self->server.state.angles[YAW] = 360;
 
 	InitTrigger(self);
 	self->touch = trigger_monsterjump_touch;

@@ -76,14 +76,14 @@ static void BOT_DMclass_Move(edict_t *self, usercmd_t *ucmd)
 				//vec3_t	tPoint;
 				//int		j;
 				//for(j=0; j<3; j++)//center of the ent
-				//	tPoint[j] = nav.ents[i].ent->s.origin[j] + 0.5*(nav.ents[i].ent->mins[j] + nav.ents[i].ent->maxs[j]);
-				//tPoint[2] = nav.ents[i].ent->s.origin[2] + nav.ents[i].ent->maxs[2];
+				//	tPoint[j] = nav.ents[i].ent->server.state.origin[j] + 0.5*(nav.ents[i].ent->server.mins[j] + nav.ents[i].ent->server.maxs[j]);
+				//tPoint[2] = nav.ents[i].ent->server.state.origin[2] + nav.ents[i].ent->server.maxs[2];
 				//tPoint[2] += 8;
-				//AITools_DrawLine( self->s.origin, tPoint );
+				//AITools_DrawLine( self->server.state.origin, tPoint );
 
 				//if not reachable, wait for it (only height matters)
-				if (((nav.ents[i].ent->s.origin[2] + nav.ents[i].ent->maxs[2])
-						> (self->s.origin[2] + self->mins[2] + AI_JUMPABLE_HEIGHT)) &&
+				if (((nav.ents[i].ent->server.state.origin[2] + nav.ents[i].ent->server.maxs[2])
+						> (self->server.state.origin[2] + self->server.mins[2] + AI_JUMPABLE_HEIGHT)) &&
 					nav.ents[i].ent->moveinfo.state != STATE_BOTTOM) //jabot092(2)
 					return; //wait for elevator
 			}
@@ -126,11 +126,11 @@ static void BOT_DMclass_Move(edict_t *self, usercmd_t *ucmd)
 		trace_t trace;
 		vec3_t  v1, v2;
 		//check floor in front, if there's none... Jump!
-		VectorCopy(self->s.origin, v1);
+		VectorCopy(self->server.state.origin, v1);
 		VectorCopy(self->ai->move_vector, v2);
 		VectorNormalize(v2);
 		VectorMA(v1, 12, v2, v1);
-		v1[2] += self->mins[2];
+		v1[2] += self->server.mins[2];
 		trace = gi.trace(v1, tv(-2, -2, -AI_JUMPABLE_HEIGHT), tv(2, 2, 0), v1, self, MASK_AISOLID);
 
 		if (!trace.startsolid && trace.fraction == 1.0f)
@@ -138,8 +138,8 @@ static void BOT_DMclass_Move(edict_t *self, usercmd_t *ucmd)
 			//jump!
 			ucmd->forwardmove = 400;
 			//prevent double jumping on crates
-			VectorCopy(self->s.origin, v1);
-			v1[2] += self->mins[2];
+			VectorCopy(self->server.state.origin, v1);
+			v1[2] += self->server.mins[2];
 			trace = gi.trace(v1, tv(-12, -12, -8), tv(12, 12, 0), v1, self, MASK_AISOLID);
 
 			if (trace.startsolid)
@@ -175,7 +175,7 @@ static void BOT_DMclass_Move(edict_t *self, usercmd_t *ucmd)
 		if (random() > 0.1f && AI_SpecialMove(self, ucmd))  //jumps, crouches, turns...
 			return;
 
-		self->s.angles[YAW] += random() * 180 - 90;
+		self->server.state.angles[YAW] += random() * 180 - 90;
 		AI_ChangeAngle(self);
 		ucmd->forwardmove = 400;
 		return;
@@ -221,17 +221,17 @@ static void BOT_DMclass_Wander(edict_t *self, usercmd_t *ucmd)
 		return;
 
 	// Swimming?
-	VectorCopy(self->s.origin, temp);
+	VectorCopy(self->server.state.origin, temp);
 	temp[2] += 24;
 
 	//	if(trap_PointContents (temp) & MASK_WATER)
 	if (gi.pointcontents(temp) & MASK_WATER)
 	{
 		// If drowning and no node, move up
-		if (self->client && self->client->next_drown_time > 0)	//jalfixme: client references must pass into botStatus
+		if (self->server.client && self->server.client->next_drown_time > 0)	//jalfixme: client references must pass into botStatus
 		{
 			ucmd->upmove = 100;
-			self->s.angles[PITCH] = -45;
+			self->server.state.angles[PITCH] = -45;
 		}
 		else
 			ucmd->upmove = 15;
@@ -239,14 +239,14 @@ static void BOT_DMclass_Wander(edict_t *self, usercmd_t *ucmd)
 		ucmd->forwardmove = 300;
 	}
 
-	// else self->client->next_drown_time = 0; // probably shound not be messing with this, but
+	// else self->server.client->next_drown_time = 0; // probably shound not be messing with this, but
 	// Lava?
 	temp[2] -= 48;
 
 	//if(trap_PointContents(temp) & (CONTENTS_LAVA|CONTENTS_SLIME))
 	if (gi.pointcontents(temp) & (CONTENTS_LAVA | CONTENTS_SLIME))
 	{
-		self->s.angles[YAW] += random() * 360 - 180;
+		self->server.state.angles[YAW] += random() * 360 - 180;
 		ucmd->forwardmove = 400;
 
 		if (self->groundentity)
@@ -263,7 +263,7 @@ static void BOT_DMclass_Wander(edict_t *self, usercmd_t *ucmd)
 		if (random() > 0.1f && AI_SpecialMove(self, ucmd))	//jumps, crouches, turns...
 			return;
 
-		self->s.angles[YAW] += random() * 180 - 90;
+		self->server.state.angles[YAW] += random() * 180 - 90;
 
 		if (!self->is_step)// if there is ground continue otherwise wait for next move
 			ucmd->forwardmove = 0; //0
@@ -318,7 +318,7 @@ static void BOT_DMclass_CombatMovement(edict_t *self, usercmd_t *ucmd)
 	else if (c < 0.8f && AI_CanMove(self, BOT_MOVE_BACK))
 		ucmd->forwardmove -= 400;
 
-	VectorSubtract(self->s.origin, self->enemy->s.origin, attackvector);
+	VectorSubtract(self->server.state.origin, self->enemy->server.state.origin, attackvector);
 	dist = VectorLength(attackvector);
 
 	if (dist < 75)
@@ -334,13 +334,13 @@ static bool BOT_DMclass_CheckShot(edict_t *ent, vec3_t	point)
 {
 	trace_t tr;
 	vec3_t	start, forward, right, offset;
-	AngleVectors(ent->client->v_angle, forward, right, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, right, NULL);
 	VectorSet(offset, 8, 8, ent->viewheight - 8);
-	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 	//bloqued, don't shoot
 	tr = gi.trace(start, vec3_origin, vec3_origin, point, ent, MASK_AISOLID);
 
-	//	trap_Trace( &tr, self->s.origin, vec3_origin, vec3_origin, point, self, MASK_AISOLID);
+	//	trap_Trace( &tr, self->server.state.origin, vec3_origin, vec3_origin, point, self, MASK_AISOLID);
 	if (tr.fraction < 0.3f) //just enough to prevent self damage (by now)
 		return false;
 
@@ -368,7 +368,7 @@ static bool BOT_DMclass_FindEnemy(edict_t *self)
 	for (i = 0; i < num_AIEnemies; i++)
 	{
 		if (AIEnemies[i] == NULL || AIEnemies[i] == self
-			|| AIEnemies[i]->solid == SOLID_NOT)
+			|| AIEnemies[i]->server.solid == SOLID_NOT)
 			continue;
 
 		//Ignore players with 0 weight (was set at botstatus)
@@ -376,11 +376,11 @@ static bool BOT_DMclass_FindEnemy(edict_t *self)
 			continue;
 
 		if (!AIEnemies[i]->deadflag && visible(self, AIEnemies[i]) &&
-			//trap_inPVS (self->s.origin, players[i]->s.origin))
-			gi.inPVS(self->s.origin, AIEnemies[i]->s.origin))
+			//trap_inPVS (self->server.state.origin, players[i]->server.state.origin))
+			gi.inPVS(self->server.state.origin, AIEnemies[i]->server.state.origin))
 		{
 			//(weight enemies from fusionbot) Is enemy visible, or is it too close to ignore
-			VectorSubtract(self->s.origin, AIEnemies[i]->s.origin, dist);
+			VectorSubtract(self->server.state.origin, AIEnemies[i]->server.state.origin, dist);
 			weight = VectorLength(dist);
 			//modify weight based on precomputed player weights
 			weight *= (1.0f - self->ai->status.playersWeights[i]);
@@ -419,24 +419,24 @@ static bool BOT_DMclass_FindEnemy(edict_t *self)
 static bool BOT_DMClass_ChangeWeapon(edict_t *ent, gitem_t *item)
 {
 	// see if we're already using it
-	if (!item || item == ent->client->pers.weapon)
+	if (!item || item == ent->server.client->pers.weapon)
 		return true;
 
 	// Has not picked up weapon yet
-	if (!ent->client->pers.inventory[ITEM_INDEX(item)])
+	if (!ent->server.client->pers.inventory[ITEM_INDEX(item)])
 		return false;
 
 	// Do we have ammo for it?
-	float ammo = game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(item)];
+	float ammo = game_iteminfos[ent->server.state.game].ammo_usages[ITEM_INDEX(item)];
 
 	if (ammo > 0)
 	{
-		if (ent->client->pers.ammo < ammo && !g_select_empty->value)
+		if (ent->server.client->pers.ammo < ammo && !g_select_empty->value)
 			return false;
 	}
 
 	// Change to this weapon
-	ent->client->gunstates[GUN_MAIN].newweapon = item;
+	ent->server.client->gunstates[GUN_MAIN].newweapon = item;
 	ent->ai->changeweapon_timeout = level.time + 6000;
 	return true;
 }
@@ -463,7 +463,7 @@ static void BOT_DMclass_ChooseWeapon(edict_t *self)
 		return;
 
 	// Base weapon selection on distance:
-	VectorSubtract(self->s.origin, self->enemy->s.origin, v);
+	VectorSubtract(self->server.state.origin, self->enemy->server.state.origin, v);
 	dist = VectorLength(v);
 
 	if (dist < 150)
@@ -481,12 +481,12 @@ static void BOT_DMclass_ChooseWeapon(edict_t *self)
 			continue;
 
 		//ignore those we don't have
-		if (!self->client->pers.inventory[ITEM_INDEX(AIWeapons[i].weaponItem)])
+		if (!self->server.client->pers.inventory[ITEM_INDEX(AIWeapons[i].weaponItem)])
 			continue;
 
 		//ignore those we don't have ammo for
 		if (AIWeapons[i].ammoItem != NULL	//excepting for those not using ammo
-			&& !self->client->pers.inventory[ITEM_INDEX(AIWeapons[i].ammoItem)])
+			&& !self->server.client->pers.inventory[ITEM_INDEX(AIWeapons[i].ammoItem)])
 			continue;
 
 		//compare range weights
@@ -526,25 +526,25 @@ static void BOT_DMclass_FireWeapon(edict_t *self, usercmd_t *ucmd)
 	if (!self->enemy)
 		return;
 
-	//weapon = self->s.skinnum & 0xff;
-	if (self->client->pers.weapon)
-		weapon = ITEM_INDEX(self->client->pers.weapon) - ITI_WEAPONS_START;
+	//weapon = self->server.state.skinnum & 0xff;
+	if (self->server.client->pers.weapon)
+		weapon = ITEM_INDEX(self->server.client->pers.weapon) - ITI_WEAPONS_START;
 	else
 		weapon = 0;
 
 	//jalToDo: Add different aiming types (explosive aim to legs, hitscan aim to body)
 	//was find range. I might use it later
-	//VectorSubtract( self->s.origin, self->enemy->s.origin, attackvector);
+	//VectorSubtract( self->server.state.origin, self->enemy->server.state.origin, attackvector);
 	//dist = VectorLength( attackvector);
 	// Aim
-	VectorCopy(self->enemy->s.origin, target);
+	VectorCopy(self->enemy->server.state.origin, target);
 
 	// find out our weapon AIM style
 	if (AIWeapons[weapon].aimType == AI_AIMSTYLE_PREDICTION_EXPLOSIVE)
 	{
 		//aim to the feets when enemy isn't higher
-		if (self->s.origin[2] + self->viewheight > target[2] + (self->enemy->mins[2] * 0.8f))
-			target[2] += self->enemy->mins[2];
+		if (self->server.state.origin[2] + self->viewheight > target[2] + (self->enemy->server.mins[2] * 0.8f))
+			target[2] += self->enemy->server.mins[2];
 	}
 	else if (AIWeapons[weapon].aimType == AI_AIMSTYLE_PREDICTION)
 	{
@@ -562,9 +562,9 @@ static void BOT_DMclass_FireWeapon(edict_t *self, usercmd_t *ucmd)
 	target[0] += (random() - 0.5f) * ((MAX_BOT_SKILL - self->ai->pers.skillLevel) * 2);
 	target[1] += (random() - 0.5f) * ((MAX_BOT_SKILL - self->ai->pers.skillLevel) * 2);
 	// Set direction
-	VectorSubtract(target, self->s.origin, self->ai->move_vector);
+	VectorSubtract(target, self->server.state.origin, self->ai->move_vector);
 	vectoangles(self->ai->move_vector, angles);
-	VectorCopy(angles, self->s.angles);
+	VectorCopy(angles, self->server.state.angles);
 	// Set the attack
 	firedelay = random() * (MAX_BOT_SKILL * 1.8f);
 
@@ -595,7 +595,7 @@ static void BOT_DMclass_WeightPlayers(edict_t *self)
 			continue;
 
 		//ignore spectators and dead players
-		if (AIEnemies[i]->svflags & SVF_NOCLIENT || AIEnemies[i]->deadflag)
+		if (AIEnemies[i]->server.flags.noclient || AIEnemies[i]->deadflag)
 		{
 			self->ai->status.playersWeights[i] = 0.0f;
 			continue;
@@ -605,24 +605,24 @@ static void BOT_DMclass_WeightPlayers(edict_t *self)
 
 		if (ctf->value)
 		{
-			if (AIEnemies[i]->client->resp.ctf_team != self->client->resp.ctf_team)
+			if (AIEnemies[i]->server.client->resp.ctf_team != self->server.client->resp.ctf_team)
 			{
 				//being at enemy team gives a small weight, but weight afterall
 				self->ai->status.playersWeights[i] = 0.2f;
 
 				//enemy has redflag
-				if (redflag && AIEnemies[i]->client->pers.inventory[ITEM_INDEX(redflag)]
-					&& (self->client->resp.ctf_team == CTF_TEAM1))
+				if (redflag && AIEnemies[i]->server.client->pers.inventory[ITEM_INDEX(redflag)]
+					&& (self->server.client->resp.ctf_team == CTF_TEAM1))
 				{
-					if (!self->client->pers.inventory[ITEM_INDEX(blueflag)])  //don't hunt if you have the other flag, let others do
+					if (!self->server.client->pers.inventory[ITEM_INDEX(blueflag)])  //don't hunt if you have the other flag, let others do
 						self->ai->status.playersWeights[i] = 0.9f;
 				}
 
 				//enemy has blueflag
-				if (blueflag && AIEnemies[i]->client->pers.inventory[ITEM_INDEX(blueflag)]
-					&& (self->client->resp.ctf_team == CTF_TEAM2))
+				if (blueflag && AIEnemies[i]->server.client->pers.inventory[ITEM_INDEX(blueflag)]
+					&& (self->server.client->resp.ctf_team == CTF_TEAM2))
 				{
-					if (!self->client->pers.inventory[ITEM_INDEX(redflag)])  //don't hunt if you have the other flag, let others do
+					if (!self->server.client->pers.inventory[ITEM_INDEX(redflag)])  //don't hunt if you have the other flag, let others do
 						self->ai->status.playersWeights[i] = 0.9f;
 				}
 			}
@@ -646,13 +646,13 @@ gitem_t	*BOT_DMclass_WantedFlag(edict_t *self)
 	if (!ctf->value)
 		return NULL;
 
-	if (!self->client || !self->client->resp.ctf_team)
+	if (!self->server.client || !self->server.client->resp.ctf_team)
 		return NULL;
 
 	//find out if the player has a flag, and what flag is it
-	if (redflag && self->client->pers.inventory[ITEM_INDEX(redflag)])
+	if (redflag && self->server.client->pers.inventory[ITEM_INDEX(redflag)])
 		hasflag = true;
-	else if (blueflag && self->client->pers.inventory[ITEM_INDEX(blueflag)])
+	else if (blueflag && self->server.client->pers.inventory[ITEM_INDEX(blueflag)])
 		hasflag = true;
 	else
 		hasflag = false;
@@ -661,14 +661,14 @@ gitem_t	*BOT_DMclass_WantedFlag(edict_t *self)
 
 	if (!hasflag)//if we don't have a flag we want other's team flag
 	{
-		if (self->client->resp.ctf_team == CTF_TEAM1)
+		if (self->server.client->resp.ctf_team == CTF_TEAM1)
 			return blueflag;
 		else
 			return redflag;
 	}
 	else	//we have a flag
 	{
-		if (self->client->resp.ctf_team == CTF_TEAM1)
+		if (self->server.client->resp.ctf_team == CTF_TEAM1)
 			return redflag;
 		else
 			return blueflag;
@@ -688,7 +688,7 @@ static void BOT_DMclass_WeightInventory(edict_t *self)
 	float		LowNeedFactor = 0.5f;
 	gclient_t	*client;
 	int			i;
-	client = self->client;
+	client = self->server.client;
 	//reset with persistant values
 	memcpy(self->ai->status.inventoryWeights, self->ai->pers.inventoryWeights, sizeof(self->ai->pers.inventoryWeights));
 
@@ -781,10 +781,10 @@ static void BOT_DMclass_WeightInventory(edict_t *self)
 
 	//TECH :
 	//-----------------------------------------------------
-	if (self->client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech1"))]
-		|| self->client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech2"))]
-		|| self->client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech3"))]
-		|| self->client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech4"))])
+	if (self->server.client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech1"))]
+		|| self->server.client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech2"))]
+		|| self->server.client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech3"))]
+		|| self->server.client->pers.inventory[ITEM_INDEX(FindItemByClassname("item_tech4"))])
 	{
 		self->ai->status.inventoryWeights[ITEM_INDEX(FindItemByClassname("item_tech1"))] = 0.0;
 		self->ai->status.inventoryWeights[ITEM_INDEX(FindItemByClassname("item_tech2"))] = 0.0;
@@ -821,17 +821,17 @@ static void BOT_DMclass_UpdateStatus(edict_t *self)
 	self->enemy = NULL;
 	self->movetarget = NULL;
 	// Set up for new client movement: jalfixme
-	VectorCopy(self->client->ps.viewangles, self->s.angles);
-	self->client->ps.pmove.delta_angles[0] = self->client->ps.pmove.delta_angles[1] = self->client->ps.pmove.delta_angles[2] = 0;
+	VectorCopy(self->server.client->server.ps.viewangles, self->server.state.angles);
+	self->server.client->server.ps.pmove.delta_angles[0] = self->server.client->server.ps.pmove.delta_angles[1] = self->server.client->server.ps.pmove.delta_angles[2] = 0;
 
 	//JALFIXMEQ2
 	/*
-		if (self->client->jumppad_time)
+		if (self->server.client->jumppad_time)
 			self->ai->status.jumpadReached = true;	//jumpad time from client to botStatus
 		else
 			self->ai->status.jumpadReached = false;
 	*/
-	if (self->client->ps.pmove.pm_flags & PMF_TIME_TELEPORT)
+	if (self->server.client->server.ps.pmove.pm_flags & PMF_TIME_TELEPORT)
 		self->ai->status.TeleportReached = true;
 	else
 		self->ai->status.TeleportReached = false;
@@ -863,7 +863,7 @@ static void BOT_DMclass_DeadFrame(edict_t *self)
 {
 	usercmd_t	ucmd;
 	// ask for respawn
-	self->client->buttons = 0;
+	self->server.client->buttons = 0;
 	ucmd.buttons = BUTTON_ATTACK;
 	ClientThink(self, &ucmd);
 	self->nextthink = level.time + 1;
@@ -903,12 +903,12 @@ static void BOT_DMclass_RunFrame(edict_t *self)
 		BOT_DMclass_Wander(self, &ucmd);
 
 	//set up for pmove
-	ucmd.angles[PITCH] = ANGLE2SHORT(self->s.angles[PITCH]);
-	ucmd.angles[YAW] = ANGLE2SHORT(self->s.angles[YAW]);
-	ucmd.angles[ROLL] = ANGLE2SHORT(self->s.angles[ROLL]);
+	ucmd.angles[PITCH] = ANGLE2SHORT(self->server.state.angles[PITCH]);
+	ucmd.angles[YAW] = ANGLE2SHORT(self->server.state.angles[YAW]);
+	ucmd.angles[ROLL] = ANGLE2SHORT(self->server.state.angles[ROLL]);
 	// set approximate ping and show values
 	ucmd.msec = 75 + floorf(random() * 25) + 1;
-	self->client->ping = ucmd.msec;
+	self->server.client->server.ping = ucmd.msec;
 	// send command through id's code
 	ClientThink(self, &ucmd);
 	self->nextthink = level.time + 1;
@@ -924,8 +924,8 @@ void BOT_DMclass_InitPersistant(edict_t *self)
 	self->entitytype = ET_PLAYER;
 
 	//copy name
-	if (self->client->pers.netname[0])
-		self->ai->pers.netname = self->client->pers.netname;
+	if (self->server.client->pers.netname[0])
+		self->ai->pers.netname = self->server.client->pers.netname;
 	else
 		self->ai->pers.netname = "dmBot";
 

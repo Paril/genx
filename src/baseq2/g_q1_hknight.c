@@ -70,14 +70,14 @@ static void hknight_shot(edict_t *self, float offset)
 {
 	vec3_t offang;
 	vec3_t org, vec;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, org);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, org);
 	vectoangles(org, offang);
 	offang[1] += offset * 6;
 	vec3_t v_forward;
 	AngleVectors(offang, v_forward, NULL, NULL);
 
 	for (int i = 0; i < 3; ++i)
-		org[i] = self->s.origin[i] + self->mins[i] + self->size[i] * 0.5f + v_forward[i] * 20;
+		org[i] = self->server.state.origin[i] + self->server.mins[i] + self->size[i] * 0.5f + v_forward[i] * 20;
 
 	// set missile speed
 	VectorNormalize2(v_forward, vec);
@@ -85,11 +85,11 @@ static void hknight_shot(edict_t *self, float offset)
 	VectorNormalize(vec);
 	edict_t *newmis = fire_spike(self, org, vec, 9, 300, false);
 	gi.setmodel(newmis, "models/q1/k_spike.mdl");
-	newmis->s.game = GAME_Q1;
-	newmis->s.effects |= EF_Q1_HKNIGHT;
+	newmis->server.state.game = GAME_Q1;
+	newmis->server.state.effects |= EF_Q1_HKNIGHT;
 	newmis->count = TE_Q1_KNIGHTSPIKE;
-	VectorClear(newmis->mins);
-	VectorClear(newmis->maxs);
+	VectorClear(newmis->server.mins);
+	VectorClear(newmis->server.maxs);
 	gi.sound(self, CHAN_WEAPON, sound_attack1, 1, ATTN_NORM, 0);
 	gi.linkentity(newmis);
 }
@@ -103,10 +103,10 @@ static void CheckForCharge(edict_t *self)
 	if (level.time < self->attack_finished_time)
 		return;
 
-	if (fabsf(self->s.origin[2] - self->enemy->s.origin[2]) > 20)
+	if (fabsf(self->server.state.origin[2] - self->enemy->server.state.origin[2]) > 20)
 		return;		// too much height change
 
-	if (Distance(self->s.origin, self->enemy->s.origin) < 80)
+	if (Distance(self->server.state.origin, self->enemy->server.state.origin) < 80)
 		return;		// use regular attack
 
 	// charge
@@ -148,7 +148,7 @@ static void hk_idle_sound(edict_t *self)
 	if (random() < 0.2f)
 		gi.sound(self, CHAN_VOICE, sound_idle1, 1, ATTN_NORM, 0);
 
-	if (self->s.frame == run1)
+	if (self->server.state.frame == run1)
 		CheckForCharge(self);
 }
 
@@ -162,14 +162,14 @@ static void hknight_walk(edict_t *self)
 
 static void hknight_unsolid(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
 static void hknight_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -202,7 +202,7 @@ static void hknight_die(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 
 static void hknight_magic(edict_t *self)
 {
-	hknight_shot(self, self->s.frame - magicc8);
+	hknight_shot(self, self->server.state.frame - magicc8);
 }
 
 static void hknight_magicc(edict_t *self)
@@ -312,11 +312,11 @@ void q1_monster_hell_knight(edict_t *self)
 	sound_sword1 = gi.soundindex("q1/knight/sword1.wav");
 	sound_sword2 = gi.soundindex("q1/knight/sword2.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 40);
 	self->health = 250;
 	self->monsterinfo.stand = hknight_stand;
 	self->monsterinfo.walk = hknight_walk;

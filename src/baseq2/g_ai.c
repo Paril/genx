@@ -49,7 +49,7 @@ This replaces the QC functions: ai_forward, ai_back, ai_pain, and ai_painforward
 */
 void ai_move(edict_t *self, float dist)
 {
-	M_walkmove(self, self->s.angles[YAW], dist);
+	M_walkmove(self, self->server.state.angles[YAW], dist);
 }
 
 
@@ -69,17 +69,17 @@ void ai_stand(edict_t *self, float dist)
 	vec3_t  v;
 
 	if (dist)
-		M_walkmove(self, self->s.angles[YAW], dist);
+		M_walkmove(self, self->server.state.angles[YAW], dist);
 
 	if (self->monsterinfo.aiflags & AI_STAND_GROUND)
 	{
 		if (self->enemy)
 		{
-			VectorSubtract(self->enemy->s.origin, self->s.origin, v);
+			VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, v);
 			self->ideal_yaw = vectoyaw(v);
 			self->ideal_pitch = 0;
 
-			if (self->s.angles[YAW] != self->ideal_yaw && self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND)
+			if (self->server.state.angles[YAW] != self->ideal_yaw && self->monsterinfo.aiflags & AI_TEMP_STAND_GROUND)
 			{
 				self->monsterinfo.aiflags &= ~(AI_STAND_GROUND | AI_TEMP_STAND_GROUND);
 				self->monsterinfo.run(self);
@@ -177,7 +177,7 @@ Use this call with a distnace of 0 to replace ai_face
 void ai_charge(edict_t *self, float dist)
 {
 	vec3_t  v;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, v);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, v);
 	vec3_t	a;
 	vectoangles2(v, a);
 	self->ideal_yaw = a[YAW];
@@ -188,7 +188,7 @@ void ai_charge(edict_t *self, float dist)
 	M_ChangeYaw(self);
 
 	if (dist)
-		M_walkmove(self, self->s.angles[YAW], dist);
+		M_walkmove(self, self->server.state.angles[YAW], dist);
 }
 
 
@@ -203,7 +203,7 @@ Distance is for slight position adjustments needed by the animations
 void ai_turn(edict_t *self, float dist)
 {
 	if (dist)
-		M_walkmove(self, self->s.angles[YAW], dist);
+		M_walkmove(self, self->server.state.angles[YAW], dist);
 
 	if (FindTarget(self))
 		return;
@@ -253,7 +253,7 @@ int range(edict_t *self, edict_t *other)
 {
 	vec3_t  v;
 	float   len;
-	VectorSubtract(self->s.origin, other->s.origin, v);
+	VectorSubtract(self->server.state.origin, other->server.state.origin, v);
 	len = VectorLength(v);
 
 	if (len < MELEE_DISTANCE)
@@ -281,7 +281,7 @@ static void HuntTarget(edict_t *self)
 	else
 		self->monsterinfo.run(self);
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, vec);
 
 	vec3_t a;
 
@@ -299,14 +299,14 @@ static void HuntTarget(edict_t *self)
 void FoundTarget(edict_t *self)
 {
 	// let other monsters see this monster for a while
-	if (self->enemy->client)
+	if (self->enemy->server.client)
 	{
 		level.sight_entity = self;
 		level.sight_entity_time = level.time + 100;
 	}
 
 	self->show_hostile = level.time + 1;        // wake up other monsters
-	VectorCopy(self->enemy->s.origin, self->monsterinfo.last_sighting);
+	VectorCopy(self->enemy->server.state.origin, self->monsterinfo.last_sighting);
 	self->monsterinfo.trail_time = level.time;
 
 	if (!self->combattarget)
@@ -321,7 +321,7 @@ void FoundTarget(edict_t *self)
 	{
 		self->goalentity = self->movetarget = self->enemy;
 		HuntTarget(self);
-		Com_Printf("%d at %s, combattarget %s not found\n", self->entitytype, vtos(self->s.origin), self->combattarget);
+		Com_Printf("%d at %s, combattarget %s not found\n", self->entitytype, vtos(self->server.state.origin), self->combattarget);
 		return;
 	}
 
@@ -338,7 +338,7 @@ void FoundTarget(edict_t *self)
 static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 {
 	// if the entity went away, forget it
-	if (!client->inuse)
+	if (!client->server.inuse)
 		return false;
 
 	// dead
@@ -348,12 +348,12 @@ static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 	if (client == self->enemy)
 		return true;    // JDC false;
 
-	if (client->client)
+	if (client->server.client)
 	{
 		if (client->flags & FL_NOTARGET)
 			return false;
 	}
-	else if (client->svflags & SVF_MONSTER)
+	else if (client->server.flags.monster)
 	{
 		if (!client->enemy)
 			return false;
@@ -363,7 +363,7 @@ static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 	}
 	else if (heardit)
 	{
-		if (client->owner->flags & FL_NOTARGET)
+		if (client->server.owner->flags & FL_NOTARGET)
 			return false;
 	}
 	else
@@ -398,11 +398,11 @@ static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 		{
 			self->monsterinfo.aiflags &= ~AI_SOUND_TARGET;
 
-			if (!self->enemy->client)
+			if (!self->enemy->server.client)
 			{
 				self->enemy = self->enemy->enemy;
 
-				if (!self->enemy->client)
+				if (!self->enemy->server.client)
 				{
 					self->enemy = NULL;
 					return false;
@@ -421,11 +421,11 @@ static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 		}
 		else
 		{
-			if (!gi.inPHS(self->s.origin, client->s.origin))
+			if (!gi.inPHS(self->server.state.origin, client->server.state.origin))
 				return false;
 		}
 
-		VectorSubtract(client->s.origin, self->s.origin, temp);
+		VectorSubtract(client->server.state.origin, self->server.state.origin, temp);
 
 		if (VectorLength(temp) > 1000)   // too far to hear
 			return false;
@@ -440,7 +440,7 @@ static bool IsTargetFound(edict_t *self, edict_t *client, bool heardit)
 		// hunt the sound for a bit; hopefully find the real player
 		self->monsterinfo.aiflags |= AI_SOUND_TARGET;
 		self->enemy = client;
-		VectorCopy(self->enemy->s.origin, self->monsterinfo.last_sighting);
+		VectorCopy(self->enemy->server.state.origin, self->monsterinfo.last_sighting);
 		M_NavigatorPathToSpot(self, self->monsterinfo.last_sighting);
 	}
 
@@ -526,7 +526,7 @@ FacingIdeal
 */
 bool FacingIdeal(edict_t *self)
 {
-	float   delta = anglemod(self->s.angles[YAW] - self->ideal_yaw);
+	float   delta = anglemod(self->server.state.angles[YAW] - self->ideal_yaw);
 
 	if (delta > 45 && delta < 315)
 		return false;
@@ -546,9 +546,9 @@ bool M_CheckAttack(edict_t *self)
 	if (self->enemy->health > 0)
 	{
 		// see if any entities are in the way of the shot
-		VectorCopy(self->s.origin, spot1);
+		VectorCopy(self->server.state.origin, spot1);
 		spot1[2] += self->viewheight;
-		VectorCopy(self->enemy->s.origin, spot2);
+		VectorCopy(self->enemy->server.state.origin, spot2);
 		spot2[2] += self->enemy->viewheight;
 		tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA | CONTENTS_WINDOW);
 
@@ -635,9 +635,9 @@ bool M_Q1_CheckAttack(edict_t *self)
 	float chance;
 	targ = self->enemy;
 	// see if any entities are in the way of the shot
-	VectorCopy(self->s.origin, spot1);
+	VectorCopy(self->server.state.origin, spot1);
 	spot1[2] += self->viewheight;
-	VectorCopy(targ->s.origin, spot2);
+	VectorCopy(targ->server.state.origin, spot2);
 	spot2[2] += targ->viewheight;
 	trace_t tr = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_SHOT | MASK_WATER);
 
@@ -735,7 +735,7 @@ static bool P_CheckMissileRange(edict_t *self)
 	//if (actor->reactiontime)
 	//	return false;	// do not attack yet
 	// OPTIMIZE: get this from a global checksight
-	dist = Distance(self->s.origin, self->enemy->s.origin) - 64;
+	dist = Distance(self->server.state.origin, self->enemy->server.state.origin) - 64;
 
 	if (!self->monsterinfo.melee)
 		dist -= 128;	// no melee attack, so fire more
@@ -833,7 +833,7 @@ bool M_Doom_CheckAttack(edict_t *self)
 			self->monsterinfo.aiflags &= ~AI_JUST_ATTACKED;
 
 			if (self->enemy)
-				SV_NewChaseDir(self, self->enemy->s.origin, 0);
+				SV_NewChaseDir(self, self->enemy->server.state.origin, 0);
 		}
 
 		return false;
@@ -1012,7 +1012,7 @@ bool ai_checkattack(edict_t *self, float dist)
 	// see if the enemy is dead
 	hesDeadJim = false;
 
-	if ((!self->enemy) || (!self->enemy->inuse))
+	if ((!self->enemy) || (!self->enemy->server.inuse))
 	{
 		if (self->monsterinfo.navigator)
 			return false; // trying to go somewhere
@@ -1080,7 +1080,7 @@ bool ai_checkattack(edict_t *self, float dist)
 	if (enemy_vis)
 	{
 		self->monsterinfo.search_time = level.time + 5000;
-		VectorCopy(self->enemy->s.origin, self->monsterinfo.last_sighting);
+		VectorCopy(self->enemy->server.state.origin, self->monsterinfo.last_sighting);
 	}
 
 	// look for other coop players here
@@ -1090,7 +1090,7 @@ bool ai_checkattack(edict_t *self, float dist)
 	//          return true;
 	//  }
 	enemy_range = range(self, self->enemy);
-	VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, temp);
 	vec3_t a;
 	vectoangles2(temp, a);
 	enemy_yaw = a[YAW];
@@ -1145,7 +1145,7 @@ void ai_run(edict_t *self, float dist)
 	if (self->monsterinfo.aiflags & AI_SOUND_TARGET)
 	{
 		vec3_t v;
-		VectorSubtract(self->s.origin, self->monsterinfo.last_sighting, v);
+		VectorSubtract(self->server.state.origin, self->monsterinfo.last_sighting, v);
 
 		if (VectorLength(v) < 64)
 		{
@@ -1181,7 +1181,7 @@ void ai_run(edict_t *self, float dist)
 			self->monsterinfo.aiflags &= ~AI_LOST_SIGHT;
 
 			if (self->enemy)
-				VectorCopy(self->enemy->s.origin, self->monsterinfo.last_sighting);
+				VectorCopy(self->enemy->server.state.origin, self->monsterinfo.last_sighting);
 
 			self->monsterinfo.trail_time = level.time;
 		}

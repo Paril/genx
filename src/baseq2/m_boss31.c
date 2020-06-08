@@ -106,7 +106,7 @@ static void jorg_reattack1(edict_t *self)
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack1");
 	else
 	{
-		self->s.sound = 0;
+		self->server.state.sound = 0;
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "end_attack1");
 	}
 }
@@ -119,9 +119,9 @@ static void jorg_attack1(edict_t *self)
 static void jorg_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
-	self->s.sound = 0;
+	self->server.state.sound = 0;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -135,15 +135,15 @@ static void jorg_pain(edict_t *self, edict_t *other, float kick, int damage)
 	going into pain
 	*/
 
-	if ((self->s.frame >= FRAME_attak101) && (self->s.frame <= FRAME_attak108))
+	if ((self->server.state.frame >= FRAME_attak101) && (self->server.state.frame <= FRAME_attak108))
 		if (random() <= 0.005f)
 			return;
 
-	if ((self->s.frame >= FRAME_attak109) && (self->s.frame <= FRAME_attak114))
+	if ((self->server.state.frame >= FRAME_attak109) && (self->server.state.frame <= FRAME_attak114))
 		if (random() <= 0.00005f)
 			return;
 
-	if ((self->s.frame >= FRAME_attak201) && (self->s.frame <= FRAME_attak208))
+	if ((self->server.state.frame >= FRAME_attak201) && (self->server.state.frame <= FRAME_attak208))
 		if (random() <= 0.005f)
 			return;
 
@@ -178,9 +178,9 @@ static void jorgBFG(edict_t *self)
 	vec3_t  start;
 	vec3_t  dir;
 	vec3_t  vec;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_JORG_BFG_1], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_JORG_BFG_1], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
@@ -192,9 +192,9 @@ static void jorg_firebullet_right(edict_t *self)
 {
 	vec3_t  forward, right, target;
 	vec3_t  start;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_JORG_MACHINEGUN_R1], forward, right, start);
-	VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_JORG_MACHINEGUN_R1], forward, right, start);
+	VectorMA(self->enemy->server.state.origin, -0.2f, self->enemy->velocity, target);
 	target[2] += self->enemy->viewheight;
 	VectorSubtract(target, start, forward);
 	VectorNormalize(forward);
@@ -205,9 +205,9 @@ static void jorg_firebullet_left(edict_t *self)
 {
 	vec3_t  forward, right, target;
 	vec3_t  start;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_JORG_MACHINEGUN_L1], forward, right, start);
-	VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_JORG_MACHINEGUN_L1], forward, right, start);
+	VectorMA(self->enemy->server.state.origin, -0.2f, self->enemy->velocity, target);
 	target[2] += self->enemy->viewheight;
 	VectorSubtract(target, start, forward);
 	VectorNormalize(forward);
@@ -225,7 +225,7 @@ static void jorg_attack(edict_t *self)
 	if (random() <= 0.75f)
 	{
 		gi.sound(self, CHAN_VOICE, sound_attack1, 1, ATTN_NORM, 0);
-		self->s.sound = gi.soundindex("boss3/w_loop.wav");
+		self->server.state.sound = gi.soundindex("boss3/w_loop.wav");
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "start_attack1");
 	}
 	else
@@ -240,7 +240,7 @@ static void jorg_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int d
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->deadflag = DEAD_DEAD;
 	self->takedamage = false;
-	self->s.sound = 0;
+	self->server.state.sound = 0;
 	self->count = 0;
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 }
@@ -257,9 +257,9 @@ static bool Jorg_CheckAttack(edict_t *self)
 	if (self->enemy->health > 0)
 	{
 		// see if any entities are in the way of the shot
-		VectorCopy(self->s.origin, spot1);
+		VectorCopy(self->server.state.origin, spot1);
 		spot1[2] += self->viewheight;
-		VectorCopy(self->enemy->s.origin, spot2);
+		VectorCopy(self->enemy->server.state.origin, spot2);
 		spot2[2] += self->enemy->viewheight;
 		tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA);
 
@@ -269,7 +269,7 @@ static bool Jorg_CheckAttack(edict_t *self)
 	}
 
 	enemy_range = range(self, self->enemy);
-	VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, temp);
 	enemy_yaw = vectoyaw(temp);
 	self->ideal_yaw = enemy_yaw;
 
@@ -372,11 +372,11 @@ void SP_monster_jorg(edict_t *self)
 	sound_death_hit = gi.soundindex("boss3/d_hit.wav");
 	MakronPrecache();
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
-	self->s.modelindex2 = gi.modelindex(model_name);
-	VectorSet(self->mins, -80, -80, 0);
-	VectorSet(self->maxs, 80, 80, 140);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
+	self->server.state.modelindex2 = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -80, -80, 0);
+	VectorSet(self->server.maxs, 80, 80, 140);
 	self->health = 3000;
 	self->gib_health = -2000;
 	self->mass = 1000;

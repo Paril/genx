@@ -57,7 +57,7 @@ static int PF_FindIndex(const char *name, precache_type_e type, int start, int m
 
 	Q_SetPrecacheBitsetType(precache_bitset, i, type);
 	int len = strlen(name);
-	int maxlen = CS_SIZE(i);
+	int maxlen = CS_SIZE;
 
 	if (len >= maxlen)
 	{
@@ -351,7 +351,7 @@ static void PF_setmodel(edict_t *ent, const char *name)
 	if (!ent || !name)
 		Com_Error(ERR_DROP, "PF_setmodel: NULL");
 
-	ent->s.modelindex = PF_ModelIndex(name);
+	ent->state.modelindex = PF_ModelIndex(name);
 
 	// if it is an inline model, get the size information for it
 	if (name[0] != '*')
@@ -390,7 +390,7 @@ static void PF_configstring(int index, const char *val)
 
 	// error out entirely if it exceedes array bounds
 	len = strlen(val);
-	maxlen = (MAX_CONFIGSTRINGS - index) * MAX_QPATH;
+	maxlen = (MAX_CONFIGSTRINGS - index) * CS_SIZE;
 
 	if (len >= maxlen)
 	{
@@ -400,7 +400,7 @@ static void PF_configstring(int index, const char *val)
 	}
 
 	// print a warning and truncate everything else
-	maxlen = CS_SIZE(index);
+	maxlen = CS_SIZE;
 
 	if (len >= maxlen)
 	{
@@ -560,7 +560,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 
 	// send origin for invisible entities
 	// the origin can also be explicitly set
-	force_pos = (edict->svflags & SVF_NOCLIENT) || origin;
+	force_pos = edict->flags.noclient || origin;
 
 	// use the entity origin unless it is a bmodel or explicitly specified
 	if (!origin)
@@ -568,11 +568,11 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 		if (edict->solid == SOLID_BSP)
 		{
 			VectorAvg(edict->mins, edict->maxs, origin_v);
-			VectorAdd(origin_v, edict->s.origin, origin_v);
+			VectorAdd(origin_v, edict->state.origin, origin_v);
 			origin = origin_v;
 		}
 		else
-			origin = edict->s.origin;
+			origin = edict->state.origin;
 	}
 
 	// prepare multicast message
@@ -636,7 +636,7 @@ static void SV_StartSound(vec3_t origin, edict_t *edict, int channel,
 		// PHS cull this sound
 		if (!(channel & CHAN_NO_PHS_ADD))
 		{
-			leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
+			leaf2 = CM_PointLeaf(&sv.cm, client->edict->state.origin);
 
 			if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
 				continue;
@@ -1025,11 +1025,11 @@ void SV_InitGameProgs(void)
 	ge->Init();
 
 	// sanitize edict_size
-	if (ge->edict_size < sizeof(edict_t) || ge->edict_size > (unsigned)INT_MAX / MAX_EDICTS)
+	if (ge->pool.edict_size < sizeof(edict_t) || ge->pool.edict_size > (unsigned)INT_MAX / MAX_EDICTS)
 		Com_Error(ERR_DROP, "Game library returned bad size of edict_t");
 
 	// sanitize max_edicts
-	if (ge->max_edicts <= sv_maxclients->integer || ge->max_edicts > MAX_EDICTS)
+	if (ge->pool.max_edicts <= sv_maxclients->integer || ge->pool.max_edicts > MAX_EDICTS)
 		Com_Error(ERR_DROP, "Game library returned bad number of max_edicts");
 }
 

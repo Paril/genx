@@ -129,7 +129,7 @@ static void parasite_walk(edict_t *self)
 static void parasite_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -173,38 +173,38 @@ static void parasite_drain_attack(edict_t *self)
 	vec3_t  offset, start, f, r, end, dir;
 	trace_t tr;
 	int damage;
-	AngleVectors(self->s.angles, f, r, NULL);
+	AngleVectors(self->server.state.angles, f, r, NULL);
 	VectorSet(offset, 24, 0, 6);
-	G_ProjectSource(self->s.origin, offset, f, r, start);
-	VectorCopy(self->enemy->s.origin, end);
+	G_ProjectSource(self->server.state.origin, offset, f, r, start);
+	VectorCopy(self->enemy->server.state.origin, end);
 
 	if (!parasite_drain_attack_ok(start, end))
 	{
-		end[2] = self->enemy->s.origin[2] + self->enemy->maxs[2] - 8;
+		end[2] = self->enemy->server.state.origin[2] + self->enemy->server.maxs[2] - 8;
 
 		if (!parasite_drain_attack_ok(start, end))
 		{
-			end[2] = self->enemy->s.origin[2] + self->enemy->mins[2] + 8;
+			end[2] = self->enemy->server.state.origin[2] + self->enemy->server.mins[2] + 8;
 
 			if (!parasite_drain_attack_ok(start, end))
 				return;
 		}
 	}
 
-	VectorCopy(self->enemy->s.origin, end);
+	VectorCopy(self->enemy->server.state.origin, end);
 	tr = gi.trace(start, NULL, NULL, end, self, MASK_SHOT);
 
 	if (tr.ent != self->enemy)
 		return;
 
-	if (self->s.frame == FRAME_drain03)
+	if (self->server.state.frame == FRAME_drain03)
 	{
 		damage = 5;
 		gi.sound(self->enemy, CHAN_AUTO, sound_impact, 1, ATTN_NORM, 0);
 	}
 	else
 	{
-		if (self->s.frame == FRAME_drain04)
+		if (self->server.state.frame == FRAME_drain04)
 			gi.sound(self, CHAN_WEAPON, sound_suck, 1, ATTN_NORM, 0);
 
 		damage = 2;
@@ -215,9 +215,9 @@ static void parasite_drain_attack(edict_t *self)
 	MSG_WriteShort(self - g_edicts);
 	MSG_WritePos(start);
 	MSG_WritePos(end);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	VectorSubtract(start, end, dir);
-	T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, damage, 0, DAMAGE_NO_KNOCKBACK, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
+	T_Damage(self->enemy, self, self, dir, self->enemy->server.state.origin, vec3_origin, damage, 0, DAMAGE_NO_KNOCKBACK, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 }
 
 static void parasite_attack(edict_t *self)
@@ -227,11 +227,11 @@ static void parasite_attack(edict_t *self)
 
 static void parasite_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -312,11 +312,11 @@ void SP_monster_parasite(edict_t *self)
 	sound_tap = gi.soundindex("parasite/paridle1.wav");
 	sound_scratch = gi.soundindex("parasite/paridle2.wav");
 	sound_search = gi.soundindex("parasite/parsrch1.wav");
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 24);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 24);
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->health = 175;
 	self->gib_health = -50;
 	self->mass = 250;

@@ -510,11 +510,38 @@ static void CL_AddPacketEntities(void)
 		VectorCopy(cent->maxs, ent.maxs);
 		modelentry_t *entry = NULL;
 
+		if (effects == EF_GROUPED_ITEM)
+		{
+			effects = 0;
+			ent.game = CL_GetClientGame();
+
+			uint32_t seed = s1->game;
+			uint32_t group = s1->skinnum;
+			weapon_seeds_t *seeds;
+
+			if (group & 128)
+			{
+				group &= ~128;
+				seeds = &cl.ammo_seeds[ent.game][group];
+			}
+			else
+				seeds = &cl.weapon_seeds[ent.game][group];
+
+			if (!seeds->num_seeds)
+				goto skip;
+
+			ent.skinnum = 0;
+			ent.model = seeds->precache[seed % seeds->num_seeds].model.handle;
+		}
+
 		// use game of object if it's explicit
-		if (s1->game != GAME_NONE)
-			ent.game = s1->game;
-		else
-			ent.game = cl_entities[cl.frame.clientNum + 1].current.game;
+		if (!ent.game)
+		{
+			if (s1->game != GAME_NONE)
+				ent.game = s1->game;
+			else
+				ent.game = CL_GetClientGame();
+		}
 
 		ent.frame = -1;
 
@@ -716,7 +743,7 @@ static void CL_AddPacketEntities(void)
 		}
 
 		// if set to invisible, skip
-		if (!s1->modelindex)
+		if (!ent.model)//(!s1->modelindex)
 			goto skip;
 
 		if (effects & EF_BFG)

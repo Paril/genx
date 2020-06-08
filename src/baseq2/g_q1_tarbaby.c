@@ -92,8 +92,8 @@ static void	tbaby_jump_do(edict_t *self)
 	self->movetype = MOVETYPE_BOUNCE;
 	self->touch = Tar_JumpTouch;
 	vec3_t v_forward;
-	AngleVectors(self->s.angles, v_forward, NULL, NULL);
-	self->s.origin[2] = self->s.origin[2] + 1;
+	AngleVectors(self->server.state.angles, v_forward, NULL, NULL);
+	self->server.state.origin[2] = self->server.state.origin[2] + 1;
 	VectorScale(v_forward, 600, self->velocity);
 	self->velocity[2] = self->velocity[2] + 200 + random() * 150;
 	self->groundentity = NULL;
@@ -123,11 +123,11 @@ static void tbaby_explode(edict_t *self)
 	T_RadiusDamage(self, self, 120, world, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, 120, MakeGenericMeansOfDeath(self, MD_NONE, DT_INDIRECT));
 	gi.sound(self, CHAN_VOICE, sound_death1, 1, ATTN_NORM, 0);
 	VectorNormalize(self->velocity);
-	VectorMA(self->s.origin, -8, self->velocity, self->s.origin);
+	VectorMA(self->server.state.origin, -8, self->velocity, self->server.state.origin);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_Q1_TAREXPLOSION);
-	MSG_WritePos(self->s.origin);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	MSG_WritePos(self->server.state.origin);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	self->think = G_FreeEdict;
 	self->nextthink = level.time + 100;
 }
@@ -181,11 +181,11 @@ void q1_monster_tarbaby(edict_t *self)
 	sound_hit1 = gi.soundindex("q1/blob/hit1.wav");
 	sound_land1 = gi.soundindex("q1/blob/land1.wav");
 	sound_sight1 = gi.soundindex("q1/blob/sight1.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 40);
 	self->health = 80;
 	self->monsterinfo.stand = tbaby_stand;
 	self->monsterinfo.walk = tbaby_walk;

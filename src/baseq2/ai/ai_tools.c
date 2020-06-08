@@ -74,9 +74,9 @@ void AIDebug_SetChased(edict_t *ent)
 		{
 	//		AIDevel.chaseguy = game.edicts + i + 1;
 			AIDevel.chaseguy = g_edicts + i + 1;
-			if(AIDevel.chaseguy->inuse && AIDevel.chaseguy->client){
-				if( AIDevel.chaseguy->client->chase_target &&
-					AIDevel.chaseguy->client->chase_target == ent)
+			if(AIDevel.chaseguy->server.inuse && AIDevel.chaseguy->server.client){
+				if( AIDevel.chaseguy->server.client->chase_target &&
+					AIDevel.chaseguy->server.client->chase_target == ent)
 					break;
 			}
 			AIDevel.chaseguy = NULL;
@@ -107,8 +107,8 @@ void AITools_DrawLine(vec3_t origin, vec3_t dest)
 		edict_t		*event;
 
 		event = G_SpawnEvent ( EV_BFG_LASER, 0, origin );
-		event->svflags = SVF_FORCEOLDORIGIN;
-		VectorCopy ( dest, event->s.origin2 );
+		event->server.flags = SVF_FORCEOLDORIGIN;
+		VectorCopy ( dest, event->server.state.origin2 );
 	*/
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_BFG_LASER);
@@ -151,8 +151,8 @@ void AITools_DrawPath(edict_t *self, int node_from, int node_to)
 	{
 		//edict_t		*event;
 		//event = G_SpawnEvent ( EV_BFG_LASER, 0, nodes[self->ai.path->nodes[pos]].origin );
-		//event->svflags = SVF_FORCEOLDORIGIN;
-		//VectorCopy ( nodes[self->ai.path->nodes[pos+1]].origin, event->s.origin2 );
+		//event->server.flags = SVF_FORCEOLDORIGIN;
+		//VectorCopy ( nodes[self->ai.path->nodes[pos+1]].origin, event->server.state.origin2 );
 		AITools_DrawLine(nodes[self->ai->path.nodes[pos]].origin, nodes[self->ai->path.nodes[pos + 1]].origin);
 		pos++;
 		count++;
@@ -179,7 +179,7 @@ static void AITools_ShowPlinks(void)
 
 	debugdrawplinks_timeout = level.time + 4 * game.frameseconds;
 	//do it
-	current_node = AI_FindClosestReachableNode(AIDevel.plinkguy->s.origin, AIDevel.plinkguy, NODE_DENSITY * 3, NODE_ALL);
+	current_node = AI_FindClosestReachableNode(AIDevel.plinkguy->server.state.origin, AIDevel.plinkguy, NODE_DENSITY * 3, NODE_ALL);
 
 	if (!pLinks[current_node].numLinks)
 		return;

@@ -21,13 +21,6 @@ bool        Pickup_Weapon(edict_t *ent, edict_t *other);
 void        Use_Weapon(edict_t *ent, gitem_t *inv);
 void        Drop_Weapon(edict_t *ent, gitem_t *inv);
 
-typedef enum
-{
-	HEALTH_NONE			= 0,
-	HEALTH_IGNORE_MAX   = 1,
-	HEALTH_TIMED        = 2
-} healthflags_e;
-
 void Use_Quad(edict_t *ent, gitem_t *item);
 static gtime_t  quad_drop_timeout_hack;
 
@@ -40,7 +33,9 @@ static gtime_t  quad_drop_timeout_hack;
 #define GameInfoArmorStats(item, base_count, max_count, normal_protection, energy_protection) \
 	info->armors[item - ITI_JACKET_ARMOR] = (gitem_armor_t) { base_count, max_count, normal_protection, energy_protection }
 #define GameInfoWeaponAmmo(item, shots) info->ammo_usages[item] = info->default_ammo_usages[item] = shots ? COUNT_FOR_SHOTS(shots) : shots
-#define GameInfoWeaponGroup(group, ...) memcpy(info->weapon_groups[group], (itemid_e[]) { __VA_ARGS__ }, sizeof((itemid_e[]) { __VA_ARGS__ }))
+#define GameInfoWeaponGroup(group, ...) \
+	memcpy(info->weapon_groups[group].weapons, (itemid_e[]) { __VA_ARGS__ }, sizeof((itemid_e[]) { __VA_ARGS__ })); \
+	info->weapon_groups[group].num_weapons = q_countof((itemid_e[]) { __VA_ARGS__ })
 
 static void InitGameInfoBase(game_iteminfo_t *info)
 {
@@ -222,55 +217,6 @@ static void InitDukeGameInfo(game_iteminfo_t *info)
 	GameInfoWeaponGroup(WEAPON_GROUP_ANY, ITI_DUKE_PISTOL, ITI_DUKE_CANNON, ITI_DUKE_SHOTGUN, ITI_DUKE_RPG, ITI_DUKE_DEVASTATOR, ITI_DUKE_FREEZER);
 }
 
-uint32_t weapon_group_seeds[WEAPON_GROUP_ALL];
-
-static uint32_t GroupLength(itemid_e *group)
-{
-	uint32_t count = 0;
-
-	while (*group && count < ITI_WEAPONS_END - ITI_WEAPONS_START + 1)
-	{
-		count++;
-		group++;
-	}
-
-	return count;
-}
-
-static bool ValidSeed(uint32_t *seeds, uint32_t highest, uint32_t multiplicand, uint32_t *out)
-{
-	*out = highest * multiplicand;
-
-	for (gametype_t game = GAME_Q2; game < GAME_TOTAL; game++)
-	{
-		if (seeds[game] && *out % seeds[game] != 0)
-			return false;
-	}
-
-	return true;
-}
-
-static void CalculateWeaponGroupSeeds()
-{
-	memset(weapon_group_seeds, 0, sizeof(weapon_group_seeds));
-
-	for (weapon_group_e group = 0; group < WEAPON_GROUP_ALL; group++)
-	{
-		uint32_t seeds[GAME_TOTAL];
-		uint32_t highest_seed = 0;
-
-		for (gametype_t game = GAME_Q2; game < GAME_TOTAL; game++)
-		{
-			seeds[game] = GroupLength(game_iteminfos[game].weapon_groups[group]);
-			highest_seed = max(highest_seed, seeds[game]);
-		}
-
-		uint32_t multiplicand = 1;
-	
-		while (!ValidSeed(seeds, highest_seed, multiplicand++, &weapon_group_seeds[group])) ;
-	}
-}
-
 game_weaponmap_t game_weaponmap[GAME_TOTAL];
 
 #define GetMappedGameWeapon(game_from, game_to, item_id) \
@@ -349,18 +295,17 @@ static void InitGameInfos()
 	InitDoomGameInfo(&game_iteminfos[GAME_DOOM]);
 	InitDukeGameInfo(&game_iteminfos[GAME_DUKE]);
 	InitWeaponMap();
-	CalculateWeaponGroupSeeds();
 }
 
 game_iteminfo_t game_iteminfos[GAME_TOTAL];
 
 gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 {
-	itemid_e currentWeapon = GetIndexByItem(ent->client->pers.weapon);
+	itemid_e currentWeapon = GetIndexByItem(ent->server.client->pers.weapon);
 	itemid_e itemid = GetIndexByItem(item);
 
 	// Q2 and Q1 are all good the way they are
-	switch (ent->s.game)
+	switch (ent->server.state.game)
 	{
 		default:
 			break;
@@ -372,13 +317,13 @@ gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 					if (currentWeapon == ITI_DOOM_CHAINSAW)
 						return GetItemByIndex(ITI_DOOM_FIST);
 
-					return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_CHAINSAW] > 0 ? ITI_DOOM_CHAINSAW : ITI_DOOM_FIST);
+					return GetItemByIndex(ent->server.client->pers.inventory[ITI_DOOM_CHAINSAW] > 0 ? ITI_DOOM_CHAINSAW : ITI_DOOM_FIST);
 
 				case ITI_WEAPON_3:
 					if (currentWeapon == ITI_DOOM_SUPER_SHOTGUN)
 						return GetItemByIndex(ITI_DOOM_SHOTGUN);
 
-					return GetItemByIndex(ent->client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN] > 0 ? ITI_DOOM_SUPER_SHOTGUN : ITI_DOOM_SHOTGUN);
+					return GetItemByIndex(ent->server.client->pers.inventory[ITI_DOOM_SUPER_SHOTGUN] > 0 ? ITI_DOOM_SUPER_SHOTGUN : ITI_DOOM_SHOTGUN);
 			}
 	}
 
@@ -387,12 +332,10 @@ gitem_t *ResolveInventoryItem(edict_t *ent, gitem_t *item)
 
 gitem_t *ResolveItemRedirect(edict_t *ent, gitem_t *item)
 {
-	itemid_e redirect = ITI_NULL;
-
 	while (true)
 	{
 		int index = ITEM_INDEX(item);
-		redirect = EntityGame(ent)->item_redirects[index];
+		itemid_e redirect = EntityGame(ent)->item_redirects[index];
 
 		if (redirect == ITI_UNUSED)
 			return item;
@@ -427,10 +370,10 @@ float GetMaxAmmo(edict_t *ent, int has_bandolier, int has_ammo_pack)
 	float max_ammo = DEFAULT_MAX_AMMO;
 
 	if (has_bandolier == -1)
-		has_bandolier = ent->client->pers.inventory[ITI_BANDOLIER];
+		has_bandolier = ent->server.client->pers.inventory[ITI_BANDOLIER];
 
 	if (has_ammo_pack == -1)
-		has_ammo_pack = ent->client->pers.inventory[ITI_AMMO_PACK];
+		has_ammo_pack = ent->server.client->pers.inventory[ITI_AMMO_PACK];
 
 	// Bandolier/Ammo Pack
 	if (has_ammo_pack)
@@ -443,7 +386,7 @@ float GetMaxAmmo(edict_t *ent, int has_bandolier, int has_ammo_pack)
 
 bool HasEnoughAmmoToFireShots(edict_t *ent, gitem_t *weapon, int shots)
 {
-	return ent->client->pers.ammo >= GetWeaponUsageCount(ent, weapon) * shots;
+	return ent->server.client->pers.ammo >= GetWeaponUsageCount(ent, weapon) * shots;
 }
 
 void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots)
@@ -451,10 +394,10 @@ void RemoveAmmoFromFiringShots(edict_t *ent, gitem_t *weapon, int shots)
 	if (dmflags.infinite_ammo)
 		return;
 
-	ent->client->pers.ammo -= GetWeaponUsageCount(ent, weapon) * shots;
+	ent->server.client->pers.ammo -= GetWeaponUsageCount(ent, weapon) * shots;
 
-	if (ent->client->pers.ammo < 0)
-		ent->client->pers.ammo = 0;
+	if (ent->server.client->pers.ammo < 0)
+		ent->server.client->pers.ammo = 0;
 }
 
 
@@ -557,11 +500,11 @@ void DoRespawn(edict_t *ent)
 			;
 	}
 
-	ent->svflags &= ~SVF_NOCLIENT;
-	ent->solid = SOLID_TRIGGER;
+	ent->server.flags.noclient = false;
+	ent->server.solid = SOLID_TRIGGER;
 	gi.linkentity(ent);
 	// send an effect
-	ent->s.event = EV_ITEM_RESPAWN;
+	ent->server.state.event = EV_ITEM_RESPAWN;
 }
 
 bool SetRespawn(edict_t *ent, float delay)
@@ -574,11 +517,14 @@ bool SetRespawn(edict_t *ent, float delay)
 		return false;
 
 	ent->flags |= FL_RESPAWN;
-	ent->svflags |= SVF_NOCLIENT;
-	ent->solid = SOLID_NOT;
+	ent->server.flags.noclient = true;
+	ent->server.solid = SOLID_NOT;
 	ent->nextthink = level.time + delay * 1000;
 	ent->think = DoRespawn;
 	gi.linkentity(ent);
+
+	if (ent->entitytype == ET_WEAPON_GROUPED || ent->entitytype == ET_AMMO)
+		ent->server.state.game = (ent->server.state.game + 1) % 256;
 
 	return true;
 }
@@ -590,9 +536,9 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 {
 	int			quantity;
 	bool		instant;
-	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
+	quantity = other->server.client->pers.inventory[ITEM_INDEX(ent->item)];
 
-	switch (other->s.game)
+	switch (other->server.state.game)
 	{
 		case GAME_Q2:
 #if ENABLE_COOP
@@ -603,7 +549,7 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 				return false;
 #endif
 
-			other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+			other->server.client->pers.inventory[ITEM_INDEX(ent->item)]++;
 			instant = !dmflags.store_items || ((ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM));
 			break;
 
@@ -621,7 +567,7 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 
 	if (instant)
 	{
-		if (other->s.game == GAME_Q2 && (ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM))
+		if (other->server.state.game == GAME_Q2 && (ent->item->use == Use_Quad) && (ent->spawnflags & DROPPED_PLAYER_ITEM))
 			quad_drop_timeout_hack = (ent->nextthink - level.time);
 
 		ent->item->use(other, ent->item);
@@ -633,7 +579,7 @@ bool Pickup_Powerup(edict_t *ent, edict_t *other)
 void Drop_General(edict_t *ent, gitem_t *item)
 {
 	Drop_Item(ent, item);
-	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+	ent->server.client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 }
 
@@ -642,7 +588,7 @@ void Drop_General(edict_t *ent, gitem_t *item)
 
 bool Pickup_Adrenaline(edict_t *ent, edict_t *other)
 {
-	switch (other->s.game)
+	switch (other->server.state.game)
 	{
 		case GAME_Q2:
 #ifdef ENABLE_COOP
@@ -679,21 +625,21 @@ bool Pickup_AncientHead(edict_t *ent, edict_t *other)
 
 bool Pickup_Bandolier(edict_t *ent, edict_t *other)
 {
-	other->client->pers.ammo = min(GetMaxAmmo(other, true, CHECK_INVENTORY), other->client->pers.ammo + (DEFAULT_MAX_AMMO / 4));
+	other->server.client->pers.ammo = min(GetMaxAmmo(other, true, CHECK_INVENTORY), other->server.client->pers.ammo + (DEFAULT_MAX_AMMO / 4));
 
 	SetRespawn(ent, ent->item->respawn_time);
 
-	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+	other->server.client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
 }
 
 bool Pickup_Pack(edict_t *ent, edict_t *other)
 {
-	other->client->pers.ammo = min(GetMaxAmmo(other, CHECK_INVENTORY, true), other->client->pers.ammo + (DEFAULT_MAX_AMMO / 2));
+	other->server.client->pers.ammo = min(GetMaxAmmo(other, CHECK_INVENTORY, true), other->server.client->pers.ammo + (DEFAULT_MAX_AMMO / 2));
 
 	SetRespawn(ent, ent->item->respawn_time);
 
-	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+	other->server.client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
 }
 
@@ -702,7 +648,7 @@ bool Pickup_Pack(edict_t *ent, edict_t *other)
 void Use_Quad(edict_t *ent, gitem_t *item)
 {
 	int     timeout;
-	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+	ent->server.client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 
 	if (quad_drop_timeout_hack)
@@ -713,30 +659,30 @@ void Use_Quad(edict_t *ent, gitem_t *item)
 	else
 		timeout = 30000;
 
-	if (ent->client->quad_time > level.time)
-		ent->client->quad_time += timeout;
+	if (ent->server.client->quad_time > level.time)
+		ent->server.client->quad_time += timeout;
 	else
-		ent->client->quad_time = level.time + timeout;
+		ent->server.client->quad_time = level.time + timeout;
 
-	if (ent->s.game != GAME_DOOM)
+	if (ent->server.state.game != GAME_DOOM)
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
-	else if (ent->client->pers.weapon != GetItemByIndex(ITI_DOOM_FIST))
-		ent->client->gunstates[GUN_MAIN].newweapon = GetItemByIndex(ITI_DOOM_FIST);
+	else if (ent->server.client->pers.weapon != GetItemByIndex(ITI_DOOM_FIST))
+		ent->server.client->gunstates[GUN_MAIN].newweapon = GetItemByIndex(ITI_DOOM_FIST);
 }
 
 //======================================================================
 
 void Use_Breather(edict_t *ent, gitem_t *item)
 {
-	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+	ent->server.client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 
-	if (ent->client->breather_time > level.time)
-		ent->client->breather_time += 30000;
+	if (ent->server.client->breather_time > level.time)
+		ent->server.client->breather_time += 30000;
 	else
-		ent->client->breather_time = level.time + 30000;
+		ent->server.client->breather_time = level.time + 30000;
 
-	if (ent->s.game == GAME_Q1)
+	if (ent->server.state.game == GAME_Q1)
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("q1/items/inv1.wav"), 1, ATTN_NORM, 0);
 
 	//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
@@ -746,15 +692,15 @@ void Use_Breather(edict_t *ent, gitem_t *item)
 
 void Use_Envirosuit(edict_t *ent, gitem_t *item)
 {
-	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+	ent->server.client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 
-	if (ent->client->enviro_time > level.time)
-		ent->client->enviro_time += 30000;
+	if (ent->server.client->enviro_time > level.time)
+		ent->server.client->enviro_time += 30000;
 	else
-		ent->client->enviro_time = level.time + 30000;
+		ent->server.client->enviro_time = level.time + 30000;
 
-	if (ent->s.game == GAME_Q1)
+	if (ent->server.state.game == GAME_Q1)
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("q1/items/suit.wav"), 1, ATTN_NORM, 0);
 
 	//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
@@ -764,15 +710,15 @@ void Use_Envirosuit(edict_t *ent, gitem_t *item)
 
 void    Use_Invulnerability(edict_t *ent, gitem_t *item)
 {
-	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+	ent->server.client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
 
-	if (ent->client->invincible_time > level.time)
-		ent->client->invincible_time += 30000;
+	if (ent->server.client->invincible_time > level.time)
+		ent->server.client->invincible_time += 30000;
 	else
-		ent->client->invincible_time = level.time + 30000;
+		ent->server.client->invincible_time = level.time + 30000;
 
-	if (ent->s.game == GAME_Q1 || ent->s.game == GAME_Q2)
+	if (ent->server.state.game == GAME_Q1 || ent->server.state.game == GAME_Q2)
 		gi.sound(ent, CHAN_ITEM, gi.soundindex("items/protect.wav"), 1, ATTN_NORM, 0);
 }
 
@@ -780,9 +726,9 @@ void    Use_Invulnerability(edict_t *ent, gitem_t *item)
 
 void    Use_Silencer(edict_t *ent, gitem_t *item)
 {
-	ent->client->pers.inventory[ITEM_INDEX(item)]--;
+	ent->server.client->pers.inventory[ITEM_INDEX(item)]--;
 	ValidateSelectedItem(ent);
-	ent->client->silencer_shots += 30;
+	ent->server.client->silencer_shots += 30;
 	//  gi.sound(ent, CHAN_ITEM, gi.soundindex("items/damage.wav"), 1, ATTN_NORM, 0);
 }
 
@@ -795,24 +741,24 @@ bool Pickup_Key(edict_t *ent, edict_t *other)
 	{
 		if (GetIndexByItem(ent->item) == ITI_POWER_CUBE)
 		{
-			if (other->client->pers.power_cubes & ((ent->spawnflags & 0x0000ff00) >> 8))
+			if (other->server.client->pers.power_cubes & ((ent->spawnflags & 0x0000ff00) >> 8))
 				return false;
 
-			other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
-			other->client->pers.power_cubes |= ((ent->spawnflags & 0x0000ff00) >> 8);
+			other->server.client->pers.inventory[ITEM_INDEX(ent->item)]++;
+			other->server.client->pers.power_cubes |= ((ent->spawnflags & 0x0000ff00) >> 8);
 		}
 		else
 		{
-			if (other->client->pers.inventory[ITEM_INDEX(ent->item)])
+			if (other->server.client->pers.inventory[ITEM_INDEX(ent->item)])
 				return false;
 
-			other->client->pers.inventory[ITEM_INDEX(ent->item)] = 1;
+			other->server.client->pers.inventory[ITEM_INDEX(ent->item)] = 1;
 		}
 
 		return true;
 	}
 
-	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+	other->server.client->pers.inventory[ITEM_INDEX(ent->item)]++;
 	return true;
 }
 #endif
@@ -825,12 +771,12 @@ bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup)
 {
 	int         max_ammo;
 
-	if (!ent->client)
+	if (!ent->server.client)
 		return false;
 
 	max_ammo = GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY);
 
-	if (!max_ammo || ent->client->pers.ammo >= max_ammo)
+	if (!max_ammo || ent->server.client->pers.ammo >= max_ammo)
 		return false;
 
 	if (pickup)
@@ -839,10 +785,10 @@ bool Add_Ammo(edict_t *ent, float count, itemid_e index, bool pickup)
 
 		// only affects Q2 and Duke realistically
 		if (item->flags.is_weapon && ShouldSwapToPotentiallyBetterWeapon(ent, item, true))
-			ent->client->gunstates[GUN_MAIN].newweapon = item;
+			ent->server.client->gunstates[GUN_MAIN].newweapon = item;
 	}
 
-	ent->client->pers.ammo = min(max_ammo, ent->client->pers.ammo + count);
+	ent->server.client->pers.ammo = min(max_ammo, ent->server.client->pers.ammo + count);
 	return true;
 }
 
@@ -859,14 +805,14 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 	else
 	{
 		// TODO
-		float real_num = 20;//game_iteminfos[other->s.game].dynamic.ammo_pickup_amounts[ITEM_INDEX(ent->real_item)];
+		float real_num = 20;//game_iteminfos[other->server.state.game].dynamic.ammo_pickup_amounts[ITEM_INDEX(ent->real_item)];
 
 		if (real_num != -1)
 			count = real_num;
 		else
 		{
 			count = 1;
-			Com_Printf("No pickup count for %i %s\n", other->s.game, item->pickup_name);
+			Com_Printf("No pickup count for %i %s\n", other->server.state.game, item->pickup_name);
 		}
 	}
 
@@ -892,7 +838,7 @@ bool Pickup_Ammo(edict_t *ent, edict_t *other)
 				{
 					edict_t *cl = &g_edicts[i + 1];
 
-					if (!cl->inuse || !cl->client->pers.connected || !cl->s.game || cl == other)
+					if (!cl->server.inuse || !cl->server.client->pers.connected || !cl->server.state.game || cl == other)
 						continue;
 
 					Pickup_Ammo(ent, cl);
@@ -917,18 +863,18 @@ void Drop_Ammo(edict_t *ent, gitem_t *item)
 	index = ITEM_INDEX(item);
 	dropped = Drop_Item(ent, item);
 
-	int quantity = game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];
+	int quantity = game_iteminfos[ent->server.state.game].dynamic.ammo_pickup_amounts[index];
 
-	if (ent->client->pers.inventory[index] >= quantity)
+	if (ent->server.client->pers.inventory[index] >= quantity)
 		dropped->count = quantity;
 	else
-		dropped->count = ent->client->pers.inventory[index];
+		dropped->count = ent->server.client->pers.inventory[index];
 
-	ent->client->pers.inventory[index] -= dropped->count;
+	ent->server.client->pers.inventory[index] -= dropped->count;
 
-	if (ent->client->pers.weapon &&
-		ent->client->pers.weapon == item &&
-		!ent->client->pers.inventory[index])
+	if (ent->server.client->pers.weapon &&
+		ent->server.client->pers.weapon == item &&
+		!ent->server.client->pers.inventory[index])
 		AttemptBetterWeaponSwap(ent);
 
 	ValidateSelectedItem(ent);*/
@@ -939,10 +885,10 @@ void Drop_Ammo(edict_t *ent, gitem_t *item)
 
 void MegaHealth_think(edict_t *self)
 {
-	if (self->owner->health > self->owner->max_health)
+	if (self->server.owner->health > self->server.owner->max_health)
 	{
 		self->nextthink = level.time + 1000;
-		self->owner->health -= 1;
+		self->server.owner->health -= 1;
 		return;
 	}
 
@@ -950,63 +896,69 @@ void MegaHealth_think(edict_t *self)
 		G_FreeEdict(self);
 }
 
+typedef struct
+{
+	bool ignore_max : 1;
+	bool timed : 1;
+} health_flags_t;
+
 bool Pickup_Health(edict_t *ent, edict_t *other)
 {
-	healthflags_e flags = HEALTH_NONE;
+	health_flags_t flags = { false, false };
 
 	switch (GetIndexByItem(ent->item))
 	{
 		case ITI_STIMPACK:
-			flags = HEALTH_IGNORE_MAX;
+			flags.ignore_max = true;
 			break;
 
 		case ITI_MEGA_HEALTH:
-			flags = HEALTH_IGNORE_MAX;
+			flags.ignore_max = true;
 
-			if (other->s.game == GAME_Q2 || other->s.game == GAME_Q1)
-				flags |= HEALTH_TIMED;
-			else if (other->s.game == GAME_DUKE && other->health >= 200)
+			if (other->server.state.game == GAME_Q2 || other->server.state.game == GAME_Q1)
+				flags.timed = true;
+			else if (other->server.state.game == GAME_DUKE && other->health >= 200)
 				return false;
 
 			break;
 	}
 
-	if (!(flags & HEALTH_IGNORE_MAX) && (other->health >= other->max_health))
+	if (!flags.ignore_max && (other->health >= other->max_health))
 		return false;
 
-	if (other->s.game == GAME_DUKE && other->health < (other->max_health / 4) && GetIndexByItem(ent->item) != ITI_MEGA_HEALTH)
+	if (other->server.state.game == GAME_DUKE && other->health < (other->max_health / 4) && GetIndexByItem(ent->item) != ITI_MEGA_HEALTH)
 		gi.sound(other, CHAN_VOICE, gi.soundindex("duke/needed03.wav"), 1, ATTN_NORM, 0);
 
-	if (other->s.game == GAME_DOOM && GetIndexByItem(ent->item) == ITI_DOOM_MEGA_SPHERE)
+	if (other->server.state.game == GAME_DOOM && GetIndexByItem(ent->item) == ITI_DOOM_MEGA_SPHERE)
 	{
 		other->health = 200;
-		other->client->pers.inventory[ITI_DOOM_ARMOR] = 0;
-		other->client->pers.inventory[ITI_DOOM_MEGA_ARMOR] = 200;
+		other->server.client->pers.inventory[ITI_DOOM_ARMOR] = 0;
+		other->server.client->pers.inventory[ITI_DOOM_MEGA_ARMOR] = 200;
 	}
 	else
 	{
 		other->health += (ent->count) ? ent->count : (int) EntityGame(other)->ammo_pickups[GetIndexByItem(ent->item)];
 
-		if (!(flags & HEALTH_IGNORE_MAX))
+		if (!flags.ignore_max)
 		{
 			if (other->health > other->max_health)
 				other->health = other->max_health;
 		}
 		else
 		{
-			if (other->s.game == GAME_DUKE && other->health > 200)
+			if (other->server.state.game == GAME_DUKE && other->health > 200)
 				other->health = 200;
 		}
 	}
 
-	if (flags & HEALTH_TIMED)
+	if (flags.timed)
 	{
 		ent->think = MegaHealth_think;
 		ent->nextthink = level.time + 5000;
-		ent->owner = other;
+		ent->server.owner = other;
 		ent->flags |= FL_RESPAWN;
-		ent->svflags |= SVF_NOCLIENT;
-		ent->solid = SOLID_NOT;
+		ent->server.flags.noclient = true;
+		ent->server.solid = SOLID_NOT;
 	}
 	else
 		SetRespawn(ent, 30);
@@ -1018,13 +970,13 @@ bool Pickup_Health(edict_t *ent, edict_t *other)
 
 itemid_e ArmorIndex(edict_t *ent)
 {
-	if (ent->client)
+	if (ent->server.client)
 	{
 		itemid_e i;
 
 		for (i = ITI_JACKET_ARMOR; i <= ITI_BODY_ARMOR; i++)
 		{
-			if (ent->client->pers.inventory[i] > 0)
+			if (ent->server.client->pers.inventory[i] > 0)
 				return i;
 		}
 	}
@@ -1046,8 +998,8 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 
 	if (result->old_armor_index)
 	{
-		result->old_armor_count = ent->client->pers.inventory[result->old_armor_index];
-		result->old_armor = &game_iteminfos[ent->s.game].armors[result->old_armor_index - ITI_JACKET_ARMOR];
+		result->old_armor_count = ent->server.client->pers.inventory[result->old_armor_index];
+		result->old_armor = &game_iteminfos[ent->server.state.game].armors[result->old_armor_index - ITI_JACKET_ARMOR];
 	}
 	else
 	{
@@ -1058,14 +1010,14 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 	// try armor shards first
 	if (GetIndexByItem(armor) == ITI_ARMOR_SHARD)
 	{
-		switch (ent->s.game)
+		switch (ent->server.state.game)
 		{
 			case GAME_Q2:
 			case GAME_DOOM:
 				if (!result->old_armor_index)
 				{
 					result->new_armor_index = ITI_JACKET_ARMOR;
-					result->new_armor = &game_iteminfos[ent->s.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
+					result->new_armor = &game_iteminfos[ent->server.state.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
 				}
 				else
 				{
@@ -1073,9 +1025,9 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 					result->new_armor = NULL;
 				}
 
-				result->new_armor_count = result->old_armor_count + ((ent->s.game == GAME_Q2) ? 2 : 1);
+				result->new_armor_count = result->old_armor_count + ((ent->server.state.game == GAME_Q2) ? 2 : 1);
 
-				if (ent->s.game == GAME_DOOM)
+				if (ent->server.state.game == GAME_DOOM)
 				{
 					if (result->old_armor_count >= 200)
 						return false;
@@ -1096,25 +1048,25 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 	if (!result->old_armor_index)
 	{
 		result->new_armor_index = ITEM_INDEX(armor);
-		result->new_armor = &game_iteminfos[ent->s.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
+		result->new_armor = &game_iteminfos[ent->server.state.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
 		result->new_armor_count = result->new_armor->base_count;
 		return true;
 	}
 	else
 	{
 		result->new_armor_index = ITEM_INDEX(armor);
-		result->new_armor = &game_iteminfos[ent->s.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
+		result->new_armor = &game_iteminfos[ent->server.state.game].armors[result->new_armor_index - ITI_JACKET_ARMOR];
 
 		// picking up new armor
 		// different games have different algorithms
-		switch (ent->s.game)
+		switch (ent->server.state.game)
 		{
 			case GAME_Q2:
 				if (result->new_armor->normal_protection > result->old_armor->normal_protection)
 				{
 					// calc new armor values
 					float salvage = result->old_armor->normal_protection / result->new_armor->normal_protection;
-					float salvagecount = salvage * ent->client->pers.inventory[result->old_armor_index];
+					float salvagecount = salvage * ent->server.client->pers.inventory[result->old_armor_index];
 					int newcount = result->new_armor->base_count + salvagecount;
 
 					if (newcount > result->new_armor->max_count)
@@ -1128,13 +1080,13 @@ bool Can_Pickup_Armor(edict_t *ent, gitem_t *armor, pickup_armor_t *result)
 					// calc new armor values
 					float salvage = result->new_armor->normal_protection / result->old_armor->normal_protection;
 					float salvagecount = salvage * result->new_armor->base_count;
-					int newcount = ent->client->pers.inventory[result->old_armor_index] + salvagecount;
+					int newcount = ent->server.client->pers.inventory[result->old_armor_index] + salvagecount;
 
 					if (newcount > result->old_armor->max_count)
 						newcount = result->old_armor->max_count;
 
 					// if we're already maxed out then we don't need the new armor
-					if (ent->client->pers.inventory[result->old_armor_index] >= newcount)
+					if (ent->server.client->pers.inventory[result->old_armor_index] >= newcount)
 						return false;
 
 					// update current armor value
@@ -1243,15 +1195,15 @@ bool Pickup_Armor(edict_t *ent, edict_t *other)
 	if (armor.old_armor_index != armor.new_armor_index)
 	{
 		if (armor.old_armor_index)
-			other->client->pers.inventory[armor.old_armor_index] = 0;
+			other->server.client->pers.inventory[armor.old_armor_index] = 0;
 	}
 
 	if (armor.new_armor_count)
 	{
 		if (armor.new_armor_index)
-			other->client->pers.inventory[armor.new_armor_index] = armor.new_armor_count;
+			other->server.client->pers.inventory[armor.new_armor_index] = armor.new_armor_count;
 		else
-			other->client->pers.inventory[armor.old_armor_index] = armor.new_armor_count;
+			other->server.client->pers.inventory[armor.old_armor_index] = armor.new_armor_count;
 	}
 
 	SetRespawn(ent, 20);
@@ -1263,16 +1215,16 @@ bool Pickup_Armor(edict_t *ent, edict_t *other)
 
 power_armor_type_e PowerArmorType(edict_t *ent)
 {
-	if (!ent->client)
+	if (!ent->server.client)
 		return POWER_ARMOR_NONE;
 
 	if (!(ent->flags & FL_POWER_ARMOR))
 		return POWER_ARMOR_NONE;
 
-	if (ent->client->pers.inventory[ITI_POWER_SHIELD] > 0)
+	if (ent->server.client->pers.inventory[ITI_POWER_SHIELD] > 0)
 		return POWER_ARMOR_SHIELD;
 
-	if (ent->client->pers.inventory[ITI_POWER_SCREEN] > 0)
+	if (ent->server.client->pers.inventory[ITI_POWER_SCREEN] > 0)
 		return POWER_ARMOR_SCREEN;
 
 	return POWER_ARMOR_NONE;
@@ -1287,7 +1239,7 @@ void Use_PowerArmor(edict_t *ent, gitem_t *item)
 	}
 	else
 	{
-		if (ent->client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB)
+		if (ent->server.client->pers.ammo < AMMO_PER_POWER_ARMOR_ABSORB)
 		{
 			gi.cprintf(ent, PRINT_HIGH, "No cells for power armor.\n");
 			return;
@@ -1301,8 +1253,8 @@ void Use_PowerArmor(edict_t *ent, gitem_t *item)
 bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 {
 	int     quantity;
-	quantity = other->client->pers.inventory[ITEM_INDEX(ent->item)];
-	other->client->pers.inventory[ITEM_INDEX(ent->item)]++;
+	quantity = other->server.client->pers.inventory[ITEM_INDEX(ent->item)];
+	other->server.client->pers.inventory[ITEM_INDEX(ent->item)]++;
 
 #ifdef ENABLE_COOP
 	if (deathmatch->value)
@@ -1320,7 +1272,7 @@ bool Pickup_PowerArmor(edict_t *ent, edict_t *other)
 
 void Drop_PowerArmor(edict_t *ent, gitem_t *item)
 {
-	if ((ent->flags & FL_POWER_ARMOR) && (ent->client->pers.inventory[ITEM_INDEX(item)] == 1))
+	if ((ent->flags & FL_POWER_ARMOR) && (ent->server.client->pers.inventory[ITEM_INDEX(item)] == 1))
 		Use_PowerArmor(ent, item);
 
 	Drop_General(ent, item);
@@ -1336,13 +1288,22 @@ Touch_Item
 void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
 	bool    taken;
-	gitem_t		*item = ent->item;
 
-	if (!other->client)
+	if (!other->server.client)
 		return;
 
 	if (other->health < 1)
 		return;     // dead people can't pickup
+
+	gitem_t *item;
+
+	if (ent->entitytype == ET_WEAPON_GROUPED)
+	{
+		game_weapon_group_t *group = &GameTypeGame(other->server.state.game)->weapon_groups[ent->weapongroup];
+		item = GetItemByIndex(group->weapons[ent->server.state.game % group->num_weapons]);
+	}
+	else
+		item = ent->item;
 
 	// check item redirections
 	item = ResolveItemRedirect(other, item);
@@ -1350,7 +1311,7 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 	if (!item || !item->pickup)
 		return;     // not a grabbable item?
 
-	bool had = !other->client->pers.inventory[ITEM_INDEX(item)];
+	bool had = !other->server.client->pers.inventory[ITEM_INDEX(item)];
 	ent->real_item = ent->item;
 	ent->item = item;
 	taken = item->pickup(ent, other);
@@ -1359,15 +1320,15 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 	if (taken)
 	{
 		// flash the screen
-		other->client->bonus_alpha = 0.25f;
+		other->server.client->bonus_alpha = 0.25f;
 		// show icon and name on status bar
-		other->client->pickup_msg_time = level.time + 3000;
-		other->client->pickup_item = item;
-		other->client->pickup_item_first = had;
+		other->server.client->pickup_msg_time = level.time + 3000;
+		other->server.client->pickup_item = item;
+		other->server.client->pickup_item_first = had;
 
 		// change selected item
 		if (item->use)
-			other->client->ps.stats.selected_item = other->client->pers.selected_item = ITEM_INDEX(item);
+			other->server.client->server.ps.stats.selected_item = other->server.client->pers.selected_item = ITEM_INDEX(item);
 
 		gi.sound(other, CHAN_ITEM, gi.soundindex(item->pickup_sound), 1, ATTN_NORM, 0);
 	}
@@ -1398,7 +1359,7 @@ void Touch_Item(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 
 void drop_temp_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	Touch_Item(ent, other, plane, surf);
@@ -1426,32 +1387,32 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
 	dropped->entitytype = ET_ITEM;
 	dropped->item = item;
 	dropped->spawnflags = DROPPED_ITEM;
-	dropped->s.effects = item->world_model_flags;
-	VectorSet(dropped->mins, -15, -15, -15);
-	VectorSet(dropped->maxs, 15, 15, 15);
-	gi.setmodel(dropped, dropped->item->world_model);
-	dropped->solid = SOLID_TRIGGER;
+	dropped->server.state.effects = item->world_model_flags;
+	VectorSet(dropped->server.mins, -15, -15, -15);
+	VectorSet(dropped->server.maxs, 15, 15, 15);
+	dropped->server.state.modelindex = gi.modelindex(dropped->item->world_model);
+	dropped->server.solid = SOLID_TRIGGER;
 	dropped->movetype = MOVETYPE_TOSS;
 	dropped->touch = drop_temp_touch;
-	dropped->owner = ent;
+	dropped->server.owner = ent;
 
-	if (ent->client)
+	if (ent->server.client)
 	{
 		trace_t trace;
-		AngleVectors(ent->client->v_angle, forward, right, up);
+		AngleVectors(ent->server.client->v_angle, forward, right, up);
 		VectorSet(offset, 24, 0, -16);
-		G_ProjectSource(ent->s.origin, offset, forward, right, dropped->s.origin);
-		trace = gi.trace(ent->s.origin, dropped->mins, dropped->maxs,
-				dropped->s.origin, ent, CONTENTS_SOLID);
-		VectorCopy(trace.endpos, dropped->s.origin);
+		G_ProjectSource(ent->server.state.origin, offset, forward, right, dropped->server.state.origin);
+		trace = gi.trace(ent->server.state.origin, dropped->server.mins, dropped->server.maxs,
+				dropped->server.state.origin, ent, CONTENTS_SOLID);
+		VectorCopy(trace.endpos, dropped->server.state.origin);
 	}
 	else
 	{
-		AngleVectors(ent->s.angles, forward, right, up);
-		VectorCopy(ent->s.origin, dropped->s.origin);
+		AngleVectors(ent->server.state.angles, forward, right, up);
+		VectorCopy(ent->server.state.origin, dropped->server.state.origin);
 	}
 
-	if (ent->health <= 0 && ent->s.game == GAME_DOOM)
+	if (ent->health <= 0 && ent->server.state.game == GAME_DOOM)
 		dropped->velocity[2] = 300;
 	else
 	{
@@ -1467,17 +1428,17 @@ edict_t *Drop_Item(edict_t *ent, gitem_t *item)
 
 void Use_Item(edict_t *ent, edict_t *other, edict_t *activator)
 {
-	ent->svflags &= ~SVF_NOCLIENT;
+	ent->server.flags.noclient = false;
 	ent->use = NULL;
 
 	if (ent->spawnflags & ITEM_NO_TOUCH)
 	{
-		ent->solid = SOLID_BBOX;
+		ent->server.solid = SOLID_BBOX;
 		ent->touch = NULL;
 	}
 	else
 	{
-		ent->solid = SOLID_TRIGGER;
+		ent->server.solid = SOLID_TRIGGER;
 		ent->touch = Touch_Item;
 	}
 
@@ -1496,49 +1457,47 @@ void droptofloor(edict_t *ent)
 	trace_t     tr;
 	vec3_t      dest;
 	float       *v;
-	bool		startIndex = (ent->s.modelindex == 0);
+	bool		startIndex = (ent->server.state.modelindex == 0);
 
 	if (startIndex)
 	{
-		VectorSet(ent->mins, -15, -15, -15);
-		VectorSet(ent->maxs, 15, 15, 15);
+		VectorSet(ent->server.mins, -15, -15, -15);
+		VectorSet(ent->server.maxs, 15, 15, 15);
 
-		if (ent->weapon_id)
-			gi.setmodel(ent, GetItemByIndex(ent->weapon_id)->ammo_model);
-		else if (ent->model)
+		if (ent->model)
 			gi.setmodel(ent, ent->model);
-		else
-			gi.setmodel(ent, ent->item->world_model);
+		else if (ent->item)
+			ent->server.state.modelindex = gi.modelindex(ent->item->world_model);
 
 		ent->touch = Touch_Item;
 	}
 
-	ent->solid = SOLID_TRIGGER;
+	ent->server.solid = SOLID_TRIGGER;
 	ent->movetype = MOVETYPE_TOSS;
 	v = tv(0, 0, -128);
-	VectorAdd(ent->s.origin, v, dest);
-	tr = gi.trace(ent->s.origin, ent->mins, ent->maxs, dest, ent, MASK_SOLID);
+	VectorAdd(ent->server.state.origin, v, dest);
+	tr = gi.trace(ent->server.state.origin, ent->server.mins, ent->server.maxs, dest, ent, MASK_SOLID);
 
 	if (tr.startsolid)
 	{
 		if (ent->item)
-			Com_Printf("droptofloor: %s startsolid at %s\n", ent->item->classname, vtos(ent->s.origin));
+			Com_Printf("droptofloor: %s startsolid at %s\n", ent->item->classname, vtos(ent->server.state.origin));
 		else
-			Com_Printf("droptofloor: entityid %i startsolid at %s\n", ent->entitytype, vtos(ent->s.origin));
+			Com_Printf("droptofloor: entityid %i startsolid at %s\n", ent->entitytype, vtos(ent->server.state.origin));
 
 		G_FreeEdict(ent);
 		return;
 	}
 
-	VectorCopy(tr.endpos, ent->s.origin);
+	VectorCopy(tr.endpos, ent->server.state.origin);
 
 	if (ent->team)
 	{
 		ent->flags &= ~FL_TEAMSLAVE;
 		ent->chain = ent->teamchain;
 		ent->teamchain = NULL;
-		ent->svflags |= SVF_NOCLIENT;
-		ent->solid = SOLID_NOT;
+		ent->server.flags.noclient = true;
+		ent->server.solid = SOLID_NOT;
 
 		if (ent == ent->teammaster)
 		{
@@ -1551,14 +1510,14 @@ void droptofloor(edict_t *ent)
 	{
 		if (ent->spawnflags & ITEM_NO_TOUCH)
 		{
-			ent->solid = SOLID_BBOX;
+			ent->server.solid = SOLID_BBOX;
 			ent->touch = NULL;
 		}
 
 		if (ent->spawnflags & ITEM_TRIGGER_SPAWN)
 		{
-			ent->svflags |= SVF_NOCLIENT;
-			ent->solid = SOLID_NOT;
+			ent->server.flags.noclient = true;
+			ent->server.solid = SOLID_NOT;
 			ent->use = Use_Item;
 		}
 	}
@@ -1652,7 +1611,11 @@ be on an entity that hasn't spawned yet.
 */
 void SpawnItem(edict_t *ent, gitem_t *item)
 {
-	ent->entitytype = ET_ITEM;
+	if (!ent->entitytype)
+		ent->entitytype = ET_ITEM;
+
+	ent->server.state.game = GAME_NONE;
+
 	PrecacheItem(item);
 
 #if ENABLE_COOP
@@ -1661,7 +1624,7 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 		if (GetIndexByItem(item) != ITI_POWER_CUBE)
 		{
 			ent->spawnflags = 0;
-			Com_Printf("%s at %s has invalid spawnflags set\n", item->classname, vtos(ent->s.origin));
+			Com_Printf("%s at %s has invalid spawnflags set\n", item->classname, vtos(ent->server.state.origin));
 		}
 	}
 #endif
@@ -1709,10 +1672,25 @@ void SpawnItem(edict_t *ent, gitem_t *item)
 #endif
 
 	ent->item = item;
+	ent->server.state.effects = item->world_model_flags;
+
+	if (ent->entitytype == ET_WEAPON_GROUPED || ent->entitytype == ET_AMMO)
+	{
+		ent->server.state.skinnum = ent->weapongroup;
+
+		if (ent->entitytype == ET_AMMO)
+		{
+			ent->server.state.skinnum |= 1 << 7;
+			ent->server.state.game = (level.ammo_spawn_id++) % 256;
+		}
+		else
+			ent->server.state.game = (level.weapon_spawn_id++) % 256;
+
+		ent->server.state.effects = EF_GROUPED_ITEM;
+	}
+
 	ent->nextthink = level.time + game.frametime * 2;    // items start after other solids
 	ent->think = droptofloor;
-	ent->s.effects = item->world_model_flags;
-	ent->s.game = GAME_NONE;
 
 	if (ent->model)
 		gi.modelindex(ent->model);
@@ -1933,6 +1911,45 @@ void CheckWeaponBalanceCvars()
 		}
 }
 
+void InitWeaponSeeds()
+{
+	char seed_info[CS_SIZE] = { 0 };
+	char *seed_ptr = seed_info;
+	size_t seed_size = 0;
+
+	for (weapon_group_e group = WEAPON_GROUP_RAPID; group < WEAPON_GROUP_MAX; group++)
+	{
+		if (group != 0)
+			seed_size = Q_strlcat(seed_ptr, "|", sizeof(seed_info));
+
+		for (gametype_t game = GAME_Q2; game < GAME_TOTAL; game++)
+		{
+			game_weapon_group_t *weapon_group = &game_iteminfos[game].weapon_groups[group];
+
+			if (game != GAME_Q2)
+				seed_size = Q_strlcat(seed_ptr, ";", sizeof(seed_info));
+
+			for (uint32_t i = 0; i < weapon_group->num_weapons; i++)
+			{
+				gitem_t *weapon = GetItemByIndex(weapon_group->weapons[i]);
+
+				if (i)
+					seed_size = Q_strlcat(seed_ptr, ",", sizeof(seed_info));
+
+				seed_size = Q_strlcat(seed_ptr, va("%d", gi.modelindex(weapon->world_model)), sizeof(seed_info));
+
+				if (weapon->ammo_model && game_iteminfos[game].ammo_usages[GetIndexByItem(weapon)])
+				{
+					seed_size = Q_strlcat(seed_ptr, ":", sizeof(seed_info));
+					seed_size = Q_strlcat(seed_ptr, va("%d", gi.modelindex(weapon->ammo_model)), sizeof(seed_info));
+				}
+			}
+		}
+	}
+
+	gi.configstring(CS_SEEDS, seed_info);
+}
+
 void InitItems(void)
 {
 	game.num_items = q_countof(itemlist);
@@ -1941,94 +1958,54 @@ void InitItems(void)
 	CheckWeaponBalanceCvars();
 }
 
-#define AMMO_LINK_RADIUS	128
-
-static void RecursiveLinkAmmo(edict_t *from, edict_t *weapon)
-{
-	edict_t *ammo = NULL;
-
-	while ((ammo = G_FindByType(ammo, ET_AMMO)))
-	{
-		if (ammo == from)
-			continue;
-
-		if (ammo->entitytype != ET_AMMO)
-			continue;
-
-		if (ammo->entity_prev)
-			continue;
-
-		if (DistanceSquared(weapon->s.origin, ammo->s.origin) > AMMO_LINK_RADIUS * AMMO_LINK_RADIUS)
-			continue;
-
-		// linked list
-		// weapon <-> old_next
-		// weapon <-> [ammo <->] old_next
-		edict_t *old_next = weapon->entity_next;
-
-		if (old_next)
-			old_next->entity_prev = ammo;
-
-		ammo->entity_next = old_next;
-		ammo->entity_prev = weapon;
-		weapon->entity_next = ammo;
-		RecursiveLinkAmmo(ammo, weapon);
-	}
-}
-
-static void Set_Ammo_Model(edict_t *ammo, gitem_t *weapon)
-{
-	ammo->weapon_id = ITEM_INDEX(weapon);
-}
-
-static void Set_Weapons_Ammo(edict_t *weapon)
-{
-	edict_t *ammo;
-
-	for (ammo = weapon->entity_next; ammo; ammo = ammo->entity_next)
-	{
-		SpawnItem(ammo, GetItemByIndex(ITI_AMMO));
-		Set_Ammo_Model(ammo, weapon->item);
-	}
-}
-
 void Spawn_Weapons()
 {
-	level.weapon_spawn_id = Q_rand_uniform(ITI_WEAPONS_END - ITI_WEAPONS_START);
-	level.ammo_spawn_id = Q_rand_uniform(ITI_WEAPONS_END - ITI_WEAPONS_START);
-	// link up ammo
-	edict_t *weapon = NULL;
+	level.weapon_spawn_id = Q_rand();
+	level.ammo_spawn_id = Q_rand();
 
-	while ((weapon = G_FindByType(weapon, ET_WEAPON)))
-	{
-		RecursiveLinkAmmo(weapon, weapon);
-		SpawnItem(weapon, GetItemByIndex(ITI_WEAPON_2 + level.weapon_spawn_id));
-		Set_Weapons_Ammo(weapon);
-		level.weapon_spawn_id = (level.weapon_spawn_id + 1) % (ITI_WEAPONS_END - ITI_WEAPONS_START);
-	}
+	edict_t *weapon = NULL, *ammo = NULL;
 
-	// link up ammo
-	edict_t *ammo = NULL;
+	while ((weapon = G_FindByType(weapon, ET_WEAPON_GROUPED)))
+		SpawnItem(weapon, GetItemByIndex(ITI_WEAPON));
 
 	while ((ammo = G_FindByType(ammo, ET_AMMO)))
-	{
-		if (ammo->entity_next)
-			continue;
-
 		SpawnItem(ammo, GetItemByIndex(ITI_AMMO));
-		Set_Ammo_Model(ammo, GetItemByIndex(ITI_WEAPON_2 + level.ammo_spawn_id));
-		level.ammo_spawn_id = (level.ammo_spawn_id + 1) % (ITI_WEAPONS_END - ITI_WEAPONS_START);
-	}
 }
 
-void SP_weapon(edict_t *ent)
+void SP_weapon(edict_t *ent, const char *classname)
 {
-	ent->entitytype = ET_WEAPON;
+	ent->entitytype = ET_WEAPON_GROUPED;
+	ent->weapongroup = WEAPON_GROUP_ANY;
+	
+	if (!Q_strcasecmp(classname, "weapon_shotgun") || !Q_strcasecmp(classname, "weapon_supershotgun") || !Q_strcasecmp(classname, "weapon_spread"))
+		ent->weapongroup = WEAPON_GROUP_SPREAD;
+	else if (!Q_strcasecmp(classname, "weapon_machinegun") || !Q_strcasecmp(classname, "weapon_chaingun") || !Q_strcasecmp(classname, "weapon_rapid"))
+		ent->weapongroup = WEAPON_GROUP_RAPID;
+	else if (!Q_strcasecmp(classname, "weapon_grenadelauncher") || !Q_strcasecmp(classname, "weapon_rocketlauncher") || !Q_strcasecmp(classname, "weapon_explosive"))
+		ent->weapongroup = WEAPON_GROUP_EXPLOSIVE;
+	else if (!Q_strcasecmp(classname, "weapon_hyperblaster") || !Q_strcasecmp(classname, "weapon_railgun") || !Q_strcasecmp(classname, "weapon_exotic"))
+		ent->weapongroup = WEAPON_GROUP_EXOTIC;
+	else if (!Q_strcasecmp(classname, "weapon_bfg") || !Q_strcasecmp(classname, "weapon_super"))
+		ent->weapongroup = WEAPON_GROUP_SUPER;
+
 	gi.linkentity(ent);
 }
 
-void SP_ammo(edict_t *ent)
+void SP_ammo(edict_t *ent, const char *classname)
 {
 	ent->entitytype = ET_AMMO;
+	ent->weapongroup = WEAPON_GROUP_ANY;
+	
+	if (!Q_strcasecmp(classname, "ammo_shells") || !Q_strcasecmp(classname, "ammo_spread"))
+		ent->weapongroup = WEAPON_GROUP_SPREAD;
+	else if (!Q_strcasecmp(classname, "ammo_bullets") || !Q_strcasecmp(classname, "ammo_rapid"))
+		ent->weapongroup = WEAPON_GROUP_RAPID;
+	else if (!Q_strcasecmp(classname, "ammo_grenades") || !Q_strcasecmp(classname, "ammo_rockets") || !Q_strcasecmp(classname, "ammo_explosive"))
+		ent->weapongroup = WEAPON_GROUP_EXPLOSIVE;
+	else if (!Q_strcasecmp(classname, "ammo_cells") || !Q_strcasecmp(classname, "ammo_slugs") || !Q_strcasecmp(classname, "ammo_exotic"))
+		ent->weapongroup = WEAPON_GROUP_EXOTIC;
+	else if (!Q_strcasecmp(classname, "ammo_super"))
+		ent->weapongroup = WEAPON_GROUP_SUPER;
+
 	gi.linkentity(ent);
 }

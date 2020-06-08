@@ -109,7 +109,7 @@ static void CL_ClipMoveToEntities(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t
 		CM_TransformedBoxTrace(&trace, start, end,
 			mins, maxs, headnode,  MASK_PLAYERSOLID,
 			ent->current.origin, ent->current.angles);
-		CM_ClipEntity(tr, &trace, (struct edict_s *)ent);
+		CM_ClipEntity(tr, &trace, (edict_t *)ent);
 	}
 }
 
@@ -126,7 +126,7 @@ static trace_t q_gameabi CL_Trace(vec3_t start, vec3_t mins, vec3_t maxs, vec3_t
 	CM_BoxTrace(&t, start, end, mins, maxs, cl.bsp->nodes, MASK_PLAYERSOLID);
 
 	if (t.fraction < 1.0f)
-		t.ent = (struct edict_s *)1;
+		t.ent = (edict_t *)1;
 
 	// check all other solid models
 	CL_ClipMoveToEntities(start, mins, maxs, end, &t);
@@ -215,7 +215,7 @@ void CL_PredictMovement(void)
 	memset(&pm, 0, sizeof(pm));
 	pm.trace = CL_Trace;
 	pm.pointcontents = CL_PointContents;
-	pm.s = cl.frame.ps.pmove;
+	pm.state = cl.frame.ps.pmove;
 #if USE_SMOOTH_DELTA_ANGLES
 	VectorCopy(cl.delta_angles, pm.s.delta_angles);
 #endif
@@ -231,7 +231,7 @@ void CL_PredictMovement(void)
 		pm.cmd = cl.cmds[ack & CMD_MASK];
 		Pmove(&pm, &cl.pmp);
 		// save for debug checking
-		VectorCopy(pm.s.origin, cl.predicted_origins[ack & CMD_MASK]);
+		VectorCopy(pm.state.origin, cl.predicted_origins[ack & CMD_MASK]);
 	}
 
 	// run pending cmd
@@ -244,15 +244,15 @@ void CL_PredictMovement(void)
 		Pmove(&pm, &cl.pmp);
 		frame = current;
 		// save for debug checking
-		VectorCopy(pm.s.origin, cl.predicted_origins[(current + 1) & CMD_MASK]);
+		VectorCopy(pm.state.origin, cl.predicted_origins[(current + 1) & CMD_MASK]);
 	}
 	else
 		frame = current - 1;
 
-	if (pm.s.pm_type != PM_SPECTATOR && (pm.s.pm_flags & PMF_ON_GROUND))
+	if (pm.state.pm_type != PM_SPECTATOR && (pm.state.pm_flags & PMF_ON_GROUND))
 	{
 		oldz = cl.predicted_origins[cl.predicted_step_frame & CMD_MASK][2];
-		step = pm.s.origin[2] - oldz;
+		step = pm.state.origin[2] - oldz;
 
 		if (step > 63 && step < 160)
 		{
@@ -266,7 +266,7 @@ void CL_PredictMovement(void)
 		cl.predicted_step_frame = frame;
 
 	// copy results out for rendering
-	VectorScale(pm.s.origin, 0.125f, cl.predicted_origin);
-	VectorScale(pm.s.velocity, 0.125f, cl.predicted_velocity);
+	VectorScale(pm.state.origin, 0.125f, cl.predicted_origin);
+	VectorScale(pm.state.velocity, 0.125f, cl.predicted_velocity);
 	VectorCopy(pm.viewangles, cl.predicted_angles);
 }

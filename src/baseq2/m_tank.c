@@ -76,7 +76,7 @@ static void tank_walk(edict_t *self)
 
 static void tank_run(edict_t *self)
 {
-	if (self->enemy && self->enemy->client)
+	if (self->enemy && self->enemy->server.client)
 		self->monsterinfo.aiflags |= AI_BRUTAL;
 	else
 		self->monsterinfo.aiflags &= ~AI_BRUTAL;
@@ -97,7 +97,7 @@ static void tank_run(edict_t *self)
 static void tank_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum |= 1;
+		self->server.state.skinnum |= 1;
 
 	if (damage <= 10)
 		return;
@@ -112,10 +112,10 @@ static void tank_pain(edict_t *self, edict_t *other, float kick, int damage)
 	// If hard or nightmare, don't go into pain while attacking
 	if (skill->value >= 2)
 	{
-		if ((self->s.frame >= FRAME_attak301) && (self->s.frame <= FRAME_attak330))
+		if ((self->server.state.frame >= FRAME_attak301) && (self->server.state.frame <= FRAME_attak330))
 			return;
 
-		if ((self->s.frame >= FRAME_attak101) && (self->s.frame <= FRAME_attak116))
+		if ((self->server.state.frame >= FRAME_attak101) && (self->server.state.frame <= FRAME_attak116))
 			return;
 	}
 
@@ -141,16 +141,16 @@ static void TankBlaster(edict_t *self)
 	vec3_t  dir;
 	int     flash_number;
 
-	if (self->s.frame == FRAME_attak110)
+	if (self->server.state.frame == FRAME_attak110)
 		flash_number = MZ2_TANK_BLASTER_1;
-	else if (self->s.frame == FRAME_attak113)
+	else if (self->server.state.frame == FRAME_attak113)
 		flash_number = MZ2_TANK_BLASTER_2;
-	else // (self->s.frame == FRAME_attak116)
+	else // (self->server.state.frame == FRAME_attak116)
 		flash_number = MZ2_TANK_BLASTER_3;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
-	VectorCopy(self->enemy->s.origin, end);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, end);
 	end[2] += self->enemy->viewheight;
 	VectorSubtract(end, start, dir);
 	monster_fire_blaster(self, start, dir, 30, 800, flash_number, EF_BLASTER);
@@ -169,16 +169,16 @@ static void TankRocket(edict_t *self)
 	vec3_t  vec;
 	int     flash_number;
 
-	if (self->s.frame == FRAME_attak324)
+	if (self->server.state.frame == FRAME_attak324)
 		flash_number = MZ2_TANK_ROCKET_1;
-	else if (self->s.frame == FRAME_attak327)
+	else if (self->server.state.frame == FRAME_attak327)
 		flash_number = MZ2_TANK_ROCKET_2;
-	else // (self->s.frame == FRAME_attak330)
+	else // (self->server.state.frame == FRAME_attak330)
 		flash_number = MZ2_TANK_ROCKET_3;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
@@ -192,13 +192,13 @@ static void TankMachineGun(edict_t *self)
 	vec3_t  start;
 	vec3_t  forward, right;
 	int     flash_number;
-	flash_number = MZ2_TANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak406);
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	flash_number = MZ2_TANK_MACHINEGUN_1 + (self->server.state.frame - FRAME_attak406);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 
 	if (self->enemy)
 	{
-		VectorCopy(self->enemy->s.origin, vec);
+		VectorCopy(self->enemy->server.state.origin, vec);
 		vec[2] += self->enemy->viewheight;
 		VectorSubtract(vec, start, vec);
 		vectoangles(vec, vec);
@@ -207,10 +207,10 @@ static void TankMachineGun(edict_t *self)
 	else
 		dir[0] = 0;
 
-	if (self->s.frame <= FRAME_attak415)
-		dir[1] = self->s.angles[1] - 8 * (self->s.frame - FRAME_attak411);
+	if (self->server.state.frame <= FRAME_attak415)
+		dir[1] = self->server.state.angles[1] - 8 * (self->server.state.frame - FRAME_attak411);
 	else
-		dir[1] = self->s.angles[1] + 8 * (self->s.frame - FRAME_attak419);
+		dir[1] = self->server.state.angles[1] + 8 * (self->server.state.frame - FRAME_attak419);
 
 	dir[2] = 0;
 	AngleVectors(dir, forward, NULL, NULL);
@@ -266,7 +266,7 @@ static void tank_attack(edict_t *self)
 		return;
 	}
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, vec);
 	range = VectorLength(vec);
 	r = random();
 
@@ -300,11 +300,11 @@ static void tank_attack(edict_t *self)
 
 static void tank_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -16);
-	VectorSet(self->maxs, 16, 16, -0);
+	VectorSet(self->server.mins, -16, -16, -16);
+	VectorSet(self->server.maxs, 16, 16, -0);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -378,11 +378,11 @@ void SP_monster_tank(edict_t *self)
 		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -16);
-	VectorSet(self->maxs, 32, 32, 72);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -16);
+	VectorSet(self->server.maxs, 32, 32, 72);
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	sound_pain = gi.soundindex("tank/tnkpain2.wav");
 	sound_thud = gi.soundindex("tank/tnkdeth2.wav");
 	sound_idle = gi.soundindex("tank/tnkidle1.wav");
@@ -427,7 +427,7 @@ void SP_monster_tank(edict_t *self)
 	walkmonster_start(self);
 
 	if (self->entitytype == ET_MONSTER_TANK_COMMANDER)
-		self->s.skinnum = 2;
+		self->server.state.skinnum = 2;
 }
 
 #endif

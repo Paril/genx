@@ -200,7 +200,7 @@ static void PM_StepSlideMove_(void)
 		}
 	}
 
-	if (pm->s.pm_time)
+	if (pm->state.pm_time)
 		VectorCopy(primal_velocity, pml.velocity);
 }
 
@@ -536,7 +536,7 @@ static void PM_AirMove(void)
 	//
 	// clamp to server defined max speed
 	//
-	maxspeed = (pm->s.pm_flags & PMF_DUCKED) ? pmp->pm_duckspeed : pmp->maxspeed;
+	maxspeed = (pm->state.pm_flags & PMF_DUCKED) ? pmp->pm_duckspeed : pmp->maxspeed;
 
 	if (wishspeed > maxspeed)
 	{
@@ -552,14 +552,14 @@ static void PM_AirMove(void)
 		{
 			if (pml.velocity[2] > 0)
 			{
-				pml.velocity[2] -= pm->s.gravity * pml.frametime;
+				pml.velocity[2] -= pm->state.gravity * pml.frametime;
 
 				if (pml.velocity[2] < 0)
 					pml.velocity[2] = 0;
 			}
 			else
 			{
-				pml.velocity[2] += pm->s.gravity * pml.frametime;
+				pml.velocity[2] += pm->state.gravity * pml.frametime;
 
 				if (pml.velocity[2] > 0)
 					pml.velocity[2] = 0;
@@ -576,10 +576,10 @@ static void PM_AirMove(void)
 
 		// PGM  -- fix for negative trigger_gravity fields
 		//      pml.velocity[2] = 0;
-		if (pm->s.gravity > 0)
+		if (pm->state.gravity > 0)
 			pml.velocity[2] = 0;
 		else
-			pml.velocity[2] -= pm->s.gravity * pml.frametime;
+			pml.velocity[2] -= pm->state.gravity * pml.frametime;
 
 		// PGM
 
@@ -598,7 +598,7 @@ static void PM_AirMove(void)
 
 		// add gravity
 		if (pm->game != GAME_DUKE || pm->waterlevel <= 1)
-			pml.velocity[2] -= pm->s.gravity * pml.frametime;
+			pml.velocity[2] -= pm->state.gravity * pml.frametime;
 
 		PM_StepSlideMove();
 	}
@@ -625,7 +625,7 @@ static void PM_CategorizePosition(void)
 
 	if (pmp->game != GAME_DOOM && pml.velocity[2] > 180)   //!!ZOID changed from 100 to 180 (ramp accel)
 	{
-		pm->s.pm_flags &= ~PMF_ON_GROUND;
+		pm->state.pm_flags &= ~PMF_ON_GROUND;
 		pm->groundentity = NULL;
 	}
 	else
@@ -638,34 +638,34 @@ static void PM_CategorizePosition(void)
 		if (!trace.ent || (trace.plane.normal[2] < 0.7f && !trace.startsolid))
 		{
 			pm->groundentity = NULL;
-			pm->s.pm_flags &= ~PMF_ON_GROUND;
+			pm->state.pm_flags &= ~PMF_ON_GROUND;
 		}
 		else
 		{
 			pm->groundentity = trace.ent;
 
 			// hitting solid ground will end a waterjump
-			if (pm->s.pm_flags & PMF_TIME_WATERJUMP)
+			if (pm->state.pm_flags & PMF_TIME_WATERJUMP)
 			{
-				pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
-				pm->s.pm_time = 0;
+				pm->state.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+				pm->state.pm_time = 0;
 			}
 
-			if (!(pm->s.pm_flags & PMF_ON_GROUND))
+			if (!(pm->state.pm_flags & PMF_ON_GROUND))
 			{
 				// just hit the ground
-				pm->s.pm_flags |= PMF_ON_GROUND;
+				pm->state.pm_flags |= PMF_ON_GROUND;
 
 				// don't do landing time if we were just going down a slope
 				if (pml.velocity[2] < -200 && !pmp->strafehack)
 				{
-					pm->s.pm_flags |= PMF_TIME_LAND;
+					pm->state.pm_flags |= PMF_TIME_LAND;
 
 					// don't allow another jump for a little while
 					if (pml.velocity[2] < -400)
-						pm->s.pm_time = 25;
+						pm->state.pm_time = 25;
 					else
-						pm->s.pm_time = 18;
+						pm->state.pm_time = 18;
 				}
 			}
 		}
@@ -713,7 +713,7 @@ PM_CheckJump
 */
 static void PM_CheckJump(void)
 {
-	if (pm->s.pm_flags & PMF_TIME_LAND)
+	if (pm->state.pm_flags & PMF_TIME_LAND)
 	{
 		// hasn't been long enough since landing to jump again
 		return;
@@ -722,15 +722,15 @@ static void PM_CheckJump(void)
 	if (pm->cmd.upmove < 10)
 	{
 		// not holding jump
-		pm->s.pm_flags &= ~PMF_JUMP_HELD;
+		pm->state.pm_flags &= ~PMF_JUMP_HELD;
 		return;
 	}
 
 	// must wait for jump to be released
-	if (pm->s.pm_flags & PMF_JUMP_HELD)
+	if (pm->state.pm_flags & PMF_JUMP_HELD)
 		return;
 
-	if (pm->s.pm_type == PM_DEAD)
+	if (pm->state.pm_type == PM_DEAD)
 		return;
 
 	if (pm->waterlevel >= 2)
@@ -759,12 +759,12 @@ static void PM_CheckJump(void)
 	if (pm->groundentity == NULL)
 		return;     // in air, so no effect
 
-	if (pmp->game == GAME_DUKE && (pm->s.pm_flags & PMF_TIME_LAND))
+	if (pmp->game == GAME_DUKE && (pm->state.pm_flags & PMF_TIME_LAND))
 		return;
 
-	pm->s.pm_flags |= PMF_JUMP_HELD;
+	pm->state.pm_flags |= PMF_JUMP_HELD;
 	pm->groundentity = NULL;
-	pm->s.pm_flags &= ~PMF_ON_GROUND;
+	pm->state.pm_flags &= ~PMF_ON_GROUND;
 	int jump_vel = (pmp->game == GAME_DUKE) ? 340 : 270;
 	pml.velocity[2] += jump_vel;
 
@@ -784,7 +784,7 @@ static void PM_CheckSpecialMovement(void)
 	vec3_t  flatforward;
 	trace_t trace;
 
-	if (pm->s.pm_time)
+	if (pm->state.pm_time)
 		return;
 
 	pml.ladder = false;
@@ -819,8 +819,8 @@ static void PM_CheckSpecialMovement(void)
 	// jump out of water
 	VectorScale(flatforward, 50, pml.velocity);
 	pml.velocity[2] = 350;
-	pm->s.pm_flags |= PMF_TIME_WATERJUMP;
-	pm->s.pm_time = 255;
+	pm->state.pm_flags |= PMF_TIME_WATERJUMP;
+	pm->state.pm_time = 255;
 }
 
 /*
@@ -921,7 +921,7 @@ static void PM_CheckDuck(void)
 	pm->maxs[0] = 16;
 	pm->maxs[1] = 16;
 
-	if (pm->s.pm_type == PM_GIB)
+	if (pm->state.pm_type == PM_GIB)
 	{
 		pm->mins[2] = 0;
 		pm->maxs[2] = 16;
@@ -931,28 +931,28 @@ static void PM_CheckDuck(void)
 
 	pm->mins[2] = -24;
 
-	if (pm->s.pm_type == PM_DEAD)
-		pm->s.pm_flags |= PMF_DUCKED;
-	else if (pm->cmd.upmove < 0 && (pm->s.pm_flags & PMF_ON_GROUND))
+	if (pm->state.pm_type == PM_DEAD)
+		pm->state.pm_flags |= PMF_DUCKED;
+	else if (pm->cmd.upmove < 0 && (pm->state.pm_flags & PMF_ON_GROUND))
 	{
 		// duck
-		pm->s.pm_flags |= PMF_DUCKED;
+		pm->state.pm_flags |= PMF_DUCKED;
 	}
 	else
 	{
 		// stand up if possible
-		if (pm->s.pm_flags & PMF_DUCKED)
+		if (pm->state.pm_flags & PMF_DUCKED)
 		{
 			// try to stand up
 			pm->maxs[2] = 32;
 			trace = pm->trace(pml.origin, pm->mins, pm->maxs, pml.origin);
 
 			if (!trace.allsolid)
-				pm->s.pm_flags &= ~PMF_DUCKED;
+				pm->state.pm_flags &= ~PMF_DUCKED;
 		}
 	}
 
-	if (pm->s.pm_flags & PMF_DUCKED)
+	if (pm->state.pm_flags & PMF_DUCKED)
 	{
 		pm->maxs[2] = 4;
 		pm->viewheight = -2;
@@ -995,11 +995,11 @@ static bool PM_GoodPosition(void)
 	vec3_t  origin, end;
 	int     i;
 
-	if (pm->s.pm_type == PM_SPECTATOR)
+	if (pm->state.pm_type == PM_SPECTATOR)
 		return true;
 
 	for (i = 0; i < 3; i++)
-		origin[i] = end[i] = pm->s.origin[i] * 0.125f;
+		origin[i] = end[i] = pm->state.origin[i] * 0.125f;
 
 	trace = pm->trace(origin, pm->mins, pm->maxs, end);
 	return !trace.allsolid;
@@ -1023,7 +1023,7 @@ static void PM_SnapPosition(void)
 
 	// snap velocity to eigths
 	for (i = 0; i < 3; i++)
-		pm->s.velocity[i] = (int)(pml.velocity[i] * 8);
+		pm->state.velocity[i] = (int)(pml.velocity[i] * 8);
 
 	for (i = 0; i < 3; i++)
 	{
@@ -1032,30 +1032,30 @@ static void PM_SnapPosition(void)
 		else
 			sign[i] = -1;
 
-		pm->s.origin[i] = (int)(pml.origin[i] * 8);
+		pm->state.origin[i] = (int)(pml.origin[i] * 8);
 
-		if (pm->s.origin[i] * 0.125f == pml.origin[i])
+		if (pm->state.origin[i] * 0.125f == pml.origin[i])
 			sign[i] = 0;
 	}
 
-	VectorCopy(pm->s.origin, base);
+	VectorCopy(pm->state.origin, base);
 
 	// try all combinations
 	for (j = 0; j < 8; j++)
 	{
 		bits = jitterbits[j];
-		VectorCopy(base, pm->s.origin);
+		VectorCopy(base, pm->state.origin);
 
 		for (i = 0; i < 3; i++)
 			if (bits & (1 << i))
-				pm->s.origin[i] += sign[i];
+				pm->state.origin[i] += sign[i];
 
 		if (PM_GoodPosition())
 			return;
 	}
 
 	// go back to the last position
-	VectorCopy(pml.previous_origin, pm->s.origin);
+	VectorCopy(pml.previous_origin, pm->state.origin);
 }
 
 /*
@@ -1069,26 +1069,26 @@ static void PM_InitialSnapPosition(void)
 	int        x, y, z;
 	short      base[3];
 	static const short offset[3] = { 0, -1, 1 };
-	VectorCopy(pm->s.origin, base);
+	VectorCopy(pm->state.origin, base);
 
 	for (z = 0; z < 3; z++)
 	{
-		pm->s.origin[2] = base[2] + offset[z];
+		pm->state.origin[2] = base[2] + offset[z];
 
 		for (y = 0; y < 3; y++)
 		{
-			pm->s.origin[1] = base[1] + offset[y];
+			pm->state.origin[1] = base[1] + offset[y];
 
 			for (x = 0; x < 3; x++)
 			{
-				pm->s.origin[0] = base[0] + offset[x];
+				pm->state.origin[0] = base[0] + offset[x];
 
 				if (PM_GoodPosition())
 				{
-					pml.origin[0] = pm->s.origin[0] * 0.125f;
-					pml.origin[1] = pm->s.origin[1] * 0.125f;
-					pml.origin[2] = pm->s.origin[2] * 0.125f;
-					VectorCopy(pm->s.origin, pml.previous_origin);
+					pml.origin[0] = pm->state.origin[0] * 0.125f;
+					pml.origin[1] = pm->state.origin[1] * 0.125f;
+					pml.origin[2] = pm->state.origin[2] * 0.125f;
+					VectorCopy(pm->state.origin, pml.previous_origin);
 					return;
 				}
 			}
@@ -1107,9 +1107,9 @@ static void PM_ClampAngles(void)
 	short   temp;
 	int     i;
 
-	if (pm->s.pm_flags & PMF_TIME_TELEPORT)
+	if (pm->state.pm_flags & PMF_TIME_TELEPORT)
 	{
-		pm->viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->s.delta_angles[YAW]);
+		pm->viewangles[YAW] = SHORT2ANGLE(pm->cmd.angles[YAW] + pm->state.delta_angles[YAW]);
 		pm->viewangles[PITCH] = 0;
 		pm->viewangles[ROLL] = 0;
 	}
@@ -1118,7 +1118,7 @@ static void PM_ClampAngles(void)
 		// circularly clamp the angles with deltas
 		for (i = 0; i < 3; i++)
 		{
-			temp = pm->cmd.angles[i] + pm->s.delta_angles[i];
+			temp = pm->cmd.angles[i] + pm->state.delta_angles[i];
 			pm->viewangles[i] = SHORT2ANGLE(temp);
 		}
 
@@ -1154,13 +1154,13 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 	// clear all pmove local vars
 	memset(&pml, 0, sizeof(pml));
 	// convert origin and velocity to float values
-	VectorScale(pm->s.origin, 0.125f, pml.origin);
-	VectorScale(pm->s.velocity, 0.125f, pml.velocity);
+	VectorScale(pm->state.origin, 0.125f, pml.origin);
+	VectorScale(pm->state.velocity, 0.125f, pml.velocity);
 	// save old org in case we get stuck
-	VectorCopy(pm->s.origin, pml.previous_origin);
+	VectorCopy(pm->state.origin, pml.previous_origin);
 	PM_ClampAngles();
 
-	if (pm->s.pm_type == PM_SPECTATOR)
+	if (pm->state.pm_type == PM_SPECTATOR)
 	{
 		pml.frametime = pmp->speedmult * pm->cmd.msec * 0.001f;
 		PM_FlyMove();
@@ -1170,16 +1170,16 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 
 	pml.frametime = pm->cmd.msec * 0.001f;
 
-	if (pm->s.pm_type >= PM_DEAD)
+	if (pm->state.pm_type >= PM_DEAD)
 	{
 		pm->cmd.forwardmove = 0;
 		pm->cmd.sidemove = 0;
 		pm->cmd.upmove = 0;
 	}
 
-	if (pm->s.pm_type == PM_FREEZE)
+	if (pm->state.pm_type == PM_FREEZE)
 		return;     // no movement at all
-	else if (pm->s.pm_type == PM_DUKE_FROZEN)
+	else if (pm->state.pm_type == PM_DUKE_FROZEN)
 	{
 		pm->cmd.angles[0] = pm->cmd.angles[1] = pm->cmd.angles[2] = 0;
 		pm->cmd.buttons = 0;
@@ -1198,29 +1198,29 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 	{
 		if (pm->cmd.upmove > 0 && pm->groundentity)
 		{
-			if (!(pm->s.pm_flags & PMF_AWAIT_JUMP))
+			if (!(pm->state.pm_flags & PMF_AWAIT_JUMP))
 			{
-				pm->s.pm_flags |= PMF_AWAIT_JUMP;
-				pm->s.pm_time2 = 12;
+				pm->state.pm_flags |= PMF_AWAIT_JUMP;
+				pm->state.pm_time2 = 12;
 			}
 
 			pm->cmd.upmove = 0;
 		}
 
-		if ((pm->s.pm_flags & PMF_AWAIT_JUMP) && !pm->s.pm_time2)
+		if ((pm->state.pm_flags & PMF_AWAIT_JUMP) && !pm->state.pm_time2)
 		{
 			pm->cmd.upmove = 200;
-			pm->s.pm_flags &= ~PMF_AWAIT_JUMP;
+			pm->state.pm_flags &= ~PMF_AWAIT_JUMP;
 		}
 	}
 
-	if (pm->s.pm_type == PM_DEAD)
+	if (pm->state.pm_type == PM_DEAD)
 		PM_DeadMove();
 
 	PM_CheckSpecialMovement();
 
 	// drop timing counter
-	if (pm->s.pm_time)
+	if (pm->state.pm_time)
 	{
 		int     msec;
 		msec = pm->cmd.msec >> 3;
@@ -1228,16 +1228,16 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 		if (!msec)
 			msec = 1;
 
-		if (msec >= pm->s.pm_time)
+		if (msec >= pm->state.pm_time)
 		{
-			pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
-			pm->s.pm_time = 0;
+			pm->state.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+			pm->state.pm_time = 0;
 		}
 		else
-			pm->s.pm_time -= msec;
+			pm->state.pm_time -= msec;
 	}
 
-	if (pm->s.pm_time2)
+	if (pm->state.pm_time2)
 	{
 		int     msec;
 		msec = pm->cmd.msec >> 3;
@@ -1245,26 +1245,26 @@ void Pmove(pmove_t *pmove, pmoveParams_t *params)
 		if (!msec)
 			msec = 1;
 
-		if (msec >= pm->s.pm_time2)
-			pm->s.pm_time2 = 0;
+		if (msec >= pm->state.pm_time2)
+			pm->state.pm_time2 = 0;
 		else
-			pm->s.pm_time2 -= msec;
+			pm->state.pm_time2 -= msec;
 	}
 
-	if (pm->s.pm_flags & PMF_TIME_TELEPORT)
+	if (pm->state.pm_flags & PMF_TIME_TELEPORT)
 	{
 		// teleport pause stays exactly in place
 	}
-	else if (pm->s.pm_flags & PMF_TIME_WATERJUMP)
+	else if (pm->state.pm_flags & PMF_TIME_WATERJUMP)
 	{
 		// waterjump has no control, but falls
-		pml.velocity[2] -= pm->s.gravity * pml.frametime;
+		pml.velocity[2] -= pm->state.gravity * pml.frametime;
 
 		if (pml.velocity[2] < 0)
 		{
 			// cancel as soon as we are falling down again
-			pm->s.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
-			pm->s.pm_time = 0;
+			pm->state.pm_flags &= ~(PMF_TIME_WATERJUMP | PMF_TIME_LAND | PMF_TIME_TELEPORT);
+			pm->state.pm_time = 0;
 		}
 
 		PM_StepSlideMove();

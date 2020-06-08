@@ -104,9 +104,9 @@ typedef struct
 typedef struct packfile_s
 {
 	char        *name;
-	unsigned    namelen;
-	unsigned    filepos;
-	unsigned    filelen;
+	size_t      namelen;
+	size_t      filepos;
+	size_t      filelen;
 #if USE_ZLIB
 	unsigned    complen;
 	byte        compmtd;    // compression method, 0 (stored) or Z_DEFLATED
@@ -148,7 +148,7 @@ typedef struct
 	pack_t      *pack;      // points to the pack entry is from
 	bool        unique;     // if true, then pack must be freed on close
 	int         error;      // stream error indicator from read/write operation
-	unsigned    rest_out;   // remaining unread length for FS_PAK/FS_ZIP
+	size_t      rest_out;   // remaining unread length for FS_PAK/FS_ZIP
 	int64_t     length;     // total cached file length
 } file_t;
 
@@ -414,15 +414,15 @@ size_t FS_NormalizePathBuffer(char *out, const char *in, size_t size)
 static file_t *alloc_handle(qhandle_t *f)
 {
 	file_t *file;
-	int i;
+	size_t i;
 
 	for (i = 0, file = fs_files; i < MAX_FILE_HANDLES; i++, file++)
 	{
-		if (file->type == FS_FREE)
-		{
-			*f = (qhandle_t)(i + 1);
-			return file;
-		}
+		if (file->type != FS_FREE)
+			continue;
+
+		*f = (qhandle_t)(i + 1);
+		return file;
 	}
 
 	return NULL;
@@ -432,10 +432,10 @@ static file_t *file_for_handle(qhandle_t f)
 {
 	file_t *file;
 
-	if (!f || (uint32_t)f > MAX_FILE_HANDLES)
+	if (!f || (size_t)f > MAX_FILE_HANDLES)
 		return NULL;
 
-	file = &fs_files[(uint32_t)f - 1];
+	file = &fs_files[(size_t)f - 1];
 
 	if (file->type == FS_FREE)
 		return NULL;
@@ -2135,7 +2135,7 @@ static pack_t *pack_alloc(FILE *fp, filetype_t type, const char *name,
 // normalizes and inserts the filename into hash table
 static void pack_hash_file(pack_t *pack, packfile_t *file)
 {
-	unsigned hash;
+	size_t hash;
 	file->namelen = FS_NormalizePath(file->name, file->name);
 	hash = FS_HashPath(file->name, pack->hash_size);
 	file->hash_next = pack->file_hash[hash];

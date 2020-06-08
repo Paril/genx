@@ -153,7 +153,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
 	// reset entity counter
 	svs.next_entity = 0;
 	// save name for levels that don't set message
-	Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, MAX_QPATH);
+	Q_strlcpy(sv.configstrings[CS_NAME], cmd->server, CS_SIZE);
 	Q_strlcpy(sv.name, cmd->server, sizeof(sv.name));
 	Q_strlcpy(sv.mapcmd, cmd->buffer, sizeof(sv.mapcmd));
 	sprintf(sv.configstrings[CS_AIRACCEL], "%d", sv_airaccelerate->integer);
@@ -166,7 +166,7 @@ void SV_SpawnServer(mapcmd_t *cmd)
 		sv.cm = cmd->cm;
 		sprintf(sv.configstrings[CS_MAPCHECKSUM], "%d", (int)sv.cm.cache->checksum);
 		// set inline model names
-		Q_concat(sv.configstrings[CS_PRECACHE + 1], MAX_QPATH, "maps/", cmd->server, ".bsp", NULL);
+		Q_concat(sv.configstrings[CS_PRECACHE + 1], CS_SIZE, "maps/", cmd->server, ".bsp", NULL);
 		Q_SetPrecacheBitsetType(sv.precache_bitset, 1, PRECACHE_MODEL);
 
 		for (i = 1; i < sv.cm.cache->nummodels; i++)
@@ -405,7 +405,7 @@ void SV_InitGame(void)
 		client = svs.client_pool + i;
 		entnum = i + 1;
 		ent = EDICT_NUM(entnum);
-		ent->s.number = entnum;
+		ent->state.number = entnum;
 		client->edict = ent;
 		client->number = i;
 	}

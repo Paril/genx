@@ -93,7 +93,7 @@ void AITools_AddBotRoamNode(void)
 	if (nav.loaded)
 		return;
 
-	AI_AddNode(player.ent->s.origin, NODEFLAGS_BOTROAM);
+	AI_AddNode(player.ent->server.state.origin, NODEFLAGS_BOTROAM);
 }
 
 

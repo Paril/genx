@@ -19,14 +19,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #pragma once
 
+#define GAME_INCLUDE
 #include "shared/shared.h"
 #include "shared/list.h"
 #include "common/error.h"
-
-// define GAME_INCLUDE so that game.h does not define the
-// short, server-visible gclient_t and edict_t structures,
-// because we define the full size ones in this file
-#define GAME_INCLUDE
 #include "shared/game.h"
 
 #define USE_64BIT_TIME 1
@@ -237,6 +233,7 @@ typedef enum
 	ET_BOTROAM,
 	ET_PLAYER_NOISE,
 	ET_WEAPON,
+	ET_WEAPON_GROUPED,
 	ET_AMMO,
 		
 #ifdef ENABLE_COOP
@@ -447,7 +444,7 @@ typedef union {
 #define SHOTS_FOR_COUNT(ammo, max_ammo, per_shot)	(ammo / max_ammo) * ((DEFAULT_MAX_AMMO / per_shot) * (max_ammo / DEFAULT_MAX_AMMO))
 
 // get # of shots we can fire for current weapon with current ammo
-#define PLAYER_SHOTS_FOR_WEAPON(ent, weapon)			SHOTS_FOR_COUNT(ent->client->pers.ammo, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)])
+#define PLAYER_SHOTS_FOR_WEAPON(ent, weapon)			SHOTS_FOR_COUNT(ent->server.client->pers.ammo, GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)])
 
 // get # of shots we can fire total for current weapon
 #define PLAYER_TOTAL_SHOTS_FOR_WEAPON(ent, weapon)		SHOTS_FOR_COUNT(GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY), EntityGame(ent)->ammo_usages[ITEM_INDEX(weapon)])
@@ -469,7 +466,7 @@ typedef struct gitem_s
 	item_use_func     use;
 	item_drop_func    drop;
 	const char        *pickup_sound;
-	const char        *world_model;
+	const char		  *world_model;
 	int               world_model_flags;
 	const char        *view_model;
 
@@ -504,6 +501,12 @@ typedef struct
 
 typedef struct
 {
+	size_t		num_weapons;
+	itemid_e	weapons[ITI_WEAPONS_END - ITI_WEAPONS_START + 1];
+} game_weapon_group_t;
+
+typedef struct
+{
 	itemid_e	item_redirects[ITI_TOTAL];
 
 	int			item_starts[ITI_TOTAL];
@@ -516,13 +519,13 @@ typedef struct
 
 	float		ammo_usages[ITI_TOTAL], default_ammo_usages[ITI_TOTAL];
 
-	itemid_e	weapon_groups[WEAPON_GROUP_ALL][ITI_WEAPONS_END - ITI_WEAPONS_START + 1];
+	game_weapon_group_t	weapon_groups[WEAPON_GROUP_MAX];
 } game_iteminfo_t;
 
 extern game_iteminfo_t game_iteminfos[GAME_TOTAL];
 
 #define GameTypeGame(e)	(&game_iteminfos[(e)])
-#define EntityGame(e)	GameTypeGame((e)->s.game)
+#define EntityGame(e)	GameTypeGame((e)->server.state.game)
 
 typedef struct
 {
@@ -636,8 +639,7 @@ typedef struct
 	int         body_que;           // dead bodies
 
 	time_t		spawn_rand;
-	int			weapon_spawn_id;
-	int			ammo_spawn_id;
+	int			weapon_spawn_id, ammo_spawn_id;
 } level_locals_t;
 
 
@@ -969,6 +971,7 @@ void Cmd_Score_f(edict_t *ent);
 // g_items.c
 //
 void PrecacheItem(gitem_t *it);
+void InitWeaponSeeds();
 void InitItems(void);
 gitem_t *FindItem(const char *pickup_name);
 gitem_t *FindItemByClassname(const char *classname);
@@ -1314,10 +1317,8 @@ typedef struct
 // except for 'client->pers'
 struct gclient_s
 {
-	// known to server
-	player_state_t  ps;             // communicated by server to clients
-	int             ping;
-	int				clientNum;
+	// server client pointer; must always be at top
+	gclient_server_t	server;
 
 	// private to game
 	client_persistant_t pers;
@@ -1411,51 +1412,21 @@ struct gclient_s
 	bool		duke_scream;
 };
 
-
 struct edict_s
 {
-	entity_state_t  s;
-	struct gclient_s    *client;    // NULL if not a player
-	// the server expects the first part
-	// of gclient_s to be a player_state_t
-	// but the rest of it is opaque
-
-	bool		inuse;
-	int         linkcount;
-
-	// FIXME: move these fields to a server private sv_entity_t
-	list_t      area;               // linked to a division node or leaf
-
-	int         num_clusters;       // if -1, use headnode instead
-	int         clusternums[MAX_ENT_CLUSTERS];
-	int         headnode;           // unused if num_clusters != -1
-	int         areanum, areanum2;
-
-	//================================
-
-	int         svflags;
-	vec3_t      mins, maxs;
-	vec3_t      absmin, absmax, size;
-	solid_t     solid;
-	int         clipmask;
-	edict_t     *owner;
-
-
-	// DO NOT MODIFY ANYTHING ABOVE THIS, THE SERVER
-	// EXPECTS THE FIELDS IN THAT ORDER!
-
-	//================================
+	// server client pointer; must always be at top
+	edict_server_t	server;
+	
+	// private to game
 	movetype_t         movetype;
 	int			       flags;
 
 	char        *model;
 	gtime_t     freetime;           // sv.time when the object was freed
 
-	//
-	// only used locally in game, not by server
-	//
 	char        *message;
 	entitytype_e	entitytype;
+	weapon_group_e	weapongroup;
 	int         spawnflags;
 
 	float       timestamp;
@@ -1515,11 +1486,7 @@ struct edict_s
 	char        *map;           // target_changelevel
 
 	int         radius_dmg;
-	union
-	{
-		int         dmg;
-		itemid_e	weapon_id;
-	};
+	int         dmg;
 
 	float		pack_ammo;
 	int			pack_weapons;
@@ -1540,22 +1507,13 @@ struct edict_s
 	edict_t     *teamchain;
 	edict_t     *teammaster;
 
-	union
-	{
 #ifdef ENABLE_COOP
-		struct
-		{
-			edict_t     *mynoise;       // can go in client only
-			edict_t     *mynoise2;
-		};
-#endif
-
-		struct
-		{
-			edict_t *entity_next;
-			edict_t *entity_prev;
-		};
+	struct
+	{
+		edict_t     *mynoise;       // can go in client only
+		edict_t     *mynoise2;
 	};
+#endif
 
 	q_soundhandle noise_index;
 	q_soundhandle noise_index2;
@@ -1607,8 +1565,6 @@ struct edict_s
 	gtime_t			freeze_time;
 };
 
-
-
 extern  game_locals_t   game;
 extern  level_locals_t  level;
 extern  game_import_t   gi;
@@ -1635,7 +1591,7 @@ static inline meansOfDeath_t MakeGenericMeansOfDeath(edict_t *inflictor, meansOf
 {
 	return (meansOfDeath_t)
 	{
-		damage_type, inflictor, inflictor->entitytype, inflictor->s.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time
+		damage_type, inflictor, inflictor->entitytype, inflictor->server.state.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time
 	};
 }
 
@@ -1644,7 +1600,7 @@ static inline meansOfDeath_t MakeAttackerMeansOfDeath(edict_t *attacker, edict_t
 {
 	return (meansOfDeath_t)
 	{
-		damage_type, attacker, attacker->entitytype, attacker->s.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time
+		damage_type, attacker, attacker->entitytype, attacker->server.state.game, level.time + 10000, ITI_NULL, inflictor, damage_means, level.time
 	};
 }
 
@@ -1653,7 +1609,7 @@ static inline meansOfDeath_t MakeWeaponMeansOfDeath(edict_t *attacker, itemid_e 
 {
 	return (meansOfDeath_t)
 	{
-		damage_type, attacker, attacker->entitytype, attacker->s.game, level.time + 10000, weapon, inflictor, MD_WEAPON, level.time
+		damage_type, attacker, attacker->entitytype, attacker->server.state.game, level.time + 10000, weapon, inflictor, MD_WEAPON, level.time
 	};
 }
 

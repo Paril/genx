@@ -76,14 +76,14 @@ static void berserk_swing(edict_t *self)
 static void berserk_attack_club(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->mins[0], -4);
+	VectorSet(aim, MELEE_DISTANCE, self->server.mins[0], -4);
 	fire_hit(self, aim, (5 + (Q_rand() % 6)), 400);       // Slower attack
 }
 
 static void berserk_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -102,11 +102,11 @@ static void berserk_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void berserk_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -203,11 +203,11 @@ void SP_monster_berserk(edict_t *self)
 	sound_punch = gi.soundindex("berserk/attack.wav");
 	sound_search = gi.soundindex("berserk/bersrch1.wav");
 	sound_sight = gi.soundindex("berserk/sight.wav");
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->health = 240;
 	self->gib_health = -60;
 	self->mass = 250;

@@ -112,12 +112,12 @@ static void zombie_run(edict_t *self)
 
 static void ZombieGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;		// don't explode on owner
 
 	if (other->takedamage)
 	{
-		T_Damage(other, self, self->owner, vec3_origin, vec3_origin, vec3_origin, 10, 0, DAMAGE_NO_PARTICLES | DAMAGE_Q1, self->meansOfDeath);
+		T_Damage(other, self, self->server.owner, vec3_origin, vec3_origin, vec3_origin, 10, 0, DAMAGE_NO_PARTICLES | DAMAGE_Q1, self->meansOfDeath);
 		gi.sound(self, CHAN_WEAPON, sound_z_hit, 1, ATTN_NORM, 0);
 		G_FreeEdict(self);
 		return;
@@ -138,30 +138,30 @@ static void ZombieFireGrenade(edict_t *self)
 	vec3_t org;
 	vec3_t start;
 
-	if (self->s.frame == atta13)
+	if (self->server.state.frame == atta13)
 		VectorSet(start, -10, 22, 30);
-	else if (self->s.frame == attb14)
+	else if (self->server.state.frame == attb14)
 		VectorSet(start, -10, -13, 29);
 	else
 		VectorSet(start, -12, 19, 29);
 
 	gi.sound(self, CHAN_WEAPON, sound_z_shot1, 1, ATTN_NORM, 0);
 	missile = G_Spawn();
-	missile->owner = self;
+	missile->server.owner = self;
 	missile->movetype = MOVETYPE_BOUNCE;
-	missile->solid = SOLID_BBOX;
-	missile->s.game = GAME_Q1;
-	missile->s.effects |= EF_GIB;
-	missile->clipmask = MASK_SHOT;
+	missile->server.solid = SOLID_BBOX;
+	missile->server.state.game = GAME_Q1;
+	missile->server.state.effects |= EF_GIB;
+	missile->server.clipmask = MASK_SHOT;
 	// calc org
 	vec3_t v_forward, v_right, v_up;
-	AngleVectors(self->s.angles, v_forward, v_right, v_up);
+	AngleVectors(self->server.state.angles, v_forward, v_right, v_up);
 
 	for (int i = 0; i < 3; ++i)
-		org[i] = self->s.origin[i] + start[0] * v_forward[i] + start[1] * v_right[i] + (start[2] - 24) * v_up[i];
+		org[i] = self->server.state.origin[i] + start[0] * v_forward[i] + start[1] * v_right[i] + (start[2] - 24) * v_up[i];
 
 	// set missile speed
-	VectorSubtract(self->enemy->s.origin, org, missile->velocity);
+	VectorSubtract(self->enemy->server.state.origin, org, missile->velocity);
 	VectorNormalize(missile->velocity);
 	VectorScale(missile->velocity, 600, missile->velocity);
 	missile->velocity[2] = 200;
@@ -170,10 +170,10 @@ static void ZombieFireGrenade(edict_t *self)
 	// set missile duration
 	missile->nextthink = level.time + 2500;
 	missile->think = G_FreeEdict;
-	missile->s.modelindex = gi.modelindex("models/q1/zom_gib.mdl");
-	VectorClear(missile->mins);
-	VectorClear(missile->maxs);
-	VectorCopy(org, missile->s.origin);
+	missile->server.state.modelindex = gi.modelindex("models/q1/zom_gib.mdl");
+	VectorClear(missile->server.mins);
+	VectorClear(missile->server.maxs);
+	VectorCopy(org, missile->server.state.origin);
 	missile->entitytype = ET_Q1_ZOMBIE_GIB;
 	missile->meansOfDeath = MakeAttackerMeansOfDeath(self, missile, MD_NONE, DT_DIRECT);
 	gi.linkentity(missile);
@@ -259,7 +259,7 @@ static void zombie_paine1_start(edict_t *self)
 static void zombie_paine1_fall(edict_t *self)
 {
 	gi.sound(self, CHAN_BODY, sound_z_fall, 1, ATTN_NORM, 0);
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	self->takedamage = false;
 	gi.linkentity(self);
 }
@@ -289,7 +289,7 @@ static void zombie_paine1_check(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -378,20 +378,20 @@ static void zombie_pain(edict_t *self, edict_t *attacker, float kick, int take)
 
 static void zombie_cruc(edict_t *self)
 {
-	if (self->s.frame == cruc_1)
+	if (self->server.state.frame == cruc_1)
 	{
 		vec3_t soundpos, fwd;
-		AngleVectors(self->s.angles, fwd, NULL, NULL);
-		VectorMA(self->s.origin, 14, fwd, soundpos);
+		AngleVectors(self->server.state.angles, fwd, NULL, NULL);
+		VectorMA(self->server.state.origin, 14, fwd, soundpos);
 
 		if (random() < 0.1f)
 			gi.positioned_sound(soundpos, self, CHAN_VOICE, sound_idle_w2, 1, ATTN_STATIC, 0);
 	}
 
-	self->s.frame++;
+	self->server.state.frame++;
 
-	if (self->s.frame > cruc_6)
-		self->s.frame = cruc_1;
+	if (self->server.state.frame > cruc_6)
+		self->server.state.frame = cruc_1;
 
 	self->nextthink = level.time + 100 + random() * 100;
 }
@@ -452,22 +452,22 @@ void q1_monster_zombie(edict_t *self)
 	sound_z_miss = gi.soundindex("q1/zombie/z_miss.wav");
 	sound_z_hit = gi.soundindex("q1/zombie/z_hit.wav");
 	sound_idle_w2 = gi.soundindex("q1/zombie/idle_w2.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
+	self->server.state.modelindex = gi.modelindex(model_name);
 
 	if (self->spawnflags & SPAWN_CRUCIFIED)
 	{
 		self->movetype = MOVETYPE_NONE;
-		self->solid = SOLID_NOT;
+		self->server.solid = SOLID_NOT;
 		self->think = zombie_cruc;
-		self->s.frame = cruc_1;
+		self->server.state.frame = cruc_1;
 		self->nextthink = level.time + 1;
 	}
 	else
 	{
-		VectorSet(self->mins, -16, -16, -24);
-		VectorSet(self->maxs, 16, 16, 40);
+		VectorSet(self->server.mins, -16, -16, -24);
+		VectorSet(self->server.maxs, 16, 16, 40);
 		self->health = 60;
 		self->monsterinfo.stand = zombie_stand;
 		self->monsterinfo.walk = zombie_walk;

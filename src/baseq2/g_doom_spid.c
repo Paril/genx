@@ -120,7 +120,7 @@ void spid_walk(edict_t *self)
 void spid_dead(edict_t *self)
 {
 	self->nextthink = 0;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 }
 
 mframe_t spid_frames_die1[FRAME_COUNT(die)] =
@@ -159,7 +159,7 @@ void spid_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &spid_die1;
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
@@ -190,7 +190,7 @@ void spid_fire_gun(edict_t *self)
 {
 	poss_fire_gun(self);
 
-	if (self->s.frame == frames_attack1 && self->enemy && self->enemy->health > 0 && visible(self, self->enemy))
+	if (self->server.state.frame == frames_attack1 && self->enemy && self->enemy->health > 0 && visible(self, self->enemy))
 		self->monsterinfo.nextframe = frames_shoot_end - 1;
 }
 
@@ -229,16 +229,16 @@ void doom_monster_spid(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_alert = gi.soundindex("doom/SPISIT.wav");
 	sound_chase = gi.soundindex("doom/METAL.wav");
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/SPIDTH.wav");
-	VectorSet(self->mins, -128, -128, -4);
-	VectorSet(self->maxs, 128, 128, 96);
-	self->s.modelindex = gi.modelindex("sprites/doom/spid.d2s");
+	VectorSet(self->server.mins, -128, -128, -4);
+	VectorSet(self->server.maxs, 128, 128, 96);
+	self->server.state.modelindex = gi.modelindex("sprites/doom/spid.d2s");
 	self->health = 3000;
 	self->mass = 1000;
 	self->dmg = 1;
@@ -250,7 +250,7 @@ void doom_monster_spid(edict_t *self)
 	self->die = spid_die;
 	self->monsterinfo.attack = spid_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &spid_stand1;
 	self->monsterinfo.scale = 1;

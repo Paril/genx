@@ -101,7 +101,7 @@ void QAL_Shutdown(void)
 
 bool QAL_Init(void)
 {
-	al_driver = Cvar_Get("al_driver", LIBAL, 0);
+	al_driver = Cvar_Get(CVARAL, LIBAL, 0);
 	al_device = Cvar_Get("al_device", "", 0);
 	// don't allow absolute or relative paths
 	FS_SanitizeFilenameVariable(al_driver);

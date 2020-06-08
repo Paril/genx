@@ -98,12 +98,12 @@ bool AI_CanPick_Ammo(edict_t *ent, gitem_t *item)
 {
 	float		max;
 
-	if (!ent->client)
+	if (!ent->server.client)
 		return false;
 
 	max = GetMaxAmmo(ent, CHECK_INVENTORY, CHECK_INVENTORY);
 
-	if (ent->client->pers.ammo >= max)
+	if (ent->server.client->pers.ammo >= max)
 		return false;
 
 	return true;
@@ -118,10 +118,10 @@ bool AI_ItemIsReachable(edict_t *self, vec3_t goal)
 {
 	trace_t trace;
 	vec3_t v;
-	VectorCopy(self->mins, v);
+	VectorCopy(self->server.mins, v);
 	v[2] += AI_STEPSIZE;
-	//	trap_Trace (&trace, self->s.origin, v, self->maxs, goal, self, MASK_NODESOLID);
-	trace = gi.trace(self->s.origin, v, self->maxs, goal, self, MASK_NODESOLID);
+	//	trap_Trace (&trace, self->server.state.origin, v, self->server.maxs, goal, self, MASK_NODESOLID);
+	trace = gi.trace(self->server.state.origin, v, self->server.maxs, goal, self, MASK_NODESOLID);
 
 	// Yes we can see it
 	if (trace.fraction == 1.0f)
@@ -139,7 +139,7 @@ float AI_ItemWeight(edict_t *self, edict_t *it)
 {
 	float		weight;
 
-	if (!self->client)
+	if (!self->server.client)
 		return 0;
 
 	if (!it->item)

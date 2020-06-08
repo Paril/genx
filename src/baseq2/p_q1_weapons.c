@@ -23,13 +23,13 @@ extern bool     is_quad;
 
 void Weapon_Q1(edict_t *ent, int num_frames, G_WeaponRunFunc fire, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (ent->deadflag || !ent->solid || ent->freeze_time > level.time) // VWep animations screw up corpses
+	if (ent->deadflag || !ent->server.solid || ent->freeze_time > level.time) // VWep animations screw up corpses
 		return;
 
-	/*if (ent->client->next_weapon_update > ent->client->player_time)
+	/*if (ent->server.client->next_weapon_update > ent->server.client->player_time)
 		return;
 
-	ent->client->next_weapon_update = ent->client->player_time + 100;*/
+	ent->server.client->next_weapon_update = ent->server.client->player_time + 100;*/
 
 	switch (gun_state->weaponstate)
 	{
@@ -43,15 +43,15 @@ void Weapon_Q1(edict_t *ent, int num_frames, G_WeaponRunFunc fire, player_gun_t 
 				return;
 			}
 
-			if ((ent->client->latched_buttons | ent->client->buttons) & BUTTON_ATTACK)
+			if ((ent->server.client->latched_buttons | ent->server.client->buttons) & BUTTON_ATTACK)
 			{
-				ent->client->latched_buttons &= ~BUTTON_ATTACK;
+				ent->server.client->latched_buttons &= ~BUTTON_ATTACK;
 
-				if ((level.time - ent->client->respawn_time) > 500 &&
-					ent->attack_finished_time < ent->client->player_time)
+				if ((level.time - ent->server.client->respawn_time) > 500 &&
+					ent->attack_finished_time < ent->server.client->player_time)
 				{
-					if ((game_iteminfos[ent->s.game].ammo_usages[ITEM_INDEX(ent->client->pers.weapon)] <= 0) ||
-						(ent->client->pers.ammo >= GetWeaponUsageCount(ent, ent->client->pers.weapon)))
+					if ((game_iteminfos[ent->server.state.game].ammo_usages[ITEM_INDEX(ent->server.client->pers.weapon)] <= 0) ||
+						(ent->server.client->pers.ammo >= GetWeaponUsageCount(ent, ent->server.client->pers.weapon)))
 					{
 						fire(ent, gun, gun_state);
 						gun_state->weaponstate = WEAPON_FIRING;
@@ -81,9 +81,9 @@ void Weapon_Q1_Anim_Shot(edict_t *ent)
 	if (ent->health <= 0)
 		return;
 
-	ent->client->anim_priority = ANIM_ATTACK;
-	ent->s.frame = 113 - 1;
-	ent->client->anim_end = 118;
+	ent->server.client->anim_priority = ANIM_ATTACK;
+	ent->server.state.frame = 113 - 1;
+	ent->server.client->anim_end = 118;
 	Weapon_QuadDamage(ent);
 }
 
@@ -92,9 +92,9 @@ void Weapon_Q1_Anim_Rock(edict_t *ent)
 	if (ent->health <= 0)
 		return;
 
-	ent->client->anim_priority = ANIM_ATTACK;
-	ent->s.frame = 107 - 1;
-	ent->client->anim_end = 112;
+	ent->server.client->anim_priority = ANIM_ATTACK;
+	ent->server.state.frame = 107 - 1;
+	ent->server.client->anim_end = 112;
 	Weapon_QuadDamage(ent);
 }
 
@@ -103,9 +103,9 @@ void Weapon_Q1_Anim_Nail(edict_t *ent)
 	if (ent->health <= 0)
 		return;
 
-	ent->client->anim_priority = ANIM_ATTACK;
-	ent->s.frame = (ent->s.frame == 103 ? 104 : 103) - 1;
-	ent->client->anim_end = 104;
+	ent->server.client->anim_priority = ANIM_ATTACK;
+	ent->server.state.frame = (ent->server.state.frame == 103 ? 104 : 103) - 1;
+	ent->server.client->anim_end = 104;
 	Weapon_QuadDamage(ent);
 }
 
@@ -114,9 +114,9 @@ void Weapon_Q1_Anim_Light(edict_t *ent)
 	if (ent->health <= 0)
 		return;
 
-	ent->client->anim_priority = ANIM_ATTACK;
-	ent->s.frame = (ent->s.frame == 105 ? 106 : 105) - 1;
-	ent->client->anim_end = 106;
+	ent->server.client->anim_priority = ANIM_ATTACK;
+	ent->server.state.frame = (ent->server.state.frame == 105 ? 106 : 105) - 1;
+	ent->server.client->anim_end = 106;
 	Weapon_QuadDamage(ent);
 }
 
@@ -140,7 +140,7 @@ static void ClearMultiDamage()
 	for (int i = 0; i < multi_hits; ++i)
 	{
 		multi_ent[i].hit->hit_index = 0;
-		multi_ent[i].hit->s.clip_contents = multi_ent[i].old_clipmask;
+		multi_ent[i].hit->server.state.clip_contents = multi_ent[i].old_clipmask;
 	}
 
 	memset(multi_ent, 0, sizeof(multi_ent));
@@ -167,7 +167,7 @@ void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod
 
 		hit->hit_index = ++multi_hits;
 		multi_ent[hit->hit_index - 1].hit = hit;
-		multi_ent[hit->hit_index - 1].old_clipmask = hit->s.clip_contents;
+		multi_ent[hit->hit_index - 1].old_clipmask = hit->server.state.clip_contents;
 	}
 
 	multi_ent[hit->hit_index - 1].damage += damage;
@@ -179,12 +179,12 @@ void AddMultiDamage(edict_t *hit, int damage, int kick, meansOfDeath_t multi_mod
 	{
 		int total_to_absorb = hit->health;
 
-		if (hit->gib_health && hit->s.game != GAME_DOOM)
+		if (hit->gib_health && hit->server.state.game != GAME_DOOM)
 			total_to_absorb += -hit->gib_health;
 
 		// traces will skip this for future shots
 		if (multi_ent[hit->hit_index - 1].damage >= total_to_absorb)
-			hit->s.clip_contents = 0;
+			hit->server.state.clip_contents = 0;
 	}
 }
 
@@ -219,12 +219,12 @@ void FireBullets(edict_t *ent, int shotcount, int damage, vec3_t dir, vec3_t spr
 	vec3_t direction, src;
 	vec3_t forward, right, up;
 
-	if (ent->client)
-		AngleVectors(ent->client->v_angle, forward, right, up);
+	if (ent->server.client)
+		AngleVectors(ent->server.client->v_angle, forward, right, up);
 	else
-		AngleVectors(ent->s.angles, forward, right, up);
+		AngleVectors(ent->server.state.angles, forward, right, up);
 
-	VectorMA(ent->s.origin, 10, forward, src);
+	VectorMA(ent->server.state.origin, 10, forward, src);
 	src[2] += ent->viewheight - 8;
 	vec3_t end;
 	VectorMA(src, 2048, dir, end);
@@ -252,21 +252,21 @@ void Q1Grenade_Explode(edict_t *ent)
 	vec3_t      origin;
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->server.owner, ent->server.state.origin, PNOISE_IMPACT);
 #endif
 
-	T_RadiusDamage(ent, ent->owner, ent->dmg, ent, DAMAGE_Q1, ent->dmg, ent->meansOfDeath);
-	VectorMA(ent->s.origin, -0.02, ent->velocity, origin);
+	T_RadiusDamage(ent, ent->server.owner, ent->dmg, ent, DAMAGE_Q1, ent->dmg, ent->meansOfDeath);
+	VectorMA(ent->server.state.origin, -0.02, ent->velocity, origin);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_Q1_EXPLODE);
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
 
 void Q1Grenade_Touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -293,28 +293,28 @@ void fire_q1_grenade(edict_t *self, vec3_t start, vec3_t aimdir, int damage, flo
 	vectoangles(aimdir, dir);
 	AngleVectors(dir, forward, right, up);
 	grenade = G_Spawn();
-	VectorCopy(start, grenade->s.origin);
+	VectorCopy(start, grenade->server.state.origin);
 	VectorScale(aimdir, 600, grenade->velocity);
 	VectorMA(grenade->velocity, 200 + crandom() * 10.0f, up, grenade->velocity);
 	VectorMA(grenade->velocity, crandom() * 10.0f, right, grenade->velocity);
 	VectorSet(grenade->avelocity, 300, 300, 300);
 	grenade->movetype = MOVETYPE_BOUNCE;
-	grenade->clipmask = MASK_SHOT;
-	grenade->solid = SOLID_BBOX;
-	grenade->s.effects |= EF_GRENADE;
-	grenade->s.game = GAME_Q1;
-	VectorClear(grenade->mins);
-	VectorClear(grenade->maxs);
-	grenade->s.modelindex = gi.modelindex("models/q1/grenade.mdl");
-	grenade->owner = self;
+	grenade->server.clipmask = MASK_SHOT;
+	grenade->server.solid = SOLID_BBOX;
+	grenade->server.state.effects |= EF_GRENADE;
+	grenade->server.state.game = GAME_Q1;
+	VectorClear(grenade->server.mins);
+	VectorClear(grenade->server.maxs);
+	grenade->server.state.modelindex = gi.modelindex("models/q1/grenade.mdl");
+	grenade->server.owner = self;
 	grenade->touch = Q1Grenade_Touch;
 	grenade->nextthink = level.time + (timer * 1000);
 	grenade->think = Q1Grenade_Explode;
 	grenade->dmg = damage;
 	grenade->entitytype = ET_GRENADE;
 
-	if (self->client)
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
+	if (self->server.client)
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), grenade, DT_DIRECT);
 	else
 		grenade->meansOfDeath = MakeAttackerMeansOfDeath(self, grenade, MD_NONE, DT_DIRECT);
 
@@ -325,7 +325,7 @@ void weapon_q1_gl_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
 	if (gun->frame != 0)
 	{
-		if (gun->frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !gun_state->newweapon)
+		if (gun->frame >= 6 && (ent->server.client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) && !gun_state->newweapon)
 			gun->frame = 0;
 		else
 		{
@@ -343,15 +343,15 @@ void weapon_q1_gl_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 		damage *= 4;
 
 	VectorSet(offset, 0, 0, ent->viewheight - 8);
-	AngleVectors(ent->client->v_angle, forward, right, NULL);
-	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	AngleVectors(ent->server.client->v_angle, forward, right, NULL);
+	P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 	fire_q1_grenade(ent, start, forward, damage, 2.5);
 
 	G_SendMuzzleFlash(ent, MZ_GRENADE);
 
 	gun->frame++;
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	Weapon_Q1_Anim_Rock(ent);
 	gun_state->kick_angles[0] = -1;
@@ -362,7 +362,7 @@ void q1_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *
 {
 	vec3_t      origin;
 
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -372,7 +372,7 @@ void q1_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *
 	}
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->server.owner, ent->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	// calculate position for the explosion entity
@@ -385,16 +385,16 @@ void q1_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *
 			damg = damg * 0.5;	// mostly immune
 #endif
 
-		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, damg, 0, DAMAGE_Q1, ent->meansOfDeath);
+		T_Damage(other, ent, ent->server.owner, ent->velocity, ent->server.state.origin, plane->normal, damg, 0, DAMAGE_Q1, ent->meansOfDeath);
 	}
 
-	T_RadiusDamage(ent, ent->owner, ent->dmg, other, DAMAGE_Q1, ent->dmg_radius, ent->meansOfDeath);
+	T_RadiusDamage(ent, ent->server.owner, ent->dmg, other, DAMAGE_Q1, ent->dmg_radius, ent->meansOfDeath);
 	VectorNormalize(ent->velocity);
-	VectorMA(ent->s.origin, -8, ent->velocity, origin);
+	VectorMA(ent->server.state.origin, -8, ent->velocity, origin);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_Q1_EXPLODE);
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
 
@@ -402,19 +402,19 @@ void fire_q1_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int dam
 {
 	edict_t *rocket;
 	rocket = G_Spawn();
-	VectorCopy(start, rocket->s.origin);
+	VectorCopy(start, rocket->server.state.origin);
 	VectorCopy(dir, rocket->movedir);
-	vectoangles(dir, rocket->s.angles);
+	vectoangles(dir, rocket->server.state.angles);
 	VectorScale(dir, speed, rocket->velocity);
 	rocket->movetype = MOVETYPE_FLYMISSILE;
-	rocket->clipmask = MASK_SHOT;
-	rocket->solid = SOLID_BBOX;
-	rocket->s.effects |= EF_ROCKET;
-	rocket->s.game = GAME_Q1;
-	VectorClear(rocket->mins);
-	VectorClear(rocket->maxs);
-	rocket->s.modelindex = gi.modelindex("%e_rocket");
-	rocket->owner = self;
+	rocket->server.clipmask = MASK_SHOT;
+	rocket->server.solid = SOLID_BBOX;
+	rocket->server.state.effects |= EF_ROCKET;
+	rocket->server.state.game = GAME_Q1;
+	VectorClear(rocket->server.mins);
+	VectorClear(rocket->server.maxs);
+	rocket->server.state.modelindex = gi.modelindex("%e_rocket");
+	rocket->server.owner = self;
 	rocket->touch = q1_rocket_touch;
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
@@ -423,11 +423,11 @@ void fire_q1_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int dam
 	rocket->entitytype = ET_ROCKET;
 
 #if ENABLE_COOP
-	check_dodge(self, rocket->s.origin, dir, speed);
+	check_dodge(self, rocket->server.state.origin, dir, speed);
 #endif
 
-	if (self->client)
-		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), rocket, DT_DIRECT);
+	if (self->server.client)
+		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), rocket, DT_DIRECT);
 	else
 		rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, rocket, MD_NONE, DT_DIRECT);
 
@@ -451,17 +451,17 @@ void weapon_q1_rl_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 		damage *= 4;
 
 	VectorSet(offset, 8, 0, ent->viewheight - 8);
-	AngleVectors(ent->client->v_angle, forward, right, NULL);
-	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	AngleVectors(ent->server.client->v_angle, forward, right, NULL);
+	P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 	fire_q1_rocket(ent, start, forward, damage, 120, 1000);
 
 	G_SendMuzzleFlash(ent, MZ_ROCKET);
 
 	gun->frame++;
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
-	ent->attack_finished_time = ent->client->player_time + 700;
+	ent->attack_finished_time = ent->server.client->player_time + 700;
 	Weapon_Q1_Anim_Rock(ent);
 	gun_state->kick_angles[0] = -1;
 }
@@ -499,9 +499,9 @@ void weapon_q1_axe_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 				break;
 		}
 
-		ent->client->anim_priority = ANIM_ATTACK;
-		ent->s.frame = start_anim - 1;
-		ent->client->anim_end = start_anim + 4;
+		ent->server.client->anim_priority = ANIM_ATTACK;
+		ent->server.state.frame = start_anim - 1;
+		ent->server.client->anim_end = start_anim + 4;
 		Weapon_QuadDamage(ent);
 	}
 	else if (gun->frame == 4 || gun->frame == 8)
@@ -514,8 +514,8 @@ void weapon_q1_axe_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 	{
 		vec3_t source, org;
 		vec3_t forward;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
-		VectorCopy(ent->s.origin, source);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
+		VectorCopy(ent->server.state.origin, source);
 		source[2] += ent->viewheight - 8;
 		VectorMA(source, 64, forward, org);
 		trace_t tr = gi.trace(source, vec3_origin, vec3_origin, org, ent, MASK_SHOT);
@@ -525,7 +525,7 @@ void weapon_q1_axe_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 			VectorMA(tr.endpos, -4, forward, org);
 
 			if (tr.ent->takedamage)
-				T_Damage(tr.ent, ent, ent, vec3_origin, vec3_origin, vec3_origin, 20, 0, DAMAGE_Q1, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+				T_Damage(tr.ent, ent, ent, vec3_origin, vec3_origin, vec3_origin, 20, 0, DAMAGE_Q1, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 			else
 			{
 				// hit wall
@@ -550,8 +550,8 @@ void LightningHit(edict_t *ent, edict_t *from, vec3_t pos, int damage)
 	gi.multicast(pos, MULTICAST_PVS);
 	meansOfDeath_t mod;
 
-	if (from->client)
-		mod = MakeWeaponMeansOfDeath(from, GetIndexByItem(from->client->pers.weapon), from, DT_DIRECT);
+	if (from->server.client)
+		mod = MakeWeaponMeansOfDeath(from, GetIndexByItem(from->server.client->pers.weapon), from, DT_DIRECT);
 	else
 		mod = MakeGenericMeansOfDeath(from, MD_NONE, DT_DIRECT);
 
@@ -579,7 +579,7 @@ void LightningDamage(edict_t *ent, vec3_t p1, vec3_t p2, edict_t *from, int dama
 	if (tr.ent->takedamage)
 	{
 		LightningHit(tr.ent, from, tr.endpos, damage);
-		/*if (ent->client && .classname == "player")
+		/*if (ent->server.client && .classname == "player")
 		{
 			if (other.classname == "player")*/
 		//tr.ent->velocity[2] += 400;
@@ -611,13 +611,13 @@ void W_FireLightning(edict_t *ent, int damage, int blowup_damage)
 	{
 		meansOfDeath_t mod;
 
-		if (ent->client)
-			mod = MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_INDIRECT);
+		if (ent->server.client)
+			mod = MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_INDIRECT);
 		else
 			mod = MakeGenericMeansOfDeath(ent, MD_NONE, DT_INDIRECT);
 
-		float cells = PLAYER_SHOTS_FOR_WEAPON(ent, ent->client->pers.weapon);
-		ent->client->pers.ammo = 0;
+		float cells = PLAYER_SHOTS_FOR_WEAPON(ent, ent->server.client->pers.weapon);
+		ent->server.client->pers.ammo = 0;
 		T_RadiusDamage(ent, ent, blowup_damage * cells, world, DAMAGE_Q1, blowup_damage * cells, mod);
 		return;
 	}
@@ -631,10 +631,10 @@ void W_FireLightning(edict_t *ent, int damage, int blowup_damage)
 		ent->decel -= 0.1f;
 
 	vec3_t org;
-	VectorCopy(ent->s.origin, org);
+	VectorCopy(ent->server.state.origin, org);
 	org[2] += ent->viewheight - 8;
 	vec3_t forward;
-	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 	vec3_t end;
 	VectorMA(org, 600, forward, end);
 	trace_t tr = gi.trace(org, vec3_origin, vec3_origin, end, ent, MASK_SOLID);
@@ -650,7 +650,7 @@ void W_FireLightning(edict_t *ent, int damage, int blowup_damage)
 
 void weapon_q1_lightning_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || gun_state->newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
+	if (!(ent->server.client->buttons & BUTTON_ATTACK) || gun_state->newweapon || !HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
 	{
 		gun->frame = 5;
 		return;
@@ -658,7 +658,7 @@ void weapon_q1_lightning_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_
 
 	vec3_t      forward;
 	int         damage = 30, blowup_damage = 35;
-	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 
 	if (is_quad)
 	{
@@ -675,8 +675,8 @@ void weapon_q1_lightning_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_
 
 	W_FireLightning(ent, damage, blowup_damage);
 
-	if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	if (HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
+		RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	if (gun->frame == 3)
 		gun->frame = 1;
@@ -706,7 +706,7 @@ void spawn_touchblood(edict_t *ent, vec3_t plane_normal, float damage)
 	VectorNormalize(vel);
 	VectorMA(vel, 2, plane_normal, vel);
 	VectorScale(vel, 200 * 0.02f, vel);
-	Q1_SpawnBlood(ent->s.origin, vel, damage);
+	Q1_SpawnBlood(ent->server.state.origin, vel, damage);
 };
 
 /*
@@ -718,7 +718,7 @@ Fires a single blaster bolt.  Used by the blaster and hyper blaster.
 */
 void spike_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -728,20 +728,20 @@ void spike_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *sur
 	}
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+	PlayerNoise(self->server.owner, self->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	if (other->takedamage)
 	{
 		spawn_touchblood(self, vec3_origin, self->dmg);
-		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 0, DAMAGE_Q1, self->meansOfDeath);
+		T_Damage(other, self, self->server.owner, self->velocity, self->server.state.origin, plane->normal, self->dmg, 0, DAMAGE_Q1, self->meansOfDeath);
 	}
 	else
 	{
 		MSG_WriteByte(svc_temp_entity);
 		MSG_WriteByte(self->count);
-		MSG_WritePos(self->s.origin);
-		gi.multicast(self->s.origin, MULTICAST_PVS);
+		MSG_WritePos(self->server.state.origin);
+		gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	}
 
 	G_FreeEdict(self);
@@ -752,30 +752,31 @@ edict_t *fire_spike(edict_t *self, vec3_t start, vec3_t dir, int damage, int spe
 	edict_t *bolt;
 	VectorNormalize(dir);
 	bolt = G_Spawn();
-	bolt->svflags = SVF_DEADMONSTER;
+	bolt->server.flags.deadmonster = true;
 	// yes, I know it looks weird that projectiles are deadmonsters
 	// what this means is that when prediction is used against the object
 	// (blaster/hyperblaster shots), the player won't be solid clipped against
 	// the object.  Right now trying to run into a firing hyperblaster
 	// is very jerky since you are predicted 'against' the shots.
-	VectorCopy(start, bolt->s.origin);
-	VectorCopy(start, bolt->s.old_origin);
-	vectoangles(dir, bolt->s.angles);
+	VectorCopy(start, bolt->server.state.origin);
+	VectorCopy(start, bolt->server.state.old_origin);
+	vectoangles(dir, bolt->server.state.angles);
 	VectorScale(dir, speed, bolt->velocity);
 	bolt->movetype = MOVETYPE_FLYMISSILE;
-	bolt->s.game = GAME_Q1;
-	bolt->clipmask = MASK_SHOT;
-	bolt->solid = SOLID_BBOX;
-	VectorClear(bolt->mins);
-	VectorClear(bolt->maxs);
+	bolt->server.state.game = GAME_Q1;
+	bolt->server.clipmask = MASK_SHOT;
+	bolt->server.solid = SOLID_BBOX;
+	VectorClear(bolt->server.mins);
+	VectorClear(bolt->server.maxs);
 	bolt->count = (super) ? TE_Q1_SUPERSPIKE : TE_Q1_SPIKE;
+	bolt->server.state.renderfx |= RF_PROJECTILE;
 
 	if (super)
-		bolt->s.modelindex = gi.modelindex("models/q1/s_spike.mdl");
+		bolt->server.state.modelindex = gi.modelindex("models/q1/s_spike.mdl");
 	else
-		bolt->s.modelindex = gi.modelindex("models/q1/spike.mdl");
+		bolt->server.state.modelindex = gi.modelindex("models/q1/spike.mdl");
 
-	bolt->owner = self;
+	bolt->server.owner = self;
 	bolt->touch = spike_touch;
 	bolt->nextthink = level.time + 6000;
 	bolt->think = G_FreeEdict;
@@ -783,46 +784,47 @@ edict_t *fire_spike(edict_t *self, vec3_t start, vec3_t dir, int damage, int spe
 	bolt->entitytype = ET_Q1_SPIKE;
 	gi.linkentity(bolt);
 
-	if (self->client)
-		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), bolt, DT_DIRECT);
+	if (self->server.client)
+		bolt->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), bolt, DT_DIRECT);
 	else
 		bolt->meansOfDeath = MakeAttackerMeansOfDeath(self, bolt, MD_NONE, DT_DIRECT);
 	
 #if ENABLE_COOP
-	check_dodge(self, bolt->s.origin, dir, speed);
+	check_dodge(self, bolt->server.state.origin, dir, speed);
 #endif
 
-	/*tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
+	/*tr = gi.trace(self->server.state.origin, NULL, NULL, bolt->server.state.origin, bolt, MASK_SHOT);
 	if (tr.fraction < 1.0) {
-		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
+		VectorMA(bolt->server.state.origin, -10, dir, bolt->server.state.origin);
 		bolt->touch(bolt, tr.ent, NULL, NULL);
 	}*/
+
 	return bolt;
 }
 
 void W_FireSuperSpikes(edict_t *ent, int damage)
 {
 	vec3_t dir, right;
-	AngleVectors(ent->client->v_angle, dir, right, NULL);
+	AngleVectors(ent->server.client->v_angle, dir, right, NULL);
 	vec3_t start;
-	VectorSet(start, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] + 16);
+	VectorSet(start, ent->server.state.origin[0], ent->server.state.origin[1], ent->server.state.origin[2] + 16);
 	fire_spike(ent, start, dir, damage, 1000, true);
 }
 
 void W_FireSpikes(edict_t *ent, int damage, float ox)
 {
 	vec3_t dir, right;
-	AngleVectors(ent->client->v_angle, dir, right, NULL);
+	AngleVectors(ent->server.client->v_angle, dir, right, NULL);
 	vec3_t start;
 	VectorScale(right, ox, right);
-	VectorSet(start, ent->s.origin[0], ent->s.origin[1], ent->s.origin[2] + ent->viewheight - 8);
+	VectorSet(start, ent->server.state.origin[0], ent->server.state.origin[1], ent->server.state.origin[2] + ent->viewheight - 8);
 	VectorAdd(start, right, start);
 	fire_spike(ent, start, dir, damage, 1000, false);
 }
 
 void weapon_q1_nailgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || gun_state->newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
+	if (!(ent->server.client->buttons & BUTTON_ATTACK) || gun_state->newweapon || !HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
 	{
 		gun->frame = 9;
 		return;
@@ -830,7 +832,7 @@ void weapon_q1_nailgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_st
 
 	vec3_t      forward;
 	int         damage = 9;
-	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 
 	if (is_quad)
 		damage *= 4;
@@ -839,7 +841,7 @@ void weapon_q1_nailgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_st
 
 	G_SendMuzzleFlash(ent, MZ_MACHINEGUN);
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	if (gun->frame == 8)
 		gun->frame = 1;
@@ -853,7 +855,7 @@ void weapon_q1_nailgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_st
 
 void weapon_q1_snailgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || gun_state->newweapon || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
+	if (!(ent->server.client->buttons & BUTTON_ATTACK) || gun_state->newweapon || !HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
 	{
 		gun->frame = 9;
 		return;
@@ -861,19 +863,19 @@ void weapon_q1_snailgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 
 	vec3_t      forward;
 	int         damage = 18;
-	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 
 	if (is_quad)
 		damage *= 4;
 
-	//if (ent->client->pers.inventory[gun_state->ammo_index] > 2)
+	//if (ent->server.client->pers.inventory[gun_state->ammo_index] > 2)
 	W_FireSuperSpikes(ent, damage);
 	//else
 	//	W_FireSpikes(ent, damage, (gun->frame % 2) == 0 ? 4 : -4);
 
 	G_SendMuzzleFlash(ent, MZ_CHAINGUN1);
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	if (gun->frame == 8)
 		gun->frame = 1;
@@ -889,7 +891,7 @@ void weapon_q1_shotgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_st
 {
 	if (gun->frame != 0)
 	{
-		if (gun->frame >= 5 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !gun_state->newweapon)
+		if (gun->frame >= 5 && (ent->server.client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) && !gun_state->newweapon)
 			gun->frame = 0;
 		else
 		{
@@ -900,19 +902,19 @@ void weapon_q1_shotgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_st
 
 	vec3_t      forward, right, up;
 	int         damage = 4;
-	AngleVectors(ent->client->v_angle, forward, right, up);
+	AngleVectors(ent->server.client->v_angle, forward, right, up);
 
 	if (is_quad)
 		damage *= 4;
 
 	vec3_t spread = { 0.04, 0.04, 0 };
-	FireBullets(ent, 6, damage, forward, spread, up, right, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+	FireBullets(ent, 6, damage, forward, spread, up, right, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 
 	G_SendMuzzleFlash(ent, MZ_SHOTGUN);
 	
 	gun->frame++;
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	Weapon_Q1_Anim_Shot(ent);
 	gun_state->kick_time = level.time + 100;
@@ -928,26 +930,26 @@ void weapon_q1_sshotgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 		return;
 	}
 
-	/*if (ent->client->pers.inventory[gun_state->ammo_index] == 1)
+	/*if (ent->server.client->pers.inventory[gun_state->ammo_index] == 1)
 	{
 		weapon_q1_shotgun_fire(ent, gun);
 		return;
 	}*/
 	vec3_t      forward, right, up;
 	int         damage = 4;
-	AngleVectors(ent->client->v_angle, forward, right, up);
+	AngleVectors(ent->server.client->v_angle, forward, right, up);
 
 	if (is_quad)
 		damage *= 4;
 
 	vec3_t spread = { 0.14, 0.08, 0 };
-	FireBullets(ent, 14, damage, forward, spread, up, right, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+	FireBullets(ent, 14, damage, forward, spread, up, right, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 
 	G_SendMuzzleFlash(ent, MZ_SSHOTGUN);
 
 	gun->frame++;
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	Weapon_Q1_Anim_Shot(ent);
 	gun_state->kick_angles[0] = -3;
@@ -956,7 +958,7 @@ void weapon_q1_sshotgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 
 void laser_q1_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -966,18 +968,18 @@ void laser_q1_touch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *
 	}
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(self->owner, self->s.origin, PNOISE_IMPACT);
+	PlayerNoise(self->server.owner, self->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	vec3_t org, dir;
 	VectorNormalize2(self->velocity, dir);
-	VectorMA(self->s.origin, -8, dir, org);
+	VectorMA(self->server.state.origin, -8, dir, org);
 	gi.sound(self, CHAN_WEAPON, gi.soundindex("q1/enforcer/enfstop.wav"), 1, ATTN_STATIC, 0);
 
 	if (other->takedamage)
 	{
 		spawn_touchblood(self, vec3_origin, self->dmg);
-		T_Damage(other, self, self->owner, self->velocity, self->s.origin, plane->normal, self->dmg, 0, DAMAGE_Q1, self->meansOfDeath);
+		T_Damage(other, self, self->server.owner, self->velocity, self->server.state.origin, plane->normal, self->dmg, 0, DAMAGE_Q1, self->meansOfDeath);
 	}
 	else
 	{
@@ -996,23 +998,23 @@ void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	edict_t *bolt;
 	VectorNormalize(dir);
 	bolt = G_Spawn();
-	bolt->svflags = SVF_DEADMONSTER;
+	bolt->server.flags.deadmonster = true;
 	// yes, I know it looks weird that projectiles are deadmonsters
 	// what this means is that when prediction is used against the object
 	// (blaster/hyperblaster shots), the player won't be solid clipped against
 	// the object.  Right now trying to run into a firing hyperblaster
 	// is very jerky since you are predicted 'against' the shots.
-	VectorCopy(start, bolt->s.origin);
-	VectorCopy(start, bolt->s.old_origin);
-	vectoangles(dir, bolt->s.angles);
+	VectorCopy(start, bolt->server.state.origin);
+	VectorCopy(start, bolt->server.state.old_origin);
+	vectoangles(dir, bolt->server.state.angles);
 	VectorScale(dir, speed, bolt->velocity);
 	bolt->movetype = MOVETYPE_FLYMISSILE;
-	bolt->clipmask = MASK_SHOT;
-	bolt->solid = SOLID_BBOX;
-	VectorClear(bolt->mins);
-	VectorClear(bolt->maxs);
-	bolt->s.modelindex = gi.modelindex("models/q1/laser.mdl");
-	bolt->owner = self;
+	bolt->server.clipmask = MASK_SHOT;
+	bolt->server.solid = SOLID_BBOX;
+	VectorClear(bolt->server.mins);
+	VectorClear(bolt->server.maxs);
+	bolt->server.state.modelindex = gi.modelindex("models/q1/laser.mdl");
+	bolt->server.owner = self;
 	bolt->touch = laser_q1_touch;
 	bolt->nextthink = level.time + 5000;
 	bolt->think = G_FreeEdict;
@@ -1021,14 +1023,14 @@ void fire_q1_laser(edict_t *self, vec3_t start, vec3_t dir, int damage, int spee
 	bolt->meansOfDeath = MakeAttackerMeansOfDeath(self, bolt, MD_NONE, DT_DIRECT);
 	
 #if ENABLE_COOP
-	check_dodge(self, bolt->s.origin, dir, speed);
+	check_dodge(self, bolt->server.state.origin, dir, speed);
 #endif
 
-	trace_t tr = gi.trace(self->s.origin, NULL, NULL, bolt->s.origin, bolt, MASK_SHOT);
+	trace_t tr = gi.trace(self->server.state.origin, NULL, NULL, bolt->server.state.origin, bolt, MASK_SHOT);
 
 	if (tr.fraction < 1.0f)
 	{
-		VectorMA(bolt->s.origin, -10, dir, bolt->s.origin);
+		VectorMA(bolt->server.state.origin, -10, dir, bolt->server.state.origin);
 		bolt->touch(bolt, tr.ent, NULL, NULL);
 	}
 }
@@ -1087,5 +1089,5 @@ static G_WeaponRunFunc q1_weapon_run_funcs[] =
 
 void Weapon_Q1_Run(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	q1_weapon_run_funcs[ITEM_INDEX(ent->client->pers.weapon) - ITI_WEAPONS_START](ent, gun, gun_state);
+	q1_weapon_run_funcs[ITEM_INDEX(ent->server.client->pers.weapon) - ITI_WEAPONS_START](ent, gun, gun_state);
 }

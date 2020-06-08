@@ -80,7 +80,7 @@ static void brain_duck_down(edict_t *self)
 		return;
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
-	self->maxs[2] -= 32;
+	self->server.maxs[2] -= 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -96,7 +96,7 @@ static void brain_duck_hold(edict_t *self)
 static void brain_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
+	self->server.maxs[2] += 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -125,7 +125,7 @@ static void brain_swing_right(edict_t *self)
 static void brain_hit_right(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->maxs[0], 8);
+	VectorSet(aim, MELEE_DISTANCE, self->server.maxs[0], 8);
 
 	if (fire_hit(self, aim, (15 + (Q_rand() % 5)), 40))
 		gi.sound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
@@ -139,7 +139,7 @@ static void brain_swing_left(edict_t *self)
 static void brain_hit_left(edict_t *self)
 {
 	vec3_t  aim;
-	VectorSet(aim, MELEE_DISTANCE, self->mins[0], 8);
+	VectorSet(aim, MELEE_DISTANCE, self->server.mins[0], 8);
 
 	if (fire_hit(self, aim, (15 + (Q_rand() % 5)), 40))
 		gi.sound(self, CHAN_WEAPON, sound_melee3, 1, ATTN_NORM, 0);
@@ -197,7 +197,7 @@ static void brain_pain(edict_t *self, edict_t *other, float kick, int damage)
 	float   r;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -228,11 +228,11 @@ static void brain_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void brain_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -240,7 +240,7 @@ static void brain_dead(edict_t *self)
 static void brain_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
 	int     n;
-	self->s.effects = 0;
+	self->server.state.effects = 0;
 	self->monsterinfo.power_armor_type = POWER_ARMOR_NONE;
 
 	// check for gib
@@ -324,10 +324,10 @@ void SP_monster_brain(edict_t *self)
 	sound_melee2 = gi.soundindex("brain/melee2.wav");
 	sound_melee3 = gi.soundindex("brain/melee3.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->health = 300;
 	self->gib_health = -150;
 	self->mass = 400;

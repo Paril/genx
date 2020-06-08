@@ -50,31 +50,31 @@ static void Boss2Rocket(edict_t *self)
 	vec3_t  start;
 	vec3_t  dir;
 	vec3_t  vec;
-	AngleVectors(self->s.angles, forward, right, NULL);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
 	//1
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_1], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
 	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_1);
 	//2
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_2], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_2], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
 	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_2);
 	//3
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_3], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_3], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
 	monster_fire_rocket(self, start, dir, 50, 500, MZ2_BOSS2_ROCKET_3);
 	//4
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_4], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_BOSS2_ROCKET_4], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
@@ -85,9 +85,9 @@ static void boss2_firebullet_right(edict_t *self)
 {
 	vec3_t  forward, right, target;
 	vec3_t  start;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_R1], forward, right, start);
-	VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_R1], forward, right, start);
+	VectorMA(self->enemy->server.state.origin, -0.2f, self->enemy->velocity, target);
 	target[2] += self->enemy->viewheight;
 	VectorSubtract(target, start, forward);
 	VectorNormalize(forward);
@@ -98,9 +98,9 @@ static void boss2_firebullet_left(edict_t *self)
 {
 	vec3_t  forward, right, target;
 	vec3_t  start;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_L1], forward, right, start);
-	VectorMA(self->enemy->s.origin, -0.2f, self->enemy->velocity, target);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_BOSS2_MACHINEGUN_L1], forward, right, start);
+	VectorMA(self->enemy->server.state.origin, -0.2f, self->enemy->velocity, target);
 	target[2] += self->enemy->viewheight;
 	VectorSubtract(target, start, forward);
 	VectorNormalize(forward);
@@ -115,12 +115,12 @@ static void Boss2MachineGun(edict_t *self)
 	    vec3_t  vec;
 	    int     flash_number;
 
-	    AngleVectors (self->s.angles, forward, right, NULL);
+	    AngleVectors (self->server.state.angles, forward, right, NULL);
 
-	    flash_number = MZ2_BOSS2_MACHINEGUN_1 + (self->s.frame - FRAME_attack10);
-	    G_ProjectSource (self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	    flash_number = MZ2_BOSS2_MACHINEGUN_1 + (self->server.state.frame - FRAME_attack10);
+	    G_ProjectSource (self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 
-	    VectorCopy (self->enemy->s.origin, vec);
+	    VectorCopy (self->enemy->server.state.origin, vec);
 	    vec[2] += self->enemy->viewheight;
 	    VectorSubtract (vec, start, dir);
 	    VectorNormalize (dir);
@@ -152,7 +152,7 @@ static void boss2_attack(edict_t *self)
 {
 	vec3_t  vec;
 	float   range;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, vec);
 	range = VectorLength(vec);
 
 	if (range <= 125)
@@ -182,7 +182,7 @@ static void boss2_reattack_mg(edict_t *self)
 static void boss2_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -209,11 +209,11 @@ static void boss2_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void boss2_dead(edict_t *self)
 {
-	VectorSet(self->mins, -56, -56, 0);
-	VectorSet(self->maxs, 56, 56, 80);
+	VectorSet(self->server.mins, -56, -56, 0);
+	VectorSet(self->server.maxs, 56, 56, 80);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -227,7 +227,7 @@ static void boss2_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death");
 #if 0
 	int     n;
-	self->s.sound = 0;
+	self->server.state.sound = 0;
 
 	// check for gib
 	if (self->health <= self->gib_health)
@@ -266,9 +266,9 @@ static bool Boss2_CheckAttack(edict_t *self)
 	if (self->enemy->health > 0)
 	{
 		// see if any entities are in the way of the shot
-		VectorCopy(self->s.origin, spot1);
+		VectorCopy(self->server.state.origin, spot1);
 		spot1[2] += self->viewheight;
-		VectorCopy(self->enemy->s.origin, spot2);
+		VectorCopy(self->enemy->server.state.origin, spot2);
 		spot2[2] += self->enemy->viewheight;
 		tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA);
 
@@ -278,7 +278,7 @@ static bool Boss2_CheckAttack(edict_t *self)
 	}
 
 	enemy_range = range(self, self->enemy);
-	VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, temp);
 	vec3_t a;
 	vectoangles2(temp, a);
 	enemy_yaw = a[YAW];
@@ -373,12 +373,12 @@ void SP_monster_boss2(edict_t *self)
 	sound_pain3 = gi.soundindex("bosshovr/bhvpain3.wav");
 	sound_death = gi.soundindex("bosshovr/bhvdeth1.wav");
 	sound_search1 = gi.soundindex("bosshovr/bhvunqv1.wav");
-	self->s.sound = gi.soundindex("bosshovr/bhvengn1.wav");
+	self->server.state.sound = gi.soundindex("bosshovr/bhvengn1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -56, -56, 0);
-	VectorSet(self->maxs, 56, 56, 80);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -56, -56, 0);
+	VectorSet(self->server.maxs, 56, 56, 80);
 	self->health = 2000;
 	self->gib_health = -200;
 	self->mass = 1000;

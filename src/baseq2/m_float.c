@@ -55,14 +55,14 @@ static void floater_fire_blaster(edict_t *self)
 	vec3_t  dir;
 	int     effect;
 
-	if ((self->s.frame == FRAME_attak104) || (self->s.frame == FRAME_attak107))
+	if ((self->server.state.frame == FRAME_attak104) || (self->server.state.frame == FRAME_attak107))
 		effect = EF_HYPERBLASTER;
 	else
 		effect = 0;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_FLOAT_BLASTER_1], forward, right, start);
-	VectorCopy(self->enemy->s.origin, end);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_FLOAT_BLASTER_1], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, end);
 	end[2] += self->enemy->viewheight;
 	VectorSubtract(end, start, dir);
 	monster_fire_blaster(self, start, dir, 1, 1000, MZ2_FLOAT_BLASTER_1, effect);
@@ -102,12 +102,12 @@ static void floater_zap(edict_t *self)
 	vec3_t  origin;
 	vec3_t  dir;
 	vec3_t  offset;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
-	AngleVectors(self->s.angles, forward, right, NULL);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dir);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
 	//FIXME use a flash and replace these two lines with the commented one
 	VectorSet(offset, 18.5f, -0.9f, 10);
-	G_ProjectSource(self->s.origin, offset, forward, right, origin);
-	//  G_ProjectSource (self->s.origin, monster_flash_offset[flash_number], forward, right, origin);
+	G_ProjectSource(self->server.state.origin, offset, forward, right, origin);
+	//  G_ProjectSource (self->server.state.origin, monster_flash_offset[flash_number], forward, right, origin);
 	gi.sound(self, CHAN_WEAPON, sound_attack2, 1, ATTN_NORM, 0);
 	//FIXME use the flash, Luke
 	MSG_WriteByte(svc_temp_entity);
@@ -117,7 +117,7 @@ static void floater_zap(edict_t *self)
 	MSG_WriteDir(dir);
 	MSG_WriteByte(1);    //sparks
 	gi.multicast(origin, MULTICAST_PVS);
-	T_Damage(self->enemy, self, self, dir, self->enemy->s.origin, vec3_origin, 5 + Q_rand() % 6, -10, DAMAGE_ENERGY, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
+	T_Damage(self->enemy, self, self, dir, self->enemy->server.state.origin, vec3_origin, 5 + Q_rand() % 6, -10, DAMAGE_ENERGY, MakeAttackerMeansOfDeath(self, self, MD_MELEE, DT_DIRECT));
 }
 
 static void floater_attack(edict_t *self)
@@ -138,7 +138,7 @@ static void floater_pain(edict_t *self, edict_t *other, float kick, int damage)
 	int     n;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -164,11 +164,11 @@ static void floater_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void floater_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -214,12 +214,12 @@ void SP_monster_floater(edict_t *self)
 	sound_pain2 = gi.soundindex("floater/fltpain2.wav");
 	sound_sight = gi.soundindex("floater/fltsght1.wav");
 	gi.soundindex("floater/fltatck1.wav");
-	self->s.sound = gi.soundindex("floater/fltsrch1.wav");
+	self->server.state.sound = gi.soundindex("floater/fltsrch1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -24, -24, -24);
-	VectorSet(self->maxs, 24, 24, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -24, -24, -24);
+	VectorSet(self->server.maxs, 24, 24, 32);
 	self->health = 200;
 	self->gib_health = -80;
 	self->mass = 300;

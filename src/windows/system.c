@@ -118,7 +118,8 @@ static void show_console_input(void)
 		}, &res);
 		SetConsoleCursorPosition(houtput, (COORD)
 		{
-			pos + 1, info.dwCursorPosition.Y
+			(SHORT) pos + 1,
+			(SHORT) info.dwCursorPosition.Y
 		});
 	}
 }
@@ -146,7 +147,8 @@ static void console_move_cursor(inputField_t *f, size_t pos)
 		{
 			SetConsoleCursorPosition(houtput, (COORD)
 			{
-				pos + 1, info.dwCursorPosition.Y
+				(SHORT) pos + 1,
+				(SHORT) info.dwCursorPosition.Y
 			});
 		}
 	}

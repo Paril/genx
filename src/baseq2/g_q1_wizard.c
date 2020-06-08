@@ -54,11 +54,11 @@ static void LaunchMissile(edict_t *self, edict_t *missile, float mspeed, float a
 	vec3_t vec, move;
 	float	fly;
 	vec3_t v_forward, v_right, v_up;
-	AngleVectors(self->s.angles, v_forward, v_right, v_up);
+	AngleVectors(self->server.state.angles, v_forward, v_right, v_up);
 
 	// set missile speed
 	for (int i = 0; i < 3; ++i)
-		vec[i] = self->enemy->s.origin[i] + self->enemy->mins[i] + self->enemy->size[i] * 0.7f - missile->s.origin[i];
+		vec[i] = self->enemy->server.state.origin[i] + self->enemy->server.mins[i] + self->enemy->size[i] * 0.7f - missile->server.state.origin[i];
 
 	// calc aproximate time for missile to reach vec
 	fly = VectorLength(vec) / mspeed;
@@ -73,8 +73,8 @@ static void LaunchMissile(edict_t *self, edict_t *missile, float mspeed, float a
 		vec[i] = vec[i] + accuracy * v_up[i] * (random() - 0.5f) + accuracy * v_right[i] * (random() - 0.5f);
 
 	VectorScale(vec, mspeed, missile->velocity);
-	VectorClear(missile->s.angles);
-	missile->s.angles[1] = vectoyaw(missile->velocity);
+	VectorClear(missile->server.state.angles);
+	missile->server.state.angles[1] = vectoyaw(missile->velocity);
 	// set missile duration
 	missile->nextthink = level.time + 5000;
 	missile->think = G_FreeEdict;
@@ -103,17 +103,17 @@ static void Wiz_FastFire(edict_t *self)
 	vec3_t vec;
 	vec3_t dst;
 
-	if (self->owner->health > 0)
+	if (self->server.owner->health > 0)
 	{
 		//self.owner.effects = self.owner.effects | EF_MUZZLEFLASH;
-		VectorMA(self->enemy->s.origin, -13, self->movedir, dst);
-		VectorSubtract(dst, self->s.origin, vec);
+		VectorMA(self->enemy->server.state.origin, -13, self->movedir, dst);
+		VectorSubtract(dst, self->server.state.origin, vec);
 		VectorNormalize(vec);
 		gi.sound(self, CHAN_WEAPON, sound_wattack, 1, ATTN_NORM, 0);
-		edict_t *newmis = fire_spike(self, self->s.origin, vec, 9, 600, false);
-		newmis->owner = self->owner;
+		edict_t *newmis = fire_spike(self, self->server.state.origin, vec, 9, 600, false);
+		newmis->server.owner = self->server.owner;
 		newmis->count = TE_Q1_WIZSPIKE;
-		newmis->s.effects |= EF_Q1_WIZ;
+		newmis->server.state.effects |= EF_Q1_WIZ;
 		gi.setmodel(newmis, "models/q1/w_spike.mdl");
 		gi.linkentity(newmis);
 	}
@@ -126,31 +126,31 @@ static void Wiz_StartFast(edict_t *self)
 	edict_t *missile;
 	gi.sound(self, CHAN_WEAPON, sound_wattack, 1, ATTN_NORM, 0);
 	vec3_t v_forward, v_right;
-	AngleVectors(self->s.angles, v_forward, v_right, NULL);
+	AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
 	missile = G_Spawn();
-	missile->owner = self;
+	missile->server.owner = self;
 	missile->nextthink = level.time + 600;
-	VectorClear(missile->mins);
-	VectorClear(missile->maxs);
+	VectorClear(missile->server.mins);
+	VectorClear(missile->server.maxs);
 
 	for (int i = 0; i < 3; ++i)
-		missile->s.origin[i] = self->s.origin[i] + v_forward[i] * 14 + v_right[i] * 14;
+		missile->server.state.origin[i] = self->server.state.origin[i] + v_forward[i] * 14 + v_right[i] * 14;
 
-	missile->s.origin[2] += 30;
+	missile->server.state.origin[2] += 30;
 	missile->enemy = self->enemy;
 	missile->nextthink = level.time + 800;
 	missile->think = Wiz_FastFire;
 	VectorCopy(v_right, missile->movedir);
 	missile = G_Spawn();
-	missile->owner = self;
+	missile->server.owner = self;
 	missile->nextthink = level.time + 1000;
-	VectorClear(missile->mins);
-	VectorClear(missile->maxs);
+	VectorClear(missile->server.mins);
+	VectorClear(missile->server.maxs);
 
 	for (int i = 0; i < 3; ++i)
-		missile->s.origin[i] = self->s.origin[i] + v_forward[i] * 14 + v_right[i] * -14;
+		missile->server.state.origin[i] = self->server.state.origin[i] + v_forward[i] * 14 + v_right[i] * -14;
 
-	missile->s.origin[2] += 30;
+	missile->server.state.origin[2] += 30;
 	missile->enemy = self->enemy;
 	missile->nextthink = level.time + 300;
 	missile->think = Wiz_FastFire;
@@ -210,14 +210,14 @@ static void wiz_paina(edict_t *self)
 
 static void wiz_unsolid(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
 static void wiz_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -326,8 +326,8 @@ static bool	WizardCheckAttack(edict_t *self)
 
 	targ = self->enemy;
 	// see if any entities are in the way of the shot
-	VectorCopy(self->s.origin, spot1);
-	VectorCopy(targ->s.origin, spot2);
+	VectorCopy(self->server.state.origin, spot1);
+	VectorCopy(targ->server.state.origin, spot2);
 	spot1[2] += self->viewheight;
 	spot2[2] += targ->viewheight;
 	trace_t tr = gi.trace(spot1, vec3_origin, vec3_origin, spot2, self, MASK_SHOT);
@@ -418,11 +418,11 @@ void q1_monster_wizard(edict_t *self)
 	sound_wpain = gi.soundindex("q1/wizard/wpain.wav");
 	sound_wsight = gi.soundindex("q1/wizard/wsight.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 40);
 	self->health = 80;
 	self->monsterinfo.stand = wiz_stand;
 	self->monsterinfo.walk = wiz_walk;

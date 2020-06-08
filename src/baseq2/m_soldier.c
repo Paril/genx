@@ -49,7 +49,7 @@ static void soldier_idle(edict_t *self)
 
 static void soldier_cock(edict_t *self)
 {
-	if (self->s.frame == FRAME_stand322)
+	if (self->server.state.frame == FRAME_stand322)
 		gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_IDLE, 0);
 	else
 		gi.sound(self, CHAN_WEAPON, sound_cock, 1, ATTN_NORM, 0);
@@ -115,7 +115,7 @@ static void soldier_pain(edict_t *self, edict_t *other, float kick, int damage)
 	int     n;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum |= 1;
+		self->server.state.skinnum |= 1;
 
 	if (level.time < self->pain_debounce_time)
 	{
@@ -128,7 +128,7 @@ static void soldier_pain(edict_t *self, edict_t *other, float kick, int damage)
 	}
 
 	self->pain_debounce_time = level.time + 3000;
-	n = self->s.skinnum | 1;
+	n = self->server.state.skinnum | 1;
 
 	if (n == 1)
 		gi.sound(self, CHAN_VOICE, sound_pain_light, 1, ATTN_NORM, 0);
@@ -174,21 +174,21 @@ static void soldier_fire(edict_t *self, int flash_number)
 	float   r, u;
 	int     flash_index;
 
-	if (self->s.skinnum < 2)
+	if (self->server.state.skinnum < 2)
 		flash_index = blaster_flash[flash_number];
-	else if (self->s.skinnum < 4)
+	else if (self->server.state.skinnum < 4)
 		flash_index = shotgun_flash[flash_number];
 	else
 		flash_index = machinegun_flash[flash_number];
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_index], forward, right, start);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_index], forward, right, start);
 
 	if (flash_number == 5 || flash_number == 6)
 		VectorCopy(forward, aim);
 	else
 	{
-		VectorCopy(self->enemy->s.origin, end);
+		VectorCopy(self->enemy->server.state.origin, end);
 		end[2] += self->enemy->viewheight;
 		VectorSubtract(end, start, aim);
 		vectoangles(aim, dir);
@@ -202,9 +202,9 @@ static void soldier_fire(edict_t *self, int flash_number)
 		VectorNormalize(aim);
 	}
 
-	if (self->s.skinnum <= 1)
+	if (self->server.state.skinnum <= 1)
 		monster_fire_blaster(self, start, aim, 5, 600, flash_index, EF_BLASTER);
-	else if (self->s.skinnum <= 3)
+	else if (self->server.state.skinnum <= 3)
 		monster_fire_shotgun(self, start, aim, 2, 1, DEFAULT_SHOTGUN_HSPREAD, DEFAULT_SHOTGUN_VSPREAD, DEFAULT_SHOTGUN_COUNT, flash_index);
 	else
 	{
@@ -229,7 +229,7 @@ static void soldier_fire1(edict_t *self)
 
 static void soldier_attack1_refire1(edict_t *self)
 {
-	if (self->s.skinnum > 1)
+	if (self->server.state.skinnum > 1)
 		return;
 
 	if (self->enemy->health <= 0)
@@ -243,7 +243,7 @@ static void soldier_attack1_refire1(edict_t *self)
 
 static void soldier_attack1_refire2(edict_t *self)
 {
-	if (self->s.skinnum < 2)
+	if (self->server.state.skinnum < 2)
 		return;
 
 	if (self->enemy->health <= 0)
@@ -262,7 +262,7 @@ static void soldier_fire2(edict_t *self)
 
 static void soldier_attack2_refire1(edict_t *self)
 {
-	if (self->s.skinnum > 1)
+	if (self->server.state.skinnum > 1)
 		return;
 
 	if (self->enemy->health <= 0)
@@ -276,7 +276,7 @@ static void soldier_attack2_refire1(edict_t *self)
 
 static void soldier_attack2_refire2(edict_t *self)
 {
-	if (self->s.skinnum < 2)
+	if (self->server.state.skinnum < 2)
 		return;
 
 	if (self->enemy->health <= 0)
@@ -294,7 +294,7 @@ static void soldier_duck_down(edict_t *self)
 		return;
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
-	self->maxs[2] -= 32;
+	self->server.maxs[2] -= 32;
 	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 100;
 	gi.linkentity(self);
@@ -303,7 +303,7 @@ static void soldier_duck_down(edict_t *self)
 static void soldier_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
+	self->server.maxs[2] += 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -348,7 +348,7 @@ static void soldier_attack6_refire(edict_t *self)
 
 static void soldier_attack(edict_t *self)
 {
-	if (self->s.skinnum < 4)
+	if (self->server.state.skinnum < 4)
 	{
 		if (random() < 0.5f)
 			self->monsterinfo.currentmove = M_GetMonsterMove(&script, "attack1");
@@ -445,11 +445,11 @@ static void soldier_fire7(edict_t *self)
 
 static void soldier_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -478,16 +478,16 @@ static void soldier_die(edict_t *self, edict_t *inflictor, edict_t *attacker, in
 	// regular death
 	self->deadflag = DEAD_DEAD;
 	self->takedamage = true;
-	self->s.skinnum |= 1;
+	self->server.state.skinnum |= 1;
 
-	if (self->s.skinnum == 1)
+	if (self->server.state.skinnum == 1)
 		gi.sound(self, CHAN_VOICE, sound_death_light, 1, ATTN_NORM, 0);
-	else if (self->s.skinnum == 3)
+	else if (self->server.state.skinnum == 3)
 		gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
-	else // (self->s.skinnum == 5)
+	else // (self->server.state.skinnum == 5)
 		gi.sound(self, CHAN_VOICE, sound_death_ss, 1, ATTN_NORM, 0);
 
-	if (fabsf((self->s.origin[2] + self->viewheight) - point[2]) <= 4)
+	if (fabsf((self->server.state.origin[2] + self->viewheight) - point[2]) <= 4)
 	{
 		// head shot
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death3");
@@ -549,12 +549,12 @@ static void SP_monster_soldier_x(edict_t *self)
 		M_ParseMonsterScript(script_name, model_name, events, &script);
 	}
 
-	self->s.modelindex = gi.modelindex(model_name);
+	self->server.state.modelindex = gi.modelindex(model_name);
 	self->monsterinfo.scale = MODEL_SCALE;
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	sound_idle =    gi.soundindex("soldier/solidle1.wav");
 	sound_sight1 =  gi.soundindex("soldier/solsght1.wav");
 	sound_sight2 =  gi.soundindex("soldier/solsrch1.wav");
@@ -590,7 +590,7 @@ void SP_monster_soldier_light(edict_t *self)
 	gi.modelindex("models/objects/laser/tris.md2");
 	gi.soundindex("misc/lasfly.wav");
 	gi.soundindex("soldier/solatck2.wav");
-	self->s.skinnum = 0;
+	self->server.state.skinnum = 0;
 	self->health = 20;
 	self->gib_health = -30;
 	SP_monster_soldier_x(self);
@@ -609,7 +609,7 @@ void SP_monster_soldier(edict_t *self)
 	sound_pain = gi.soundindex("soldier/solpain1.wav");
 	sound_death = gi.soundindex("soldier/soldeth1.wav");
 	gi.soundindex("soldier/solatck1.wav");
-	self->s.skinnum = 2;
+	self->server.state.skinnum = 2;
 	self->health = 30;
 	self->gib_health = -30;
 	SP_monster_soldier_x(self);
@@ -628,7 +628,7 @@ void SP_monster_soldier_ss(edict_t *self)
 	sound_pain_ss = gi.soundindex("soldier/solpain3.wav");
 	sound_death_ss = gi.soundindex("soldier/soldeth3.wav");
 	gi.soundindex("soldier/solatck3.wav");
-	self->s.skinnum = 4;
+	self->server.state.skinnum = 4;
 	self->health = 40;
 	self->gib_health = -30;
 	SP_monster_soldier_x(self);

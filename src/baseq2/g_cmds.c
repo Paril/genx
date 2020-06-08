@@ -22,11 +22,11 @@ bool OnSameTeam(edict_t *ent1, edict_t *ent2)
 {
 #if ENABLE_COOP
 	if (invasion->value || coop->value)
-		return (!!ent1->client) != (!!ent2->client);
+		return (!!ent1->server.client) != (!!ent2->server.client);
 #endif
 
 	if (dmflags.game_teams)
-		return ent1->s.game == ent2->s.game;
+		return ent1->server.state.game == ent2->server.state.game;
 
 	return false;
 }
@@ -37,7 +37,7 @@ static void SelectNextItem(edict_t *ent, int itflags)
 	gclient_t   *cl;
 	itemid_e    i, index;
 	gitem_t     *it;
-	cl = ent->client;
+	cl = ent->server.client;
 
 	if (cl->chase_target)
 	{
@@ -73,7 +73,7 @@ static void SelectPrevItem(edict_t *ent, int itflags)
 	gclient_t   *cl;
 	itemid_e    i, index;
 	gitem_t     *it;
-	cl = ent->client;
+	cl = ent->server.client;
 
 	if (cl->chase_target)
 	{
@@ -107,7 +107,7 @@ static void SelectPrevItem(edict_t *ent, int itflags)
 void ValidateSelectedItem(edict_t *ent)
 {
 	gclient_t   *cl;
-	cl = ent->client;
+	cl = ent->server.client;
 
 	if (cl->pers.inventory[cl->pers.selected_item])
 		return;     // valid
@@ -138,13 +138,13 @@ static void Cmd_Spawn_f(edict_t *ent)
 	if (!SV_CheatsOK(ent))
 		return;
 
-	vec3_t fwd, ang = { 0, ent->client->v_angle[1], 0 };
+	vec3_t fwd, ang = { 0, ent->server.client->v_angle[1], 0 };
 	AngleVectors(ang, fwd, NULL, NULL);
 	edict_t *s = G_Spawn();
-	VectorMA(ent->s.origin, 128, fwd, s->s.origin);
-	s->s.origin[2] += 3;
-	VectorClear(s->s.angles);
-	s->s.angles[1] = ang[1];
+	VectorMA(ent->server.state.origin, 128, fwd, s->server.state.origin);
+	s->server.state.origin[2] += 3;
+	VectorClear(s->server.state.angles);
+	s->server.state.angles[1] = ang[1];
 	Q_snprintf(spawnTemp.classname, sizeof(spawnTemp.classname), "%s", Cmd_Args());
 	ED_CallSpawn(s);
 	gi.linkentity(s);
@@ -156,10 +156,10 @@ bool M_NavigatorPathToSpot(edict_t *self, vec3_t spot);
 
 static void Cmd_Path_f(edict_t *ent)
 {
-	if (!last_spawn || !last_spawn->inuse)
+	if (!last_spawn || !last_spawn->server.inuse)
 		return;
 
-	M_NavigatorPathToSpot(last_spawn, ent->s.origin);
+	M_NavigatorPathToSpot(last_spawn, ent->server.state.origin);
 	last_spawn->monsterinfo.run(last_spawn);
 }
 #endif
@@ -213,7 +213,7 @@ static void Cmd_Give_f(edict_t *ent)
 			if (!it->flags.is_weapon)
 				continue;
 
-			ent->client->pers.inventory[i] += 1;
+			ent->server.client->pers.inventory[i] += 1;
 		}
 
 		if (!give_all)
@@ -231,23 +231,23 @@ static void Cmd_Give_f(edict_t *ent)
 	if (give_all || Q_stricmp(name, "armor") == 0)
 	{
 		gitem_armor_t   *info;
-		ent->client->pers.inventory[ITI_JACKET_ARMOR] = 0;
-		ent->client->pers.inventory[ITI_BODY_ARMOR] = 0;
-		info = &game_iteminfos[ent->s.game].armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR];
-		ent->client->pers.inventory[ITI_BODY_ARMOR] = info->max_count;
+		ent->server.client->pers.inventory[ITI_JACKET_ARMOR] = 0;
+		ent->server.client->pers.inventory[ITI_BODY_ARMOR] = 0;
+		info = &game_iteminfos[ent->server.state.game].armors[ITI_BODY_ARMOR - ITI_JACKET_ARMOR];
+		ent->server.client->pers.inventory[ITI_BODY_ARMOR] = info->max_count;
 
 		if (!give_all)
 			return;
 	}
 
-	if (ent->s.game == GAME_Q2 && (give_all || Q_stricmp(name, "Power Shield") == 0))
+	if (ent->server.state.game == GAME_Q2 && (give_all || Q_stricmp(name, "Power Shield") == 0))
 	{
 		it = GetItemByIndex(ITI_POWER_SHIELD);
 		it_ent = G_Spawn();
 		SpawnItem(it_ent, it);
 		Touch_Item(it_ent, ent, NULL, NULL);
 
-		if (it_ent->inuse)
+		if (it_ent->server.inuse)
 			G_FreeEdict(it_ent);
 
 		if (!give_all)
@@ -266,7 +266,7 @@ static void Cmd_Give_f(edict_t *ent)
 			if (it->flags.flags & (IT_ARMOR | IT_WEAPON | IT_AMMO))
 				continue;
 
-			ent->client->pers.inventory[i] = 1;
+			ent->server.client->pers.inventory[i] = 1;
 		}
 
 		return;
@@ -297,9 +297,9 @@ static void Cmd_Give_f(edict_t *ent)
 	if (it->flags.is_ammo)
 	{
 		/*if (Cmd_Argc() == 3)
-		    ent->client->pers.inventory[index] = atoi(Cmd_Argv(2));
+		    ent->server.client->pers.inventory[index] = atoi(Cmd_Argv(2));
 		else
-		    ent->client->pers.inventory[index] += game_iteminfos[ent->s.game].dynamic.ammo_pickup_amounts[index];*/
+		    ent->server.client->pers.inventory[index] += game_iteminfos[ent->server.state.game].dynamic.ammo_pickup_amounts[index];*/
 	}
 	else
 	{
@@ -307,7 +307,7 @@ static void Cmd_Give_f(edict_t *ent)
 		SpawnItem(it_ent, it);
 		Touch_Item(it_ent, ent, NULL, NULL);
 
-		if (it_ent->inuse)
+		if (it_ent->server.inuse)
 			G_FreeEdict(it_ent);
 	}
 }
@@ -435,7 +435,7 @@ static void Cmd_Use_f(edict_t *ent)
 
 	index = ITEM_INDEX(it);
 
-	if (!ent->client->pers.inventory[index] && game_iteminfos[GAME_DUKE].ammo_usages[index] != 0)
+	if (!ent->server.client->pers.inventory[index] && game_iteminfos[GAME_DUKE].ammo_usages[index] != 0)
 	{
 		gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
 		return;
@@ -474,7 +474,7 @@ static void Cmd_Drop_f(edict_t *ent)
 
 	index = ITEM_INDEX(it);
 
-	if (!ent->client->pers.inventory[index])
+	if (!ent->server.client->pers.inventory[index])
 	{
 		gi.cprintf(ent, PRINT_HIGH, "Out of item: %s\n", s);
 		return;
@@ -493,7 +493,7 @@ static void Cmd_Inven_f(edict_t *ent)
 {
 	gclient_t   *cl;
 	itemid_e	i;
-	cl = ent->client;
+	cl = ent->server.client;
 	cl->showscores = false;
 
 #if ENABLE_COOP
@@ -525,13 +525,13 @@ static void Cmd_InvUse_f(edict_t *ent)
 	gitem_t     *it;
 	ValidateSelectedItem(ent);
 
-	if (ent->client->pers.selected_item == ITI_NULL)
+	if (ent->server.client->pers.selected_item == ITI_NULL)
 	{
 		gi.cprintf(ent, PRINT_HIGH, "No item to use.\n");
 		return;
 	}
 
-	it = &itemlist[ent->client->pers.selected_item];
+	it = &itemlist[ent->server.client->pers.selected_item];
 
 	if (!it->use)
 	{
@@ -553,7 +553,7 @@ static void Cmd_WeapPrev_f(edict_t *ent)
 	int         i, index;
 	gitem_t     *it;
 	int         selected_weapon;
-	cl = ent->client;
+	cl = ent->server.client;
 
 	if (!cl->pers.weapon)
 		return;
@@ -594,7 +594,7 @@ static void Cmd_WeapNext_f(edict_t *ent)
 	int         i, index;
 	gitem_t     *it;
 	int         selected_weapon;
-	cl = ent->client;
+	cl = ent->server.client;
 
 	if (!cl->pers.weapon)
 		return;
@@ -634,7 +634,7 @@ static void Cmd_WeapLast_f(edict_t *ent)
 	gclient_t   *cl;
 	int         index;
 	gitem_t     *it;
-	cl = ent->client;
+	cl = ent->server.client;
 
 	if (!cl->pers.weapon || !cl->pers.lastweapon)
 		return;
@@ -665,13 +665,13 @@ static void Cmd_InvDrop_f(edict_t *ent)
 	gitem_t     *it;
 	ValidateSelectedItem(ent);
 
-	if (ent->client->pers.selected_item == ITI_NULL)
+	if (ent->server.client->pers.selected_item == ITI_NULL)
 	{
 		gi.cprintf(ent, PRINT_HIGH, "No item to drop.\n");
 		return;
 	}
 
-	it = &itemlist[ent->client->pers.selected_item];
+	it = &itemlist[ent->server.client->pers.selected_item];
 
 	if (!it->drop)
 	{
@@ -689,7 +689,7 @@ Cmd_Kill_f
 */
 static void Cmd_Kill_f(edict_t *ent)
 {
-	if ((level.time - ent->client->respawn_time) < 5000)
+	if ((level.time - ent->server.client->respawn_time) < 5000)
 		return;
 
 	ent->flags &= ~FL_GODMODE;
@@ -715,11 +715,11 @@ Cmd_PutAway_f
 */
 static void Cmd_PutAway_f(edict_t *ent)
 {
-	ent->client->showscores = false;
+	ent->server.client->showscores = false;
 #if ENABLE_COOP
-	ent->client->showhelp = false;
+	ent->server.client->showhelp = false;
 #endif
-	ent->client->showinventory = false;
+	ent->server.client->showinventory = false;
 }
 
 
@@ -728,8 +728,8 @@ static int PlayerSort(void const *a, void const *b)
 	int     anum, bnum;
 	anum = *(const int *)a;
 	bnum = *(const int *)b;
-	anum = game.clients[anum].ps.stats.frags;
-	bnum = game.clients[bnum].ps.stats.frags;
+	anum = game.clients[anum].server.ps.stats.frags;
+	bnum = game.clients[bnum].server.ps.stats.frags;
 
 	if (anum < bnum)
 		return -1;
@@ -769,7 +769,7 @@ static void Cmd_Players_f(edict_t *ent)
 	for (i = 0 ; i < count ; i++)
 	{
 		Q_snprintf(small, sizeof(small), "%3i %s\n",
-			game.clients[index[i]].ps.stats.frags,
+			game.clients[index[i]].server.ps.stats.frags,
 			game.clients[index[i]].pers.netname);
 
 		if (strlen(small) + strlen(large) > sizeof(large) - 100)
@@ -796,45 +796,45 @@ static void Cmd_Wave_f(edict_t *ent)
 	i = atoi(Cmd_Argv(1));
 
 	// can't wave when ducked
-	if (ent->client->ps.pmove.pm_flags & PMF_DUCKED)
+	if (ent->server.client->server.ps.pmove.pm_flags & PMF_DUCKED)
 		return;
 
-	if (ent->client->anim_priority > ANIM_WAVE)
+	if (ent->server.client->anim_priority > ANIM_WAVE)
 		return;
 
-	ent->client->anim_priority = ANIM_WAVE;
+	ent->server.client->anim_priority = ANIM_WAVE;
 
 	switch (i)
 	{
 		case 0:
 			gi.cprintf(ent, PRINT_HIGH, "flipoff\n");
-			ent->s.frame = FRAME_flip01 - 1;
-			ent->client->anim_end = FRAME_flip12;
+			ent->server.state.frame = FRAME_flip01 - 1;
+			ent->server.client->anim_end = FRAME_flip12;
 			break;
 
 		case 1:
 			gi.cprintf(ent, PRINT_HIGH, "salute\n");
-			ent->s.frame = FRAME_salute01 - 1;
-			ent->client->anim_end = FRAME_salute11;
+			ent->server.state.frame = FRAME_salute01 - 1;
+			ent->server.client->anim_end = FRAME_salute11;
 			break;
 
 		case 2:
 			gi.cprintf(ent, PRINT_HIGH, "taunt\n");
-			ent->s.frame = FRAME_taunt01 - 1;
-			ent->client->anim_end = FRAME_taunt17;
+			ent->server.state.frame = FRAME_taunt01 - 1;
+			ent->server.client->anim_end = FRAME_taunt17;
 			break;
 
 		case 3:
 			gi.cprintf(ent, PRINT_HIGH, "wave\n");
-			ent->s.frame = FRAME_wave01 - 1;
-			ent->client->anim_end = FRAME_wave11;
+			ent->server.state.frame = FRAME_wave01 - 1;
+			ent->server.client->anim_end = FRAME_wave11;
 			break;
 
 		case 4:
 		default:
 			gi.cprintf(ent, PRINT_HIGH, "point\n");
-			ent->s.frame = FRAME_point01 - 1;
-			ent->client->anim_end = FRAME_point12;
+			ent->server.state.frame = FRAME_point01 - 1;
+			ent->server.client->anim_end = FRAME_point12;
 			break;
 	}
 }
@@ -859,9 +859,9 @@ static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 		team = false;
 
 	if (team)
-		Q_snprintf(text, sizeof(text), "(%s): ", ent->client->pers.netname);
+		Q_snprintf(text, sizeof(text), "(%s): ", ent->server.client->pers.netname);
 	else
-		Q_snprintf(text, sizeof(text), "%s: ", ent->client->pers.netname);
+		Q_snprintf(text, sizeof(text), "%s: ", ent->server.client->pers.netname);
 
 	if (arg0)
 	{
@@ -890,7 +890,7 @@ static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 
 	if (flood_msgs->value)
 	{
-		cl = ent->client;
+		cl = ent->server.client;
 
 		if (level.time < cl->flood_locktill)
 		{
@@ -925,10 +925,10 @@ static void Cmd_Say_f(edict_t *ent, bool team, bool arg0)
 	{
 		other = &g_edicts[j];
 
-		if (!other->inuse)
+		if (!other->server.inuse)
 			continue;
 
-		if (!other->client)
+		if (!other->server.client)
 			continue;
 
 		if (team)
@@ -952,16 +952,16 @@ static void Cmd_PlayerList_f(edict_t *ent)
 
 	for (i = 0, e2 = g_edicts + 1; i < maxclients->value; i++, e2++)
 	{
-		if (!e2->inuse)
+		if (!e2->server.inuse)
 			continue;
 
 		Q_snprintf(str, sizeof(str), "%02d:%02d %4d %3d %s%s\n",
-			(int)((level.time - e2->client->resp.entertime) / 6000),
-			(int)(((level.time - e2->client->resp.entertime) % 6000) / 10),
-			e2->client->ping,
-			e2->client->resp.score,
-			e2->client->pers.netname,
-			e2->client->resp.spectator ? " (spectator)" : "");
+			(int)((level.time - e2->server.client->resp.entertime) / 6000),
+			(int)(((level.time - e2->server.client->resp.entertime) % 6000) / 10),
+			e2->server.client->server.ping,
+			e2->server.client->resp.score,
+			e2->server.client->pers.netname,
+			e2->server.client->resp.spectator ? " (spectator)" : "");
 
 		if (strlen(text) + strlen(str) > sizeof(text) - 50)
 		{
@@ -1025,7 +1025,7 @@ void ClientCommand(edict_t *ent)
 {
 	char    *cmd;
 
-	if (!ent->client)
+	if (!ent->server.client)
 		return;     // not fully in game yet
 
 	cmd = Cmd_Argv(0);

@@ -43,11 +43,11 @@ void BOT_Respawn(edict_t *self)
 	CopyToBodyQue(self);
 	PutClientInServer(self);
 	// add a teleportation effect
-	self->s.event = EV_PLAYER_TELEPORT;
+	self->server.state.event = EV_PLAYER_TELEPORT;
 	// hold in place briefly
-	self->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-	self->client->ps.pmove.pm_time = 14;
-	self->client->respawn_time = level.time;
+	self->server.client->server.ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+	self->server.client->server.ps.pmove.pm_time = 14;
+	self->server.client->respawn_time = level.time;
 	AI_ResetWeights(self);
 	AI_ResetNavigation(self);
 }
@@ -66,7 +66,7 @@ static edict_t *BOT_FindFreeClient(void)
 
 	for (i = 0, ent = g_edicts + 1; i < game.maxclients; i++, ent++)
 	{
-		if (!ent->inuse && bot == NULL)
+		if (!ent->server.inuse && bot == NULL)
 			bot = ent;
 
 		//count bots for bot names
@@ -198,11 +198,11 @@ int	BOT_NextCTFTeam()
 	{
 		self = g_edicts + i + 1;
 
-		if (self->inuse && self->client)
+		if (self->server.inuse && self->server.client)
 		{
-			if (self->client->resp.ctf_team == CTF_TEAM1)
+			if (self->server.client->resp.ctf_team == CTF_TEAM1)
 				onteam1++;
-			else if (self->client->resp.ctf_team == CTF_TEAM2)
+			else if (self->server.client->resp.ctf_team == CTF_TEAM2)
 				onteam2++;
 		}
 	}
@@ -225,7 +225,7 @@ bool BOT_JoinCTFTeam(edict_t *ent, char *team_name)
 	int		team;
 	//	edict_t	*event;
 
-	if (ent->client->resp.ctf_team != CTF_NOTEAM)
+	if (ent->server.client->resp.ctf_team != CTF_NOTEAM)
 		return false;
 
 	// find what ctf team
@@ -240,17 +240,17 @@ bool BOT_JoinCTFTeam(edict_t *ent, char *team_name)
 		return false;
 
 	//join ctf team
-	ent->svflags &= ~SVF_NOCLIENT;
-	ent->client->resp.ctf_state = 1;//0?
-	ent->client->resp.ctf_team = team;
-	s = Info_ValueForKey(ent->client->pers.userinfo, "skin");
+	ent->server.flags.noclient = false;
+	ent->server.client->resp.ctf_state = 1;//0?
+	ent->server.client->resp.ctf_team = team;
+	s = Info_ValueForKey(ent->server.client->pers.userinfo, "skin");
 	CTFAssignSkin(ent, s);
 	PutClientInServer(ent);
 	// hold in place briefly
-	ent->client->ps.pmove.pm_flags = PMF_TIME_TELEPORT;
-	ent->client->ps.pmove.pm_time = 14;
+	ent->server.client->server.ps.pmove.pm_flags = PMF_TIME_TELEPORT;
+	ent->server.client->server.ps.pmove.pm_time = 14;
 	Com_Printf("%s joined the %s team.\n",
-		ent->client->pers.netname, CTFTeamName(ent->client->resp.ctf_team));
+		ent->server.client->pers.netname, CTFTeamName(ent->server.client->resp.ctf_team));
 	return true;
 }
 #endif
@@ -266,15 +266,15 @@ static void BOT_DMClass_JoinGame(edict_t *ent, char *team_name)
 	if (!BOT_JoinCTFTeam(ent, team_name))
 #endif
 		Com_Printf("%s joined the game.\n",
-			ent->client->pers.netname);
+			ent->server.client->pers.netname);
 
 	ent->think = AI_Think;
 	ent->nextthink = level.time + 1;
 	//join game
 	ent->movetype = MOVETYPE_WALK;
-	ent->solid = SOLID_BBOX;
-	ent->svflags &= ~SVF_NOCLIENT;
-	memset(ent->client->ps.guns, 0, sizeof(ent->client->ps.guns));
+	ent->server.solid = SOLID_BBOX;
+	ent->server.flags.noclient = false;
+	memset(ent->server.client->server.ps.guns, 0, sizeof(ent->server.client->server.ps.guns));
 
 	if (!KillBox(ent))
 	{
@@ -291,12 +291,12 @@ static void BOT_StartAsSpectator(edict_t *ent)
 {
 	// start as 'observer'
 	ent->movetype = MOVETYPE_NOCLIP;
-	ent->solid = SOLID_NOT;
-	ent->svflags |= SVF_NOCLIENT;
+	ent->server.solid = SOLID_NOT;
+	ent->server.flags.noclient = true;
 #if CTF
-	ent->client->resp.ctf_team = CTF_NOTEAM;
+	ent->server.client->resp.ctf_team = CTF_NOTEAM;
 #endif
-	memset(ent->client->ps.guns, 0, sizeof(ent->client->ps.guns));
+	memset(ent->server.client->server.ps.guns, 0, sizeof(ent->server.client->server.ps.guns));
 	gi.linkentity(ent);
 }
 
@@ -342,7 +342,7 @@ void BOT_SpawnBot(char *team, char *name, char *skin, char *userinfo)
 	}
 
 	//init the bot
-	bot->inuse = true;
+	bot->server.inuse = true;
 	bot->yaw_speed = 100;
 
 	// To allow bots to respawn
@@ -354,7 +354,7 @@ void BOT_SpawnBot(char *team, char *name, char *skin, char *userinfo)
 	G_InitEdict(bot);
 	G_SpawnAI(bot); //jabot092(2)
 	bot->ai->is_bot = true;
-	InitClientResp(bot->client);
+	InitClientResp(bot->server.client);
 	PutClientInServer(bot);
 	BOT_StartAsSpectator(bot);
 	//skill
@@ -396,20 +396,20 @@ void BOT_RemoveBot(char *name)
 	{
 		bot = g_edicts + i + 1;
 
-		if (!bot->inuse || !bot->ai)   //jabot092(2)
+		if (!bot->server.inuse || !bot->ai)   //jabot092(2)
 			continue;
 
-		if (bot->ai->is_bot && (!strcmp(bot->client->pers.netname, name) || !strcmp(name, "all")))
+		if (bot->ai->is_bot && (!strcmp(bot->server.client->pers.netname, name) || !strcmp(name, "all")))
 		{
 			bot->health = 0;
 			player_die(bot, bot, bot, 100000, vec3_origin);
 			// don't even bother waiting for death frames
 			bot->deadflag = DEAD_DEAD;
-			bot->inuse = false;
+			bot->server.inuse = false;
 			freed = true;
 			AI_EnemyRemoved(bot);
 			G_FreeAI(bot);   //jabot092(2)
-			//safe_bprintf (PRINT_MEDIUM, "%s removed\n", bot->client->pers.netname);
+			//safe_bprintf (PRINT_MEDIUM, "%s removed\n", bot->server.client->pers.netname);
 		}
 	}
 

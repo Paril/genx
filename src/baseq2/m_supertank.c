@@ -85,7 +85,7 @@ static void supertank_reattack1(edict_t *self)
 static void supertank_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -97,7 +97,7 @@ static void supertank_pain(edict_t *self, edict_t *other, float kick, int damage
 
 	// Don't go into pain if he's firing his rockets
 	if (skill->value >= 2)
-		if ((self->s.frame >= FRAME_attak2_1) && (self->s.frame <= FRAME_attak2_14))
+		if ((self->server.state.frame >= FRAME_attak2_1) && (self->server.state.frame <= FRAME_attak2_14))
 			return;
 
 	self->pain_debounce_time = level.time + 3000;
@@ -130,16 +130,16 @@ static void supertankRocket(edict_t *self)
 	vec3_t  vec;
 	int     flash_number;
 
-	if (self->s.frame == FRAME_attak2_8)
+	if (self->server.state.frame == FRAME_attak2_8)
 		flash_number = MZ2_SUPERTANK_ROCKET_1;
-	else if (self->s.frame == FRAME_attak2_11)
+	else if (self->server.state.frame == FRAME_attak2_11)
 		flash_number = MZ2_SUPERTANK_ROCKET_2;
-	else // (self->s.frame == FRAME_attak2_14)
+	else // (self->server.state.frame == FRAME_attak2_14)
 		flash_number = MZ2_SUPERTANK_ROCKET_3;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
@@ -153,17 +153,17 @@ static void supertankMachineGun(edict_t *self)
 	vec3_t  start;
 	vec3_t  forward, right;
 	int     flash_number;
-	flash_number = MZ2_SUPERTANK_MACHINEGUN_1 + (self->s.frame - FRAME_attak1_1);
+	flash_number = MZ2_SUPERTANK_MACHINEGUN_1 + (self->server.state.frame - FRAME_attak1_1);
 	//FIXME!!!
 	dir[0] = 0;
-	dir[1] = self->s.angles[1];
+	dir[1] = self->server.state.angles[1];
 	dir[2] = 0;
 	AngleVectors(dir, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 
 	if (self->enemy)
 	{
-		VectorCopy(self->enemy->s.origin, vec);
+		VectorCopy(self->enemy->server.state.origin, vec);
 		VectorMA(vec, 0, self->enemy->velocity, vec);
 		vec[2] += self->enemy->viewheight;
 		VectorSubtract(vec, start, forward);
@@ -177,7 +177,7 @@ static void supertank_attack(edict_t *self)
 {
 	vec3_t  vec;
 	float   range;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, vec);
 	range = VectorLength(vec);
 
 	if (range <= 160)
@@ -194,11 +194,11 @@ static void supertank_attack(edict_t *self)
 
 static void supertank_dead(edict_t *self)
 {
-	VectorSet(self->mins, -60, -60, 0);
-	VectorSet(self->maxs, 60, 60, 72);
+	VectorSet(self->server.mins, -60, -60, 0);
+	VectorSet(self->server.maxs, 60, 60, 72);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -208,7 +208,7 @@ void BossExplode(edict_t *self)
 	vec3_t  org;
 	int     n;
 	self->think = BossExplode;
-	VectorCopy(self->s.origin, org);
+	VectorCopy(self->server.state.origin, org);
 	org[2] += 24 + (Q_rand() & 15);
 
 	switch (self->count++)
@@ -254,7 +254,7 @@ void BossExplode(edict_t *self)
 			break;
 
 		case 8:
-			self->s.sound = 0;
+			self->server.state.sound = 0;
 
 			for (n = 0; n < 4; n++)
 				ThrowGib(self, "models/objects/gibs/sm_meat/tris.md2", 500, GIB_ORGANIC);
@@ -271,7 +271,7 @@ void BossExplode(edict_t *self)
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_EXPLOSION1);
 	MSG_WritePos(org);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	self->nextthink = level.time + game.frametime;
 }
 
@@ -322,10 +322,10 @@ void SP_monster_supertank(edict_t *self)
 	sound_search2 = gi.soundindex("bosstank/btkunqv2.wav");
 	tread_sound = gi.soundindex("bosstank/btkengn1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -64, -64, 0);
-	VectorSet(self->maxs, 64, 64, 112);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -64, -64, 0);
+	VectorSet(self->server.maxs, 64, 64, 112);
 	self->health = 1500;
 	self->gib_health = -500;
 	self->mass = 800;

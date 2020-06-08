@@ -66,7 +66,7 @@ static void insane_cross(edict_t *self)
 static void insane_walk(edict_t *self)
 {
 	if (self->spawnflags & 16)              // Hold Ground?
-		if (self->s.frame == FRAME_cr_pain10)
+		if (self->server.state.frame == FRAME_cr_pain10)
 		{
 			self->monsterinfo.currentmove = M_GetMonsterMove(&script, "down");
 			return;
@@ -83,7 +83,7 @@ static void insane_walk(edict_t *self)
 static void insane_run(edict_t *self)
 {
 	if (self->spawnflags & 16)              // Hold Ground?
-		if (self->s.frame == FRAME_cr_pain10)
+		if (self->server.state.frame == FRAME_cr_pain10)
 		{
 			self->monsterinfo.currentmove = M_GetMonsterMove(&script, "down");
 			return;
@@ -102,7 +102,7 @@ static void insane_pain(edict_t *self, edict_t *other, float kick, int damage)
 	int l, r;
 
 	//  if (self->health < (self->max_health / 2))
-	//      self->s.skinnum = 1;
+	//      self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -131,7 +131,7 @@ static void insane_pain(edict_t *self, edict_t *other, float kick, int damage)
 		return;
 	}
 
-	if (((self->s.frame >= FRAME_crawl1) && (self->s.frame <= FRAME_crawl9)) || ((self->s.frame >= FRAME_stand99) && (self->s.frame <= FRAME_stand160)))
+	if (((self->server.state.frame >= FRAME_crawl1) && (self->server.state.frame <= FRAME_crawl9)) || ((self->server.state.frame >= FRAME_stand99) && (self->server.state.frame <= FRAME_stand160)))
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "crawl_pain");
 	else
 		self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand_pain");
@@ -144,7 +144,7 @@ static void insane_onground(edict_t *self)
 
 static void insane_checkdown(edict_t *self)
 {
-	//  if ( (self->s.frame == FRAME_stand94) || (self->s.frame == FRAME_stand65) )
+	//  if ( (self->server.state.frame == FRAME_stand94) || (self->server.state.frame == FRAME_stand65) )
 	if (self->spawnflags & 32)              // Always stand
 		return;
 
@@ -189,13 +189,13 @@ static void insane_dead(edict_t *self)
 		self->flags |= FL_FLY;
 	else
 	{
-		VectorSet(self->mins, -16, -16, -24);
-		VectorSet(self->maxs, 16, 16, -8);
+		VectorSet(self->server.mins, -16, -16, -24);
+		VectorSet(self->server.maxs, 16, 16, -8);
 		self->movetype = MOVETYPE_TOSS;
 	}
 
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -230,7 +230,7 @@ static void insane_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 		insane_dead(self);
 	else
 	{
-		if (((self->s.frame >= FRAME_crawl1) && (self->s.frame <= FRAME_crawl9)) || ((self->s.frame >= FRAME_stand99) && (self->s.frame <= FRAME_stand160)))
+		if (((self->server.state.frame >= FRAME_crawl1) && (self->server.state.frame <= FRAME_crawl9)) || ((self->server.state.frame >= FRAME_stand99) && (self->server.state.frame <= FRAME_stand160)))
 			self->monsterinfo.currentmove = M_GetMonsterMove(&script, "crawl_death");
 		else
 			self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand_death");
@@ -284,10 +284,10 @@ void SP_misc_insane(edict_t *self)
 	sound_scream[6] = gi.soundindex("insane/insane9.wav");
 	sound_scream[7] = gi.soundindex("insane/insane10.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->health = 100;
 	self->gib_health = -50;
 	self->mass = 300;
@@ -301,7 +301,7 @@ void SP_misc_insane(edict_t *self)
 	self->monsterinfo.melee = NULL;
 	self->monsterinfo.sight = NULL;
 	self->monsterinfo.aiflags |= AI_GOOD_GUY;
-	self->s.skinnum = Q_rand_uniform(3);
+	self->server.state.skinnum = Q_rand_uniform(3);
 	gi.linkentity(self);
 
 	if (self->spawnflags & 16)              // Stand Ground
@@ -312,15 +312,15 @@ void SP_misc_insane(edict_t *self)
 
 	if (self->spawnflags & 8)                   // Crucified ?
 	{
-		VectorSet(self->mins, -16, 0, 0);
-		VectorSet(self->maxs, 16, 8, 32);
+		VectorSet(self->server.mins, -16, 0, 0);
+		VectorSet(self->server.maxs, 16, 8, 32);
 		self->flags |= FL_NO_KNOCKBACK;
 		flymonster_start(self);
 	}
 	else
 	{
 		walkmonster_start(self);
-		self->s.skinnum = Q_rand() % 3;
+		self->server.state.skinnum = Q_rand() % 3;
 	}
 }
 

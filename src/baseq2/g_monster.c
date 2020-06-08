@@ -100,8 +100,8 @@ void monster_fire_bfg(edict_t *self, vec3_t start, vec3_t aimdir, int damage, in
 
 void M_FliesOff(edict_t *self)
 {
-	self->s.effects &= ~EF_FLIES;
-	self->s.sound = 0;
+	self->server.state.effects &= ~EF_FLIES;
+	self->server.state.sound = 0;
 }
 
 void M_FliesOn(edict_t *self)
@@ -109,8 +109,8 @@ void M_FliesOn(edict_t *self)
 	if (self->waterlevel)
 		return;
 
-	self->s.effects |= EF_FLIES;
-	self->s.sound = gi.soundindex("infantry/inflies1.wav");
+	self->server.state.effects |= EF_FLIES;
+	self->server.state.sound = gi.soundindex("infantry/inflies1.wav");
 	self->think = M_FliesOff;
 	self->nextthink = level.time + 60000;
 }
@@ -152,10 +152,10 @@ void M_CheckGround(edict_t *ent)
 	}
 
 	// if the hull point one-quarter unit down is solid the entity is on ground
-	point[0] = ent->s.origin[0];
-	point[1] = ent->s.origin[1];
-	point[2] = ent->s.origin[2] - 0.25f;
-	trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, point, ent, MASK_MONSTERSOLID);
+	point[0] = ent->server.state.origin[0];
+	point[1] = ent->server.state.origin[1];
+	point[2] = ent->server.state.origin[2] - 0.25f;
+	trace = gi.trace(ent->server.state.origin, ent->server.mins, ent->server.maxs, point, ent, MASK_MONSTERSOLID);
 
 	// check steepness
 	if (trace.plane.normal[2] < 0.7f && !trace.startsolid)
@@ -165,14 +165,14 @@ void M_CheckGround(edict_t *ent)
 	}
 
 	//  ent->groundentity = trace.ent;
-	//  ent->groundentity_linkcount = trace.ent->linkcount;
+	//  ent->groundentity_linkcount = trace.ent->server.linkcount;
 	//  if (!trace.startsolid && !trace.allsolid)
-	//      VectorCopy (trace.endpos, ent->s.origin);
+	//      VectorCopy (trace.endpos, ent->server.state.origin);
 	if (!trace.startsolid && !trace.allsolid)
 	{
-		VectorCopy(trace.endpos, ent->s.origin);
+		VectorCopy(trace.endpos, ent->server.state.origin);
 		ent->groundentity = trace.ent;
-		ent->groundentity_linkcount = trace.ent->linkcount;
+		ent->groundentity_linkcount = trace.ent->server.linkcount;
 		ent->velocity[2] = 0;
 	}
 }
@@ -185,9 +185,9 @@ void M_CatagorizePosition(edict_t *ent)
 	//
 	// get waterlevel
 	//
-	point[0] = ent->s.origin[0];
-	point[1] = ent->s.origin[1];
-	point[2] = ent->s.origin[2] + ent->mins[2] + 1;
+	point[0] = ent->server.state.origin[0];
+	point[1] = ent->server.state.origin[1];
+	point[2] = ent->server.state.origin[2] + ent->server.mins[2] + 1;
 	cont = gi.pointcontents(point);
 
 	if (!(cont & MASK_WATER))
@@ -218,8 +218,8 @@ void M_WorldEffects(edict_t *ent)
 {
 	int     dmg;
 
-	if (gi.pointcontents(ent->s.origin) == CONTENTS_SOLID)
-		T_Damage(ent, world, world, vec3_origin, ent->s.origin, vec3_origin, 1000, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_FALLING, DT_DIRECT));
+	if (gi.pointcontents(ent->server.state.origin) == CONTENTS_SOLID)
+		T_Damage(ent, world, world, vec3_origin, ent->server.state.origin, vec3_origin, 1000, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_FALLING, DT_DIRECT));
 
 	if (ent->health > 0)
 	{
@@ -237,7 +237,7 @@ void M_WorldEffects(edict_t *ent)
 					if (dmg > 15)
 						dmg = 15;
 
-					T_Damage(ent, world, world, vec3_origin, ent->s.origin, vec3_origin, dmg, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_WATER, DT_DIRECT));
+					T_Damage(ent, world, world, vec3_origin, ent->server.state.origin, vec3_origin, dmg, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_WATER, DT_DIRECT));
 					ent->pain_debounce_time = level.time + 1000;
 				}
 			}
@@ -256,7 +256,7 @@ void M_WorldEffects(edict_t *ent)
 					if (dmg > 15)
 						dmg = 15;
 
-					T_Damage(ent, world, world, vec3_origin, ent->s.origin, vec3_origin, dmg, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_WATER, DT_DIRECT));
+					T_Damage(ent, world, world, vec3_origin, ent->server.state.origin, vec3_origin, dmg, 0, DAMAGE_NO_ARMOR, MakeGenericMeansOfDeath(world, MD_WATER, DT_DIRECT));
 					ent->pain_debounce_time = level.time + 1000;
 				}
 			}
@@ -279,7 +279,7 @@ void M_WorldEffects(edict_t *ent)
 		if (ent->damage_debounce_time < level.time)
 		{
 			ent->damage_debounce_time = level.time + 200;
-			T_Damage(ent, world, world, vec3_origin, ent->s.origin, vec3_origin, 10 * ent->waterlevel, 0, DAMAGE_NONE, MakeGenericMeansOfDeath(world, MD_LAVA, DT_DIRECT));
+			T_Damage(ent, world, world, vec3_origin, ent->server.state.origin, vec3_origin, 10 * ent->waterlevel, 0, DAMAGE_NONE, MakeGenericMeansOfDeath(world, MD_LAVA, DT_DIRECT));
 		}
 	}
 
@@ -288,13 +288,13 @@ void M_WorldEffects(edict_t *ent)
 		if (ent->damage_debounce_time < level.time)
 		{
 			ent->damage_debounce_time = level.time + 1000;
-			T_Damage(ent, world, world, vec3_origin, ent->s.origin, vec3_origin, 4 * ent->waterlevel, 0, DAMAGE_NONE, MakeGenericMeansOfDeath(world, MD_SLIME, DT_DIRECT));
+			T_Damage(ent, world, world, vec3_origin, ent->server.state.origin, vec3_origin, 4 * ent->waterlevel, 0, DAMAGE_NONE, MakeGenericMeansOfDeath(world, MD_SLIME, DT_DIRECT));
 		}
 	}
 
 	if (!(ent->flags & FL_INWATER))
 	{
-		if (!(ent->svflags & SVF_DEADMONSTER))
+		if (!ent->server.flags.deadmonster)
 		{
 			if (ent->watertype & CONTENTS_LAVA)
 				if (random() <= 0.5f)
@@ -317,15 +317,15 @@ void M_droptofloor(edict_t *ent)
 {
 	vec3_t      end;
 	trace_t     trace;
-	ent->s.origin[2] += 1;
-	VectorCopy(ent->s.origin, end);
+	ent->server.state.origin[2] += 1;
+	VectorCopy(ent->server.state.origin, end);
 	end[2] -= 256;
-	trace = gi.trace(ent->s.origin, ent->mins, ent->maxs, end, ent, MASK_MONSTERSOLID);
+	trace = gi.trace(ent->server.state.origin, ent->server.mins, ent->server.maxs, end, ent, MASK_MONSTERSOLID);
 
 	if (trace.fraction == 1 || trace.allsolid)
 		return;
 
-	VectorCopy(trace.endpos, ent->s.origin);
+	VectorCopy(trace.endpos, ent->server.state.origin);
 	gi.linkentity(ent);
 	M_CheckGround(ent);
 	M_CatagorizePosition(ent);
@@ -334,17 +334,17 @@ void M_droptofloor(edict_t *ent)
 
 void M_SetEffects(edict_t *ent)
 {
-	ent->s.effects &= ~(EF_COLOR_SHELL | EF_POWERSCREEN);
-	ent->s.renderfx &= ~(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_FROZEN);
+	ent->server.state.effects &= ~(EF_COLOR_SHELL | EF_POWERSCREEN);
+	ent->server.state.renderfx &= ~(RF_SHELL_RED | RF_SHELL_GREEN | RF_SHELL_BLUE | RF_FROZEN);
 
 	if (ent->monsterinfo.aiflags & AI_RESURRECTING)
 	{
-		ent->s.effects |= EF_COLOR_SHELL;
-		ent->s.renderfx |= RF_SHELL_RED;
+		ent->server.state.effects |= EF_COLOR_SHELL;
+		ent->server.state.renderfx |= RF_SHELL_RED;
 	}
 
 	if (ent->freeze_time > level.time)
-		ent->s.renderfx |= RF_FROZEN;
+		ent->server.state.renderfx |= RF_FROZEN;
 
 	if (ent->health <= 0)
 		return;
@@ -352,11 +352,11 @@ void M_SetEffects(edict_t *ent)
 	if (ent->powerarmor_time > level.time)
 	{
 		if (ent->monsterinfo.power_armor_type == POWER_ARMOR_SCREEN)
-			ent->s.effects |= EF_POWERSCREEN;
+			ent->server.state.effects |= EF_POWERSCREEN;
 		else if (ent->monsterinfo.power_armor_type == POWER_ARMOR_SHIELD)
 		{
-			ent->s.effects |= EF_COLOR_SHELL;
-			ent->s.renderfx |= RF_SHELL_GREEN;
+			ent->server.state.effects |= EF_COLOR_SHELL;
+			ent->server.state.renderfx |= RF_SHELL_GREEN;
 		}
 	}
 }
@@ -375,7 +375,7 @@ void M_MoveFrame(edict_t *self)
 	if (self->monsterinfo.special_frames)
 		frame_ptr = &self->style;
 	else
-		frame_ptr = &self->s.frame;
+		frame_ptr = &self->server.state.frame;
 
 	move = self->monsterinfo.currentmove;
 	self->nextthink = level.time + 100;
@@ -399,7 +399,7 @@ void M_MoveFrame(edict_t *self)
 			{
 				move->endfunc(self);
 
-				if (self->svflags & SVF_DEADMONSTER)
+				if (self->server.flags.deadmonster)
 					return;
 
 				// regrab move, endfunc is very likely to change it
@@ -436,7 +436,7 @@ void M_MoveFrame(edict_t *self)
 	index = abs(*frame_ptr - move->firstframe);
 
 	if (self->monsterinfo.special_frames)
-		self->s.frame = move->frame[index].real_frame;
+		self->server.state.frame = move->frame[index].real_frame;
 
 	if (move->frame[index].aifunc)
 	{
@@ -458,9 +458,9 @@ void monster_think(edict_t *self)
 	else
 		self->nextthink = level.time + game.frametime;
 
-	if (self->linkcount != self->monsterinfo.linkcount)
+	if (self->server.linkcount != self->monsterinfo.linkcount)
 	{
-		self->monsterinfo.linkcount = self->linkcount;
+		self->monsterinfo.linkcount = self->server.linkcount;
 		M_CheckGround(self);
 	}
 
@@ -488,7 +488,7 @@ void monster_use(edict_t *self, edict_t *other, edict_t *activator)
 	if (activator->flags & FL_NOTARGET)
 		return;
 
-	if (!(activator->client) && !(activator->monsterinfo.aiflags & AI_GOOD_GUY))
+	if (!(activator->server.client) && !(activator->monsterinfo.aiflags & AI_GOOD_GUY))
 		return;
 
 	// delay reaction so if the monster is teleported, its sound is still heard
@@ -502,11 +502,11 @@ void monster_start_go(edict_t *self);
 
 void monster_triggered_spawn(edict_t *self)
 {
-	self->s.origin[2] += 1;
+	self->server.state.origin[2] += 1;
 	KillBox(self);
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->svflags &= ~SVF_NOCLIENT;
+	self->server.flags.noclient = false;
 	self->air_finished = level.time + 12;
 	self->spawnflags &= ~2;
 	gi.linkentity(self);
@@ -524,7 +524,7 @@ void monster_triggered_spawn_use(edict_t *self, edict_t *other, edict_t *activat
 	self->think = monster_triggered_spawn;
 	self->nextthink = level.time + 100;
 
-	if (activator->client)
+	if (activator->server.client)
 		self->enemy = activator;
 
 	self->use = monster_use;
@@ -532,9 +532,9 @@ void monster_triggered_spawn_use(edict_t *self, edict_t *other, edict_t *activat
 
 void monster_triggered_start(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	self->movetype = MOVETYPE_NONE;
-	self->svflags |= SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 	self->nextthink = 0;
 	self->use = monster_triggered_spawn_use;
 }
@@ -592,50 +592,50 @@ bool monster_start(edict_t *self)
 	{
 		self->spawnflags &= ~4;
 		self->spawnflags |= 1;
-		//      Com_Printf("fixed spawnflags on %s at %s\n", self->classname, vtos(self->s.origin));
+		//      Com_Printf("fixed spawnflags on %s at %s\n", self->classname, vtos(self->server.state.origin));
 	}
 
 	if (!(self->monsterinfo.aiflags & AI_GOOD_GUY))
 		level.total_monsters++;
 
 	self->nextthink = level.time + 100;
-	self->svflags |= SVF_MONSTER;
-	self->s.renderfx |= RF_FRAMELERP;
+	self->server.flags.monster = true;
+	self->server.state.renderfx |= RF_FRAMELERP;
 	self->takedamage = true;
 	self->air_finished = level.time + 12;
 	self->use = monster_use;
 	self->max_health = self->health;
-	self->clipmask = MASK_MONSTERSOLID;
+	self->server.clipmask = MASK_MONSTERSOLID;
 	self->deadflag = DEAD_NO;
-	self->svflags &= ~SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_MONSTER;
+	self->server.flags.deadmonster = false;
+	self->server.state.clip_contents = CONTENTS_MONSTER;
 
-	if (self->s.game == GAME_DOOM && !self->mass)
+	if (self->server.state.game == GAME_DOOM && !self->mass)
 		self->mass = 100;
 
 	if (!self->monsterinfo.checkattack)
 	{
-		if (self->s.game == GAME_Q1)
+		if (self->server.state.game == GAME_Q1)
 			self->monsterinfo.checkattack = M_Q1_CheckAttack;
-		else if (self->s.game == GAME_DOOM)
+		else if (self->server.state.game == GAME_DOOM)
 			self->monsterinfo.checkattack = M_Doom_CheckAttack;
 		else
 			self->monsterinfo.checkattack = M_CheckAttack;
 	}
 
-	VectorCopy(self->s.origin, self->s.old_origin);
+	VectorCopy(self->server.state.origin, self->server.state.old_origin);
 
 	if (spawnTemp.item)
 	{
 		self->item = FindItemByClassname(spawnTemp.item);
 
 		if (!self->item)
-			Com_Printf("entityid %i at %s has bad item: %s\n", self->entitytype, vtos(self->s.origin), spawnTemp.item);
+			Com_Printf("entityid %i at %s has bad item: %s\n", self->entitytype, vtos(self->server.state.origin), spawnTemp.item);
 	}
 
 	// randomize what frame they start on
-	if (self->monsterinfo.currentmove && self->s.game != GAME_DOOM)
-		self->s.frame = self->monsterinfo.currentmove->firstframe + (Q_rand() % (self->monsterinfo.currentmove->lastframe - self->monsterinfo.currentmove->firstframe + 1));
+	if (self->monsterinfo.currentmove && self->server.state.game != GAME_DOOM)
+		self->server.state.frame = self->monsterinfo.currentmove->firstframe + (Q_rand() % (self->monsterinfo.currentmove->lastframe - self->monsterinfo.currentmove->firstframe + 1));
 
 	if (invasion->value)
 	{
@@ -653,7 +653,7 @@ bool M_tryoriginfix(edict_t *self)
 	return false;
 	/*bool success = false;
 	vec3_t main_origin;
-	VectorCopy(self->s.origin, main_origin);
+	VectorCopy(self->server.state.origin, main_origin);
 
 	// Preliminary trace stuff
 	trace_t updown_traces[2];
@@ -664,7 +664,7 @@ bool M_tryoriginfix(edict_t *self)
 		vec3_t dir = { 0, 0, (i == 1) ? -1 : 1 };
 
 		VectorMA(main_origin, 8192, dir, updown_traces[i].endpos);
-		updown_traces[i] = gi.trace(main_origin, self->mins, self->maxs, updown_traces[i].endpos, self, MASK_SOLID | CONTENTS_MONSTER);
+		updown_traces[i] = gi.trace(main_origin, self->server.mins, self->server.maxs, updown_traces[i].endpos, self, MASK_SOLID | CONTENTS_MONSTER);
 
 		if (updown_traces[i].fraction == 1.0)
 			assert(false);
@@ -683,7 +683,7 @@ bool M_tryoriginfix(edict_t *self)
 		AngleVectors(angle, angle, NULL, NULL);
 
 		VectorMA(main_origin, 8192, angle, angle_traces[i].endpos);
-		angle_traces[i] = gi.trace(main_origin, self->mins, self->maxs, angle_traces[i].endpos, self, MASK_SOLID | CONTENTS_MONSTER);
+		angle_traces[i] = gi.trace(main_origin, self->server.mins, self->server.maxs, angle_traces[i].endpos, self, MASK_SOLID | CONTENTS_MONSTER);
 
 		if (angle_traces[i].fraction == 1.0)
 			assert(false);
@@ -697,8 +697,8 @@ bool M_tryoriginfix(edict_t *self)
 	float x_fit = fabsf(angle_traces[0].endpos[0] - angle_traces[4].endpos[0]);
 	float y_fit = fabsf(angle_traces[2].endpos[1] - angle_traces[6].endpos[1]);
 
-	can_fit_x = x_fit >= self->maxs[0] - self->mins[0];
-	can_fit_y = y_fit >= self->maxs[1] - self->mins[1];
+	can_fit_x = x_fit >= self->server.maxs[0] - self->server.mins[0];
+	can_fit_y = y_fit >= self->server.maxs[1] - self->server.mins[1];
 
 	// Step 1: if we can fit in this spot with our x/y traces,
 	// something must be messed up with the Z.
@@ -721,7 +721,7 @@ bool M_tryoriginfix(edict_t *self)
 
 	if (!success)
 	{
-		VectorCopy(main_origin, self->s.origin);
+		VectorCopy(main_origin, self->server.state.origin);
 		return false;
 	}*/
 }
@@ -733,7 +733,7 @@ void monster_start_go(edict_t *self)
 	if (self->health <= 0)
 		return;
 
-	if (self->s.game == GAME_DOOM)
+	if (self->server.state.game == GAME_DOOM)
 		self->yaw_speed = 30;
 
 	// check for target to combat_point and change to combattarget
@@ -758,7 +758,7 @@ void monster_start_go(edict_t *self)
 		}
 
 		if (notcombat && self->combattarget)
-			Com_Printf("entityid %i at %s has target with mixed types\n", self->entitytype, vtos(self->s.origin));
+			Com_Printf("entityid %i at %s has target with mixed types\n", self->entitytype, vtos(self->server.state.origin));
 
 		if (fixup)
 			self->target = NULL;
@@ -775,9 +775,9 @@ void monster_start_go(edict_t *self)
 			if (target->entitytype != ET_POINT_COMBAT)
 			{
 				Com_Printf("entityid %i at (%i %i %i) has a bad combattarget %s : entityid %i at (%i %i %i)\n",
-					self->entitytype, (int)self->s.origin[0], (int)self->s.origin[1], (int)self->s.origin[2],
-					self->combattarget, target->entitytype, (int)target->s.origin[0], (int)target->s.origin[1],
-					(int)target->s.origin[2]);
+					self->entitytype, (int)self->server.state.origin[0], (int)self->server.state.origin[1], (int)self->server.state.origin[2],
+					self->combattarget, target->entitytype, (int)target->server.state.origin[0], (int)target->server.state.origin[1],
+					(int)target->server.state.origin[2]);
 			}
 		}
 	}
@@ -788,15 +788,15 @@ void monster_start_go(edict_t *self)
 
 		if (!self->movetarget)
 		{
-			Com_Printf("entityid %i can't find target %s at %s\n", self->entitytype, self->target, vtos(self->s.origin));
+			Com_Printf("entityid %i can't find target %s at %s\n", self->entitytype, self->target, vtos(self->server.state.origin));
 			self->target = NULL;
 			self->monsterinfo.pausetime = GTIME_MAX;
 			self->monsterinfo.stand(self);
 		}
 		else if (self->movetarget->entitytype == ET_PATH_CORNER)
 		{
-			VectorSubtract(self->goalentity->s.origin, self->s.origin, v);
-			self->ideal_yaw = self->s.angles[YAW] = vectoyaw(v);
+			VectorSubtract(self->goalentity->server.state.origin, self->server.state.origin, v);
+			self->ideal_yaw = self->server.state.angles[YAW] = vectoyaw(v);
 			self->monsterinfo.walk(self);
 			self->target = NULL;
 		}
@@ -823,8 +823,8 @@ void monster_start_go(edict_t *self)
 			bool found_fit = false;
 			vec3_t new_mins, new_maxs;
 			vec3_t old_mins, old_maxs;
-			VectorCopy(self->mins, old_mins);
-			VectorCopy(self->maxs, old_maxs);
+			VectorCopy(self->server.mins, old_mins);
+			VectorCopy(self->server.maxs, old_maxs);
 			int i;
 			float refit_size = VectorLength(self->size) / 14;
 
@@ -832,19 +832,19 @@ void monster_start_go(edict_t *self)
 			{
 				for (int x = 0; x < 2; ++x)
 				{
-					new_mins[x] = self->mins[x] + refit_size * i;
-					new_maxs[x] = self->maxs[x] - refit_size * i;
+					new_mins[x] = self->server.mins[x] + refit_size * i;
+					new_maxs[x] = self->server.maxs[x] - refit_size * i;
 				}
 
-				new_maxs[2] = self->maxs[2] - refit_size * i;
+				new_maxs[2] = self->server.maxs[2] - refit_size * i;
 				new_mins[2] = old_mins[2];
-				VectorCopy(new_mins, self->mins);
-				VectorCopy(new_maxs, self->maxs);
+				VectorCopy(new_mins, self->server.mins);
+				VectorCopy(new_maxs, self->server.maxs);
 
-				if (gi.trace(self->s.origin, self->mins, self->maxs, self->s.origin, self, MASK_MONSTERSOLID).startsolid)
+				if (gi.trace(self->server.state.origin, self->server.mins, self->server.maxs, self->server.state.origin, self, MASK_MONSTERSOLID).startsolid)
 				{
-					VectorCopy(old_mins, self->mins);
-					VectorCopy(old_maxs, self->maxs);
+					VectorCopy(old_mins, self->server.mins);
+					VectorCopy(old_maxs, self->server.maxs);
 					continue;
 				}
 
@@ -860,12 +860,12 @@ void monster_start_go(edict_t *self)
 					self->flags |= FL_STUCK;
 					VectorCopy(old_mins, self->pos1);
 					VectorCopy(old_maxs, self->pos2);
-					Com_Printf("entityid %i in solid, refit with new bbox at %s\n", self->entitytype, vtos(self->s.origin));
+					Com_Printf("entityid %i in solid, refit with new bbox at %s\n", self->entitytype, vtos(self->server.state.origin));
 					gi.linkentity(self);
 				}
 			}
 			else
-				Com_Printf("entityid %i in solid, couldn't refit, at %s\n", self->entitytype, vtos(self->s.origin));
+				Com_Printf("entityid %i in solid, couldn't refit, at %s\n", self->entitytype, vtos(self->server.state.origin));
 		}
 
 		if (!(self->flags & (FL_FLY | FL_SWIM)))

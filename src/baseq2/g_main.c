@@ -182,13 +182,17 @@ void InitGame(void)
 
 	// initialize all entities for this game
 	game.maxentities = maxentities->value;
-	g_edicts = Z_TagMallocz(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
-	globals.edicts = g_edicts;
-	globals.max_edicts = game.maxentities;
-	// initialize all clients for this game
 	game.maxclients = maxclients->value;
+	g_edicts = Z_TagMallocz(game.maxentities * sizeof(g_edicts[0]), TAG_GAME);
 	game.clients = Z_TagMallocz(game.maxclients * sizeof(game.clients[0]), TAG_GAME);
-	globals.num_edicts = game.maxclients + 1;
+	globals.pool = (edict_pool_t)
+	{
+		.edicts = g_edicts,
+		.max_edicts = game.maxentities,
+		.num_edicts = game.maxclients + 1,
+		.edict_size = sizeof(edict_t)
+	};
+	// initialize all clients for this game
 	AI_Init();//JABot
 	game.framerate = BASE_FRAMERATE;
 	game.frametime = BASE_FRAMETIME;
@@ -233,7 +237,7 @@ q_exported game_export_t *GetGameAPI(game_import_t *import)
 	globals.ClientCommand = ClientCommand;
 	globals.RunFrame = G_RunFrame;
 	globals.ServerCommand = ServerCommand;
-	globals.edict_size = sizeof(edict_t);
+	globals.pool.edict_size = sizeof(edict_t);
 	return &globals;
 }
 
@@ -256,7 +260,7 @@ void ClientEndServerFrames(void)
 	{
 		ent = g_edicts + 1 + i;
 
-		if (!ent->inuse || !ent->client || !ent->client->pers.connected)
+		if (!ent->server.inuse || !ent->server.client || !ent->server.client->pers.connected)
 			continue;
 
 		ClientEndServerFrame(ent);
@@ -416,7 +420,7 @@ void CheckDMRules(void)
 		{
 			cl = game.clients + i;
 
-			if (!g_edicts[i + 1].inuse)
+			if (!g_edicts[i + 1].server.inuse)
 				continue;
 
 			if (cl->resp.score >= fraglimit->value)
@@ -455,11 +459,11 @@ void ExitLevel(void)
 	{
 		ent = g_edicts + 1 + i;
 
-		if (!ent->inuse)
+		if (!ent->server.inuse)
 			continue;
 
-		if (ent->health > ent->client->pers.max_health)
-			ent->health = ent->client->pers.max_health;
+		if (ent->health > ent->server.client->pers.max_health)
+			ent->health = ent->server.client->pers.max_health;
 	}
 }
 
@@ -495,23 +499,23 @@ void G_RunFrame(void)
 	//
 	ent = &g_edicts[0];
 
-	for (i = 0 ; i < globals.num_edicts ; i++, ent++)
+	for (i = 0 ; i < globals.pool.num_edicts ; i++, ent++)
 	{
-		if (!ent->inuse)
+		if (!ent->server.inuse)
 			continue;
 
 		level.current_entity = ent;
 
-		if (!(ent->s.renderfx & (RF_PROJECTILE | RF_BEAM)))
-			VectorCopy(ent->s.origin, ent->s.old_origin);
+		if (!(ent->server.state.renderfx & (RF_PROJECTILE | RF_BEAM)))
+			VectorCopy(ent->server.state.origin, ent->server.state.old_origin);
 
 		// if the ground entity moved, make sure we are still on it
-		if ((ent->groundentity) && (ent->groundentity->linkcount != ent->groundentity_linkcount))
+		if (ent->groundentity && (ent->groundentity->server.linkcount != ent->groundentity_linkcount))
 		{
 			ent->groundentity = NULL;
 
 #if ENABLE_COOP
-			if (!(ent->flags & (FL_SWIM | FL_FLY)) && (ent->svflags & SVF_MONSTER))
+			if (!(ent->flags & (FL_SWIM | FL_FLY)) && ent->server.flags.monster)
 				M_CheckGround(ent);
 #endif
 		}
@@ -528,8 +532,8 @@ void G_RunFrame(void)
 
 		G_RunEntity(ent);
 
-		if (ent->s.renderfx & RF_PROJECTILE)
-			VectorCopy(ent->velocity, ent->s.old_origin);
+		if (ent->server.state.renderfx & RF_PROJECTILE)
+			VectorCopy(ent->velocity, ent->server.state.old_origin);
 	}
 
 	// see if it is time to end a deathmatch

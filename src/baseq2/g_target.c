@@ -25,8 +25,8 @@ void Use_Target_Tent(edict_t *ent, edict_t *other, edict_t *activator)
 {
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(ent->style);
-	MSG_WritePos(ent->s.origin);
-	gi.multicast(ent->s.origin, MULTICAST_PVS);
+	MSG_WritePos(ent->server.state.origin);
+	gi.multicast(ent->server.state.origin, MULTICAST_PVS);
 }
 
 void SP_target_temp_entity(edict_t *ent)
@@ -60,10 +60,10 @@ void Use_Target_Speaker(edict_t *ent, edict_t *other, edict_t *activator)
 	if (ent->spawnflags & 3)
 	{
 		// looping sound toggles
-		if (ent->s.sound)
-			ent->s.sound = 0;   // turn it off
+		if (ent->server.state.sound)
+			ent->server.state.sound = 0;   // turn it off
 		else
-			ent->s.sound = ent->noise_index;    // start it
+			ent->server.state.sound = ent->noise_index;    // start it
 	}
 	else
 	{
@@ -75,7 +75,7 @@ void Use_Target_Speaker(edict_t *ent, edict_t *other, edict_t *activator)
 
 		// use a positioned_sound, because this entity won't normally be
 		// sent to any clients because it is invisible
-		gi.positioned_sound(ent->s.origin, ent, chan, ent->noise_index, ent->volume, ent->attenuation, 0);
+		gi.positioned_sound(ent->server.state.origin, ent, chan, ent->noise_index, ent->volume, ent->attenuation, 0);
 	}
 }
 
@@ -85,7 +85,7 @@ void SP_target_speaker(edict_t *ent)
 
 	if (!spawnTemp.noise)
 	{
-		Com_Printf("target_speaker with no noise set at %s\n", vtos(ent->s.origin));
+		Com_Printf("target_speaker with no noise set at %s\n", vtos(ent->server.state.origin));
 		return;
 	}
 
@@ -106,7 +106,7 @@ void SP_target_speaker(edict_t *ent)
 
 	// check for prestarted looping sound
 	if (ent->spawnflags & 1)
-		ent->s.sound = ent->noise_index;
+		ent->server.state.sound = ent->noise_index;
 
 	ent->use = Use_Target_Speaker;
 	// must link the entity so we get areas and clusters so
@@ -144,7 +144,7 @@ void SP_target_help(edict_t *ent)
 	
 	if (!ent->message)
 	{
-		Com_Printf("%s with no message at %s\n", spawnTemp.classname, vtos(ent->s.origin));
+		Com_Printf("%s with no message at %s\n", spawnTemp.classname, vtos(ent->server.state.origin));
 		G_FreeEdict(ent);
 		return;
 	}
@@ -187,11 +187,11 @@ void SP_target_secret(edict_t *ent)
 		spawnTemp.noise = "misc/secret.wav";
 
 	ent->noise_index = gi.soundindex(spawnTemp.noise);
-	ent->svflags = SVF_NOCLIENT;
+	ent->server.flags.noclient = true;
 	level.total_secrets++;
 
 	// map bug hack
-	if (!Q_stricmp(level.mapname, "mine3") && ent->s.origin[0] == 280 && ent->s.origin[1] == -2048 && ent->s.origin[2] == -624)
+	if (!Q_stricmp(level.mapname, "mine3") && ent->server.state.origin[0] == 280 && ent->server.state.origin[1] == -2048 && ent->server.state.origin[2] == -624)
 		ent->message = "You have found a secret area.";
 #else
 	G_FreeEdict(ent);
@@ -234,7 +234,7 @@ void SP_target_goal(edict_t *ent)
 		spawnTemp.noise = "misc/secret.wav";
 
 	ent->noise_index = gi.soundindex(spawnTemp.noise);
-	ent->svflags = SVF_NOCLIENT;
+	ent->server.flags.noclient = true;
 	level.total_goals++;
 #else
 	G_FreeEdict(ent);
@@ -255,8 +255,8 @@ void target_explosion_explode(edict_t *self)
 	float       save;
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_EXPLOSION1);
-	MSG_WritePos(self->s.origin);
-	gi.multicast(self->s.origin, MULTICAST_PHS);
+	MSG_WritePos(self->server.state.origin);
+	gi.multicast(self->server.state.origin, MULTICAST_PHS);
 	T_RadiusDamage(self, self->activator, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
 	save = self->delay;
 	self->delay = 0;
@@ -281,7 +281,7 @@ void use_target_explosion(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_explosion(edict_t *ent)
 {
 	ent->use = use_target_explosion;
-	ent->svflags = SVF_NOCLIENT;
+	ent->server.flags.noclient = true;
 }
 
 
@@ -310,7 +310,7 @@ void use_target_changelevel(edict_t *self, edict_t *other, edict_t *activator)
 #endif
 		!dmflags.allow_exit && other != world)
 	{
-		T_Damage(other, self, self, vec3_origin, other->s.origin, vec3_origin, 10 * other->max_health, 1000, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
+		T_Damage(other, self, self, vec3_origin, other->server.state.origin, vec3_origin, 10 * other->max_health, 1000, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
 		return;
 	}
 	
@@ -319,8 +319,8 @@ void use_target_changelevel(edict_t *self, edict_t *other, edict_t *activator)
 	if (deathmatch->value)
 #endif
 	{
-		if (activator && activator->client)
-			gi.bprintf(PRINT_HIGH, "%s exited the level.\n", activator->client->pers.netname);
+		if (activator && activator->server.client)
+			gi.bprintf(PRINT_HIGH, "%s exited the level.\n", activator->server.client->pers.netname);
 	}
 	
 #ifdef ENABLE_COOP
@@ -336,7 +336,7 @@ void SP_target_changelevel(edict_t *ent)
 {
 	if (!ent->map)
 	{
-		Com_Printf("target_changelevel with no map at %s\n", vtos(ent->s.origin));
+		Com_Printf("target_changelevel with no map at %s\n", vtos(ent->server.state.origin));
 		G_FreeEdict(ent);
 		return;
 	}
@@ -346,7 +346,7 @@ void SP_target_changelevel(edict_t *ent)
 		ent->map = "fact3$secret1";
 
 	ent->use = use_target_changelevel;
-	ent->svflags = SVF_NOCLIENT;
+	ent->server.flags.noclient = true;
 }
 
 
@@ -373,10 +373,10 @@ void use_target_splash(edict_t *self, edict_t *other, edict_t *activator)
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_SPLASH);
 	MSG_WriteByte(self->count);
-	MSG_WritePos(self->s.origin);
+	MSG_WritePos(self->server.state.origin);
 	MSG_WriteDir(self->movedir);
 	MSG_WriteByte(self->sounds);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 
 	if (self->dmg)
 		T_RadiusDamage(self, activator, self->dmg, NULL, DAMAGE_NONE, self->dmg + 40, MakeBlankMeansOfDeath(self));
@@ -385,12 +385,12 @@ void use_target_splash(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_splash(edict_t *self)
 {
 	self->use = use_target_splash;
-	G_SetMovedir(self->s.angles, self->movedir);
+	G_SetMovedir(self->server.state.angles, self->movedir);
 
 	if (!self->count)
 		self->count = 32;
 
-	self->svflags = SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 }
 
 
@@ -415,8 +415,8 @@ void use_target_spawner(edict_t *self, edict_t *other, edict_t *activator)
 	edict_t *ent;
 	ent = G_Spawn();
 	Q_snprintf(spawnTemp.classname, sizeof(spawnTemp.classname), "%s", self->target);
-	VectorCopy(self->s.origin, ent->s.origin);
-	VectorCopy(self->s.angles, ent->s.angles);
+	VectorCopy(self->server.state.origin, ent->server.state.origin);
+	VectorCopy(self->server.state.angles, ent->server.state.angles);
 	ED_CallSpawn(ent);
 	gi.unlinkentity(ent);
 	KillBox(ent);
@@ -429,11 +429,11 @@ void use_target_spawner(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_spawner(edict_t *self)
 {
 	self->use = use_target_spawner;
-	self->svflags = SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 
 	if (self->speed)
 	{
-		G_SetMovedir(self->s.angles, self->movedir);
+		G_SetMovedir(self->server.state.angles, self->movedir);
 		VectorScale(self->movedir, self->speed, self->movedir);
 	}
 }
@@ -460,14 +460,14 @@ void use_target_blaster(edict_t *self, edict_t *other, edict_t *activator)
 		effect = EF_BLASTER;
 
 #endif
-	fire_blaster(self, self->s.origin, self->movedir, self->dmg, self->speed, EF_BLASTER, false);
+	fire_blaster(self, self->server.state.origin, self->movedir, self->dmg, self->speed, EF_BLASTER, false);
 	gi.sound(self, CHAN_VOICE, self->noise_index, 1, ATTN_NORM, 0);
 }
 
 void SP_target_blaster(edict_t *self)
 {
 	self->use = use_target_blaster;
-	G_SetMovedir(self->s.angles, self->movedir);
+	G_SetMovedir(self->server.state.angles, self->movedir);
 	self->noise_index = gi.soundindex("weapons/laser2.wav");
 
 	if (!self->dmg)
@@ -476,7 +476,7 @@ void SP_target_blaster(edict_t *self)
 	if (!self->speed)
 		self->speed = 1000;
 
-	self->svflags = SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 }
 
 
@@ -496,7 +496,7 @@ void trigger_crosslevel_trigger_use(edict_t *self, edict_t *other, edict_t *acti
 void SP_target_crosslevel_trigger(edict_t *self)
 {
 #ifdef ENABLE_COOP
-	self->svflags = SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 	self->use = trigger_crosslevel_trigger_use;
 #else
 	G_FreeEdict(self);
@@ -526,7 +526,7 @@ void SP_target_crosslevel_target(edict_t *self)
 	if (! self->delay)
 		self->delay = 1;
 
-	self->svflags = SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 	self->think = target_crosslevel_target_think;
 	self->nextthink = level.time + (self->delay * 1000);
 #else
@@ -559,8 +559,8 @@ void target_laser_think(edict_t *self)
 	if (self->enemy)
 	{
 		VectorCopy(self->movedir, last_movedir);
-		VectorMA(self->enemy->absmin, 0.5f, self->enemy->size, point);
-		VectorSubtract(point, self->s.origin, self->movedir);
+		VectorMA(self->enemy->server.absmin, 0.5f, self->enemy->server.size, point);
+		VectorSubtract(point, self->server.state.origin, self->movedir);
 		VectorNormalize(self->movedir);
 
 		if (!VectorCompare(self->movedir, last_movedir))
@@ -568,7 +568,7 @@ void target_laser_think(edict_t *self)
 	}
 
 	ignore = self;
-	VectorCopy(self->s.origin, start);
+	VectorCopy(self->server.state.origin, start);
 	VectorMA(start, 2048, self->movedir, end);
 
 	while (1)
@@ -583,7 +583,7 @@ void target_laser_think(edict_t *self)
 			T_Damage(tr.ent, self, self->activator, self->movedir, tr.endpos, vec3_origin, self->dmg, 1, DAMAGE_ENERGY, MakeBlankMeansOfDeath(self));
 
 		// if we hit something that's not a monster or player or is immune to lasers, we're done
-		if (!(tr.ent->svflags & SVF_MONSTER) && (!tr.ent->client))
+		if (!tr.ent->server.flags.monster && !tr.ent->server.client)
 		{
 			if (self->spawnflags & 0x80000000)
 			{
@@ -593,7 +593,7 @@ void target_laser_think(edict_t *self)
 				MSG_WriteByte(count);
 				MSG_WritePos(tr.endpos);
 				MSG_WriteDir(tr.plane.normal);
-				MSG_WriteByte(self->s.skinnum);
+				MSG_WriteByte(self->server.state.skinnum);
 				gi.multicast(tr.endpos, MULTICAST_PVS);
 			}
 
@@ -604,7 +604,7 @@ void target_laser_think(edict_t *self)
 		VectorCopy(tr.endpos, start);
 	}
 
-	VectorCopy(tr.endpos, self->s.old_origin);
+	VectorCopy(tr.endpos, self->server.state.old_origin);
 	self->nextthink = level.time + 1;
 }
 
@@ -614,14 +614,14 @@ void target_laser_on(edict_t *self)
 		self->activator = self;
 
 	self->spawnflags |= 0x80000001;
-	self->svflags &= ~SVF_NOCLIENT;
+	self->server.flags.noclient = false;
 	target_laser_think(self);
 }
 
 void target_laser_off(edict_t *self)
 {
 	self->spawnflags &= ~1;
-	self->svflags |= SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 	self->nextthink = 0;
 }
 
@@ -639,28 +639,28 @@ void target_laser_start(edict_t *self)
 {
 	edict_t *ent;
 	self->movetype = MOVETYPE_NONE;
-	self->solid = SOLID_NOT;
-	self->s.renderfx |= RF_BEAM | RF_TRANSLUCENT;
+	self->server.solid = SOLID_NOT;
+	self->server.state.renderfx |= RF_BEAM | RF_TRANSLUCENT;
 	// FIXME
-	self->s.modelindex = (q_modelhandle)1;         // must be non-zero
+	self->server.state.modelindex = (q_modelhandle)1;         // must be non-zero
 
 	// set the beam diameter
 	if (self->spawnflags & 64)
-		self->s.frame = 16;
+		self->server.state.frame = 16;
 	else
-		self->s.frame = 4;
+		self->server.state.frame = 4;
 
 	// set the color
 	if (self->spawnflags & 2)
-		self->s.skinnum = 0xf2f2f0f0;
+		self->server.state.skinnum = 0xf2f2f0f0;
 	else if (self->spawnflags & 4)
-		self->s.skinnum = 0xd0d1d2d3;
+		self->server.state.skinnum = 0xd0d1d2d3;
 	else if (self->spawnflags & 8)
-		self->s.skinnum = 0xf3f3f1f1;
+		self->server.state.skinnum = 0xf3f3f1f1;
 	else if (self->spawnflags & 16)
-		self->s.skinnum = 0xdcdddedf;
+		self->server.state.skinnum = 0xdcdddedf;
 	else if (self->spawnflags & 32)
-		self->s.skinnum = 0xe0e1e2e3;
+		self->server.state.skinnum = 0xe0e1e2e3;
 
 	if (!self->enemy)
 	{
@@ -669,12 +669,12 @@ void target_laser_start(edict_t *self)
 			ent = G_Find(NULL, FOFS(targetname), self->target);
 
 			if (!ent)
-				Com_Printf("entityid %i at %s: %s is a bad target\n", self->entitytype, vtos(self->s.origin), self->target);
+				Com_Printf("entityid %i at %s: %s is a bad target\n", self->entitytype, vtos(self->server.state.origin), self->target);
 
 			self->enemy = ent;
 		}
 		else
-			G_SetMovedir(self->s.angles, self->movedir);
+			G_SetMovedir(self->server.state.angles, self->movedir);
 	}
 
 	self->use = target_laser_use;
@@ -683,8 +683,8 @@ void target_laser_start(edict_t *self)
 	if (!self->dmg)
 		self->dmg = 1;
 
-	VectorSet(self->mins, -8, -8, -8);
-	VectorSet(self->maxs, 8, 8, 8);
+	VectorSet(self->server.mins, -8, -8, -8);
+	VectorSet(self->server.maxs, 8, 8, 8);
 	gi.linkentity(self);
 
 	if (self->spawnflags & 1)
@@ -743,8 +743,8 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
 
 			if (e->entitytype != ET_LIGHT)
 			{
-				Com_Printf("entityid %i at %s ", self->entitytype, vtos(self->s.origin));
-				Com_Printf("target %s (entityid %i at %s) is not a light\n", self->target, e->entitytype, vtos(e->s.origin));
+				Com_Printf("entityid %i at %s ", self->entitytype, vtos(self->server.state.origin));
+				Com_Printf("target %s (entityid %i at %s) is not a light\n", self->target, e->entitytype, vtos(e->server.state.origin));
 			}
 			else
 				self->enemy = e;
@@ -752,7 +752,7 @@ void target_lightramp_use(edict_t *self, edict_t *other, edict_t *activator)
 
 		if (!self->enemy)
 		{
-			Com_Printf("entityid %i target %s not found at %s\n", self->entitytype, self->target, vtos(self->s.origin));
+			Com_Printf("entityid %i target %s not found at %s\n", self->entitytype, self->target, vtos(self->server.state.origin));
 			G_FreeEdict(self);
 			return;
 		}
@@ -768,7 +768,7 @@ void SP_target_lightramp(edict_t *self)
 #ifdef ENABLE_COOP
 	if (!self->message || strlen(self->message) != 2 || self->message[0] < 'a' || self->message[0] > 'z' || self->message[1] < 'a' || self->message[1] > 'z' || self->message[0] == self->message[1])
 	{
-		Com_Printf("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->s.origin));
+		Com_Printf("target_lightramp has bad ramp (%s) at %s\n", self->message, vtos(self->server.state.origin));
 		G_FreeEdict(self);
 		return;
 	}
@@ -781,12 +781,12 @@ void SP_target_lightramp(edict_t *self)
 
 	if (!self->target)
 	{
-		Com_Printf("%s with no target at %s\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("%s with no target at %s\n", spawnTemp.classname, vtos(self->server.state.origin));
 		G_FreeEdict(self);
 		return;
 	}
 
-	self->svflags |= SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 	self->use = target_lightramp_use;
 	self->think = target_lightramp_think;
 	self->movedir[0] = self->message[0] - 'a';
@@ -813,16 +813,16 @@ void target_earthquake_think(edict_t *self)
 
 	if (self->last_move_time < level.time)
 	{
-		gi.positioned_sound(self->s.origin, self, CHAN_AUTO, self->noise_index, 1.0f, ATTN_NONE, 0);
+		gi.positioned_sound(self->server.state.origin, self, CHAN_AUTO, self->noise_index, 1.0f, ATTN_NONE, 0);
 		self->last_move_time = level.time + 500;
 	}
 
-	for (i = 1, e = g_edicts + i; i < globals.num_edicts; i++, e++)
+	for (i = 1, e = g_edicts + i; i < globals.pool.num_edicts; i++, e++)
 	{
-		if (!e->inuse)
+		if (!e->server.inuse)
 			continue;
 
-		if (!e->client)
+		if (!e->server.client)
 			continue;
 
 		if (!e->groundentity)
@@ -849,7 +849,7 @@ void target_earthquake_use(edict_t *self, edict_t *other, edict_t *activator)
 void SP_target_earthquake(edict_t *self)
 {
 	if (!self->targetname)
-		Com_Printf("untargeted %s at %s\n", spawnTemp.classname, vtos(self->s.origin));
+		Com_Printf("untargeted %s at %s\n", spawnTemp.classname, vtos(self->server.state.origin));
 
 	if (!self->count)
 		self->count = 5;
@@ -857,7 +857,7 @@ void SP_target_earthquake(edict_t *self)
 	if (!self->speed)
 		self->speed = 200;
 
-	self->svflags |= SVF_NOCLIENT;
+	self->server.flags.noclient = true;
 	self->think = target_earthquake_think;
 	self->use = target_earthquake_use;
 	self->noise_index = gi.soundindex("world/quake.wav");

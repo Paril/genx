@@ -112,9 +112,9 @@ static void makronBFG(edict_t *self)
 	vec3_t  start;
 	vec3_t  dir;
 	vec3_t  vec;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_MAKRON_BFG], forward, right, start);
-	VectorCopy(self->enemy->s.origin, vec);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_MAKRON_BFG], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, vec);
 	vec[2] += self->enemy->viewheight;
 	VectorSubtract(vec, start, dir);
 	VectorNormalize(dir);
@@ -124,7 +124,7 @@ static void makronBFG(edict_t *self)
 
 static void MakronSaveloc(edict_t *self)
 {
-	VectorCopy(self->enemy->s.origin, self->pos1);  //save for aiming the shot
+	VectorCopy(self->enemy->server.state.origin, self->pos1);  //save for aiming the shot
 	self->pos1[2] += self->enemy->viewheight;
 }
 
@@ -134,8 +134,8 @@ static void MakronRailgun(edict_t *self)
 	vec3_t  start;
 	vec3_t  dir;
 	vec3_t  forward, right;
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_MAKRON_RAILGUN_1], forward, right, start);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_MAKRON_RAILGUN_1], forward, right, start);
 	// calc direction to where we targted
 	VectorSubtract(self->pos1, start, dir);
 	VectorNormalize(dir);
@@ -150,13 +150,13 @@ static void MakronHyperblaster(edict_t *self)
 	vec3_t  start;
 	vec3_t  forward, right;
 	int     flash_number;
-	flash_number = MZ2_MAKRON_BLASTER_1 + (self->s.frame - FRAME_attak405);
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[flash_number], forward, right, start);
+	flash_number = MZ2_MAKRON_BLASTER_1 + (self->server.state.frame - FRAME_attak405);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[flash_number], forward, right, start);
 
 	if (self->enemy)
 	{
-		VectorCopy(self->enemy->s.origin, vec);
+		VectorCopy(self->enemy->server.state.origin, vec);
 		vec[2] += self->enemy->viewheight;
 		VectorSubtract(vec, start, vec);
 		vectoangles(vec, vec);
@@ -165,10 +165,10 @@ static void MakronHyperblaster(edict_t *self)
 	else
 		dir[0] = 0;
 
-	if (self->s.frame <= FRAME_attak413)
-		dir[1] = self->s.angles[1] - 10 * (self->s.frame - FRAME_attak413);
+	if (self->server.state.frame <= FRAME_attak413)
+		dir[1] = self->server.state.angles[1] - 10 * (self->server.state.frame - FRAME_attak413);
 	else
-		dir[1] = self->s.angles[1] + 10 * (self->s.frame - FRAME_attak421);
+		dir[1] = self->server.state.angles[1] + 10 * (self->server.state.frame - FRAME_attak421);
 
 	dir[2] = 0;
 	AngleVectors(dir, forward, NULL, NULL);
@@ -178,7 +178,7 @@ static void MakronHyperblaster(edict_t *self)
 static void makron_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -247,11 +247,11 @@ Makron Torso. This needs to be spawned in
 
 static void makron_torso_think(edict_t *self)
 {
-	if (++self->s.frame < 365)
+	if (++self->server.state.frame < 365)
 		self->nextthink = level.time + game.frametime;
 	else
 	{
-		self->s.frame = 346;
+		self->server.state.frame = 346;
 		self->nextthink = level.time + game.frametime;
 	}
 }
@@ -259,14 +259,14 @@ static void makron_torso_think(edict_t *self)
 static void makron_torso(edict_t *ent)
 {
 	ent->movetype = MOVETYPE_NONE;
-	ent->solid = SOLID_NOT;
-	VectorSet(ent->mins, -8, -8, 0);
-	VectorSet(ent->maxs, 8, 8, 8);
-	ent->s.frame = 346;
-	ent->s.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
+	ent->server.solid = SOLID_NOT;
+	VectorSet(ent->server.mins, -8, -8, 0);
+	VectorSet(ent->server.maxs, 8, 8, 8);
+	ent->server.state.frame = 346;
+	ent->server.state.modelindex = gi.modelindex("models/monsters/boss3/rider/tris.md2");
 	ent->think = makron_torso_think;
 	ent->nextthink = level.time + (2 * game.frametime);
-	ent->s.sound = gi.soundindex("makron/spine.wav");
+	ent->server.state.sound = gi.soundindex("makron/spine.wav");
 	gi.linkentity(ent);
 }
 
@@ -277,11 +277,11 @@ static void makron_torso(edict_t *ent)
 
 static void makron_dead(edict_t *self)
 {
-	VectorSet(self->mins, -60, -60, 0);
-	VectorSet(self->maxs, 60, 60, 72);
+	VectorSet(self->server.mins, -60, -60, 0);
+	VectorSet(self->server.maxs, 60, 60, 72);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -290,7 +290,7 @@ static void makron_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 {
 	edict_t *tempent;
 	int     n;
-	self->s.sound = 0;
+	self->server.state.sound = 0;
 
 	// check for gib
 	if (self->health <= self->gib_health)
@@ -316,9 +316,9 @@ static void makron_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 	self->deadflag = DEAD_DEAD;
 	self->takedamage = true;
 	tempent = G_Spawn();
-	VectorCopy(self->s.origin, tempent->s.origin);
-	VectorCopy(self->s.angles, tempent->s.angles);
-	tempent->s.origin[1] -= 84;
+	VectorCopy(self->server.state.origin, tempent->server.state.origin);
+	VectorCopy(self->server.state.angles, tempent->server.state.angles);
+	tempent->server.state.origin[1] -= 84;
 	makron_torso(tempent);
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "death2");
 }
@@ -335,9 +335,9 @@ static bool Makron_CheckAttack(edict_t *self)
 	if (self->enemy->health > 0)
 	{
 		// see if any entities are in the way of the shot
-		VectorCopy(self->s.origin, spot1);
+		VectorCopy(self->server.state.origin, spot1);
 		spot1[2] += self->viewheight;
-		VectorCopy(self->enemy->s.origin, spot2);
+		VectorCopy(self->enemy->server.state.origin, spot2);
 		spot2[2] += self->enemy->viewheight;
 		tr = gi.trace(spot1, NULL, NULL, spot2, self, CONTENTS_SOLID | CONTENTS_MONSTER | CONTENTS_SLIME | CONTENTS_LAVA);
 
@@ -347,7 +347,7 @@ static bool Makron_CheckAttack(edict_t *self)
 	}
 
 	enemy_range = range(self, self->enemy);
-	VectorSubtract(self->enemy->s.origin, self->s.origin, temp);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, temp);
 	enemy_yaw = vectoyaw(temp);
 	self->ideal_yaw = enemy_yaw;
 
@@ -463,10 +463,10 @@ void SP_monster_makron(edict_t *self)
 
 	MakronPrecache();
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -30, -30, 0);
-	VectorSet(self->maxs, 30, 30, 90);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -30, -30, 0);
+	VectorSet(self->server.maxs, 30, 30, 90);
 	self->health = 3000;
 	self->gib_health = -2000;
 	self->mass = 500;
@@ -503,8 +503,8 @@ void MakronSpawn(edict_t *self)
 		return;
 	
 	vec3_t vec;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, vec);
-	self->s.angles[YAW] = vectoyaw(vec);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, vec);
+	self->server.state.angles[YAW] = vectoyaw(vec);
 	VectorNormalize(vec);
 	VectorScale(vec, 400, self->velocity);
 	self->velocity[2] = 200;
@@ -525,7 +525,7 @@ void MakronToss(edict_t *self)
 	ent->nextthink = level.time + (game.frametime * 8);
 	ent->think = MakronSpawn;
 	ent->target = self->target;
-	VectorCopy(self->s.origin, ent->s.origin);
+	VectorCopy(self->server.state.origin, ent->server.state.origin);
 }
 
 #endif

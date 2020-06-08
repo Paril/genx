@@ -56,6 +56,14 @@ typedef OPAQUE_TYPE q_imagehandle;
 
 typedef OPAQUE_TYPE qhandle_t;
 
+#ifdef GAME_INCLUDE
+typedef struct edict_s edict_t;
+typedef struct gclient_s gclient_t;
+#else
+typedef struct edict_server_s edict_t;
+typedef struct gclient_server_s gclient_t;
+#endif
+
 #define MODEL_HANDLE_PLAYER ((q_modelhandle)(USHRT_MAX - 1))
 
 // Paril
@@ -82,7 +90,7 @@ typedef enum
 	WEAPON_GROUP_SUPER,
 	WEAPON_GROUP_ANY,
 
-	WEAPON_GROUP_ALL
+	WEAPON_GROUP_MAX
 } weapon_group_e;
 
 // Item enums
@@ -114,6 +122,7 @@ typedef enum
 	ITI_WEAPON_G,
 	ITI_WEAPONS_END = ITI_WEAPON_G,
 
+	ITI_WEAPON,
 	ITI_AMMO,
 
 	ITI_STIMPACK,
@@ -1049,14 +1058,14 @@ typedef struct csurface_s
 // a trace is returned when a box is swept through the world
 typedef struct
 {
-	bool    allsolid;   // if true, plane is not valid
-	bool    startsolid; // if true, the initial point was in a solid area
-	float			fraction;   // time completed, 1.0 = didn't hit anything
-	vec3_t			endpos;     // final position
-	cplane_t		plane;      // surface normal at impact
-	csurface_t		*surface;   // surface hit
+	bool		allsolid;   // if true, plane is not valid
+	bool		startsolid; // if true, the initial point was in a solid area
+	float		fraction;   // time completed, 1.0 = didn't hit anything
+	vec3_t		endpos;     // final position
+	cplane_t	plane;      // surface normal at impact
+	csurface_t	*surface;   // surface hit
 	int         contents;   // contents on other side of surface hit
-	struct edict_s  *ent;       // not set by CM_*() functions
+	edict_t		*ent;       // not set by CM_*() functions
 } trace_t;
 
 // pmove_state_t is the information necessary for client side movement
@@ -1126,22 +1135,22 @@ typedef struct usercmd_s
 typedef struct
 {
 	// state (in / out)
-	pmove_state_t   s;
+	pmove_state_t   state;
 
 	// command (in)
 	usercmd_t       cmd;
-	bool        snapinitial;    // if s has been changed outside pmove
+	bool			snapinitial;    // if s has been changed outside pmove
 
 	// results (out)
-	int         numtouch;
-	struct edict_s  *touchents[MAXTOUCH];
+	int				numtouch;
+	edict_t			*touchents[MAXTOUCH];
 
 	vec3_t      viewangles;         // clamped
 	float       viewheight;
 
 	vec3_t      mins, maxs;         // bounding box size
 
-	struct edict_s  *groundentity;
+	edict_t		*groundentity;
 	int         watertype;
 	int         waterlevel;
 	gametype_t	game; // Paril
@@ -1193,6 +1202,8 @@ typedef struct
 //ROGUE
 
 // Generations
+#define EF_GROUPED_ITEM		(EF_IONRIPPER | EF_BLUEHYPERBLASTER)
+
 #ifdef ENABLE_COOP
 #define EF_Q1_WIZ			EF_BLUEHYPERBLASTER
 #define EF_Q1_VORE			EF_IONRIPPER
@@ -1621,8 +1632,6 @@ typedef enum
 	TE_DUKE_FREEZE_HIT,
 	TE_DUKE_GLASS,
 
-	TE_DAMAGE_DIRECTION,
-
 	TE_NUM_ENTITIES
 } temp_event_t;
 
@@ -1753,33 +1762,33 @@ static inline float SHORT2ANGLE(const short x)
 //
 // config strings are a general means of communication from
 // the server to all connected clients.
-// Each config string can be at most MAX_QPATH characters.
+// Each config string can be at most CS_SIZE characters.
 //
-#define CS_NAME             0
-#define CS_CDTRACK          1
-#define CS_SKY              2
-#define CS_SKYAXIS          3       // %f %f %f format
-#define CS_SKYROTATE        4
-#define CS_STATUSBAR        5       // display program string
-#define CS_GAMEMODE			6		// Generations
+enum {
+	CS_NAME,
+	CS_CDTRACK,
+	CS_SKY,
+	CS_SKYAXIS, // %f %f %f format
+	CS_SKYROTATE,
+	CS_STATUSBAR,       // display program string
+	CS_GAMEMODE,		// Generations
 
-#define CS_AIRACCEL         29      // air acceleration control
-#define CS_MAXCLIENTS       30
-#define CS_MAPCHECKSUM      31      // for catching cheater maps
+	CS_AIRACCEL,      // air acceleration control
+	CS_MAXCLIENTS,
+	CS_MAPCHECKSUM,      // for catching cheater maps
 
-// Generations
-#define CS_PRECACHE         32
-#define CS_LIGHTS           (CS_PRECACHE+MAX_PRECACHE)
-#define CS_ITEMS            (CS_LIGHTS+MAX_LIGHTSTYLES)
-// Generations
-#define CS_PLAYERSKINS      (CS_ITEMS+ITI_TOTAL)
-#define CS_GENERAL          (CS_PLAYERSKINS+MAX_CLIENTS)
-#define MAX_CONFIGSTRINGS   (CS_GENERAL+MAX_GENERAL)
+	// Generations
+	CS_SEEDS,
+	CS_PRECACHE,
+	CS_LIGHTS           = (CS_PRECACHE+MAX_PRECACHE),
+	CS_ITEMS            = (CS_LIGHTS+MAX_LIGHTSTYLES),
+	// Generations
+	CS_PLAYERSKINS      = (CS_ITEMS+ITI_TOTAL),
+	CS_GENERAL          = (CS_PLAYERSKINS+MAX_CLIENTS),
+	MAX_CONFIGSTRINGS   = (CS_GENERAL+MAX_GENERAL),
 
-// Some mods actually exploit CS_STATUSBAR to take space up to CS_AIRACCEL
-#define CS_SIZE(cs) \
-	((cs) >= CS_STATUSBAR && (cs) < CS_AIRACCEL ? \
-		MAX_QPATH * (CS_AIRACCEL - (cs)) : MAX_QPATH)
+	CS_SIZE				= 512
+};
 
 #if ENABLE_COOP
 typedef enum

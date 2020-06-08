@@ -57,15 +57,15 @@ static edict_t *duke_findradius(edict_t *from, vec3_t org, float rad, float *fou
 	else
 		from++;
 
-	for (; from < &g_edicts[globals.num_edicts]; from++)
+	for (; from < &g_edicts[globals.pool.num_edicts]; from++)
 	{
-		if (!from->inuse)
+		if (!from->server.inuse)
 			continue;
 
-		if (from->solid == SOLID_NOT)
+		if (from->server.solid == SOLID_NOT)
 			continue;
 
-		if ((*found_rad = DukeDistance(from->s.origin, org)) > rad)
+		if ((*found_rad = DukeDistance(from->server.state.origin, org)) > rad)
 			continue;
 
 		return from;
@@ -87,7 +87,7 @@ void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, 
 
 	mod.damage_type = DT_INDIRECT;
 
-	while ((ent = duke_findradius(ent, inflictor->s.origin, radius, &d)) != NULL)
+	while ((ent = duke_findradius(ent, inflictor->server.state.origin, radius, &d)) != NULL)
 	{
 		if (ent == ignore)
 			continue;
@@ -121,7 +121,7 @@ void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, 
 		{
 			if (CanDamage(ent, inflictor))
 			{
-				VectorSubtract(ent->s.origin, inflictor->s.origin, dir);
+				VectorSubtract(ent->server.state.origin, inflictor->server.state.origin, dir);
 				
 #ifdef ENABLE_COOP
 				// shambler takes half damage
@@ -129,7 +129,7 @@ void T_DukeRadiusDamage(edict_t *inflictor, edict_t *attacker, edict_t *ignore, 
 					points *= 0.5f;
 #endif
 
-				T_Damage(ent, inflictor, attacker, dir, inflictor->s.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
+				T_Damage(ent, inflictor, attacker, dir, inflictor->server.state.origin, vec3_origin, (int)points, (int)points, dflags | DAMAGE_RADIUS, mod);
 			}
 		}
 	}
@@ -144,16 +144,16 @@ void Pipe_Explode(edict_t *ent)
 	vec3_t      origin;
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(ent->activator, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->activator, ent->server.state.origin, PNOISE_IMPACT);
 #endif
 
-	ent->owner = ent->activator;
+	ent->server.owner = ent->activator;
 	T_DukeRadiusDamage(ent, ent->activator, ent, PIPE_RADIUS, PIPE_STRENGTH >> 2, PIPE_STRENGTH - (PIPE_STRENGTH >> 1), PIPE_STRENGTH - (PIPE_STRENGTH >> 2), PIPE_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
-	VectorMA(ent->s.origin, -0.02, ent->velocity, origin);
+	VectorMA(ent->server.state.origin, -0.02, ent->velocity, origin);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_DUKE_EXPLODE_PIPE);
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent->chain);
 	G_FreeEdict(ent);
 }
@@ -182,39 +182,39 @@ void PipeTrigger_Touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 	if (other == ent)
 		return;
 
-	if (other->client && level.time > ent->chain->last_move_time)
+	if (other->server.client && level.time > ent->chain->last_move_time)
 	{
 		edict_t *pipe = ent->chain;
 		do_propagate = false;
 		Touch_Item(pipe, other, plane, surf);
 		do_propagate = true;
 
-		if (!pipe->inuse)
+		if (!pipe->server.inuse)
 			G_FreeEdict(ent);
 	}
 }
 
 void Pipe_Think(edict_t *self)
 {
-	VectorCopy(self->s.origin, self->chain->s.origin);
+	VectorCopy(self->server.state.origin, self->chain->server.state.origin);
 	gi.linkentity(self->chain);
 	self->nextthink = level.time + game.frametime;
 
 	if (VectorLengthSquared(self->velocity))
-		self->s.frame = (self->s.frame + 1) % 2;
+		self->server.state.frame = (self->server.state.frame + 1) % 2;
 
-	if (!self->activator || !self->activator->client || !self->activator->inuse || !self->activator->client->pers.connected)
+	if (!self->activator || !self->activator->server.client || !self->activator->server.inuse || !self->activator->server.client->pers.connected)
 		return;
 
-	if (GetIndexByItem(self->activator->client->pers.weapon) == ITI_DUKE_PIPEBOMBS &&
-		self->activator->client->pers.alt_weapon == true &&
-		self->activator->client->ps.guns[GUN_MAIN].frame == 1)
+	if (GetIndexByItem(self->activator->server.client->pers.weapon) == ITI_DUKE_PIPEBOMBS &&
+		self->activator->server.client->pers.alt_weapon == true &&
+		self->activator->server.client->server.ps.guns[GUN_MAIN].frame == 1)
 		Pipe_Explode(self);
 }
 
 void pipe_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
 {
-	if (attacker->client || (attacker->svflags & SVF_MONSTER))
+	if (attacker->server.client || attacker->server.flags.monster)
 		self->activator = attacker;
 
 	Pipe_Explode(self);
@@ -228,23 +228,23 @@ void fire_pipe(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed
 	vectoangles(aimdir, dir);
 	AngleVectors(dir, forward, right, up);
 	grenade = G_Spawn();
-	VectorCopy(start, grenade->s.origin);
+	VectorCopy(start, grenade->server.state.origin);
 	VectorScale(aimdir, speed, grenade->velocity);
 	VectorMA(grenade->velocity, 250, up, grenade->velocity);
 	grenade->movetype = MOVETYPE_BOUNCE;
-	grenade->clipmask = CONTENTS_SOLID | CONTENTS_BULLETS;
-	grenade->s.clip_contents = CONTENTS_BULLETS;
-	grenade->solid = SOLID_BBOX;
+	grenade->server.clipmask = CONTENTS_SOLID | CONTENTS_BULLETS;
+	grenade->server.state.clip_contents = CONTENTS_BULLETS;
+	grenade->server.solid = SOLID_BBOX;
 	grenade->health = 1;
 	grenade->takedamage = true;
 	grenade->die = pipe_die;
-	grenade->s.game = GAME_DUKE;
-	VectorSet(grenade->mins, -8, -8, -4);
-	VectorSet(grenade->maxs, 8, 8, 0);
+	grenade->server.state.game = GAME_DUKE;
+	VectorSet(grenade->server.mins, -8, -8, -4);
+	VectorSet(grenade->server.maxs, 8, 8, 0);
 	grenade->spawnflags |= DROPPED_ITEM | DROPPED_PLAYER_ITEM;
 	grenade->item = grenade->real_item = GetItemByIndex(ITI_DUKE_PIPEBOMBS);
 	grenade->count = 1;
-	grenade->s.modelindex = gi.modelindex("%e_pipebomb");
+	grenade->server.state.modelindex = gi.modelindex("%e_pipebomb");
 	grenade->activator = self;
 	grenade->touch = Pipe_Touch;
 	grenade->nextthink = level.time + game.frametime;
@@ -254,24 +254,24 @@ void fire_pipe(edict_t *self, vec3_t start, vec3_t aimdir, int damage, int speed
 	grenade->entitytype = ET_GRENADE;
 	grenade->last_move_time = level.time + 500;
 
-	if (self->client)
-		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), grenade, DT_DIRECT);
+	if (self->server.client)
+		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), grenade, DT_DIRECT);
 	else
 		grenade->meansOfDeath = MakeWeaponMeansOfDeath(self, ITI_Q2_GRENADE_LAUNCHER, grenade, DT_DIRECT);
 
 	gi.linkentity(grenade);
 	edict_t *trigger;
 	trigger = G_Spawn();
-	trigger->clipmask = 0;
-	trigger->s.clip_contents = CONTENTS_PLAYERCLIP;
-	trigger->solid = SOLID_TRIGGER;
-	VectorCopy(grenade->mins, trigger->mins);
-	VectorCopy(grenade->maxs, trigger->maxs);
+	trigger->server.clipmask = 0;
+	trigger->server.state.clip_contents = CONTENTS_PLAYERCLIP;
+	trigger->server.solid = SOLID_TRIGGER;
+	VectorCopy(grenade->server.mins, trigger->server.mins);
+	VectorCopy(grenade->server.maxs, trigger->server.maxs);
 	trigger->chain = grenade;
 	grenade->chain = trigger;
-	trigger->svflags = SVF_NOCLIENT;
+	trigger->server.flags.noclient = true;
 	trigger->touch = PipeTrigger_Touch;
-	VectorCopy(grenade->s.origin, trigger->s.origin);
+	VectorCopy(grenade->server.state.origin, trigger->server.state.origin);
 	gi.linkentity(trigger);
 }
 
@@ -279,32 +279,32 @@ void weapon_duke_pipebomb_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun
 {
 	if (gun->frame == 3)
 	{
-		if (ent->client->buttons & BUTTON_ATTACK)
+		if (ent->server.client->buttons & BUTTON_ATTACK)
 		{
-			if (ent->client->pers.pipebomb_hold < 10)
-				ent->client->pers.pipebomb_hold++;
+			if (ent->server.client->pers.pipebomb_hold < 10)
+				ent->server.client->pers.pipebomb_hold++;
 
 			return;
 		}
 
-		if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
+		if (HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
 		{
-			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+			RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 			vec3_t start, forward, right, offset;
-			AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+			AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 			VectorSet(offset, 0, 0, ent->viewheight - 8);
-			P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
-			fire_pipe(ent, start, forward, 150, 250 + (ent->client->pers.pipebomb_hold * 25), 450);
+			P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
+			fire_pipe(ent, start, forward, 150, 250 + (ent->server.client->pers.pipebomb_hold * 25), 450);
 		}
 	}
 
-	ent->client->pers.pipebomb_hold = 0;
+	ent->server.client->pers.pipebomb_hold = 0;
 	gun->frame++;
 
 	if (gun->frame >= 9)
 	{
-		ent->client->pers.alt_weapon = true;
+		ent->server.client->pers.alt_weapon = true;
 		gun->offset[2] = DUKE_ANIM_FRAC;
 		gun->index = pipe_detonator_index;
 		gun->frame = 0;
@@ -319,8 +319,8 @@ void weapon_duke_detonator_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gu
 
 	if (gun->frame >= 3)
 	{
-		if (HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
-			gun_state->newweapon = ent->client->pers.weapon;
+		if (HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
+			gun_state->newweapon = ent->server.client->pers.weapon;
 		else
 			NoAmmoWeaponChange(ent, gun_state);
 	}
@@ -330,7 +330,7 @@ void duke_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 {
 	vec3_t      origin;
 
-	if (other == ent->owner)
+	if (other == ent->server.owner)
 		return;
 
 	if (surf && (surf->flags & SURF_SKY))
@@ -340,11 +340,11 @@ void duke_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 	}
 	
 #ifdef ENABLE_COOP
-	PlayerNoise(ent->owner, ent->s.origin, PNOISE_IMPACT);
+	PlayerNoise(ent->server.owner, ent->server.state.origin, PNOISE_IMPACT);
 #endif
 
 	if (other->takedamage)
-		T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
+		T_Damage(other, ent, ent->server.owner, ent->velocity, ent->server.state.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
 
 	// calculate position for the explosion entity
 #define RPG_RADIUS 1780
@@ -352,16 +352,16 @@ void duke_rocket_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_t
 #define DEVASTATOR_STRENGTH 20
 
 	if (ent->spawnflags == 0)
-		T_DukeRadiusDamage(ent, ent->owner, ent, RPG_RADIUS, RPG_STRENGTH >> 2, RPG_STRENGTH >> 1, RPG_STRENGTH - (RPG_STRENGTH >> 2), RPG_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
+		T_DukeRadiusDamage(ent, ent->server.owner, ent, RPG_RADIUS, RPG_STRENGTH >> 2, RPG_STRENGTH >> 1, RPG_STRENGTH - (RPG_STRENGTH >> 2), RPG_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
 	else
-		T_DukeRadiusDamage(ent, ent->owner, ent, (RPG_RADIUS >> 1), DEVASTATOR_STRENGTH >> 2, DEVASTATOR_STRENGTH >> 1, DEVASTATOR_STRENGTH - (DEVASTATOR_STRENGTH >> 2), DEVASTATOR_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
+		T_DukeRadiusDamage(ent, ent->server.owner, ent, (RPG_RADIUS >> 1), DEVASTATOR_STRENGTH >> 2, DEVASTATOR_STRENGTH >> 1, DEVASTATOR_STRENGTH - (DEVASTATOR_STRENGTH >> 2), DEVASTATOR_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, ent->meansOfDeath);
 
 	VectorNormalize(ent->velocity);
-	VectorMA(ent->s.origin, -8, ent->velocity, origin);
+	VectorMA(ent->server.state.origin, -8, ent->velocity, origin);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(ent->spawnflags == 1 ? TE_DUKE_EXPLODE_SMALL : TE_DUKE_EXPLODE);
 	MSG_WritePos(origin);
-	gi.multicast(ent->s.origin, MULTICAST_PHS);
+	gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(ent);
 }
 
@@ -369,24 +369,24 @@ void fire_duke_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int r
 {
 	edict_t *rocket;
 	rocket = G_Spawn();
-	VectorCopy(start, rocket->s.origin);
+	VectorCopy(start, rocket->server.state.origin);
 	VectorCopy(dir, rocket->movedir);
-	vectoangles(dir, rocket->s.angles);
+	vectoangles(dir, rocket->server.state.angles);
 	VectorScale(dir, speed, rocket->velocity);
 	rocket->movetype = MOVETYPE_FLYMISSILE;
-	rocket->clipmask = MASK_SHOT;
-	rocket->solid = SOLID_BBOX;
-	rocket->s.game = GAME_DUKE;
-	VectorClear(rocket->mins);
-	VectorClear(rocket->maxs);
-	rocket->s.modelindex = tiny ? gi.modelindex("%e_smallrocket") : gi.modelindex("%e_rocket");
-	rocket->owner = self;
+	rocket->server.clipmask = MASK_SHOT;
+	rocket->server.solid = SOLID_BBOX;
+	rocket->server.state.game = GAME_DUKE;
+	VectorClear(rocket->server.mins);
+	VectorClear(rocket->server.maxs);
+	rocket->server.state.modelindex = tiny ? gi.modelindex("%e_smallrocket") : gi.modelindex("%e_rocket");
+	rocket->server.owner = self;
 	rocket->touch = duke_rocket_touch;
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
 	rocket->dmg = damage;
 	rocket->radius_dmg = radius_damage;
-	rocket->s.frame = 3;
+	rocket->server.state.frame = 3;
 	rocket->entitytype = ET_ROCKET;
 
 	if (tiny)
@@ -398,11 +398,11 @@ void fire_duke_rocket(edict_t *self, vec3_t start, vec3_t dir, int damage, int r
 		rocket->dmg_radius = radius_damage + 400;
 
 #if ENABLE_COOP
-	check_dodge(self, rocket->s.origin, dir, speed);
+	check_dodge(self, rocket->server.state.origin, dir, speed);
 #endif
 
-	if (self->client)
-		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), rocket, DT_DIRECT);
+	if (self->server.client)
+		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), rocket, DT_DIRECT);
 	else
 		rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, rocket, MD_NONE, DT_DIRECT);
 
@@ -413,12 +413,12 @@ void weapon_duke_devastate_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gu
 {
 	gun->frame++;
 
-	if (gun->frame == 3 && (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || gun_state->newweapon))
+	if (gun->frame == 3 && (!(ent->server.client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) || gun_state->newweapon))
 	{
 		gun->frame = 6;
 		return;
 	}
-	else if (gun->frame >= 6 && (ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !gun_state->newweapon)
+	else if (gun->frame >= 6 && (ent->server.client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) && !gun_state->newweapon)
 		gun->frame = 1;
 
 	if (gun->frame == 1 || gun->frame == 3)
@@ -430,18 +430,18 @@ void weapon_duke_devastate_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gu
 
 		for (int i = 0; i < 2; ++i)
 		{
-			if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon))
+			if (!HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon))
 				break;
 
-			VectorCopy(ent->client->v_angle, angles);
+			VectorCopy(ent->server.client->v_angle, angles);
 			angles[0] += crandom() * 2;
 			angles[1] += crandom() * 2;
 			AngleVectors(angles, forward, right, NULL);
 			VectorSet(offset, 0, gun->frame == 1 ? 8 : -8, ent->viewheight - 8);
-			P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+			P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 			fire_duke_rocket(ent, start, forward, 38, 50, 850 - i * 50, true);
 
-			RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+			RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 		}
 	}
 }
@@ -454,12 +454,12 @@ void weapon_duke_rocket_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 	{
 		G_SendMuzzleFlash(ent, MZ_ROCKET);
 
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 		VectorSet(offset, 0, 0, ent->viewheight - 8);
-		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+		P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 		fire_duke_rocket(ent, start, forward, 140, sqrtf(1780) * 2, 850, false);
 		Weapon_Doom_Anim_Regular(ent);
 	}
@@ -471,23 +471,23 @@ void weapon_duke_foot_fire_generic(edict_t *ent, player_gun_t *gun)
 
 	if (gun->frame >= 3 && gun->frame <= 5)
 	{
-		ent->client->anim_priority = ANIM_ATTACK;
-		ent->s.frame = 6;
-		ent->client->anim_end = 7;
+		ent->server.client->anim_priority = ANIM_ATTACK;
+		ent->server.state.frame = 6;
+		ent->server.client->anim_end = 7;
 	}
 	else
 	{
-		ent->client->anim_priority = ANIM_ATTACK;
-		ent->s.frame = 5;
-		ent->client->anim_end = 6;
+		ent->server.client->anim_priority = ANIM_ATTACK;
+		ent->server.state.frame = 5;
+		ent->server.client->anim_end = 6;
 	}
 
 	if (gun->frame == 3)
 	{
 		vec3_t source, org;
 		vec3_t forward;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
-		VectorCopy(ent->s.origin, source);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
+		VectorCopy(ent->server.state.origin, source);
 		source[2] += ent->viewheight - 8;
 		VectorMA(source, 64, forward, org);
 		trace_t tr = gi.trace(source, vec3_origin, vec3_origin, org, ent, MASK_SHOT);
@@ -502,14 +502,14 @@ void weapon_duke_foot_fire_generic(edict_t *ent, player_gun_t *gun)
 				MSG_WriteByte(TE_DUKE_BLOOD);
 				MSG_WritePos(org);
 				gi.multicast(org, MULTICAST_PVS);
-				int damage = (ent->client->quad_time > level.time) ? 42 : 12;
+				int damage = (ent->server.client->quad_time > level.time) ? 42 : 12;
 				vec3_t dir;
-				VectorSubtract(tr.ent->s.origin, ent->s.origin, dir);
+				VectorSubtract(tr.ent->server.state.origin, ent->server.state.origin, dir);
 				vectoangles(dir, dir);
 				dir[0] = 0;
 				dir[2] = 0;
 				AngleVectors(dir, dir, NULL, NULL);
-				T_Damage(tr.ent, ent, ent, dir, vec3_origin, vec3_origin, damage, damage, DAMAGE_NO_PARTICLES, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+				T_Damage(tr.ent, ent, ent, dir, vec3_origin, vec3_origin, damage, damage, DAMAGE_NO_PARTICLES, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 			}
 
 			MSG_WriteByte(svc_temp_entity);
@@ -523,7 +523,7 @@ void weapon_duke_foot_fire_generic(edict_t *ent, player_gun_t *gun)
 
 void weapon_duke_foot_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (gun->frame == 5 && (ent->client->buttons & BUTTON_ATTACK) && !gun_state->newweapon)
+	if (gun->frame == 5 && (ent->server.client->buttons & BUTTON_ATTACK) && !gun_state->newweapon)
 		gun->frame = 0;
 
 	weapon_duke_foot_fire_generic(ent, gun);
@@ -542,18 +542,18 @@ void weapon_duke_offfoot_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_
 
 static void Weapon_Duke_Offhand_Foot(edict_t *ent)
 {
-	if (ent->deadflag || !ent->solid || ent->freeze_time > level.time)
+	if (ent->deadflag || !ent->server.solid || ent->freeze_time > level.time)
 		return;
 
-	player_gun_t *gun = &ent->client->ps.guns[GUN_OFFHAND];
-	gun_state_t *gun_state = &ent->client->gunstates[GUN_OFFHAND];
+	player_gun_t *gun = &ent->server.client->server.ps.guns[GUN_OFFHAND];
+	gun_state_t *gun_state = &ent->server.client->gunstates[GUN_OFFHAND];
 
 	if (gun->index != foot_index)
 	{
 		vec3_t source, org;
 		vec3_t forward;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
-		VectorCopy(ent->s.origin, source);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
+		VectorCopy(ent->server.state.origin, source);
 		source[2] += ent->viewheight - 8;
 		VectorMA(source, 64, forward, org);
 		trace_t tr = gi.trace(source, vec3_origin, vec3_origin, org, ent, MASK_SHOT);
@@ -591,29 +591,29 @@ void duke_freezer_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_
 
 	vec3_t vel;
 	VectorNormalize2(ent->velocity, vel);
-	VectorMA(ent->s.origin, -8, vel, origin);
+	VectorMA(ent->server.state.origin, -8, vel, origin);
 
 	if (other->takedamage)
 	{
 		bool freeze_fx = false;
-		ent->owner = ent->activator;
+		ent->server.owner = ent->activator;
 
 		if (other->freeze_time <= level.time)
 		{
 			if (other->health > ent->dmg)
 			{
-				T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
+				T_Damage(other, ent, ent->server.owner, ent->velocity, ent->server.state.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
 				gi.sound(ent, CHAN_VOICE, gi.soundindex("duke/BULITHIT.wav"), 1, ATTN_NORM, 0);
 			}
 			else
 			{
-				if (other->client || (other->svflags & SVF_MONSTER))
+				if (other->server.client || other->server.flags.monster)
 				{
 					other->freeze_time = level.time + 5000;
 					other->health = 1;
 				}
 				else
-					T_Damage(other, ent, ent->owner, ent->velocity, ent->s.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
+					T_Damage(other, ent, ent->server.owner, ent->velocity, ent->server.state.origin, plane->normal, ent->dmg, 0, DAMAGE_NO_PARTICLES, ent->meansOfDeath);
 
 				gi.sound(ent, CHAN_VOICE, gi.soundindex("duke/FREEZE.wav"), 1, ATTN_NORM, 0);
 				freeze_fx = true;
@@ -630,14 +630,14 @@ void duke_freezer_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_
 			MSG_WriteByte(svc_temp_entity);
 			MSG_WriteByte(TE_DUKE_FREEZE_HIT);
 			MSG_WritePos(origin);
-			gi.multicast(ent->s.origin, MULTICAST_PHS);
+			gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 		}
 
 		G_FreeEdict(ent);
 		return;
 	}
 
-	ent->owner = NULL;
+	ent->server.owner = NULL;
 	float dot = DotProduct(vel, plane->normal);
 
 	if (!ent->count || (ent->count <= 2 && dot > -0.4f))
@@ -645,7 +645,7 @@ void duke_freezer_touch(edict_t *ent, edict_t *other, cplane_t *plane, csurface_
 		MSG_WriteByte(svc_temp_entity);
 		MSG_WriteByte(TE_DUKE_FREEZE_HIT);
 		MSG_WritePos(origin);
-		gi.multicast(ent->s.origin, MULTICAST_PHS);
+		gi.multicast(ent->server.state.origin, MULTICAST_PHS);
 		G_FreeEdict(ent);
 	}
 	else
@@ -659,20 +659,20 @@ void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
 {
 	edict_t *rocket;
 	rocket = G_Spawn();
-	VectorCopy(start, rocket->s.origin);
+	VectorCopy(start, rocket->server.state.origin);
 	VectorCopy(dir, rocket->movedir);
-	vectoangles(dir, rocket->s.angles);
+	vectoangles(dir, rocket->server.state.angles);
 	VectorScale(dir, speed, rocket->velocity);
 	rocket->movetype = MOVETYPE_FLYBOUNCE;
-	rocket->clipmask = MASK_SHOT;
-	rocket->solid = SOLID_BBOX;
-	rocket->s.effects |= EF_ANIM_ALLFAST;
-	rocket->s.renderfx |= RF_FULLBRIGHT | RF_ANIM_BOUNCE;
-	rocket->s.game = GAME_DOOM;
-	VectorClear(rocket->mins);
-	VectorClear(rocket->maxs);
-	rocket->s.modelindex = gi.modelindex("%e_freezer");
-	rocket->owner = rocket->activator = self;
+	rocket->server.clipmask = MASK_SHOT;
+	rocket->server.solid = SOLID_BBOX;
+	rocket->server.state.effects |= EF_ANIM_ALLFAST;
+	rocket->server.state.renderfx |= RF_FULLBRIGHT | RF_ANIM_BOUNCE;
+	rocket->server.state.game = GAME_DOOM;
+	VectorClear(rocket->server.mins);
+	VectorClear(rocket->server.maxs);
+	rocket->server.state.modelindex = gi.modelindex("%e_freezer");
+	rocket->server.owner = rocket->activator = self;
 	rocket->touch = duke_freezer_touch;
 	rocket->nextthink = level.time + 8000000.0f / speed;
 	rocket->think = G_FreeEdict;
@@ -680,13 +680,13 @@ void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
 	rocket->count = 3;
 	rocket->entitytype = ET_DOOM_PLASMA;
 
-	if (self->client)
-		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->client->pers.weapon), rocket, DT_DIRECT);
+	if (self->server.client)
+		rocket->meansOfDeath = MakeWeaponMeansOfDeath(self, GetIndexByItem(self->server.client->pers.weapon), rocket, DT_DIRECT);
 	else
 		rocket->meansOfDeath = MakeAttackerMeansOfDeath(self, rocket, MD_NONE, DT_DIRECT);
 
 #if ENABLE_COOP
-	check_dodge(self, rocket->s.origin, dir, speed);
+	check_dodge(self, rocket->server.state.origin, dir, speed);
 #endif
 
 	gi.linkentity(rocket);
@@ -694,7 +694,7 @@ void fire_duke_freezer(edict_t *self, vec3_t start, vec3_t dir, int damage, int 
 
 void weapon_duke_freezer_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (!HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || gun_state->newweapon || !((ent->client->buttons | ent->client->latched_buttons) & BUTTON_ATTACK))
+	if (!HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) || gun_state->newweapon || !((ent->server.client->buttons | ent->server.client->latched_buttons) & BUTTON_ATTACK))
 	{
 		gun->frame = 5;
 		return;
@@ -708,19 +708,19 @@ void weapon_duke_freezer_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_
 	G_SendMuzzleFlash(ent, MZ_BFG);
 
 	vec3_t start, forward, right, offset;
-	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 	VectorSet(offset, 0, 0, ent->viewheight - 8);
-	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+	P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 	fire_duke_freezer(ent, start, forward, 20, 900);
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 }
 
 void weapon_duke_pistol_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
 	if (gun->frame == 0 || gun->frame == 2)
 	{
-		if ((ent->client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && !gun_state->newweapon && ent->client->pers.pistol_clip)
+		if ((ent->server.client->buttons & BUTTON_ATTACK) && HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) && !gun_state->newweapon && ent->server.client->pers.pistol_clip)
 			gun->frame = 1;
 		else
 			gun->frame = 21;
@@ -734,7 +734,7 @@ void weapon_duke_pistol_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/CLIPIN.wav"), 1, ATTN_NORM, 0);
 	}
 	else if (gun->frame == 7)
-		ent->client->pers.pistol_clip = 12;
+		ent->server.client->pers.pistol_clip = 12;
 	else if (gun->frame == 13)
 		gun->frame = 21;
 	else if (gun->frame == 15)
@@ -743,20 +743,20 @@ void weapon_duke_pistol_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 	{
 		G_SendMuzzleFlash(ent, MZ_BLASTER);
 
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 		VectorSet(offset, 0, 0, ent->viewheight - 2);
-		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
-		--ent->client->pers.pistol_clip;
-		fire_doom_bullet(ent, start, forward, 6, 0, TE_DUKE_GUNSHOT, 250, 250, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+		P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
+		--ent->server.client->pers.pistol_clip;
+		fire_doom_bullet(ent, start, forward, 6, 0, TE_DUKE_GUNSHOT, 250, 250, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 	}
 }
 
 void weapon_duke_chaingun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state, bool first)
 {
-	if (!(ent->client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->client->pers.weapon) || gun_state->newweapon)
+	if (!(ent->server.client->buttons & BUTTON_ATTACK) || !HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) || gun_state->newweapon)
 	{
 		gun->frame = 5;
 		return;
@@ -764,13 +764,13 @@ void weapon_duke_chaingun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun
 
 	G_SendMuzzleFlash(ent, MZ_CHAINGUN1);
 
-	RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+	RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 	vec3_t start, forward, right, offset;
-	AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+	AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 	VectorSet(offset, 0, 0, ent->viewheight - 2);
-	P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
-	fire_doom_bullet(ent, start, forward, 9, 0, TE_DUKE_GUNSHOT, 300, 300, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+	P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
+	fire_doom_bullet(ent, start, forward, 9, 0, TE_DUKE_GUNSHOT, 300, 300, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 
 	if (++gun->frame == 5)
 		gun->frame = 2;
@@ -792,13 +792,13 @@ void weapon_duke_shotgun_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun_
 	{
 		G_SendMuzzleFlash(ent, MZ_SHOTGUN);
 
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 		vec3_t start, forward, right, offset;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 		VectorSet(offset, 0, 0, ent->viewheight - 2);
-		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
-		fire_doom_shotgun(ent, start, forward, 7, 0, TE_DUKE_GUNSHOT, 7, 250, 250, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), ent, DT_DIRECT));
+		P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
+		fire_doom_shotgun(ent, start, forward, 7, 0, TE_DUKE_GUNSHOT, 7, 250, 250, MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), ent, DT_DIRECT));
 		Weapon_Doom_Anim_Regular(ent);
 	}
 }
@@ -812,8 +812,8 @@ void tripwire_laser_explode(edict_t *laser)
 	T_DukeRadiusDamage(laser, laser->activator, laser, TRIP_RADIUS, TRIP_STRENGTH >> 2, TRIP_STRENGTH >> 1, TRIP_STRENGTH - (TRIP_STRENGTH >> 2), TRIP_STRENGTH, DAMAGE_NO_PARTICLES | DAMAGE_DUKE, laser->goalentity->meansOfDeath);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_DUKE_EXPLODE_PIPE);
-	MSG_WritePos(laser->s.origin);
-	gi.multicast(laser->s.origin, MULTICAST_PHS);
+	MSG_WritePos(laser->server.state.origin);
+	gi.multicast(laser->server.state.origin, MULTICAST_PHS);
 	G_FreeEdict(laser->goalentity);
 	G_FreeEdict(laser);
 }
@@ -821,7 +821,7 @@ void tripwire_laser_explode(edict_t *laser)
 void tripwire_laser_think(edict_t *laser)
 {
 	trace_t tr;
-	tr = gi.trace(laser->s.origin, NULL, NULL, laser->s.old_origin, NULL, CONTENTS_MONSTER);
+	tr = gi.trace(laser->server.state.origin, NULL, NULL, laser->server.state.old_origin, NULL, CONTENTS_MONSTER);
 
 	if (tr.fraction < 1.0 || tr.startsolid)
 	{
@@ -838,20 +838,20 @@ void tripwire_laser_think(edict_t *laser)
 void tripwire_activate(edict_t *ent)
 {
 	edict_t *laser = G_Spawn();
-	VectorCopy(ent->s.origin, laser->s.origin);
+	VectorCopy(ent->server.state.origin, laser->server.state.origin);
 	vec3_t up;
-	AngleVectors(ent->s.angles, NULL, NULL, up);
-	VectorMA(laser->s.origin, 1.25f, up, laser->s.origin);
-	VectorMA(ent->s.origin, 8192, ent->movedir, laser->s.old_origin);
+	AngleVectors(ent->server.state.angles, NULL, NULL, up);
+	VectorMA(laser->server.state.origin, 1.25f, up, laser->server.state.origin);
+	VectorMA(ent->server.state.origin, 8192, ent->movedir, laser->server.state.old_origin);
 	trace_t tr;
-	tr = gi.trace(ent->s.origin, NULL, NULL, laser->s.old_origin, NULL, CONTENTS_SOLID);
-	laser->s.game = GAME_DUKE;
-	laser->s.modelindex = (q_modelhandle)1;         // must be non-zero
-	laser->s.renderfx |= RF_BEAM;
-	laser->s.skinnum = 0xF0F0F0F0;
-	laser->s.frame = 2;
+	tr = gi.trace(ent->server.state.origin, NULL, NULL, laser->server.state.old_origin, NULL, CONTENTS_SOLID);
+	laser->server.state.game = GAME_DUKE;
+	laser->server.state.modelindex = (q_modelhandle)1;         // must be non-zero
+	laser->server.state.renderfx |= RF_BEAM;
+	laser->server.state.skinnum = 0xF0F0F0F0;
+	laser->server.state.frame = 2;
 	gi.linkentity(laser);
-	VectorCopy(tr.endpos, laser->s.old_origin);
+	VectorCopy(tr.endpos, laser->server.state.old_origin);
 	gi.linkentity(laser);
 	ent->goalentity = laser;
 	laser->goalentity = ent;
@@ -877,9 +877,9 @@ void weapon_duke_tripwire_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun
 	{
 		trace_t tr;
 		vec3_t start, forward, right, offset;
-		AngleVectors(ent->client->v_angle, forward, NULL, NULL);
+		AngleVectors(ent->server.client->v_angle, forward, NULL, NULL);
 		VectorSet(offset, 0, 0, ent->viewheight - 2);
-		P_ProjectSource(ent->client, ent->s.origin, offset, forward, right, start);
+		P_ProjectSource(ent->server.client, ent->server.state.origin, offset, forward, right, start);
 		VectorMA(start, 48, forward, offset);
 		tr = gi.trace(start, NULL, NULL, offset, NULL, CONTENTS_SOLID);
 
@@ -892,20 +892,20 @@ void weapon_duke_tripwire_fire(edict_t *ent, player_gun_t *gun, gun_state_t *gun
 
 		gi.sound(ent, CHAN_AUTO, gi.soundindex("duke/LSRBMBPT.wav"), 1, ATTN_IDLE, 0);
 
-		RemoveAmmoFromFiring(ent, ent->client->pers.weapon);
+		RemoveAmmoFromFiring(ent, ent->server.client->pers.weapon);
 
 		edict_t *trip = G_Spawn();
-		vectoangles2(tr.plane.normal, trip->s.angles);
-		VectorCopy(tr.endpos, trip->s.origin);
-		VectorMA(trip->s.origin, 0.5, tr.plane.normal, trip->s.origin);
+		vectoangles2(tr.plane.normal, trip->server.state.angles);
+		VectorCopy(tr.endpos, trip->server.state.origin);
+		VectorMA(trip->server.state.origin, 0.5, tr.plane.normal, trip->server.state.origin);
 		VectorCopy(tr.plane.normal, trip->movedir);
-		trip->s.modelindex = gi.modelindex("%e_tripwire");
+		trip->server.state.modelindex = gi.modelindex("%e_tripwire");
 		trip->think = tripwire_activate;
 		trip->nextthink = level.time + 1500;
-		trip->owner = ent;
-		trip->meansOfDeath = MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->client->pers.weapon), trip, DT_DIRECT);
+		trip->server.owner = ent;
+		trip->meansOfDeath = MakeWeaponMeansOfDeath(ent, GetIndexByItem(ent->server.client->pers.weapon), trip, DT_DIRECT);
 		trip->health = 1;
-		trip->solid = SOLID_BBOX;
+		trip->server.solid = SOLID_BBOX;
 		trip->takedamage = true;
 		trip->die = tripwire_die;
 		gi.linkentity(trip);
@@ -928,8 +928,8 @@ static void Weapon_Duke_Foot(edict_t *ent, player_gun_t *gun, gun_state_t *gun_s
 
 static void Weapon_Duke_Pistol(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (gun_state->weaponstate == WEAPON_READY && !ent->client->pers.pistol_clip &&
-		HasEnoughAmmoToFire(ent, ent->client->pers.weapon) && gun->frame < 3)
+	if (gun_state->weaponstate == WEAPON_READY && !ent->server.client->pers.pistol_clip &&
+		HasEnoughAmmoToFire(ent, ent->server.client->pers.weapon) && gun->frame < 3)
 	{
 		gun_state->weaponstate = WEAPON_FIRING;
 		gun->frame = 3;
@@ -958,7 +958,7 @@ static void Weapon_Duke_RPG(edict_t *ent, player_gun_t *gun, gun_state_t *gun_st
 
 static void Weapon_Duke_Pipebombs(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	if (ent->client->pers.alt_weapon)
+	if (ent->server.client->pers.alt_weapon)
 		Weapon_Doom(ent, 3, weapon_duke_detonator_fire, gun, gun_state);
 	else
 		Weapon_Doom(ent, 9, weapon_duke_pipebomb_fire, gun, gun_state);
@@ -994,6 +994,6 @@ static G_WeaponRunFunc duke_weapon_run_funcs[] =
 
 void Weapon_Duke_Run(edict_t *ent, player_gun_t *gun, gun_state_t *gun_state)
 {
-	duke_weapon_run_funcs[ITEM_INDEX(ent->client->pers.weapon) - ITI_WEAPONS_START](ent, gun, gun_state);
+	duke_weapon_run_funcs[ITEM_INDEX(ent->server.client->pers.weapon) - ITI_WEAPONS_START](ent, gun, gun_state);
 	Weapon_Duke_Offhand_Foot(ent);
 }

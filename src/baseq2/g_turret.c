@@ -55,12 +55,12 @@ void turret_blocked(edict_t *self, edict_t *other)
 
 	if (other->takedamage)
 	{
-		if (self->teammaster->owner)
-			attacker = self->teammaster->owner;
+		if (self->teammaster->server.owner)
+			attacker = self->teammaster->server.owner;
 		else
 			attacker = self->teammaster;
 
-		T_Damage(other, self, attacker, vec3_origin, other->s.origin, vec3_origin, self->teammaster->dmg, 10, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
+		T_Damage(other, self, attacker, vec3_origin, other->server.state.origin, vec3_origin, self->teammaster->dmg, 10, DAMAGE_NONE, MakeBlankMeansOfDeath(self));
 	}
 }
 
@@ -86,13 +86,13 @@ void turret_breach_fire(edict_t *self)
 	vec3_t  start;
 	int     damage;
 	int     speed;
-	AngleVectors(self->s.angles, f, r, u);
-	VectorMA(self->s.origin, self->move_origin[0], f, start);
+	AngleVectors(self->server.state.angles, f, r, u);
+	VectorMA(self->server.state.origin, self->move_origin[0], f, start);
 	VectorMA(start, self->move_origin[1], r, start);
 	VectorMA(start, self->move_origin[2], u, start);
 	damage = 100 + random() * 50;
 	speed = 550 + 50 * skill->value;
-	fire_rocket(self->teammaster->owner, start, f, damage, speed, 150, damage);
+	fire_rocket(self->teammaster->server.owner, start, f, damage, speed, 150, damage);
 	gi.positioned_sound(start, self, CHAN_WEAPON, gi.soundindex("weapons/rocklf1a.wav"), 1, ATTN_NORM, 0);
 }
 
@@ -101,7 +101,7 @@ void turret_breach_think(edict_t *self)
 	edict_t *ent;
 	vec3_t  current_angles;
 	vec3_t  delta;
-	VectorCopy(self->s.angles, current_angles);
+	VectorCopy(self->server.state.angles, current_angles);
 	AnglesNormalize(current_angles);
 	AnglesNormalize(self->move_angles);
 
@@ -170,7 +170,7 @@ void turret_breach_think(edict_t *self)
 		ent->avelocity[1] = self->avelocity[1];
 
 	// if we have adriver, adjust his velocities
-	if (self->owner)
+	if (self->server.owner)
 	{
 		float   angle;
 		float   target_z;
@@ -178,22 +178,22 @@ void turret_breach_think(edict_t *self)
 		vec3_t  target;
 		vec3_t  dir;
 		// angular is easy, just copy ours
-		self->owner->avelocity[0] = self->avelocity[0];
-		self->owner->avelocity[1] = self->avelocity[1];
+		self->server.owner->avelocity[0] = self->avelocity[0];
+		self->server.owner->avelocity[1] = self->avelocity[1];
 		// x & y
-		angle = self->s.angles[1] + self->owner->move_origin[1];
+		angle = self->server.state.angles[1] + self->server.owner->move_origin[1];
 		angle = DEG2RAD(angle);
-		target[0] = SnapToEights(self->s.origin[0] + cosf(angle) * self->owner->move_origin[0]);
-		target[1] = SnapToEights(self->s.origin[1] + sinf(angle) * self->owner->move_origin[0]);
-		target[2] = self->owner->s.origin[2];
-		VectorSubtract(target, self->owner->s.origin, dir);
-		self->owner->velocity[0] = dir[0] * 1.0f / game.frameseconds;
-		self->owner->velocity[1] = dir[1] * 1.0f / game.frameseconds;
+		target[0] = SnapToEights(self->server.state.origin[0] + cosf(angle) * self->server.owner->move_origin[0]);
+		target[1] = SnapToEights(self->server.state.origin[1] + sinf(angle) * self->server.owner->move_origin[0]);
+		target[2] = self->server.owner->server.state.origin[2];
+		VectorSubtract(target, self->server.owner->server.state.origin, dir);
+		self->server.owner->velocity[0] = dir[0] * 1.0f / game.frameseconds;
+		self->server.owner->velocity[1] = dir[1] * 1.0f / game.frameseconds;
 		// z
-		angle = DEG2RAD(self->s.angles[PITCH]);
-		target_z = SnapToEights(self->s.origin[2] + self->owner->move_origin[0] * tanf(angle) + self->owner->move_origin[2]);
-		diff = target_z - self->owner->s.origin[2];
-		self->owner->velocity[2] = diff * 1.0f / game.frameseconds;
+		angle = DEG2RAD(self->server.state.angles[PITCH]);
+		target_z = SnapToEights(self->server.state.origin[2] + self->server.owner->move_origin[0] * tanf(angle) + self->server.owner->move_origin[2]);
+		diff = target_z - self->server.owner->server.state.origin[2];
+		self->server.owner->velocity[2] = diff * 1.0f / game.frameseconds;
 
 		if (self->spawnflags & 65536)
 		{
@@ -207,11 +207,11 @@ void turret_breach_finish_init(edict_t *self)
 {
 	// get and save info for muzzle location
 	if (!self->target)
-		Com_Printf("entityid %i at %s needs a target\n", self->entitytype, vtos(self->s.origin));
+		Com_Printf("entityid %i at %s needs a target\n", self->entitytype, vtos(self->server.state.origin));
 	else
 	{
 		self->target_ent = G_PickTarget(self->target);
-		VectorSubtract(self->target_ent->s.origin, self->s.origin, self->move_origin);
+		VectorSubtract(self->target_ent->server.state.origin, self->server.state.origin, self->move_origin);
 		G_FreeEdict(self->target_ent);
 	}
 
@@ -222,7 +222,7 @@ void turret_breach_finish_init(edict_t *self)
 
 void SP_turret_breach(edict_t *self)
 {
-	self->solid = SOLID_BSP;
+	self->server.solid = SOLID_BSP;
 	self->movetype = MOVETYPE_PUSH;
 	gi.setmodel(self, self->model);
 
@@ -245,7 +245,7 @@ void SP_turret_breach(edict_t *self)
 	self->pos1[YAW]   = spawnTemp.minyaw;
 	self->pos2[PITCH] = -1 * spawnTemp.maxpitch;
 	self->pos2[YAW]   = spawnTemp.maxyaw;
-	self->ideal_yaw = self->s.angles[YAW];
+	self->ideal_yaw = self->server.state.angles[YAW];
 	self->move_angles[YAW] = self->ideal_yaw;
 	self->blocked = turret_blocked;
 	self->think = turret_breach_finish_init;
@@ -261,7 +261,7 @@ MUST be teamed with a turret_breach.
 
 void SP_turret_base(edict_t *self)
 {
-	self->solid = SOLID_BSP;
+	self->server.solid = SOLID_BSP;
 	self->movetype = MOVETYPE_PUSH;
 	gi.setmodel(self, self->model);
 	self->blocked = turret_blocked;
@@ -291,8 +291,8 @@ void turret_driver_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int
 	ent->teamchain = NULL;
 	self->teammaster = NULL;
 	self->flags &= ~FL_TEAMSLAVE;
-	self->target_ent->owner = NULL;
-	self->target_ent->teammaster->owner = NULL;
+	self->target_ent->server.owner = NULL;
+	self->target_ent->teammaster->server.owner = NULL;
 	infantry_die(self, inflictor, attacker, damage, point);
 
 	self->die = infantry_die;
@@ -308,7 +308,7 @@ void turret_driver_think(edict_t *self)
 	float   reaction_time;
 	self->nextthink = level.time + 1;
 
-	if (self->enemy && (!self->enemy->inuse || self->enemy->health <= 0))
+	if (self->enemy && (!self->enemy->server.inuse || self->enemy->health <= 0))
 		self->enemy = NULL;
 
 	if (!self->enemy)
@@ -337,9 +337,9 @@ void turret_driver_think(edict_t *self)
 	}
 
 	// let the turret know where we want it to aim
-	VectorCopy(self->enemy->s.origin, target);
+	VectorCopy(self->enemy->server.state.origin, target);
 	target[2] += self->enemy->viewheight;
-	VectorSubtract(target, self->target_ent->s.origin, dir);
+	VectorSubtract(target, self->target_ent->server.state.origin, dir);
 	vectoangles(dir, self->target_ent->move_angles);
 
 	// decide if we should shoot
@@ -363,18 +363,18 @@ void turret_driver_link(edict_t *self)
 	self->think = turret_driver_think;
 	self->nextthink = level.time + 1;
 	self->target_ent = G_PickTarget(self->target);
-	self->target_ent->owner = self;
-	self->target_ent->teammaster->owner = self;
-	VectorCopy(self->target_ent->s.angles, self->s.angles);
-	vec[0] = self->target_ent->s.origin[0] - self->s.origin[0];
-	vec[1] = self->target_ent->s.origin[1] - self->s.origin[1];
+	self->target_ent->server.owner = self;
+	self->target_ent->teammaster->server.owner = self;
+	VectorCopy(self->target_ent->server.state.angles, self->server.state.angles);
+	vec[0] = self->target_ent->server.state.origin[0] - self->server.state.origin[0];
+	vec[1] = self->target_ent->server.state.origin[1] - self->server.state.origin[1];
 	vec[2] = 0;
 	self->move_origin[0] = VectorLength(vec);
-	VectorSubtract(self->s.origin, self->target_ent->s.origin, vec);
+	VectorSubtract(self->server.state.origin, self->target_ent->server.state.origin, vec);
 	vectoangles(vec, vec);
 	AnglesNormalize(vec);
 	self->move_origin[1] = vec[1];
-	self->move_origin[2] = self->s.origin[2] - self->target_ent->s.origin[2];
+	self->move_origin[2] = self->server.state.origin[2] - self->target_ent->server.state.origin[2];
 
 	// add the driver to the end of them team chain
 	for (ent = self->target_ent->teammaster; ent->teamchain; ent = ent->teamchain)
@@ -401,11 +401,11 @@ void SP_turret_driver(edict_t *self)
 	self->viewheight = 24;
 	self->die = turret_driver_die;
 	self->flags |= FL_NO_KNOCKBACK;
-	VectorCopy(self->s.origin, self->s.old_origin);
+	VectorCopy(self->server.state.origin, self->server.state.old_origin);
 	self->monsterinfo.aiflags |= AI_STAND_GROUND;
 	self->think = turret_driver_link;
 	self->nextthink = level.time + 1;
-	self->s.frame = 0;
+	self->server.state.frame = 0;
 	gi.linkentity(self);
 }
 

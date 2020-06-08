@@ -106,7 +106,7 @@ static void dog_bite(edict_t *self)
 		return;
 
 	vec3_t delta;
-	VectorSubtract(self->s.origin, self->enemy->s.origin, delta);
+	VectorSubtract(self->server.state.origin, self->enemy->server.state.origin, delta);
 
 	if (VectorLength(delta) > 100)
 		return;
@@ -130,8 +130,8 @@ static void dog_leap_func(edict_t *self)
 {
 	self->touch = Dog_JumpTouch;
 	vec3_t v_forward;
-	AngleVectors(self->s.angles, v_forward, NULL, NULL);
-	self->s.origin[2] = self->s.origin[2] + 1;
+	AngleVectors(self->server.state.angles, v_forward, NULL, NULL);
+	self->server.state.origin[2] = self->server.state.origin[2] + 1;
 	self->groundentity = NULL;
 	VectorScale(v_forward, 300, self->velocity);
 	self->velocity[2] += 200;
@@ -151,7 +151,7 @@ static void dog_pain(edict_t *self, edict_t *attacker, float kick, int damage)
 static void dog_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -175,7 +175,7 @@ static void dog_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int da
 	self->deadflag = DEAD_DEAD;
 	// regular death
 	gi.sound(self, CHAN_VOICE, sound_ddeath, 1, ATTN_NORM, 0);
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 
 	if (random() > 0.5f)
@@ -209,15 +209,15 @@ static bool CheckDogJump(edict_t *self)
 	vec3_t dist;
 	float d;
 
-	if (self->s.origin[2] + self->mins[2] > self->enemy->s.origin[2] + self->enemy->mins[2]
+	if (self->server.state.origin[2] + self->server.mins[2] > self->enemy->server.state.origin[2] + self->enemy->server.mins[2]
 		+ 0.75f * self->enemy->size[2])
 		return false;
 
-	if (self->s.origin[2] + self->maxs[2] < self->enemy->s.origin[2] + self->enemy->mins[2]
+	if (self->server.state.origin[2] + self->server.maxs[2] < self->enemy->server.state.origin[2] + self->enemy->server.mins[2]
 		+ 0.25f * self->enemy->size[2])
 		return false;
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dist);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dist);
 	dist[2] = 0;
 	d = VectorLength(dist);
 
@@ -299,11 +299,11 @@ void q1_monster_dog(edict_t *self)
 	sound_dsight = gi.soundindex("q1/dog/dsight.wav");
 	sound_idle = gi.soundindex("q1/dog/idle.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 40);
 	self->health = 25;
 	self->monsterinfo.stand = dog_stand;
 	self->monsterinfo.walk = dog_walk;

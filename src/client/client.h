@@ -144,6 +144,12 @@ typedef struct
 	};
 } precache_entry_t;
 
+typedef struct
+{
+	size_t				num_seeds;
+	precache_entry_t	precache[ITI_WEAPONS_END - ITI_WEAPONS_START + 1];
+} weapon_seeds_t;
+
 //
 // the client_state_t structure is wiped completely at every
 // server map change
@@ -246,8 +252,8 @@ typedef struct client_state_s
 	int         maxclients;
 	pmoveParams_t pmp;
 
-	char        baseconfigstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
-	char        configstrings[MAX_CONFIGSTRINGS][MAX_QPATH];
+	char        baseconfigstrings[MAX_CONFIGSTRINGS][CS_SIZE];
+	char        configstrings[MAX_CONFIGSTRINGS][CS_SIZE];
 	byte		precache_bitset[MAX_PRECACHE_BITSET];
 	char        mapname[MAX_QPATH]; // short format - q2dm1, etc
 
@@ -257,6 +263,8 @@ typedef struct client_state_s
 	bsp_t        *bsp;
 
 	precache_entry_t	precache[MAX_PRECACHE];
+	weapon_seeds_t		weapon_seeds[GAME_TOTAL][WEAPON_GROUP_MAX];
+	weapon_seeds_t		ammo_seeds[GAME_TOTAL][WEAPON_GROUP_MAX];
 
 	clientinfo_t    clientinfo[MAX_CLIENTS];
 	clientinfo_t    baseclientinfo;

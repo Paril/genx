@@ -46,18 +46,18 @@ static edict_t *medic_FindDeadMonster(edict_t *self)
 	edict_t *ent = NULL;
 	edict_t *best = NULL;
 
-	while ((ent = findradius(ent, self->s.origin, 1024)) != NULL)
+	while ((ent = findradius(ent, self->server.state.origin, 1024)) != NULL)
 	{
 		if (ent == self)
 			continue;
 
-		if (!(ent->svflags & (SVF_MONSTER | SVF_DEADMONSTER)))
+		if (!ent->server.flags.monster || !ent->server.flags.deadmonster)
 			continue;
 
 		if (ent->monsterinfo.aiflags & AI_GOOD_GUY)
 			continue;
 
-		if (ent->owner)
+		if (ent->server.owner)
 			continue;
 
 		if (ent->health > 0)
@@ -90,7 +90,7 @@ static void medic_idle(edict_t *self)
 	if (ent)
 	{
 		self->enemy = ent;
-		self->enemy->owner = self;
+		self->enemy->server.owner = self;
 		self->monsterinfo.aiflags |= AI_MEDIC;
 		FoundTarget(self);
 	}
@@ -109,7 +109,7 @@ static void medic_search(edict_t *self)
 		{
 			self->oldenemy = self->enemy;
 			self->enemy = ent;
-			self->enemy->owner = self;
+			self->enemy->server.owner = self;
 			self->monsterinfo.aiflags |= AI_MEDIC;
 			FoundTarget(self);
 		}
@@ -142,7 +142,7 @@ static void medic_run(edict_t *self)
 		{
 			self->oldenemy = self->enemy;
 			self->enemy = ent;
-			self->enemy->owner = self;
+			self->enemy->server.owner = self;
 			self->monsterinfo.aiflags |= AI_MEDIC;
 			FoundTarget(self);
 			return;
@@ -158,7 +158,7 @@ static void medic_run(edict_t *self)
 static void medic_pain(edict_t *self, edict_t *other, float kick, int damage)
 {
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -188,16 +188,16 @@ static void medic_fire_blaster(edict_t *self)
 	vec3_t  dir;
 	int     effect;
 
-	if ((self->s.frame == FRAME_attack9) || (self->s.frame == FRAME_attack12))
+	if ((self->server.state.frame == FRAME_attack9) || (self->server.state.frame == FRAME_attack12))
 		effect = EF_BLASTER;
-	else if ((self->s.frame == FRAME_attack19) || (self->s.frame == FRAME_attack22) || (self->s.frame == FRAME_attack25) || (self->s.frame == FRAME_attack28))
+	else if ((self->server.state.frame == FRAME_attack19) || (self->server.state.frame == FRAME_attack22) || (self->server.state.frame == FRAME_attack25) || (self->server.state.frame == FRAME_attack28))
 		effect = EF_HYPERBLASTER;
 	else
 		effect = 0;
 
-	AngleVectors(self->s.angles, forward, right, NULL);
-	G_ProjectSource(self->s.origin, monster_flash_offset[MZ2_MEDIC_BLASTER_1], forward, right, start);
-	VectorCopy(self->enemy->s.origin, end);
+	AngleVectors(self->server.state.angles, forward, right, NULL);
+	G_ProjectSource(self->server.state.origin, monster_flash_offset[MZ2_MEDIC_BLASTER_1], forward, right, start);
+	VectorCopy(self->enemy->server.state.origin, end);
 	end[2] += self->enemy->viewheight;
 	VectorSubtract(end, start, dir);
 	monster_fire_blaster(self, start, dir, 2, 1000, MZ2_MEDIC_BLASTER_1, effect);
@@ -205,11 +205,11 @@ static void medic_fire_blaster(edict_t *self)
 
 static void medic_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -219,8 +219,8 @@ static void medic_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int 
 	int     n;
 
 	// if we had a pending patient, free him up for another medic
-	if ((self->enemy) && (self->enemy->owner == self))
-		self->enemy->owner = NULL;
+	if ((self->enemy) && (self->enemy->server.owner == self))
+		self->enemy->server.owner = NULL;
 
 	// check for gib
 	if (self->health <= self->gib_health)
@@ -254,7 +254,7 @@ static void medic_duck_down(edict_t *self)
 		return;
 
 	self->monsterinfo.aiflags |= AI_DUCKED;
-	self->maxs[2] -= 32;
+	self->server.maxs[2] -= 32;
 	self->takedamage = true;
 	self->monsterinfo.pausetime = level.time + 1000;
 	gi.linkentity(self);
@@ -271,7 +271,7 @@ static void medic_duck_hold(edict_t *self)
 static void medic_duck_up(edict_t *self)
 {
 	self->monsterinfo.aiflags &= ~AI_DUCKED;
-	self->maxs[2] += 32;
+	self->server.maxs[2] += 32;
 	self->takedamage = true;
 	gi.linkentity(self);
 }
@@ -321,14 +321,14 @@ static void medic_cable_attack(edict_t *self)
 	vec3_t  dir, angles;
 	float   distance;
 
-	if (!self->enemy->inuse)
+	if (!self->enemy->server.inuse)
 		return;
 
-	AngleVectors(self->s.angles, f, r, NULL);
-	VectorCopy(medic_cable_offsets[self->s.frame - FRAME_attack42], offset);
-	G_ProjectSource(self->s.origin, offset, f, r, start);
+	AngleVectors(self->server.state.angles, f, r, NULL);
+	VectorCopy(medic_cable_offsets[self->server.state.frame - FRAME_attack42], offset);
+	G_ProjectSource(self->server.state.origin, offset, f, r, start);
 	// check for max distance
-	VectorSubtract(start, self->enemy->s.origin, dir);
+	VectorSubtract(start, self->enemy->server.state.origin, dir);
 	distance = VectorLength(dir);
 
 	if (distance > 256)
@@ -343,17 +343,17 @@ static void medic_cable_attack(edict_t *self)
 	if (fabsf(angles[0]) > 45)
 		return;
 
-	tr = gi.trace(start, NULL, NULL, self->enemy->s.origin, self, MASK_SHOT);
+	tr = gi.trace(start, NULL, NULL, self->enemy->server.state.origin, self, MASK_SHOT);
 
 	if (tr.fraction != 1.0f && tr.ent != self->enemy)
 		return;
 
-	if (self->s.frame == FRAME_attack43)
+	if (self->server.state.frame == FRAME_attack43)
 	{
 		gi.sound(self->enemy, CHAN_AUTO, sound_hook_hit, 1, ATTN_NORM, 0);
 		self->enemy->monsterinfo.aiflags |= AI_RESURRECTING;
 	}
-	else if (self->s.frame == FRAME_attack50)
+	else if (self->server.state.frame == FRAME_attack50)
 	{
 		self->enemy->spawnflags = 0;
 		self->enemy->monsterinfo.aiflags = 0;
@@ -361,9 +361,9 @@ static void medic_cable_attack(edict_t *self)
 		self->enemy->targetname = NULL;
 		self->enemy->combattarget = NULL;
 		self->enemy->deathtarget = NULL;
-		self->enemy->owner = self;
+		self->enemy->server.owner = self;
 		ED_CallSpawn(self->enemy);
-		self->enemy->owner = NULL;
+		self->enemy->server.owner = NULL;
 
 		if (self->enemy->think)
 		{
@@ -373,7 +373,7 @@ static void medic_cable_attack(edict_t *self)
 
 		self->enemy->monsterinfo.aiflags |= AI_RESURRECTING;
 
-		if (self->oldenemy && self->oldenemy->client)
+		if (self->oldenemy && self->oldenemy->server.client)
 		{
 			self->enemy->enemy = self->oldenemy;
 			FoundTarget(self->enemy);
@@ -381,21 +381,21 @@ static void medic_cable_attack(edict_t *self)
 	}
 	else
 	{
-		if (self->s.frame == FRAME_attack44)
+		if (self->server.state.frame == FRAME_attack44)
 			gi.sound(self, CHAN_WEAPON, sound_hook_heal, 1, ATTN_NORM, 0);
 	}
 
 	// adjust start for beam origin being in middle of a segment
 	VectorMA(start, 8, f, start);
 	// adjust end z for end spot since the monster is currently dead
-	VectorCopy(self->enemy->s.origin, end);
-	end[2] = self->enemy->absmin[2] + self->enemy->size[2] / 2;
+	VectorCopy(self->enemy->server.state.origin, end);
+	end[2] = self->enemy->server.absmin[2] + self->enemy->size[2] / 2;
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_MEDIC_CABLE_ATTACK);
 	MSG_WriteShort(self - g_edicts);
 	MSG_WritePos(start);
 	MSG_WritePos(end);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 }
 
 static void medic_hook_retract(edict_t *self)
@@ -469,10 +469,10 @@ void SP_monster_medic(edict_t *self)
 	sound_hook_retract = gi.soundindex("medic/medatck5.wav");
 	gi.soundindex("medic/medatck1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -24, -24, -24);
-	VectorSet(self->maxs, 24, 24, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -24, -24, -24);
+	VectorSet(self->server.maxs, 24, 24, 32);
 	self->health = 300;
 	self->gib_health = -130;
 	self->mass = 400;

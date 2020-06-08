@@ -306,7 +306,7 @@ void SV_Multicast(vec3_t origin, multicast_t to)
 
 		if (leaf1)
 		{
-			leaf2 = CM_PointLeaf(&sv.cm, client->edict->s.origin);
+			leaf2 = CM_PointLeaf(&sv.cm, client->edict->state.origin);
 
 			if (!CM_AreasConnected(&sv.cm, leaf1->area, leaf2->area))
 				continue;

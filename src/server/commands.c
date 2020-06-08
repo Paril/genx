@@ -293,8 +293,6 @@ static void SV_Map(bool restart)
 	if (!SV_ParseMapCmd(&cmd))
 		return;
 
-	// save pending CM to be freed later if ERR_DROP is thrown
-	Com_AbortFunc(abort_func, &cmd.cm);
 	// wipe savegames
 	cmd.endofunit |= restart;
 	SV_AutoSaveBegin(&cmd);
@@ -303,8 +301,6 @@ static void SV_Map(bool restart)
 	if ((sv.state != ss_game && sv.state != ss_pic) || restart)
 		SV_InitGame();    // the game is just starting
 
-	// clear pending CM
-	Com_AbortFunc(NULL, NULL);
 	SV_SpawnServer(&cmd);
 	SV_AutoSaveEnd();
 }

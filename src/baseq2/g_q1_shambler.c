@@ -82,7 +82,7 @@ static void sham_smash_hit(edict_t *self)
 	if (!self->enemy)
 		return;
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 100)
 		return;
@@ -95,8 +95,8 @@ static void sham_smash_hit(edict_t *self)
 	gi.sound(self, CHAN_VOICE, sound_smack, 1, ATTN_NORM, 0);
 	vec3_t v, o;
 	vec3_t v_forward, v_right;
-	AngleVectors(self->s.angles, v_forward, v_right, NULL);
-	VectorMA(self->s.origin, 16, v_forward, o);
+	AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
+	VectorMA(self->server.state.origin, 16, v_forward, o);
 	VectorScale(v_right, crandom() * 100, v);
 	SpawnMeatSpray(self, o, v);
 	SpawnMeatSpray(self, o, v);
@@ -120,7 +120,7 @@ static void ShamClaw(edict_t *self, float side)
 	if (!self->enemy)
 		return;
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 100)
 		return;
@@ -133,8 +133,8 @@ static void ShamClaw(edict_t *self, float side)
 	{
 		vec3_t v, o;
 		vec3_t v_forward, v_right;
-		AngleVectors(self->s.angles, v_forward, v_right, NULL);
-		VectorMA(self->s.origin, 16, v_forward, o);
+		AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
+		VectorMA(self->server.state.origin, 16, v_forward, o);
 		VectorScale(v_right, side, v);
 		SpawnMeatSpray(self, o, v);
 	}
@@ -199,15 +199,15 @@ static void CastLightning(edict_t *self)
 {
 	vec3_t org, dir;
 	//self.effects = self.effects | EF_MUZZLEFLASH;
-	VectorCopy(self->s.origin, org);
+	VectorCopy(self->server.state.origin, org);
 	org[2] += 40;
 
 	for (int i = 0; i < 3; ++i)
-		dir[i] = self->enemy->s.origin[i] + ((i == 2) ? 16 : 0) - org[i];
+		dir[i] = self->enemy->server.state.origin[i] + ((i == 2) ? 16 : 0) - org[i];
 
 	VectorNormalize(dir);
 	vec3_t end;
-	VectorMA(self->s.origin, 600, dir, end);
+	VectorMA(self->server.state.origin, 600, dir, end);
 	trace_t tr = gi.trace(org, vec3_origin, vec3_origin, end, self, MASK_SHOT);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_Q1_LIGHTNING1);
@@ -231,10 +231,10 @@ static void sham_magic_start(edict_t *self)
 		edict_t *o;
 		//self.effects = self.effects | EF_MUZZLEFLASH;
 		o = G_Spawn();
-		self->owner = o;
+		self->server.owner = o;
 		gi.setmodel(o, "models/q1/s_light.mdl");
-		VectorCopy(self->s.origin, o->s.origin);
-		VectorCopy(self->s.angles, o->s.angles);
+		VectorCopy(self->server.state.origin, o->server.state.origin);
+		VectorCopy(self->server.state.angles, o->server.state.angles);
 		o->nextthink = level.time + 700;
 		o->think = G_FreeEdict;
 		gi.linkentity(o);
@@ -247,22 +247,22 @@ static void sham_magic_start(edict_t *self)
 
 static void sham_magic_inc(edict_t *self)
 {
-	self->owner->s.frame++;
+	self->server.owner->server.state.frame++;
 }
 
 static void sham_fire(edict_t *self)
 {
-	if (self->s.frame == magic11)
+	if (self->server.state.frame == magic11)
 	{
 		if (skill->integer == 3)
 			CastLightning(self);
 	}
-	else if (self->s.frame == magic9 || self->s.frame == magic10)
+	else if (self->server.state.frame == magic9 || self->server.state.frame == magic10)
 		CastLightning(self);
-	else if (self->s.frame == magic6)
+	else if (self->server.state.frame == magic6)
 	{
-		G_FreeEdict(self->owner);
-		self->owner = NULL;
+		G_FreeEdict(self->server.owner);
+		self->server.owner = NULL;
 		CastLightning(self);
 		gi.sound(self, CHAN_WEAPON, sound_sboom, 1, ATTN_NORM, 0);
 		self->monsterinfo.nextframe = magic9;
@@ -293,14 +293,14 @@ static void sham_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void sham_unsolid(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
 static void sham_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -384,11 +384,11 @@ void q1_monster_shambler(edict_t *self)
 	sound_melee2 = gi.soundindex("q1/shambler/melee2.wav");
 	sound_smack = gi.soundindex("q1/shambler/smack.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 64);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 64);
 	self->health = 600;
 	self->monsterinfo.stand = sham_stand;
 	self->monsterinfo.walk = sham_walk;

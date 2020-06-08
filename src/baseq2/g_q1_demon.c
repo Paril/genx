@@ -80,15 +80,15 @@ static bool CheckDemonJump(edict_t *self)
 	vec3_t dist;
 	float d;
 
-	if (self->s.origin[2] + self->mins[2] > self->enemy->s.origin[2] + self->enemy->mins[2]
+	if (self->server.state.origin[2] + self->server.mins[2] > self->enemy->server.state.origin[2] + self->enemy->server.mins[2]
 		+ 0.75f * self->enemy->size[2])
 		return false;
 
-	if (self->s.origin[2] + self->maxs[2] < self->enemy->s.origin[2] + self->enemy->mins[2]
+	if (self->server.state.origin[2] + self->server.maxs[2] < self->enemy->server.state.origin[2] + self->enemy->server.mins[2]
 		+ 0.25f * self->enemy->size[2])
 		return true;
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dist);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dist);
 	dist[2] = 0;
 	d = VectorLength(dist);
 
@@ -132,7 +132,7 @@ static void Demon_Melee(edict_t *self, float side)
 	float ldmg;
 	vec3_t delta;
 	M_walkmove(self, self->ideal_yaw, 12);	// allow a little closing
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 100)
 		return;
@@ -144,9 +144,9 @@ static void Demon_Melee(edict_t *self, float side)
 	ldmg = 10 + 5 * random();
 	T_Damage(self->enemy, self, self, vec3_origin, vec3_origin, vec3_origin, ldmg, 0, DAMAGE_Q1 | DAMAGE_NO_PARTICLES, MakeGenericMeansOfDeath(self, MD_MELEE, DT_DIRECT));
 	vec3_t v_forward, v_right;
-	AngleVectors(self->s.angles, v_forward, v_right, NULL);
+	AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
 	vec3_t o, v;
-	VectorMA(self->s.origin, 16, v_forward, o);
+	VectorMA(self->server.state.origin, 16, v_forward, o);
 	VectorScale(v_right, side, v);
 	SpawnMeatSpray(self, o, v);
 }
@@ -211,8 +211,8 @@ static void demon_do_jump(edict_t *self)
 {
 	self->monsterinfo.attack_finished = level.time + 3000;
 	vec3_t v_forward;
-	AngleVectors(self->s.angles, v_forward, NULL, NULL);
-	self->s.origin[2]++;
+	AngleVectors(self->server.state.angles, v_forward, NULL, NULL);
+	self->server.state.origin[2]++;
 	VectorScale(v_forward, 600, self->velocity);
 	self->velocity[2] = 250;
 	self->groundentity = NULL;
@@ -235,7 +235,7 @@ static void demon_jump(edict_t *self)
 
 static void Demon_Swipe(edict_t *self)
 {
-	if (self->s.frame == attacka5)
+	if (self->server.state.frame == attacka5)
 		Demon_Melee(self, 200);
 	else
 		Demon_Melee(self, -200);
@@ -270,14 +270,14 @@ static void demon_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void demon_unsolid(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
 static void demon_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -353,11 +353,11 @@ void q1_monster_demon(edict_t *self)
 	sound_idle1 = gi.soundindex("q1/demon/idle1.wav");
 	sound_sight2 = gi.soundindex("q1/demon/sight2.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 64);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 64);
 	self->health = 300;
 	self->monsterinfo.stand = demon_stand;
 	self->monsterinfo.walk = demon_walk;
@@ -368,7 +368,7 @@ void q1_monster_demon(edict_t *self)
 	self->monsterinfo.attack = demon_jump;			// jump attack
 	self->monsterinfo.checkattack = DemonCheckAttack;
 	self->pain = demon_pain;
-	self->s.game = GAME_Q1;
+	self->server.state.game = GAME_Q1;
 	walkmonster_start(self);
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = M_GetMonsterMove(&script, "stand1");

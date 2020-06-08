@@ -385,7 +385,7 @@ static void CL_ParseConfigstring(int index)
 		Com_Error(ERR_DROP, "%s: bad index: %d", __func__, index);
 
 	s = cl.configstrings[index];
-	maxlen = CS_SIZE(index);
+	maxlen = CS_SIZE;
 	len = MSG_ReadString(s, maxlen);
 	SHOWNET(2, "    %d \"%s\"\n", index, s);
 

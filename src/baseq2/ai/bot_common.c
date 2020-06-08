@@ -95,7 +95,7 @@ void AI_BotObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 	char		message2[64];
 	bool		ff;
 
-	if (coop->value && attacker->client)
+	if (coop->value && attacker->server.client)
 		meansOfDeath |= MOD_FRIENDLY_FIRE;
 
 	if ( deathmatch->value || coop->value )
@@ -106,44 +106,44 @@ void AI_BotObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 		GS_Obituary ( self, G_PlayerGender ( self ), attacker, mod, message, message2 );
 
 		// duplicate message at server console for logging
-		if ( attacker && attacker->client )
+		if ( attacker && attacker->server.client )
 		{
 			if ( attacker != self )
 			{		// regular death message
 				if ( deathmatch->value ) {
 					if( ff )
-						attacker->client->resp.score--;
+						attacker->server.client->resp.score--;
 					else
-						attacker->client->resp.score++;
+						attacker->server.client->resp.score++;
 				}
 
 				self->enemy = attacker;
 
 				if( dedicated->value )
-					G_Printf ( "%s %s %s%s\n", self->client->pers.netname, message, attacker->client->pers.netname, message2 );
+					G_Printf ( "%s %s %s%s\n", self->server.client->pers.netname, message, attacker->server.client->pers.netname, message2 );
 				else
 				{	//bot
 					G_PrintMsg (NULL, PRINT_HIGH, "%s%s %s %s%s\n",
-						self->client->pers.netname,
+						self->server.client->pers.netname,
 						S_COLOR_WHITE,
 						message,
-						attacker->client->pers.netname,
+						attacker->server.client->pers.netname,
 						message2);
 				}
 
 			} else {			// suicide
 
 				if( deathmatch->value )
-					self->client->resp.score--;
+					self->server.client->resp.score--;
 
 				self->enemy = NULL;
 
 				if( dedicated->value )
-					G_Printf ( "%s %s\n", self->client->pers.netname, message );
+					G_Printf ( "%s %s\n", self->server.client->pers.netname, message );
 				else
 				{	//bot
 					G_PrintMsg (NULL, PRINT_HIGH, "%s%s %s\n",
-						self->client->pers.netname,
+						self->server.client->pers.netname,
 						S_COLOR_WHITE,
 						message );
 				}
@@ -152,16 +152,16 @@ void AI_BotObituary (edict_t *self, edict_t *inflictor, edict_t *attacker)
 		} else {		// wrong place, suicide, etc.
 
 			if( deathmatch->value )
-				self->client->resp.score--;
+				self->server.client->resp.score--;
 
 			self->enemy = NULL;
 
 			if( dedicated->value )
-				G_Printf( "%s %s\n", self->client->pers.netname, message );
+				G_Printf( "%s %s\n", self->server.client->pers.netname, message );
 			else
 			{	//bot
 				G_PrintMsg (NULL, PRINT_HIGH, "%s%s %s\n",
-					self->client->pers.netname,
+					self->server.client->pers.netname,
 					S_COLOR_WHITE,
 					message );
 			}
@@ -205,7 +205,7 @@ void debug_printf(char *fmt, ...)
 	{
 		cl_ent = g_edicts + 1 + i;
 
-		if (!cl_ent->inuse || cl_ent->ai)
+		if (!cl_ent->server.inuse || cl_ent->ai)
 			continue;
 
 		gi.cprintf(cl_ent,  PRINT_MEDIUM, bigbuffer);
@@ -221,7 +221,7 @@ void safe_cprintf(edict_t *ent, int printlevel, char *fmt, ...)
 	va_list		argptr;
 	int len;
 
-	if (ent && (!ent->inuse || ent->ai))
+	if (ent && (!ent->server.inuse || ent->ai))
 		return;
 
 	va_start(argptr, fmt);
@@ -239,7 +239,7 @@ void safe_centerprintf(edict_t *ent, char *fmt, ...)
 	va_list		argptr;
 	int len;
 
-	if (!ent->inuse || ent->ai)
+	if (!ent->server.inuse || ent->ai)
 		return;
 
 	va_start(argptr, fmt);
@@ -269,7 +269,7 @@ void safe_bprintf(int printlevel, char *fmt, ...)
 	{
 		cl_ent = g_edicts + 1 + i;
 
-		if (!cl_ent->inuse || cl_ent->ai)
+		if (!cl_ent->server.inuse || cl_ent->ai)
 			continue;
 
 		gi.cprintf(cl_ent, printlevel, bigbuffer);

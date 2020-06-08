@@ -117,7 +117,7 @@ void cybr_walk(edict_t *self)
 void cybr_dead(edict_t *self)
 {
 	self->nextthink = 0;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 }
 
 mframe_t cybr_frames_die1[FRAME_COUNT(die)] =
@@ -154,7 +154,7 @@ void cybr_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &cybr_die1;
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
@@ -186,10 +186,10 @@ void cybr_fire_gun(edict_t *self)
 {
 	G_SendMuzzleFlash(self, MZ_ROCKET);
 	vec3_t start, forward, right, offset;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, forward);
 	VectorNormalize(forward);
 	VectorSet(offset, 0, 0, self->viewheight);
-	G_ProjectSource(self->s.origin, offset, forward, right, start);
+	G_ProjectSource(self->server.state.origin, offset, forward, right, start);
 	fire_doom_rocket(self, start, forward, Doom_MissileDamageRandomizer(20), 128, 650);
 }
 
@@ -239,7 +239,7 @@ void doom_monster_cybr(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_active = gi.soundindex("doom/DMACT.wav");
 	sound_alert = gi.soundindex("doom/CYBSIT.wav");
@@ -247,9 +247,9 @@ void doom_monster_cybr(edict_t *self)
 	sound_hoof = gi.soundindex("doom/HOOF.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/CYBDTH.wav");
-	VectorSet(self->mins, -20, -20, -4);
-	VectorSet(self->maxs, 20, 20, 106);
-	self->s.modelindex = gi.modelindex("sprites/doom/cybr.d2s");
+	VectorSet(self->server.mins, -20, -20, -4);
+	VectorSet(self->server.maxs, 20, 20, 106);
+	self->server.state.modelindex = gi.modelindex("sprites/doom/cybr.d2s");
 	self->health = 4000;
 	self->mass = 1000;
 	self->dmg = 1;
@@ -261,7 +261,7 @@ void doom_monster_cybr(edict_t *self)
 	self->die = cybr_die;
 	self->monsterinfo.attack = cybr_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &cybr_stand1;
 	self->monsterinfo.scale = 1;

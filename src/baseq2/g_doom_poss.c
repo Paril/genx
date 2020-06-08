@@ -117,7 +117,7 @@ void poss_walk(edict_t *self)
 void poss_dead(edict_t *self)
 {
 	self->nextthink = 0;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 }
 
 mframe_t poss_frames_gib1[FRAME_COUNT(gib)] =
@@ -199,7 +199,7 @@ void poss_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	else
 		Doom_TossItem(self, ITI_BULLETS, 5);*/
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
@@ -232,10 +232,10 @@ void poss_fire_gun(edict_t *self)
 {
 	G_SendMuzzleFlash(self, self->dmg == 1 ? MZ_SHOTGUN : MZ_BLASTER);
 	vec3_t start, forward, right, offset;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, forward);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, forward);
 	VectorNormalize(forward);
 	VectorSet(offset, 0, 0, self->viewheight);
-	G_ProjectSource(self->s.origin, offset, forward, right, start);
+	G_ProjectSource(self->server.state.origin, offset, forward, right, start);
 	int damage = ((Q_rand() % 5) + 1) * 3;
 	fire_doom_shotgun(self, start, forward, damage, 0, TE_DOOM_GUNSHOT, (self->dmg == 1 ? 3 : 1), 800, 0, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
 }
@@ -286,7 +286,7 @@ void doom_monster_poss(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_gib = gi.soundindex("doom/SLOP.wav");
 	sound_alert1 = gi.soundindex("doom/POSIT1.wav");
@@ -297,18 +297,18 @@ void doom_monster_poss(edict_t *self)
 	sound_death1 = gi.soundindex("doom/PODTH1.wav");
 	sound_death2 = gi.soundindex("doom/PODTH2.wav");
 	sound_death3 = gi.soundindex("doom/PODTH3.wav");
-	VectorSet(self->mins, -20, -20, -2);
-	VectorSet(self->maxs, 20, 20, 62);
+	VectorSet(self->server.mins, -20, -20, -2);
+	VectorSet(self->server.maxs, 20, 20, 62);
 
 	if (self->entitytype == ET_DOOM_MONSTER_SPOS)
 	{
-		self->s.modelindex = gi.modelindex("sprites/doom/SPOS.d2s");
+		self->server.state.modelindex = gi.modelindex("sprites/doom/SPOS.d2s");
 		self->health = 30;
 		self->dmg = 1;
 	}
 	else
 	{
-		self->s.modelindex = gi.modelindex("sprites/doom/POSS.d2s");
+		self->server.state.modelindex = gi.modelindex("sprites/doom/POSS.d2s");
 		self->health = 20;
 		self->dmg = 0;
 	}
@@ -322,7 +322,7 @@ void doom_monster_poss(edict_t *self)
 	self->die = poss_die;
 	self->monsterinfo.attack = poss_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &poss_stand1;
 	self->monsterinfo.scale = 1;

@@ -45,10 +45,10 @@ static void fish_idle_sound(edict_t *self)
 
 static void fish_run_skip(edict_t *self)
 {
-	if (self->s.frame == swim2)
+	if (self->server.state.frame == swim2)
 		fish_idle_sound(self);
 
-	self->s.frame++;
+	self->server.state.frame++;
 }
 
 static void f_run(edict_t *self)
@@ -62,7 +62,7 @@ static void fish_melee(edict_t *self)
 		return;		// removed before stroke
 
 	vec3_t delta;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 60)
 		return;
@@ -79,9 +79,9 @@ static void f_attack(edict_t *self)
 
 static void fish_dead(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -127,11 +127,11 @@ void q1_monster_fish(edict_t *self)
 	sound_death = gi.soundindex("q1/fish/death.wav");
 	sound_bite = gi.soundindex("q1/fish/bite.wav");
 	sound_idle = gi.soundindex("q1/fish/idle.wav");
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 24);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 24);
 	self->health = 25;
 	self->monsterinfo.stand = f_stand;
 	self->monsterinfo.walk = f_walk;

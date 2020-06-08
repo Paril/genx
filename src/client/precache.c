@@ -344,6 +344,57 @@ void CL_SetSky(void)
 	R_SetSky(cl.configstrings[CS_SKY], rotate, axis);
 }
 
+static void CL_ParseWeaponSeeds()
+{
+	weapon_group_e group = WEAPON_GROUP_RAPID;
+	gametype_t game = GAME_Q2;
+	uint32_t weapon_seed_index = 0, ammo_seed_index = 0;
+
+	for (const char *ptr = cl.configstrings[CS_SEEDS]; *ptr; )
+	{
+		if (*ptr == '|')
+		{
+			group++;
+			game = GAME_Q2;
+			weapon_seed_index = ammo_seed_index = 0;
+			ptr++;
+			continue;
+		}
+		else if (*ptr == ';')
+		{
+			game++;
+			weapon_seed_index = ammo_seed_index = 0;
+			ptr++;
+			continue;
+		}
+		else if (*ptr == ',')
+		{
+			ptr++;
+			continue;
+		}
+
+		uint16_t index;
+		sscanf(ptr, "%hu", &index);
+		cl.weapon_seeds[game][group].precache[weapon_seed_index++] = cl.precache[index];
+		cl.weapon_seeds[game][group].num_seeds = weapon_seed_index;
+
+		while (Q_isdigit(*ptr))
+			ptr++;
+
+		if (*ptr == ':')
+		{
+			ptr++;
+
+			sscanf(ptr, "%hu", &index);
+			cl.ammo_seeds[game][group].precache[ammo_seed_index++] = cl.precache[index];
+			cl.ammo_seeds[game][group].num_seeds = ammo_seed_index;
+
+			while (Q_isdigit(*ptr))
+				ptr++;
+		}
+	}
+}
+
 /*
 =================
 CL_PrepRefresh
@@ -433,6 +484,8 @@ void CL_PrepRefresh(void)
 	else
 		cl.gamemode = GAMEMODE_SINGLEPLAYER;
 #endif
+
+	CL_ParseWeaponSeeds();
 
 	// the renderer can now free unneeded stuff
 	R_EndRegistration();

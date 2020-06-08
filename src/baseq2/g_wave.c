@@ -249,7 +249,7 @@ void Wave_Begin()
 	{
 		edict_t *player = &g_edicts[i + 1];
 
-		if (player->inuse && player->client->pers.connected)
+		if (player->server.inuse && player->server.client->pers.connected)
 			gi.centerprintf(player, "Wave %u\n", wave_globals.wave_number);
 	}
 
@@ -275,9 +275,9 @@ void Wave_SpawnMonster()
 {
 	edict_t *point = SelectMonsterSpawnPoint();
 	edict_t *s = G_Spawn();
-	VectorCopy(point->s.origin, s->s.origin);
-	s->s.origin[2] += 16;
-	VectorCopy(point->s.angles, s->s.angles);
+	VectorCopy(point->server.state.origin, s->server.state.origin);
+	s->server.state.origin[2] += 16;
+	VectorCopy(point->server.state.angles, s->server.state.angles);
 	ED_CallSpawnByType(s, Wave_PickSpawnableMonster());
 	gi.linkentity(s);
 
@@ -293,7 +293,7 @@ void Wave_SpawnMonster()
 		if (last_enemy > g_edicts + maxclients->integer)
 			last_enemy = &g_edicts[1];
 
-		if (last_enemy->inuse && last_enemy->health > 0 && !(last_enemy->flags & FL_NOTARGET))
+		if (last_enemy->server.inuse && last_enemy->health > 0 && !(last_enemy->flags & FL_NOTARGET))
 		{
 			s->enemy = last_enemy;
 			break;
@@ -321,7 +321,7 @@ void Wave_Frame()
 				{
 					edict_t *player = &g_edicts[i + 1];
 
-					if (player->inuse && player->client->pers.connected)
+					if (player->server.inuse && player->server.client->pers.connected)
 						gi.centerprintf(player, "Type \"wave_start\" to start the game.\n");
 				}
 			}
@@ -345,7 +345,7 @@ void Wave_Frame()
 					{
 						edict_t *player = &g_edicts[i + 1];
 
-						if (player->inuse && player->client->pers.connected)
+						if (player->server.inuse && player->server.client->pers.connected)
 							gi.centerprintf(player, "Wave complete! 10 second cooldown.\n");
 					}
 
@@ -376,7 +376,7 @@ bool Wave_Commands(edict_t *ent)
 {
 	char    *cmd;
 
-	if (!ent->client)
+	if (!ent->server.client)
 		return false;     // not fully in game yet
 
 	cmd = Cmd_Argv(0);
@@ -392,7 +392,7 @@ bool Wave_Commands(edict_t *ent)
 			{
 				edict_t *player = &g_edicts[i + 1];
 
-				if (player->inuse && player->client->pers.connected)
+				if (player->server.inuse && player->server.client->pers.connected)
 				{
 					gi.centerprintf(player, "Waves will start in 10 seconds.\n");
 					respawn(player);

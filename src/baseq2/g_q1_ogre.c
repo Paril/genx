@@ -64,18 +64,18 @@ static mscript_t script;
 
 static void OgreGrenadeExplode(edict_t *self)
 {
-	T_RadiusDamage(self, self->owner, 40, NULL, DAMAGE_Q1, 40, self->meansOfDeath);
+	T_RadiusDamage(self, self->server.owner, 40, NULL, DAMAGE_Q1, 40, self->meansOfDeath);
 	gi.sound(self, CHAN_VOICE, gi.soundindex("q1/weapons/r_exp3.wav"), 1, ATTN_NORM, 0);
 	MSG_WriteByte(svc_temp_entity);
 	MSG_WriteByte(TE_Q1_EXPLODE);
-	MSG_WritePos(self->s.origin);
-	gi.multicast(self->s.origin, MULTICAST_PVS);
+	MSG_WritePos(self->server.state.origin);
+	gi.multicast(self->server.state.origin, MULTICAST_PVS);
 	G_FreeEdict(self);
 }
 
 static void OgreGrenadeTouch(edict_t *self, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
-	if (other == self->owner)
+	if (other == self->server.owner)
 		return;		// don't explode on owner
 
 	if (other->takedamage)
@@ -100,29 +100,29 @@ static void OgreFireGrenade(edict_t *self)
 	//self.effects = self.effects | EF_MUZZLEFLASH;
 	gi.sound(self, CHAN_VOICE, gi.soundindex("q1/weapons/grenade.wav"), 1, ATTN_NORM, 0);
 	edict_t *missile = G_Spawn();
-	missile->owner = self;
+	missile->server.owner = self;
 	missile->movetype = MOVETYPE_BOUNCE;
-	missile->solid = SOLID_BBOX;
-	missile->clipmask = MASK_SHOT;
-	missile->s.game = GAME_Q1;
-	missile->s.effects |= EF_GRENADE;
+	missile->server.solid = SOLID_BBOX;
+	missile->server.clipmask = MASK_SHOT;
+	missile->server.state.game = GAME_Q1;
+	missile->server.state.effects |= EF_GRENADE;
 	missile->entitytype = ET_GRENADE;
-	VectorClear(missile->mins);
-	VectorClear(missile->maxs);
+	VectorClear(missile->server.mins);
+	VectorClear(missile->server.maxs);
 	// set missile speed
 	vec3_t dir;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, dir);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, dir);
 	VectorNormalize(dir);
 	VectorScale(dir, 600, missile->velocity);
 	missile->velocity[2] = 200;
 	missile->avelocity[0] = missile->avelocity[1] = missile->avelocity[2] = 300;
-	vectoangles(missile->velocity, missile->s.angles);
+	vectoangles(missile->velocity, missile->server.state.angles);
 	missile->touch = OgreGrenadeTouch;
 	// set missile duration
 	missile->nextthink = level.time + 2500;
 	missile->think = OgreGrenadeExplode;
-	missile->s.modelindex = gi.modelindex("models/q1/grenade.mdl");
-	VectorCopy(self->s.origin, missile->s.origin);
+	missile->server.state.modelindex = gi.modelindex("models/q1/grenade.mdl");
+	VectorCopy(self->server.state.origin, missile->server.state.origin);
 	missile->meansOfDeath = MakeAttackerMeansOfDeath(self, missile, MD_NONE, DT_DIRECT);
 	gi.linkentity(missile);
 }
@@ -139,21 +139,21 @@ SpawnMeatSpray
 void SpawnMeatSpray(edict_t *self, vec3_t org, vec3_t vel)
 {
 	edict_t *missile = G_Spawn();
-	missile->owner = self;
+	missile->server.owner = self;
 	missile->movetype = MOVETYPE_BOUNCE;
-	missile->solid = SOLID_NOT;
+	missile->server.solid = SOLID_NOT;
 	VectorCopy(vel, missile->velocity);
 	missile->velocity[2] = missile->velocity[2] + 250 + 50 * random();
 	VectorSet(missile->avelocity, 3000, 1000, 2000);
 	// set missile duration
 	missile->nextthink = level.time + 1000;
 	missile->think = G_FreeEdict;
-	missile->s.game = GAME_Q1;
-	missile->s.effects |= EF_GIB;
-	missile->s.modelindex = gi.modelindex("models/q1/zom_gib.mdl");
-	VectorClear(missile->mins);
-	VectorClear(missile->maxs);
-	VectorCopy(org, missile->s.origin);
+	missile->server.state.game = GAME_Q1;
+	missile->server.state.effects |= EF_GIB;
+	missile->server.state.modelindex = gi.modelindex("models/q1/zom_gib.mdl");
+	VectorClear(missile->server.mins);
+	VectorClear(missile->server.maxs);
+	VectorCopy(org, missile->server.state.origin);
 	gi.linkentity(missile);
 }
 
@@ -175,7 +175,7 @@ static void chainsaw(edict_t *self, float side)
 	if (!CanDamage(self->enemy, self))
 		return;
 
-	VectorSubtract(self->enemy->s.origin, self->s.origin, delta);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, delta);
 
 	if (VectorLength(delta) > 100)
 		return;
@@ -186,9 +186,9 @@ static void chainsaw(edict_t *self, float side)
 	if (side)
 	{
 		vec3_t v_forward, v_right;
-		AngleVectors(self->s.angles, v_forward, v_right, NULL);
+		AngleVectors(self->server.state.angles, v_forward, v_right, NULL);
 		vec3_t sp;
-		VectorMA(self->s.origin, 16, v_forward, sp);
+		VectorMA(self->server.state.origin, 16, v_forward, sp);
 
 		if (side == 1)
 		{
@@ -248,14 +248,14 @@ static void ogre_swing_sound(edict_t *self)
 
 static void ogre_swing_attack(edict_t *self)
 {
-	if (self->s.frame == swing6)
+	if (self->server.state.frame == swing6)
 		chainsaw(self, 200);
-	else if (self->s.frame == swing10)
+	else if (self->server.state.frame == swing10)
 		chainsaw(self, -200);
 	else
 		chainsaw(self, 0);
 
-	self->s.angles[1] = self->s.angles[1] + random() * 25;
+	self->server.state.angles[1] = self->server.state.angles[1] + random() * 25;
 }
 
 static void ogre_swing(edict_t *self)
@@ -265,12 +265,12 @@ static void ogre_swing(edict_t *self)
 
 static void ogre_smash_attack(edict_t *self)
 {
-	if (self->s.frame == smash10)
+	if (self->server.state.frame == smash10)
 		chainsaw(self, 1);
 	else
 		chainsaw(self, 0);
 
-	if (self->s.frame == smash11)
+	if (self->server.state.frame == smash11)
 		self->monsterinfo.pausetime = level.time + (random() * 200);
 }
 
@@ -349,7 +349,7 @@ edict_t *Drop_Backpack(edict_t *self);
 
 static void ogre_drop(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	//edict_t *backpack = Drop_Backpack(self);
 	//backpack->pack_rockets = 2;
 	gi.linkentity(self);
@@ -358,7 +358,7 @@ static void ogre_drop(edict_t *self)
 static void ogre_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -453,11 +453,11 @@ void q1_monster_ogre(edict_t *self)
 	sound_ogsawatk = gi.soundindex("q1/ogre/ogsawatk.wav");
 	sound_ogwake = gi.soundindex("q1/ogre/ogwake.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -32, -32, -24);
-	VectorSet(self->maxs, 32, 32, 64);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -32, -32, -24);
+	VectorSet(self->server.maxs, 32, 32, 64);
 	self->health = 200;
 	self->monsterinfo.stand = ogre_stand;
 	self->monsterinfo.walk = ogre_walk;

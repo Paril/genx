@@ -87,7 +87,7 @@ static void flipper_pain(edict_t *self, edict_t *other, float kick, int damage)
 	int     n;
 
 	if (self->health < (self->max_health / 2))
-		self->s.skinnum = 1;
+		self->server.state.skinnum = 1;
 
 	if (level.time < self->pain_debounce_time)
 		return;
@@ -113,11 +113,11 @@ static void flipper_pain(edict_t *self, edict_t *other, float kick, int damage)
 
 static void flipper_dead(edict_t *self)
 {
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, -8);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, -8);
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
-	self->s.clip_contents = CONTENTS_DEADMONSTER;
+	self->server.flags.deadmonster = true;
+	self->server.state.clip_contents = CONTENTS_DEADMONSTER;
 	self->nextthink = 0;
 	gi.linkentity(self);
 }
@@ -194,10 +194,10 @@ void SP_monster_flipper(edict_t *self)
 	sound_search    = gi.soundindex("flipper/flpsrch1.wav");
 	sound_sight     = gi.soundindex("flipper/flpsght1.wav");
 	self->movetype = MOVETYPE_STEP;
-	self->solid = SOLID_BBOX;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, 0);
-	VectorSet(self->maxs, 16, 16, 32);
+	self->server.solid = SOLID_BBOX;
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, 0);
+	VectorSet(self->server.maxs, 16, 16, 32);
 	self->health = 50;
 	self->gib_health = -30;
 	self->mass = 100;

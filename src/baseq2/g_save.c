@@ -460,7 +460,7 @@ void WriteLevel(const char *filename)
 	{
 		ent = &g_edicts[i];
 
-		if (!ent->inuse)
+		if (!ent->server.inuse)
 			continue;
 
 		write_short(f, i);
@@ -562,8 +562,8 @@ void ReadLevel(const char *filename)
 	for (i = 0 ; i < maxclients->value ; i++)
 	{
 		ent = &g_edicts[i + 1];
-		ent->client = game.clients + i;
-		ent->client->pers.connected = false;
+		ent->server.client = game.clients + i;
+		ent->server.client->pers.connected = false;
 	}
 
 	// do any load time things at this point
@@ -571,7 +571,7 @@ void ReadLevel(const char *filename)
 	{
 		ent = &g_edicts[i];
 
-		if (!ent->inuse)
+		if (!ent->server.inuse)
 			continue;
 
 		// fire any cross-level triggers

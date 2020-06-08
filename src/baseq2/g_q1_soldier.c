@@ -83,11 +83,11 @@ static void army_fire(edict_t *self)
 	edict_t *en = self->enemy;
 	vec3_t dir;
 	VectorScale(en->velocity, 0.2, dir);
-	VectorSubtract(en->s.origin, dir, dir);
-	VectorSubtract(dir, self->s.origin, dir);
+	VectorSubtract(en->server.state.origin, dir, dir);
+	VectorSubtract(dir, self->server.state.origin, dir);
 	VectorNormalize(dir);
 	vec3_t right, up;
-	AngleVectors(self->s.angles, NULL, right, up);
+	AngleVectors(self->server.state.angles, NULL, right, up);
 	vec3_t spread = { 0.1, 0.1, 0 };
 	FireBullets(self, 4, 4, dir, spread, up, right, MakeAttackerMeansOfDeath(self, self, MD_NONE, DT_DIRECT));
 }
@@ -121,7 +121,7 @@ edict_t *Drop_Backpack(edict_t *self);
 
 static void army_drop(edict_t *self)
 {
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	//edict_t *backpack = Drop_Backpack(self);
 	//backpack->pack_shells = 5;
 	gi.linkentity(self);
@@ -130,7 +130,7 @@ static void army_drop(edict_t *self)
 static void army_dead(edict_t *self)
 {
 	self->movetype = MOVETYPE_TOSS;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 	self->nextthink = 0;
 }
 
@@ -228,11 +228,11 @@ void q1_monster_army(edict_t *self)
 	sound_sattck1 = gi.soundindex("q1/soldier/sattck1.wav");
 	sound_sight1 = gi.soundindex("q1/soldier/sight1.wav");
 	sound_udeath = gi.soundindex("q1/player/udeath.wav");		// gib death
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
-	self->s.modelindex = gi.modelindex(model_name);
-	VectorSet(self->mins, -16, -16, -24);
-	VectorSet(self->maxs, 16, 16, 40);
+	self->server.state.modelindex = gi.modelindex(model_name);
+	VectorSet(self->server.mins, -16, -16, -24);
+	VectorSet(self->server.maxs, 16, 16, 40);
 	self->health = 30;
 	self->monsterinfo.stand = army_stand;
 	self->monsterinfo.walk = army_walk;

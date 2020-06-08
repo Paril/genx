@@ -106,7 +106,7 @@ void sarg_walk(edict_t *self)
 void sarg_dead(edict_t *self)
 {
 	self->nextthink = 0;
-	self->svflags |= SVF_DEADMONSTER;
+	self->server.flags.deadmonster = true;
 }
 
 mframe_t sarg_frames_die1[FRAME_COUNT(die)] =
@@ -129,7 +129,7 @@ void sarg_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &sarg_die1;
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
@@ -199,16 +199,16 @@ void doom_monster_sarg(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_alert = gi.soundindex("doom/SGTSIT.wav");
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/DMPAIN.wav");
 	sound_death = gi.soundindex("doom/SGTDTH.wav");
 	sound_attack = gi.soundindex("doom/SGTATK.wav");
-	VectorSet(self->mins, -30, -30, -4);
-	VectorSet(self->maxs, 30, 30, 52);
-	self->s.modelindex = gi.modelindex("sprites/doom/sarg.d2s");
+	VectorSet(self->server.mins, -30, -30, -4);
+	VectorSet(self->server.maxs, 30, 30, 52);
+	self->server.state.modelindex = gi.modelindex("sprites/doom/sarg.d2s");
 	self->health = 150;
 	self->dmg = 0;
 	self->monsterinfo.stand = sarg_stand;
@@ -219,10 +219,10 @@ void doom_monster_sarg(edict_t *self)
 	self->die = sarg_die;
 	self->monsterinfo.melee = sarg_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 
 	if (self->entitytype == ET_DOOM_MONSTER_SPECTRE)
-		self->s.renderfx |= RF_SPECTRE;
+		self->server.state.renderfx |= RF_SPECTRE;
 
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &sarg_stand1;

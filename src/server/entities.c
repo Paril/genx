@@ -347,67 +347,69 @@ void SV_BuildClientFrame(client_t *client)
 			continue;
 
 		// ignore ents without visible models
-		if (ent->svflags & SVF_NOCLIENT)
+		if (ent->flags.noclient)
 			continue;
 
 		// ignore ents without visible models unless they have an effect
-		if (!ent->s.modelindex && !ent->s.effects && !ent->s.sound)
+		if (!ent->state.modelindex && !ent->state.effects && !ent->state.sound)
 		{
-			if (!ent->s.event)
+			if (!ent->state.event)
 				continue;
 
-			if (ent->s.event == EV_FOOTSTEP && client->settings[CLS_NOFOOTSTEPS])
+			if (ent->state.event == EV_FOOTSTEP && client->settings[CLS_NOFOOTSTEPS])
 				continue;
 		}
 
-		if ((ent->s.effects & EF_GIB) && client->settings[CLS_NOGIBS])
+		if ((ent->state.effects & EF_GIB) && client->settings[CLS_NOGIBS])
 			continue;
 
 		// ignore if not touching a PV leaf
 		if (ent != clent && !sv_novis->integer)
 		{
+			server_entity_t *sent = &sv.entities[NUM_FOR_EDICT(ent)];
+
 			// check area
-			if (!CM_AreasConnected(client->cm, clientarea, ent->areanum))
+			if (!CM_AreasConnected(client->cm, clientarea, sent->areanum))
 			{
 				// doors can legally straddle two areas, so
 				// we may need to check another one
-				if (!CM_AreasConnected(client->cm, clientarea, ent->areanum2))
+				if (!CM_AreasConnected(client->cm, clientarea, sent->areanum2))
 				{
 					continue;        // blocked by a door
 				}
 			}
 
 			// beams just check one point for PHS
-			if (ent->s.renderfx & (RF_BEAM | RF_PROJECTILE))
+			if (ent->state.renderfx & (RF_BEAM | RF_PROJECTILE))
 			{
-				if (!Q_IsBitSet(clientphs, ent->clusternums[0]))
+				if (!Q_IsBitSet(clientphs, sent->clusternums[0]))
 					continue;
 			}
 			else
 			{
-				if (ent->num_clusters == -1)
+				if (sent->num_clusters == -1)
 				{
 					// too many leafs for individual check, go by headnode
-					if (!CM_HeadnodeVisible(CM_NodeNum(client->cm, ent->headnode), clientpvs))
+					if (!CM_HeadnodeVisible(CM_NodeNum(client->cm, sent->headnode), clientpvs))
 						continue;
 				}
 				else
 				{
 					// check individual leafs
-					for (i = 0; i < ent->num_clusters; i++)
-						if (Q_IsBitSet(clientpvs, ent->clusternums[i]))
+					for (i = 0; i < sent->num_clusters; i++)
+						if (Q_IsBitSet(clientpvs, sent->clusternums[i]))
 							break;
 
-					if (i == ent->num_clusters)
+					if (i == sent->num_clusters)
 						continue;       // not visible
 				}
 
-				if (!ent->s.modelindex)
+				if (!ent->state.modelindex && ent->state.sound)
 				{
 					// don't send sounds if they will be attenuated away
 					vec3_t    delta;
 					float    len;
-					VectorSubtract(org, ent->s.origin, delta);
+					VectorSubtract(org, ent->state.origin, delta);
 					len = VectorLength(delta);
 
 					if (len > 400)
@@ -416,16 +418,16 @@ void SV_BuildClientFrame(client_t *client)
 			}
 		}
 
-		if (ent->s.number != e)
+		if (ent->state.number != e)
 		{
-			Com_WPrintf("%s: fixing ent->s.number: %d to %d\n",
-				__func__, ent->s.number, e);
-			ent->s.number = e;
+			Com_WPrintf("%s: fixing ent->state.number: %d to %d\n",
+				__func__, ent->state.number, e);
+			ent->state.number = e;
 		}
 
 		// add it to the circular client_entities array
 		state = &svs.entities[svs.next_entity % svs.num_entities];
-		MSG_PackEntity(state, &ent->s, Q2PRO_SHORTANGLES(client, e));
+		MSG_PackEntity(state, &ent->state, Q2PRO_SHORTANGLES(client, e));
 
 		// clear footsteps
 		if (state->event == EV_FOOTSTEP && client->settings[CLS_NOFOOTSTEPS])

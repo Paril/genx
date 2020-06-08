@@ -103,9 +103,9 @@ void pain_launch_soul(edict_t *self, float yaw);
 
 void pain_throw(edict_t *self)
 {
-	pain_launch_soul(self, self->s.angles[1] + 90);
-	pain_launch_soul(self, self->s.angles[1] + 180);
-	pain_launch_soul(self, self->s.angles[1] + 270);
+	pain_launch_soul(self, self->server.state.angles[1] + 90);
+	pain_launch_soul(self, self->server.state.angles[1] + 180);
+	pain_launch_soul(self, self->server.state.angles[1] + 270);
 }
 
 mframe_t pain_frames_die1[FRAME_COUNT(die)] =
@@ -128,7 +128,7 @@ void pain_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	gi.sound(self, CHAN_VOICE, sound_death, 1, ATTN_NORM, 0);
 	self->monsterinfo.currentmove = &pain_die1;
 	self->takedamage = false;
-	self->solid = SOLID_NOT;
+	self->server.solid = SOLID_NOT;
 	gi.linkentity(self);
 }
 
@@ -194,7 +194,7 @@ void pain_launch_soul(edict_t *self, float yaw)
 	vec3_t fwd;
 	vec3_t dir = { 0, yaw, 0 };
 	AngleVectors(dir, fwd, NULL, NULL);
-	VectorMA(self->s.origin, 32, fwd, start);
+	VectorMA(self->server.state.origin, 32, fwd, start);
 	start[2] += 6;
 	vec3_t ls_mins = { -16, -16, -4 };
 	vec3_t ls_maxs = { 16, 16, 52 };
@@ -214,8 +214,8 @@ void pain_launch_soul(edict_t *self, float yaw)
 	}
 
 	edict_t *skul = G_Spawn();
-	VectorCopy(tr.endpos, skul->s.origin);
-	VectorCopy(self->s.angles, skul->s.angles);
+	VectorCopy(tr.endpos, skul->server.state.origin);
+	VectorCopy(self->server.state.angles, skul->server.state.angles);
 	skul->enemy = self->enemy;
 	skul->entitytype = ET_DOOM_MONSTER_SKUL;
 	doom_monster_skul(skul);
@@ -237,7 +237,7 @@ void pain_launch_soul(edict_t *self, float yaw)
 void pain_throw_soul(edict_t *self)
 {
 	vec3_t sub;
-	VectorSubtract(self->enemy->s.origin, self->s.origin, sub);
+	VectorSubtract(self->enemy->server.state.origin, self->server.state.origin, sub);
 	vectoangles(sub, sub);
 	pain_launch_soul(self, sub[1]);
 }
@@ -275,15 +275,15 @@ void doom_monster_pain(edict_t *self)
 		return;
 	}
 
-	self->solid = SOLID_BBOX;
+	self->server.solid = SOLID_BBOX;
 	self->movetype = MOVETYPE_STEP;
 	sound_alert = gi.soundindex("doom/PESIT.wav");
 	sound_action = gi.soundindex("doom/DMACT.wav");
 	sound_pain = gi.soundindex("doom/PEPAIN.wav");
 	sound_death = gi.soundindex("doom/PEDTH.wav");
-	VectorSet(self->mins, -31, -31, -4);
-	VectorSet(self->maxs, 31, 31, 52);
-	self->s.modelindex = gi.modelindex("sprites/doom/pain.d2s");
+	VectorSet(self->server.mins, -31, -31, -4);
+	VectorSet(self->server.maxs, 31, 31, 52);
+	self->server.state.modelindex = gi.modelindex("sprites/doom/pain.d2s");
 	self->health = 400;
 	self->mass = 400;
 	self->dmg = 0;
@@ -296,7 +296,7 @@ void doom_monster_pain(edict_t *self)
 	self->monsterinfo.attack = pain_attack;
 	self->monsterinfo.melee = pain_attack;
 	self->monsterinfo.special_frames = true;
-	self->s.game = GAME_DOOM;
+	self->server.state.game = GAME_DOOM;
 	gi.linkentity(self);
 	self->monsterinfo.currentmove = &pain_stand1;
 	self->monsterinfo.scale = 1;
