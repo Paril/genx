@@ -272,6 +272,8 @@
     <ClCompile Include="..\src\format\md2.c">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IntDir)_2</ObjectFileName>
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(IntDir)_2</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)_2</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(IntDir)_2</ObjectFileName>
     </ClCompile>
     <ClCompile Include="..\src\refresh\draw.c" />
     <ClCompile Include="..\src\refresh\glad.c" />

@@ -1545,7 +1545,6 @@ void    SelectSpawnPoint(edict_t *ent, vec3_t origin, vec3_t angles)
 
 //======================================================================
 
-
 void InitBodyQue(void)
 {
 	int     i;
@@ -1553,7 +1552,12 @@ void InitBodyQue(void)
 	level.body_que = 0;
 
 	for (i = 0; i < BODY_QUEUE_SIZE ; i++)
+	{
 		ent = G_Spawn();
+
+		if (!level.body_queue_begin)
+			level.body_queue_begin = ent;
+	}
 }
 
 void body_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, vec3_t point)
@@ -1606,12 +1610,37 @@ void body_die(edict_t *self, edict_t *inflictor, edict_t *attacker, int damage, 
 	}
 }
 
+void G_RemoveOutdatedBodies(edict_t *ent)
+{
+	return;
+
+	for (int i = 0; i < BODY_QUEUE_SIZE; i++)
+	{
+		edict_t *body = level.body_queue_begin + i;
+
+		if (!body->server.inuse)
+			continue;
+
+		int32_t clientnum = body->server.state.skinnum & 0xFF;
+
+		if (clientnum != ent->server.client->server.clientNum)
+			continue;
+
+		if (body->server.state.game == ent->server.state.game)
+			continue;
+
+		G_FreeEdict(body);
+	}
+}
+
 void CopyToBodyQue(edict_t *ent)
 {
-	edict_t     *body;
+	G_RemoveOutdatedBodies(ent);
+
 	gi.unlinkentity(ent);
+
 	// grab a body que and cycle to the next one
-	body = &g_edicts[game.maxclients + level.body_que + 1];
+	edict_t *body = &g_edicts[game.maxclients + level.body_que + 1];
 	level.body_que = (level.body_que + 1) % BODY_QUEUE_SIZE;
 
 	// send an effect on the removed body
@@ -1810,12 +1839,14 @@ void PutClientInServer(edict_t *ent)
 #ifdef ENABLE_COOP
 	if (deathmatch->value || (invasion->value && (ent->movetype == MOVETYPE_NOCLIP || ent->movetype == MOVETYPE_NONE)))
 	{
+#endif
 		char        userinfo[MAX_INFO_STRING];
 		resp = client->resp;
 		memcpy(userinfo, client->pers.userinfo, sizeof(userinfo));
 		InitClientPersistant(ent);
 		ClientUserinfoChanged(ent, userinfo);
 		InitClientItems(ent);
+#ifdef ENABLE_COOP
 	}
 	else if (coop->value)
 	{
@@ -2300,9 +2331,12 @@ void ClientDisconnect(edict_t *ent)
 	ent->server.state.sound = 0;
 	ent->server.state.event = 0;
 	ent->server.state.effects = 0;
+	ent->server.state.game = 0;
 	ent->server.solid = SOLID_NOT;
 	ent->entitytype = ET_NULL;
 	ent->server.client->pers.connected = false;
+
+	G_RemoveOutdatedBodies(ent);
 
 	if (wasInUse)
 		gi.bprintf(PRINT_HIGH, "%s disconnected\n", ent->server.client->pers.netname);

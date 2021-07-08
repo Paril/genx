@@ -429,28 +429,20 @@ CL_AddPacketEntities
 */
 static void CL_AddPacketEntities(void)
 {
-	entity_t            ent;
-	entity_state_t      *s1;
-	float               autorotate;
-	int                 i;
-	int                 pnum;
-	centity_t           *cent;
-	int                 autoanim;
-	clientinfo_t        *ci;
-	unsigned int        effects, renderfx;
 	// bonus items rotate at a fixed rate
-	autorotate = anglemod(cl.time * 0.1f);
+	float autorotate = anglemod(cl.time * 0.1f);
 	// brush models can auto animate their frames
-	autoanim = 2 * cl.time / 1000;
-	memset(&ent, 0, sizeof(ent));
+	int autoanim = 2 * cl.time / 1000;
 
-	for (pnum = 0; pnum < cl.frame.numEntities; pnum++)
+	for (int pnum = 0; pnum < cl.frame.numEntities; pnum++)
 	{
-		i = (cl.frame.firstEntity + pnum) & PARSE_ENTITIES_MASK;
-		s1 = &cl.entityStates[i];
-		cent = &cl_entities[s1->number];
-		effects = s1->effects;
-		renderfx = s1->renderfx;
+		entity_t ent = { .scale = 1 };
+
+		int i = (cl.frame.firstEntity + pnum) & PARSE_ENTITIES_MASK;
+		entity_state_t *s1 = &cl.entityStates[i];
+		centity_t *cent = &cl_entities[s1->number];
+		unsigned int effects = s1->effects;
+		unsigned int renderfx = s1->renderfx;
 		ent.scale = 1;
 
 		// tweak the color of beams
@@ -461,49 +453,45 @@ static void CL_AddPacketEntities(void)
 			ent.skinnum = (s1->skinnum >> ((Q_rand() % 4) * 8)) & 0xff;
 			ent.model = 0;
 		}
-		else
+		else if (s1->modelindex == MODEL_HANDLE_PLAYER)
 		{
-			// set skin
-			if (s1->modelindex == MODEL_HANDLE_PLAYER)
+			// use custom player skin
+			ent.skinnum = 0;
+
+			if (s1->game == GAME_Q2)
 			{
-				// use custom player skin
-				ent.skinnum = 0;
+				clientinfo_t *ci = &cl.clientinfo[s1->skinnum & 0xff];
+				ent.skin = ci->skin;
+				ent.model = ci->model;
 
-				if (s1->game == GAME_Q2)
+				if (!ent.skin || !ent.model)
 				{
-					ci = &cl.clientinfo[s1->skinnum & 0xff];
-					ent.skin = ci->skin;
-					ent.model = ci->model;
-
-					if (!ent.skin || !ent.model)
-					{
-						ent.skin = cl.baseclientinfo.skin;
-						ent.model = cl.baseclientinfo.model;
-						ci = &cl.baseclientinfo;
-					}
-
-					if (renderfx & RF_USE_DISGUISE)
-					{
-						char buffer[MAX_QPATH];
-						Q_concat(buffer, sizeof(buffer), "players/", ci->model_name, "/disguise.pcx", NULL);
-						ent.skin = R_RegisterSkin(buffer);
-					}
+					ent.skin = cl.baseclientinfo.skin;
+					ent.model = cl.baseclientinfo.model;
+					ci = &cl.baseclientinfo;
 				}
-				else
+
+				if (renderfx & RF_USE_DISGUISE)
 				{
-					ent.model = cl_mod_player;
-					ent.skin = 0;
+					char buffer[MAX_QPATH];
+					Q_concat(buffer, sizeof(buffer), "players/", ci->model_name, "/disguise.pcx", NULL);
+					ent.skin = R_RegisterSkin(buffer);
 				}
 			}
 			else
 			{
-				ent.skinnum = s1->skinnum;
+				ent.model = cl_mod_player;
 				ent.skin = 0;
-				ent.model = cl.precache[(uint16_t)s1->modelindex].model.handle;
-
-				if (ent.model == cl_mod_laser || ent.model == cl_mod_dmspot)
-					renderfx |= RF_NOSHADOW;
 			}
+		}
+		else
+		{
+			ent.skinnum = s1->skinnum;
+			ent.skin = 0;
+			ent.model = cl.precache[(uint16_t)s1->modelindex].model.handle;
+
+			if (ent.model == cl_mod_laser || ent.model == cl_mod_dmspot)
+				renderfx |= RF_NOSHADOW;
 		}
 
 		VectorCopy(cent->mins, ent.mins);
@@ -743,8 +731,8 @@ static void CL_AddPacketEntities(void)
 		}
 
 		// if set to invisible, skip
-		if (!ent.model)//(!s1->modelindex)
-			goto skip;
+		//if (!s1->modelindex)
+		//	goto skip;
 
 		if (effects & EF_BFG)
 		{
@@ -769,7 +757,8 @@ static void CL_AddPacketEntities(void)
 		}
 
 		// add to refresh list
-		V_AddEntity(&ent);
+		if (ent.model || (ent.flags & RF_BEAM))
+			V_AddEntity(&ent);
 
 		// color shells generate a seperate entity for the main model
 		if (effects & EF_COLOR_SHELL)
@@ -825,7 +814,7 @@ static void CL_AddPacketEntities(void)
 			if (s1->modelindex2 == MODEL_HANDLE_PLAYER)
 			{
 				// custom weapon
-				ci = &cl.clientinfo[s1->skinnum & 0xff];
+				clientinfo_t *ci = &cl.clientinfo[s1->skinnum & 0xff];
 				i = (s1->skinnum >> 8); // 0 is default weapon model
 
 				if (i < 0 || i > cl.numWeaponModels - 1)
@@ -843,13 +832,15 @@ static void CL_AddPacketEntities(void)
 				}
 			}
 			else
+			{
 				ent.model = cl.precache[(uint16_t)s1->modelindex2].model.handle;
 
-			// PMM - check for the defender sphere shell .. make it translucent
-			if (!Q_strcasecmp(cl.configstrings[CS_PRECACHE + ((uint16_t)s1->modelindex2)], "models/items/shell/tris.md2"))
-			{
-				ent.alpha = 0.32f;
-				ent.flags = RF_TRANSLUCENT;
+				// PMM - check for the defender sphere shell .. make it translucent
+				if (!Q_strcasecmp(cl.configstrings[CS_PRECACHE + ((uint16_t)s1->modelindex2)], "models/items/shell/tris.md2"))
+				{
+					ent.alpha = 0.32f;
+					ent.flags = RF_TRANSLUCENT;
+				}
 			}
 
 			V_AddEntity(&ent);

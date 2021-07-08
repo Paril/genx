@@ -637,6 +637,7 @@ typedef struct
 
 	edict_t     *current_entity;    // entity running from G_RunFrame
 	int         body_que;           // dead bodies
+	edict_t		*body_queue_begin;
 
 	time_t		spawn_rand;
 	int			weapon_spawn_id, ammo_spawn_id;
